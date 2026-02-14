@@ -14,6 +14,7 @@ static std::string sqlite_err(sqlite3* db, const char* prefix) {
 SqliteStore::SqliteStore(SqliteConfig cfg) : cfg_(std::move(cfg)) {}
 SqliteStore::~SqliteStore() { (void)close(); }
 
+//--------
 Result<void> SqliteStore::open() {
   if (db_) return Result<void>::ok();
 
@@ -24,7 +25,6 @@ Result<void> SqliteStore::open() {
     return Result<void>::err(msg);
   }
 
-  // pragmas
   if (cfg_.enable_foreign_keys) {
     auto r = exec("PRAGMA foreign_keys=ON;");
     if (!r) return r;
@@ -36,8 +36,10 @@ Result<void> SqliteStore::open() {
     if (!r) return r;
   }
 
-  return prepare_all();
+  // IMPORTANT: do NOT prepare statements here; schema may not exist yet.
+  return Result<void>::ok();
 }
+//---------
 
 Result<void> SqliteStore::close() {
   if (!db_) return Result<void>::ok();
@@ -103,10 +105,20 @@ Result<void> SqliteStore::ensure_schema() {
     CREATE INDEX IF NOT EXISTS idx_edges_to   ON edges(to_id, to_ver, name);
   )SQL";
 
+//--------
   auto r = exec(schema_sql);
   if (!r) return r;
+
+  // Prepare statements now that schema exists
+  if (!st_insert_object_) {
+    auto p = prepare_all();
+    if (!p) return p;
+  }
+
   return Result<void>::ok();
 }
+//---------
+
 
 Result<void> SqliteStore::prepare_all() {
   auto prep = [&](sqlite3_stmt** out, const char* sql) -> Result<void> {

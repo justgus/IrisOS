@@ -1,5 +1,3 @@
 Running suite(s): RefereeCore
-0%: Checks: 2, Failures: 2, Errors: 0
-test_referee_core.cc:15:F:core:test_create_and_get_object_roundtrip:0: open failed
-test_referee_core.cc:47:F:core:test_edges_from_and_to:0: open failed
-FAIL test_referee_core (exit status: 1)
+100%: Checks: 2, Failures: 0, Errors: 0
+PASS test_referee_core (exit status: 0)

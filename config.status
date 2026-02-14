@@ -430,7 +430,7 @@ Copyright (C) 2021 Free Software Foundation, Inc.
 This config.status script is free software; the Free Software Foundation
 gives unlimited permission to copy, distribute and modify it."
 
-ac_pwd='/home/justgus/Dev/irisos-ai/referee'
+ac_pwd='/home/justgus/Dev/irisOS'
 srcdir='.'
 INSTALL='/usr/bin/install -c'
 MKDIR_P='/usr/bin/mkdir -p'
@@ -951,12 +951,12 @@ S["mkdir_p"]="$(MKDIR_P)"
 S["MKDIR_P"]="/usr/bin/mkdir -p"
 S["INSTALL_STRIP_PROGRAM"]="$(install_sh) -c -s"
 S["STRIP"]="strip"
-S["install_sh"]="${SHELL} /home/justgus/Dev/irisos-ai/referee/install-sh"
-S["MAKEINFO"]="${SHELL} '/home/justgus/Dev/irisos-ai/referee/missing' makeinfo"
-S["AUTOHEADER"]="${SHELL} '/home/justgus/Dev/irisos-ai/referee/missing' autoheader"
-S["AUTOMAKE"]="${SHELL} '/home/justgus/Dev/irisos-ai/referee/missing' automake-1.16"
-S["AUTOCONF"]="${SHELL} '/home/justgus/Dev/irisos-ai/referee/missing' autoconf"
-S["ACLOCAL"]="${SHELL} '/home/justgus/Dev/irisos-ai/referee/missing' aclocal-1.16"
+S["install_sh"]="${SHELL} /home/justgus/Dev/irisOS/install-sh"
+S["MAKEINFO"]="${SHELL} '/home/justgus/Dev/irisOS/missing' makeinfo"
+S["AUTOHEADER"]="${SHELL} '/home/justgus/Dev/irisOS/missing' autoheader"
+S["AUTOMAKE"]="${SHELL} '/home/justgus/Dev/irisOS/missing' automake-1.16"
+S["AUTOCONF"]="${SHELL} '/home/justgus/Dev/irisOS/missing' autoconf"
+S["ACLOCAL"]="${SHELL} '/home/justgus/Dev/irisOS/missing' aclocal-1.16"
 S["VERSION"]="0.1.0"
 S["PACKAGE"]="referee"
 S["CYGPATH_W"]="echo"

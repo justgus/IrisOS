@@ -157,8 +157,9 @@ am__define_uniq_tagged_files = \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
 DIST_SUBDIRS = $(SUBDIRS)
-am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/config.h.in compile \
-	config.guess config.sub install-sh ltmain.sh missing
+am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/config.h.in \
+	README.md compile config.guess config.sub install-sh ltmain.sh \
+	missing
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
 top_distdir = $(distdir)
@@ -203,13 +204,13 @@ distuninstallcheck_listfiles = find . -type f -print
 am__distuninstallcheck_listfiles = $(distuninstallcheck_listfiles) \
   | sed 's|^\./|$(prefix)/|' | grep -v '$(infodir)/dir$$'
 distcleancheck_listfiles = find . -type f -print
-ACLOCAL = ${SHELL} '/home/justgus/Dev/irisos-ai/referee/missing' aclocal-1.16
+ACLOCAL = ${SHELL} '/home/justgus/Dev/irisOS/missing' aclocal-1.16
 AMTAR = $${TAR-tar}
 AM_DEFAULT_VERBOSITY = 1
 AR = ar
-AUTOCONF = ${SHELL} '/home/justgus/Dev/irisos-ai/referee/missing' autoconf
-AUTOHEADER = ${SHELL} '/home/justgus/Dev/irisos-ai/referee/missing' autoheader
-AUTOMAKE = ${SHELL} '/home/justgus/Dev/irisos-ai/referee/missing' automake-1.16
+AUTOCONF = ${SHELL} '/home/justgus/Dev/irisOS/missing' autoconf
+AUTOHEADER = ${SHELL} '/home/justgus/Dev/irisOS/missing' autoheader
+AUTOMAKE = ${SHELL} '/home/justgus/Dev/irisOS/missing' automake-1.16
 AWK = mawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
@@ -253,7 +254,7 @@ LIPO =
 LN_S = ln -s
 LTLIBOBJS = 
 LT_SYS_LIBRARY_PATH = 
-MAKEINFO = ${SHELL} '/home/justgus/Dev/irisos-ai/referee/missing' makeinfo
+MAKEINFO = ${SHELL} '/home/justgus/Dev/irisOS/missing' makeinfo
 MANIFEST_TOOL = :
 MKDIR_P = /usr/bin/mkdir -p
 NM = /usr/bin/nm -B
@@ -281,10 +282,10 @@ SQLITE_CFLAGS =
 SQLITE_LIBS = -lsqlite3 
 STRIP = strip
 VERSION = 0.1.0
-abs_builddir = /home/justgus/Dev/irisos-ai/referee
-abs_srcdir = /home/justgus/Dev/irisos-ai/referee
-abs_top_builddir = /home/justgus/Dev/irisos-ai/referee
-abs_top_srcdir = /home/justgus/Dev/irisos-ai/referee
+abs_builddir = /home/justgus/Dev/irisOS
+abs_srcdir = /home/justgus/Dev/irisOS
+abs_top_builddir = /home/justgus/Dev/irisOS
+abs_top_srcdir = /home/justgus/Dev/irisOS
 ac_ct_AR = ar
 ac_ct_CC = gcc
 ac_ct_CXX = g++
@@ -314,7 +315,7 @@ host_vendor = pc
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /home/justgus/Dev/irisos-ai/referee/install-sh
+install_sh = ${SHELL} /home/justgus/Dev/irisOS/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
