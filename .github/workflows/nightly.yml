@@ -1,0 +1,50 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: "30 7 * * *"   # 02:30 America/New_York is 07:30 UTC (standard time)
+  workflow_dispatch:
+
+jobs:
+  nightly:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential g++ \
+            autoconf automake libtool pkg-config autoconf-archive \
+            sqlite3 libsqlite3-dev \
+            check \
+            valgrind \
+            nlohmann-json3-dev
+
+      - name: Bootstrap
+        run: ./bootstrap.sh
+
+      - name: Configure
+        run: ./configure
+
+      - name: Build
+        run: make -j
+
+      - name: Unit tests
+        run: make check V=1
+
+      - name: Distcheck
+        run: make distcheck
+        
+        
+      - name: Upload test logs (always)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs
+          path: |
+            tests/test-suite.log
+            tests/*.log
