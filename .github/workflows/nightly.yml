@@ -7,6 +7,7 @@ on:
 
 jobs:
   nightly:
+    name: nightly-build
     runs-on: ubuntu-latest
 
     steps:
