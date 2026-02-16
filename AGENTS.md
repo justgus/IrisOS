@@ -14,6 +14,22 @@ Your job: make safe, reviewable, minimal diffs that pass CI and match existing a
 - **No destructive actions** (deleting files, force pushes, history edits, massive rewrites) without explicit instruction.
 - **Do not add new dependencies** unless explicitly requested or truly unavoidable (and justified).
 
+### File Size & Formatting
+- Do not compact or reflow lines in ways that risk obscuring or losing content.
+- Keep source files reasonably small; if a file grows too large to be fully replaced in a change, split it into smaller local files.
+- Default implementation baseline: C++20 or C++24.
+- Only the System Engineer may mark ER/DR items as Verified (Implementation Engineer may use Proposed/In Progress/Complete).
+
+### Git Workflow
+- Create a new branch named `codex/<topic>` unless explicitly told otherwise.
+- Commit with a cohesive, single-purpose message (`fix: ...`, `feat: ...`, `docs: ...`, `chore: ...`).
+- Push the branch to `origin` and open a PR against `main`.
+- Wait for CI to complete; do not merge if checks fail.
+- Merge the PR (default: merge commit), then delete the branch locally and on `origin`.
+- Update local `main` with `git fetch origin main` and `git merge --ff-only origin/main`.
+- Use `git rebase origin/main` only when asked.
+- Networked git/GitHub commands may need to run outside the sandbox (e.g., `git fetch/push`, `gh pr ...`, `curl`); request escalation when needed.
+
 ### Security / Secrets
 - Never create, edit, or print secrets: API keys, tokens, `.env`, private certs, SSH keys, passwords.
 - Never instruct insecure changes (e.g., disabling checks, permissive permissions) without calling it out clearly.
