@@ -4,15 +4,22 @@
 
 - Implementation Engineer: drafts and implements changes
 - System Engineer: reviews, tests, and verifies
+- Note: Only the System Engineer may mark an ER as Verified.
 
 ## ER Metadata
 
 - ER ID:
 - Title:
-- Status: Draft | Proposed | Approved | Implemented | Verified | Rejected
+- Status: Draft | Proposed | Approved | In Progress | Implemented | Complete | Verified | Rejected
 - Date:
 - Owners:
 - Type: Enhancement | Epic | Sprint
+
+## Engineering Guidelines
+
+- Implementation language baseline: C++20 or C++24.
+- Avoid line compaction or formatting changes that risk obscuring or losing content.
+- Keep source files reasonably small. If a file grows too large to be fully replaced in a change, split it into smaller local files.
 
 ## Context
 
