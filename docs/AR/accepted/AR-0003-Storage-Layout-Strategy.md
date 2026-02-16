@@ -53,10 +53,8 @@ append-only data segments and separate indexes.
 ### Durability and Updates
 
 - Writes append to the active segment first, then update indexes.
-- A write is considered durable only after both segment and index updates
-  are persisted.
-- Compaction (when introduced) rewrites segments and indexes, then swaps
-  using atomic rename.
+- A write is considered durable only after both segment and index updates are persisted.
+- Compaction (when introduced) rewrites segments and indexes, then swaps using atomic rename.
 
 ## Alternatives Considered
 
