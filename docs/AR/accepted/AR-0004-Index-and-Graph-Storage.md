@@ -1,6 +1,6 @@
 # AR-0004 — Index and Graph Storage Strategy (Recommendation)
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-02-16
 - Owners: Mike
 
