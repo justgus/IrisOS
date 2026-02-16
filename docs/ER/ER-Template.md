@@ -1,0 +1,68 @@
+# ER Template — Enhancement Request / Epic / Sprint
+
+## Roles
+
+- Implementation Engineer: drafts and implements changes
+- System Engineer: reviews, tests, and verifies
+
+## ER Metadata
+
+- ER ID:
+- Title:
+- Status: Draft | Proposed | Approved | Implemented | Verified | Rejected
+- Date:
+- Owners:
+- Type: Enhancement | Epic | Sprint
+
+## Context
+
+- Problem statement:
+- Background / constraints:
+
+## Goals
+
+- Goal 1:
+- Goal 2:
+
+## Non-Goals
+
+- Non-goal 1:
+- Non-goal 2:
+
+## Scope
+
+- In scope:
+- Out of scope:
+
+## Requirements
+
+- Functional:
+- Non-functional:
+
+## Proposed Approach
+
+- Summary:
+- Alternatives considered:
+
+## Acceptance Criteria
+
+- Criterion 1:
+- Criterion 2:
+
+## Risks / Open Questions
+
+- Risk 1:
+- Question 1:
+
+## Dependencies
+
+- Dependency 1:
+
+## Implementation Notes
+
+- Notes for implementer:
+
+## Verification Plan
+
+- Tests to run:
+- Manual checks:
