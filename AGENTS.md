@@ -118,6 +118,13 @@ If a build/test step fails, stop and report:
 - Prefer RAII and deterministic cleanup.
 - Validate inputs at boundaries; don’t add silent failure modes.
 - No performance foot-guns on hot paths (flag if any complexity increases).
+- Naming conventions:
+  - Class names: CamelCase.
+  - Variables/functions: initial lower case.
+  - Macros/defines: ALL_UPPER_CASE.
+  - Enum fields: InitialUppercase.
+- Prefer C++24 syntax when available.
+- Prefer header-only template implementations and template metaprogramming when it clearly improves performance.
 
 ---
 
