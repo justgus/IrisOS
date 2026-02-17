@@ -10,7 +10,7 @@
 
 - ER ID: ER-0001
 - Title: Service Model and IPC Foundation
-- Status: Draft
+- Status: Verified
 - Date: 2026-02-16
 - Owners: Mike
 - Type: Epic
