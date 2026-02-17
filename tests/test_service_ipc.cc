@@ -16,6 +16,11 @@ using namespace iris::service;
 
 namespace {
 
+template <typename T>
+const char* result_message(const Result<T>& r) {
+  return r.error.has_value() ? r.error->message.c_str() : "ok";
+}
+
 class EchoService final : public ServiceObject {
 public:
   EchoService(ObjectID id, TypeID type, std::string name)
@@ -53,19 +58,19 @@ START_TEST(test_service_registry_register_resolve_unregister)
   ck_assert_msg(registry.register_service(svc.descriptor(), &svc), "register_service failed");
 
   auto by_name = registry.resolve_by_name("echo-service");
-  ck_assert_msg(by_name, "resolve_by_name failed: %s", by_name.error->message.c_str());
+  ck_assert_msg(by_name, "resolve_by_name failed: %s", result_message(by_name));
   ck_assert_msg(by_name.value->has_value(), "expected service by name");
   ck_assert(by_name.value->value().id == svc.descriptor().id);
 
   auto by_type = registry.resolve_by_type(svc.descriptor().type);
-  ck_assert_msg(by_type, "resolve_by_type failed: %s", by_type.error->message.c_str());
+  ck_assert_msg(by_type, "resolve_by_type failed: %s", result_message(by_type));
   ck_assert_msg(by_type.value->has_value(), "expected service by type");
   ck_assert(by_type.value->value().id == svc.descriptor().id);
 
   ck_assert_msg(registry.unregister_service(svc.descriptor().id), "unregister_service failed");
 
   auto after = registry.resolve_by_name("echo-service");
-  ck_assert_msg(after, "resolve_by_name after unregister failed: %s", after.error->message.c_str());
+  ck_assert_msg(after, "resolve_by_name after unregister failed: %s", result_message(after));
   ck_assert_msg(!after.value->has_value(), "expected no service after unregister");
 }
 END_TEST
@@ -85,7 +90,7 @@ START_TEST(test_ipc_send_receive_ack_and_timeout)
   auto request = make_request_to_endpoint(ObjectID::random(), endpoint, TypeID{0xBEEF0001ULL}, payload);
 
   auto response = ipc.send_request(request, std::chrono::milliseconds(5));
-  ck_assert_msg(response, "send_request failed: %s", response.error->message.c_str());
+  ck_assert_msg(response, "send_request failed: %s", result_message(response));
   ck_assert_msg(response.value.has_value(), "expected response envelope");
 
   const auto& env = response.value.value();

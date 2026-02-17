@@ -9,6 +9,15 @@ extern "C" {
 
 using namespace referee;
 
+namespace {
+
+template <typename T>
+const char* result_message(const Result<T>& r) {
+  return r.error.has_value() ? r.error->message.c_str() : "ok";
+}
+
+} // namespace
+
 START_TEST(test_create_and_get_object_roundtrip)
 {
   SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
@@ -21,10 +30,10 @@ START_TEST(test_create_and_get_object_roundtrip)
   auto payload = cbor_from_json_string(R"({"displayName":"Ship Propulsion"})");
 
   auto createdR = store.create_object(demoType, payload);
-  ck_assert_msg(createdR, "create_object failed: %s", createdR.error->message.c_str());
+  ck_assert_msg(createdR, "create_object failed: %s", result_message(createdR));
 
   auto getR = store.get_object(createdR.value->ref);
-  ck_assert_msg(getR, "get_object failed: %s", getR.error->message.c_str());
+  ck_assert_msg(getR, "get_object failed: %s", result_message(getR));
   ck_assert_msg(getR.value->has_value(), "expected object present");
 
   auto& opt = getR.value.value();     // inner optional<ObjectRecord>
