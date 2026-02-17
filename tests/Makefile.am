@@ -1,5 +1,6 @@
 AM_CXXFLAGS = -Wall -Wextra -Wpedantic
 AM_CPPFLAGS = -I$(top_srcdir)/src $(CHECK_CFLAGS)
+AM_TESTS_ENVIRONMENT = CK_FORK=no
 
 TESTS = test_referee_core test_service_ipc test_refract_registry
 check_PROGRAMS = $(TESTS)
