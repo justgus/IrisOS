@@ -5,6 +5,7 @@ extern "C" {
 #include "referee/referee.h"
 #include "referee_sqlite/sqlite_store.h"
 
+#include <cstdlib>
 #include <string>
 
 using namespace referee;
@@ -104,6 +105,7 @@ Suite* referee_suite(void) {
 }
 
 int main(void) {
+  setenv("CK_FORK", "no", 1);
   Suite* s = referee_suite();
   SRunner* sr = srunner_create(s);
   srunner_set_fork_status(sr, CK_NOFORK);
