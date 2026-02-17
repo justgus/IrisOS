@@ -136,6 +136,8 @@ am__DEPENDENCIES_1 =
 libreferee_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__dirstamp = $(am__leading_dot)dirstamp
 am_libreferee_la_OBJECTS = referee/libreferee_la-referee.lo \
+	services/libreferee_la-service.lo \
+	refract/libreferee_la-schema_registry.lo \
 	referee_sqlite/libreferee_la-sqlite_store.lo
 libreferee_la_OBJECTS = $(am_libreferee_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -158,7 +160,9 @@ DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = referee/$(DEPDIR)/libreferee_la-referee.Plo \
-	referee_sqlite/$(DEPDIR)/libreferee_la-sqlite_store.Plo
+	referee_sqlite/$(DEPDIR)/libreferee_la-sqlite_store.Plo \
+	refract/$(DEPDIR)/libreferee_la-schema_registry.Plo \
+	services/$(DEPDIR)/libreferee_la-service.Plo
 am__mv = mv -f
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -360,12 +364,19 @@ lib_LTLIBRARIES = libreferee.la
 libreferee_la_SOURCES = \
    referee/referee.h \
    referee/referee.cc \
+   services/service.h \
+   services/service.cc \
+   refract/schema_registry.h \
+   refract/schema_registry.cc \
    referee_sqlite/sqlite_store.h \
    referee_sqlite/sqlite_store.cc
 
 libreferee_la_CPPFLAGS = $(SQLITE_CFLAGS)
 libreferee_la_LIBADD = $(SQLITE_LIBS)
-include_HEADERS = referee/referee.h
+include_HEADERS = referee/referee.h \
+   services/service.h \
+   refract/schema_registry.h
+
 all: all-am
 
 .SUFFIXES:
@@ -442,6 +453,22 @@ referee/$(DEPDIR)/$(am__dirstamp):
 	@: > referee/$(DEPDIR)/$(am__dirstamp)
 referee/libreferee_la-referee.lo: referee/$(am__dirstamp) \
 	referee/$(DEPDIR)/$(am__dirstamp)
+services/$(am__dirstamp):
+	@$(MKDIR_P) services
+	@: > services/$(am__dirstamp)
+services/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) services/$(DEPDIR)
+	@: > services/$(DEPDIR)/$(am__dirstamp)
+services/libreferee_la-service.lo: services/$(am__dirstamp) \
+	services/$(DEPDIR)/$(am__dirstamp)
+refract/$(am__dirstamp):
+	@$(MKDIR_P) refract
+	@: > refract/$(am__dirstamp)
+refract/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) refract/$(DEPDIR)
+	@: > refract/$(DEPDIR)/$(am__dirstamp)
+refract/libreferee_la-schema_registry.lo: refract/$(am__dirstamp) \
+	refract/$(DEPDIR)/$(am__dirstamp)
 referee_sqlite/$(am__dirstamp):
 	@$(MKDIR_P) referee_sqlite
 	@: > referee_sqlite/$(am__dirstamp)
@@ -461,12 +488,18 @@ mostlyclean-compile:
 	-rm -f referee/*.lo
 	-rm -f referee_sqlite/*.$(OBJEXT)
 	-rm -f referee_sqlite/*.lo
+	-rm -f refract/*.$(OBJEXT)
+	-rm -f refract/*.lo
+	-rm -f services/*.$(OBJEXT)
+	-rm -f services/*.lo
 
 distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@referee/$(DEPDIR)/libreferee_la-referee.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@referee_sqlite/$(DEPDIR)/libreferee_la-sqlite_store.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@refract/$(DEPDIR)/libreferee_la-schema_registry.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@services/$(DEPDIR)/libreferee_la-service.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -505,6 +538,20 @@ referee/libreferee_la-referee.lo: referee/referee.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libreferee_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o referee/libreferee_la-referee.lo `test -f 'referee/referee.cc' || echo '$(srcdir)/'`referee/referee.cc
 
+services/libreferee_la-service.lo: services/service.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libreferee_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT services/libreferee_la-service.lo -MD -MP -MF services/$(DEPDIR)/libreferee_la-service.Tpo -c -o services/libreferee_la-service.lo `test -f 'services/service.cc' || echo '$(srcdir)/'`services/service.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) services/$(DEPDIR)/libreferee_la-service.Tpo services/$(DEPDIR)/libreferee_la-service.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='services/service.cc' object='services/libreferee_la-service.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libreferee_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o services/libreferee_la-service.lo `test -f 'services/service.cc' || echo '$(srcdir)/'`services/service.cc
+
+refract/libreferee_la-schema_registry.lo: refract/schema_registry.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libreferee_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT refract/libreferee_la-schema_registry.lo -MD -MP -MF refract/$(DEPDIR)/libreferee_la-schema_registry.Tpo -c -o refract/libreferee_la-schema_registry.lo `test -f 'refract/schema_registry.cc' || echo '$(srcdir)/'`refract/schema_registry.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) refract/$(DEPDIR)/libreferee_la-schema_registry.Tpo refract/$(DEPDIR)/libreferee_la-schema_registry.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='refract/schema_registry.cc' object='refract/libreferee_la-schema_registry.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libreferee_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o refract/libreferee_la-schema_registry.lo `test -f 'refract/schema_registry.cc' || echo '$(srcdir)/'`refract/schema_registry.cc
+
 referee_sqlite/libreferee_la-sqlite_store.lo: referee_sqlite/sqlite_store.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libreferee_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT referee_sqlite/libreferee_la-sqlite_store.lo -MD -MP -MF referee_sqlite/$(DEPDIR)/libreferee_la-sqlite_store.Tpo -c -o referee_sqlite/libreferee_la-sqlite_store.lo `test -f 'referee_sqlite/sqlite_store.cc' || echo '$(srcdir)/'`referee_sqlite/sqlite_store.cc
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) referee_sqlite/$(DEPDIR)/libreferee_la-sqlite_store.Tpo referee_sqlite/$(DEPDIR)/libreferee_la-sqlite_store.Plo
@@ -519,6 +566,8 @@ clean-libtool:
 	-rm -rf .libs _libs
 	-rm -rf referee/.libs referee/_libs
 	-rm -rf referee_sqlite/.libs referee_sqlite/_libs
+	-rm -rf refract/.libs refract/_libs
+	-rm -rf services/.libs services/_libs
 install-includeHEADERS: $(include_HEADERS)
 	@$(NORMAL_INSTALL)
 	@list='$(include_HEADERS)'; test -n "$(includedir)" || list=; \
@@ -662,6 +711,10 @@ distclean-generic:
 	-rm -f referee/$(am__dirstamp)
 	-rm -f referee_sqlite/$(DEPDIR)/$(am__dirstamp)
 	-rm -f referee_sqlite/$(am__dirstamp)
+	-rm -f refract/$(DEPDIR)/$(am__dirstamp)
+	-rm -f refract/$(am__dirstamp)
+	-rm -f services/$(DEPDIR)/$(am__dirstamp)
+	-rm -f services/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -674,6 +727,8 @@ clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
 distclean: distclean-am
 		-rm -f referee/$(DEPDIR)/libreferee_la-referee.Plo
 	-rm -f referee_sqlite/$(DEPDIR)/libreferee_la-sqlite_store.Plo
+	-rm -f refract/$(DEPDIR)/libreferee_la-schema_registry.Plo
+	-rm -f services/$(DEPDIR)/libreferee_la-service.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -721,6 +776,8 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 		-rm -f referee/$(DEPDIR)/libreferee_la-referee.Plo
 	-rm -f referee_sqlite/$(DEPDIR)/libreferee_la-sqlite_store.Plo
+	-rm -f refract/$(DEPDIR)/libreferee_la-schema_registry.Plo
+	-rm -f services/$(DEPDIR)/libreferee_la-service.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
