@@ -12,7 +12,18 @@ static std::string sqlite_err(sqlite3* db, const char* prefix) {
   return os.str();
 }
 
-SqliteStore::SqliteStore(SqliteConfig cfg) : cfg_(std::move(cfg)) {}
+SqliteStore::SqliteStore(SqliteConfig cfg)
+  : cfg_(std::move(cfg)),
+    db_(nullptr),
+    st_insert_object_(nullptr),
+    st_get_object_(nullptr),
+    st_get_latest_(nullptr),
+    st_list_by_type_(nullptr),
+    st_insert_edge_(nullptr),
+    st_edges_from_(nullptr),
+    st_edges_from_named_(nullptr),
+    st_edges_to_(nullptr),
+    st_edges_to_named_(nullptr) {}
 SqliteStore::~SqliteStore() { (void)close(); }
 
 //--------
@@ -220,6 +231,7 @@ Result<void> SqliteStore::rollback() { return exec("ROLLBACK;"); }
 // -----------------------------
 Result<ObjectRecord> SqliteStore::create_object(TypeID type, const Bytes& payload_cbor) {
   if (!db_) return Result<ObjectRecord>::err("db not open");
+  if (!st_insert_object_) return Result<ObjectRecord>::err("insert statement not prepared");
 
   ObjectRecord rec;
   rec.ref.id = ObjectID::random();
@@ -246,6 +258,7 @@ Result<ObjectRecord> SqliteStore::create_object(TypeID type, const Bytes& payloa
 
 Result<std::optional<ObjectRecord>> SqliteStore::get_object(ObjectRef ref) {
   if (!db_) return Result<std::optional<ObjectRecord>>::err("db not open");
+  if (!st_get_object_) return Result<std::optional<ObjectRecord>>::err("get_object statement not prepared");
 
   sqlite3_reset(st_get_object_);
   sqlite3_clear_bindings(st_get_object_);
@@ -277,6 +290,7 @@ Result<std::optional<ObjectRecord>> SqliteStore::get_object(ObjectRef ref) {
 
 Result<std::optional<ObjectRecord>> SqliteStore::get_latest(ObjectID id) {
   if (!db_) return Result<std::optional<ObjectRecord>>::err("db not open");
+  if (!st_get_latest_) return Result<std::optional<ObjectRecord>>::err("get_latest statement not prepared");
 
   sqlite3_reset(st_get_latest_);
   sqlite3_clear_bindings(st_get_latest_);
@@ -304,6 +318,7 @@ Result<std::optional<ObjectRecord>> SqliteStore::get_latest(ObjectID id) {
 
 Result<std::vector<ObjectRecord>> SqliteStore::list_by_type(TypeID type) {
   if (!db_) return Result<std::vector<ObjectRecord>>::err("db not open");
+  if (!st_list_by_type_) return Result<std::vector<ObjectRecord>>::err("list_by_type statement not prepared");
 
   sqlite3_reset(st_list_by_type_);
   sqlite3_clear_bindings(st_list_by_type_);
@@ -341,6 +356,7 @@ Result<std::vector<ObjectRecord>> SqliteStore::list_by_type(TypeID type) {
 // -----------------------------
 Result<void> SqliteStore::add_edge(ObjectRef from, ObjectRef to, std::string name, const Bytes& props_cbor) {
   if (!db_) return Result<void>::err("db not open");
+  if (!st_insert_edge_) return Result<void>::err("insert_edge statement not prepared");
 
   sqlite3_reset(st_insert_edge_);
   sqlite3_clear_bindings(st_insert_edge_);
@@ -388,6 +404,9 @@ static Result<std::vector<EdgeRecord>> read_edges(sqlite3* db, sqlite3_stmt* st)
 
 Result<std::vector<EdgeRecord>> SqliteStore::edges_from(ObjectRef from, std::optional<std::string> name_filter) {
   if (!db_) return Result<std::vector<EdgeRecord>>::err("db not open");
+  if (!st_edges_from_ || !st_edges_from_named_) {
+    return Result<std::vector<EdgeRecord>>::err("edges_from statement not prepared");
+  }
 
   sqlite3_stmt* st = name_filter ? st_edges_from_named_ : st_edges_from_;
   sqlite3_reset(st);
@@ -402,6 +421,9 @@ Result<std::vector<EdgeRecord>> SqliteStore::edges_from(ObjectRef from, std::opt
 
 Result<std::vector<EdgeRecord>> SqliteStore::edges_to(ObjectRef to, std::optional<std::string> name_filter) {
   if (!db_) return Result<std::vector<EdgeRecord>>::err("db not open");
+  if (!st_edges_to_ || !st_edges_to_named_) {
+    return Result<std::vector<EdgeRecord>>::err("edges_to statement not prepared");
+  }
 
   sqlite3_stmt* st = name_filter ? st_edges_to_named_ : st_edges_to_;
   sqlite3_reset(st);
