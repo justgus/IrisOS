@@ -16,6 +16,13 @@ const char* result_message(const Result<T>& r) {
   return r.error.has_value() ? r.error->message.c_str() : "ok";
 }
 
+template <typename T>
+std::optional<T> require_optional(const Result<std::optional<T>>& r, const char* context) {
+  ck_assert_msg(r, "%s: %s", context, result_message(r));
+  ck_assert_msg(r.value.has_value(), "%s: missing optional container", context);
+  return r.value.value();
+}
+
 } // namespace
 
 START_TEST(test_create_and_get_object_roundtrip)
@@ -33,10 +40,7 @@ START_TEST(test_create_and_get_object_roundtrip)
   ck_assert_msg(createdR, "create_object failed: %s", result_message(createdR));
 
   auto getR = store.get_object(createdR.value->ref);
-  ck_assert_msg(getR, "get_object failed: %s", result_message(getR));
-  ck_assert_msg(getR.value->has_value(), "expected object present");
-
-  auto& opt = getR.value.value();     // inner optional<ObjectRecord>
+  auto opt = require_optional(getR, "get_object");
   ck_assert_msg(opt.has_value(), "expected object present");
 
   const auto& obj = opt.value();      // ObjectRecord
