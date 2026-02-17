@@ -1,5 +1,6 @@
 #include "referee_sqlite/sqlite_store.h"
 
+#include <algorithm>
 #include <cstring>
 #include <sstream>
 
@@ -52,6 +53,7 @@ Result<void> SqliteStore::close() {
   finalize(st_insert_object_);
   finalize(st_get_object_);
   finalize(st_get_latest_);
+  finalize(st_list_by_type_);
 
   finalize(st_insert_edge_);
   finalize(st_edges_from_);
@@ -142,6 +144,11 @@ Result<void> SqliteStore::prepare_all() {
     r = prep(&st_get_latest_,
       "SELECT object_id, version, type_id, payload_cbor, created_at_ms "
       "FROM objects WHERE object_id=? ORDER BY version DESC LIMIT 1;");
+    if (!r) return r;
+
+    r = prep(&st_list_by_type_,
+      "SELECT object_id, version, type_id, payload_cbor, created_at_ms "
+      "FROM objects WHERE type_id=? ORDER BY created_at_ms ASC;");
     if (!r) return r;
   }
 
@@ -293,6 +300,40 @@ Result<std::optional<ObjectRecord>> SqliteStore::get_latest(ObjectID id) {
     return Result<std::optional<ObjectRecord>>::ok(std::nullopt);
   }
   return Result<std::optional<ObjectRecord>>::err(sqlite_err(db_, "get_latest failed"));
+}
+
+Result<std::vector<ObjectRecord>> SqliteStore::list_by_type(TypeID type) {
+  if (!db_) return Result<std::vector<ObjectRecord>>::err("db not open");
+
+  sqlite3_reset(st_list_by_type_);
+  sqlite3_clear_bindings(st_list_by_type_);
+
+  sqlite3_bind_int64(st_list_by_type_, 1, (sqlite3_int64)type.v);
+
+  std::vector<ObjectRecord> out;
+  for (;;) {
+    int rc = sqlite3_step(st_list_by_type_);
+    if (rc == SQLITE_DONE) break;
+    if (rc != SQLITE_ROW) {
+      return Result<std::vector<ObjectRecord>>::err(sqlite_err(db_, "list_by_type failed"));
+    }
+
+    auto id_bytes = col_blob(st_list_by_type_, 0);
+    if (id_bytes.size() != 16) {
+      return Result<std::vector<ObjectRecord>>::err("invalid object_id size");
+    }
+
+    ObjectRecord rec;
+    std::copy(id_bytes.begin(), id_bytes.end(), rec.ref.id.bytes.begin());
+    rec.ref.ver = Version{(std::uint64_t)sqlite3_column_int64(st_list_by_type_, 1)};
+    rec.type = TypeID{(std::uint64_t)sqlite3_column_int64(st_list_by_type_, 2)};
+    rec.payload_cbor = col_blob(st_list_by_type_, 3);
+    rec.created_at_unix_ms = (std::uint64_t)sqlite3_column_int64(st_list_by_type_, 4);
+
+    out.push_back(std::move(rec));
+  }
+
+  return Result<std::vector<ObjectRecord>>::ok(std::move(out));
 }
 
 // -----------------------------

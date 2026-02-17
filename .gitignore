@@ -12,3 +12,4 @@ config.log
 config.status
 build.log
 tests/test_*
+!tests/test_*.cc
