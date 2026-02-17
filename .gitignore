@@ -1,1 +1,14 @@
 .api-key
+src/services/.dirstamp
+**/.deps/
+**/.libs/
+*.o
+*.lo
+*.a
+*.la
+*.log
+*.trs
+config.log
+config.status
+build.log
+tests/test_*
