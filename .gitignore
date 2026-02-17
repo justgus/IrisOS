@@ -1,5 +1,6 @@
 .api-key
 src/services/.dirstamp
+**/.dirstamp
 **/.deps/
 **/.libs/
 *.o
