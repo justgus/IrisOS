@@ -1,1 +1,13 @@
 .api-key
+**/.deps/
+**/.libs/
+*.o
+*.lo
+*.a
+*.la
+*.log
+*.trs
+config.log
+config.status
+build.log
+tests/test_*
