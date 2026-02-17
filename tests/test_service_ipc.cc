@@ -1,6 +1,9 @@
 extern "C" {
 #include <check.h>
 }
+#ifdef fail
+#undef fail
+#endif
 
 #include "referee/referee.h"
 #include "services/service.h"
@@ -83,9 +86,9 @@ START_TEST(test_ipc_send_receive_ack_and_timeout)
 
   auto response = ipc.send_request(request, std::chrono::milliseconds(5));
   ck_assert_msg(response, "send_request failed: %s", response.error->message.c_str());
-  ck_assert_msg(response.value->has_value(), "expected response envelope");
+  ck_assert_msg(response.value.has_value(), "expected response envelope");
 
-  const auto& env = response.value->value();
+  const auto& env = response.value.value();
   ck_assert(env.correlation_id == request.correlation_id);
   ck_assert(env.sender == svc.descriptor().id);
   ck_assert_uint_eq(env.message_type.v, svc.ack_type().v);
