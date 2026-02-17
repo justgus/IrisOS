@@ -2,6 +2,15 @@ AM_CXXFLAGS = -Wall -Wextra -Wpedantic
 AM_CPPFLAGS = -I$(top_srcdir)/src $(CHECK_CFLAGS)
 AM_TESTS_ENVIRONMENT = CK_FORK=no
 
+ASAN_CXXFLAGS = -O0 -g -fsanitize=address,undefined -fno-omit-frame-pointer
+ASAN_LDFLAGS = -fsanitize=address,undefined
+
+asan-check: check
+	@$(MAKE) clean
+	@$(MAKE) AM_CXXFLAGS="$(AM_CXXFLAGS) $(ASAN_CXXFLAGS)" \
+		AM_LDFLAGS="$(AM_LDFLAGS) $(ASAN_LDFLAGS)" \
+		check
+
 TESTS = test_referee_core test_service_ipc test_refract_registry
 check_PROGRAMS = $(TESTS)
 
