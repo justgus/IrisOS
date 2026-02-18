@@ -29,6 +29,7 @@ Your job: make safe, reviewable, minimal diffs that pass CI and match existing a
 - Update local `main` with `git fetch origin main` and `git merge --ff-only origin/main`.
 - Use `git rebase origin/main` only when asked.
 - Networked git/GitHub commands may need to run outside the sandbox (e.g., `git fetch/push`, `gh pr ...`, `curl`); request escalation when needed.
+- All `gh` commands must be executed outside the app sandbox; the implementation engineer is authorized to request escalation for them.
 
 ### Security / Secrets
 - Never create, edit, or print secrets: API keys, tokens, `.env`, private certs, SSH keys, passwords.
