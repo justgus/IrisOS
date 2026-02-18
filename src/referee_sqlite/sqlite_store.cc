@@ -280,11 +280,17 @@ Result<std::optional<ObjectRecord>> SqliteStore::get_object(ObjectRef ref) {
     rec.payload_cbor = col_blob(st_get_object_, 3);
     rec.created_at_unix_ms = (std::uint64_t)sqlite3_column_int64(st_get_object_, 4);
 
+    sqlite3_reset(st_get_object_);
+    sqlite3_clear_bindings(st_get_object_);
     return Result<std::optional<ObjectRecord>>::ok(std::optional<ObjectRecord>(std::move(rec)));
   }
   if (rc == SQLITE_DONE) {
+    sqlite3_reset(st_get_object_);
+    sqlite3_clear_bindings(st_get_object_);
     return Result<std::optional<ObjectRecord>>::ok(std::nullopt);
   }
+  sqlite3_reset(st_get_object_);
+  sqlite3_clear_bindings(st_get_object_);
   return Result<std::optional<ObjectRecord>>::err(sqlite_err(db_, "get_object failed"));
 }
 
@@ -308,11 +314,17 @@ Result<std::optional<ObjectRecord>> SqliteStore::get_latest(ObjectID id) {
     rec.type = TypeID{ (std::uint64_t)sqlite3_column_int64(st_get_latest_, 2) };
     rec.payload_cbor = col_blob(st_get_latest_, 3);
     rec.created_at_unix_ms = (std::uint64_t)sqlite3_column_int64(st_get_latest_, 4);
+    sqlite3_reset(st_get_latest_);
+    sqlite3_clear_bindings(st_get_latest_);
     return Result<std::optional<ObjectRecord>>::ok(std::optional<ObjectRecord>(std::move(rec)));
   }
   if (rc == SQLITE_DONE) {
+    sqlite3_reset(st_get_latest_);
+    sqlite3_clear_bindings(st_get_latest_);
     return Result<std::optional<ObjectRecord>>::ok(std::nullopt);
   }
+  sqlite3_reset(st_get_latest_);
+  sqlite3_clear_bindings(st_get_latest_);
   return Result<std::optional<ObjectRecord>>::err(sqlite_err(db_, "get_latest failed"));
 }
 
@@ -330,6 +342,8 @@ Result<std::vector<ObjectRecord>> SqliteStore::list_by_type(TypeID type) {
     int rc = sqlite3_step(st_list_by_type_);
     if (rc == SQLITE_DONE) break;
     if (rc != SQLITE_ROW) {
+      sqlite3_reset(st_list_by_type_);
+      sqlite3_clear_bindings(st_list_by_type_);
       return Result<std::vector<ObjectRecord>>::err(sqlite_err(db_, "list_by_type failed"));
     }
 
@@ -348,6 +362,8 @@ Result<std::vector<ObjectRecord>> SqliteStore::list_by_type(TypeID type) {
     out.push_back(std::move(rec));
   }
 
+  sqlite3_reset(st_list_by_type_);
+  sqlite3_clear_bindings(st_list_by_type_);
   return Result<std::vector<ObjectRecord>>::ok(std::move(out));
 }
 
@@ -397,8 +413,12 @@ static Result<std::vector<EdgeRecord>> read_edges(sqlite3* db, sqlite3_stmt* st)
       continue;
     }
     if (rc == SQLITE_DONE) break;
+    sqlite3_reset(st);
+    sqlite3_clear_bindings(st);
     return Result<std::vector<EdgeRecord>>::err(sqlite_err(db, "read edges failed"));
   }
+  sqlite3_reset(st);
+  sqlite3_clear_bindings(st);
   return Result<std::vector<EdgeRecord>>::ok(std::move(out));
 }
 
