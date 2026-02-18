@@ -35,7 +35,14 @@ jobs:
         run: make -j
 
       - name: Unit tests
-        run: make check V=1
+        run: |
+          ulimit -c unlimited
+          make check V=1 || {
+            echo "make check failed; running gdb on test_referee_core"
+            gdb -q -ex run -ex bt -ex quit --args tests/test_referee_core \
+              > tests/gdb-test_referee_core.txt 2>&1 || true
+            exit 1
+          }
 
       - name: Distcheck
         run: make distcheck 
@@ -48,3 +55,4 @@ jobs:
           path: |
             tests/test-suite.log
             tests/*.log
+            tests/gdb-test_referee_core.txt
