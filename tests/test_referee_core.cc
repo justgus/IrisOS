@@ -35,9 +35,10 @@ START_TEST(test_create_and_get_object_roundtrip)
   ck_assert_msg(store.begin(), "begin failed");
 
   TypeID demoType{0xABCDEF01ULL};
+  ObjectID demoDef = ObjectID::random();
   auto payload = cbor_from_json_string(R"({"displayName":"Ship Propulsion"})");
 
-  auto createdR = store.create_object(demoType, payload);
+  auto createdR = store.create_object(demoType, demoDef, payload);
   ck_assert_msg(createdR, "create_object failed: %s", result_message(createdR));
 
   auto getR = store.get_object(createdR.value->ref);
@@ -46,6 +47,7 @@ START_TEST(test_create_and_get_object_roundtrip)
 
   const auto& obj = opt.value();      // ObjectRecord
   ck_assert_uint_eq(obj.type.v, demoType.v);
+  ck_assert(obj.definition_id == demoDef);
 
   auto json = json_string_from_cbor(obj.payload_cbor);
   ck_assert_msg(json.find("Ship Propulsion") != std::string::npos, "payload didn't match json=%s", json.c_str());
@@ -64,23 +66,27 @@ START_TEST(test_edges_from_and_to)
   ck_assert_msg(store.begin(), "begin failed");
 
   TypeID typeA{1}, typeB{2};
-  auto aR = store.create_object(typeA, cbor_from_json_string(R"({"a":1})"));
-  auto bR = store.create_object(typeB, cbor_from_json_string(R"({"b":2})"));
+  ObjectID defA = ObjectID::random();
+  ObjectID defB = ObjectID::random();
+  auto aR = store.create_object(typeA, defA, cbor_from_json_string(R"({"a":1})"));
+  auto bR = store.create_object(typeB, defB, cbor_from_json_string(R"({"b":2})"));
   ck_assert(aR);
   ck_assert(bR);
 
   Bytes props = cbor_from_json_string(R"({"name":"hasSubsystem"})");
-  ck_assert(store.add_edge(aR.value->ref, bR.value->ref, "hasSubsystem", props));
+  ck_assert(store.add_edge(aR.value->ref, bR.value->ref, "hasSubsystem", "subsystem", props));
 
-  auto fromR = store.edges_from(aR.value->ref);
+  auto fromR = store.edges_from(aR.value->ref, "hasSubsystem", "subsystem");
   ck_assert(fromR);
   ck_assert_int_eq((int)fromR.value->size(), 1);
   ck_assert_str_eq(fromR.value->at(0).name.c_str(), "hasSubsystem");
+  ck_assert_str_eq(fromR.value->at(0).role.c_str(), "subsystem");
 
-  auto toR = store.edges_to(bR.value->ref);
+  auto toR = store.edges_to(bR.value->ref, "hasSubsystem", "subsystem");
   ck_assert(toR);
   ck_assert_int_eq((int)toR.value->size(), 1);
   ck_assert_str_eq(toR.value->at(0).name.c_str(), "hasSubsystem");
+  ck_assert_str_eq(toR.value->at(0).role.c_str(), "subsystem");
 
   ck_assert_msg(store.rollback(), "rollback failed"); // test rollback path too
 

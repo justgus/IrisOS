@@ -22,8 +22,12 @@ SqliteStore::SqliteStore(SqliteConfig cfg)
     st_insert_edge_(nullptr),
     st_edges_from_(nullptr),
     st_edges_from_named_(nullptr),
+    st_edges_from_role_(nullptr),
+    st_edges_from_named_role_(nullptr),
     st_edges_to_(nullptr),
-    st_edges_to_named_(nullptr) {}
+    st_edges_to_named_(nullptr),
+    st_edges_to_role_(nullptr),
+    st_edges_to_named_role_(nullptr) {}
 SqliteStore::~SqliteStore() { (void)close(); }
 
 //--------
@@ -71,8 +75,12 @@ Result<void> SqliteStore::close() {
   st_insert_edge_ = nullptr;
   st_edges_from_ = nullptr;
   st_edges_from_named_ = nullptr;
+  st_edges_from_role_ = nullptr;
+  st_edges_from_named_role_ = nullptr;
   st_edges_to_ = nullptr;
   st_edges_to_named_ = nullptr;
+  st_edges_to_role_ = nullptr;
+  st_edges_to_named_role_ = nullptr;
 
   sqlite3_close(db_);
   db_ = nullptr;
@@ -98,12 +106,14 @@ Result<void> SqliteStore::ensure_schema() {
       object_id   BLOB NOT NULL,
       version     INTEGER NOT NULL,
       type_id     INTEGER NOT NULL,
+      definition_id BLOB NOT NULL,
       payload_cbor BLOB NOT NULL,
       created_at_ms INTEGER NOT NULL,
       PRIMARY KEY (object_id, version)
     );
 
     CREATE INDEX IF NOT EXISTS idx_objects_type ON objects(type_id);
+    CREATE INDEX IF NOT EXISTS idx_objects_definition ON objects(definition_id);
     CREATE INDEX IF NOT EXISTS idx_objects_oid ON objects(object_id);
 
     CREATE TABLE IF NOT EXISTS edges (
@@ -112,12 +122,13 @@ Result<void> SqliteStore::ensure_schema() {
       to_id       BLOB NOT NULL,
       to_ver      INTEGER NOT NULL,
       name        TEXT NOT NULL,
+      role        TEXT NOT NULL,
       props_cbor  BLOB NOT NULL,
       created_at_ms INTEGER NOT NULL
     );
 
-    CREATE INDEX IF NOT EXISTS idx_edges_from ON edges(from_id, from_ver, name);
-    CREATE INDEX IF NOT EXISTS idx_edges_to   ON edges(to_id, to_ver, name);
+    CREATE INDEX IF NOT EXISTS idx_edges_from ON edges(from_id, from_ver, name, role);
+    CREATE INDEX IF NOT EXISTS idx_edges_to   ON edges(to_id, to_ver, name, role);
   )SQL";
 
 //--------
@@ -146,21 +157,22 @@ Result<void> SqliteStore::prepare_all() {
   // objects
   {
     auto r = prep(&st_insert_object_,
-      "INSERT INTO objects(object_id, version, type_id, payload_cbor, created_at_ms) VALUES(?,?,?,?,?);");
+      "INSERT INTO objects(object_id, version, type_id, definition_id, payload_cbor, created_at_ms) "
+      "VALUES(?,?,?,?,?,?);");
     if (!r) return r;
 
     r = prep(&st_get_object_,
-      "SELECT object_id, version, type_id, payload_cbor, created_at_ms "
+      "SELECT object_id, version, type_id, definition_id, payload_cbor, created_at_ms "
       "FROM objects WHERE object_id=? AND version=? LIMIT 1;");
     if (!r) return r;
 
     r = prep(&st_get_latest_,
-      "SELECT object_id, version, type_id, payload_cbor, created_at_ms "
+      "SELECT object_id, version, type_id, definition_id, payload_cbor, created_at_ms "
       "FROM objects WHERE object_id=? ORDER BY version DESC LIMIT 1;");
     if (!r) return r;
 
     r = prep(&st_list_by_type_,
-      "SELECT object_id, version, type_id, payload_cbor, created_at_ms "
+      "SELECT object_id, version, type_id, definition_id, payload_cbor, created_at_ms "
       "FROM objects WHERE type_id=? ORDER BY created_at_ms ASC;");
     if (!r) return r;
   }
@@ -168,28 +180,48 @@ Result<void> SqliteStore::prepare_all() {
   // edges
   {
     auto r = prep(&st_insert_edge_,
-      "INSERT INTO edges(from_id, from_ver, to_id, to_ver, name, props_cbor, created_at_ms) "
-      "VALUES(?,?,?,?,?,?,?);");
+      "INSERT INTO edges(from_id, from_ver, to_id, to_ver, name, role, props_cbor, created_at_ms) "
+      "VALUES(?,?,?,?,?,?,?,?);");
     if (!r) return r;
 
     r = prep(&st_edges_from_,
-      "SELECT from_id, from_ver, to_id, to_ver, name, props_cbor, created_at_ms "
+      "SELECT from_id, from_ver, to_id, to_ver, name, role, props_cbor, created_at_ms "
       "FROM edges WHERE from_id=? AND from_ver=? ORDER BY created_at_ms ASC;");
     if (!r) return r;
 
     r = prep(&st_edges_from_named_,
-      "SELECT from_id, from_ver, to_id, to_ver, name, props_cbor, created_at_ms "
+      "SELECT from_id, from_ver, to_id, to_ver, name, role, props_cbor, created_at_ms "
       "FROM edges WHERE from_id=? AND from_ver=? AND name=? ORDER BY created_at_ms ASC;");
     if (!r) return r;
 
+    r = prep(&st_edges_from_role_,
+      "SELECT from_id, from_ver, to_id, to_ver, name, role, props_cbor, created_at_ms "
+      "FROM edges WHERE from_id=? AND from_ver=? AND role=? ORDER BY created_at_ms ASC;");
+    if (!r) return r;
+
+    r = prep(&st_edges_from_named_role_,
+      "SELECT from_id, from_ver, to_id, to_ver, name, role, props_cbor, created_at_ms "
+      "FROM edges WHERE from_id=? AND from_ver=? AND name=? AND role=? ORDER BY created_at_ms ASC;");
+    if (!r) return r;
+
     r = prep(&st_edges_to_,
-      "SELECT from_id, from_ver, to_id, to_ver, name, props_cbor, created_at_ms "
+      "SELECT from_id, from_ver, to_id, to_ver, name, role, props_cbor, created_at_ms "
       "FROM edges WHERE to_id=? AND to_ver=? ORDER BY created_at_ms ASC;");
     if (!r) return r;
 
     r = prep(&st_edges_to_named_,
-      "SELECT from_id, from_ver, to_id, to_ver, name, props_cbor, created_at_ms "
+      "SELECT from_id, from_ver, to_id, to_ver, name, role, props_cbor, created_at_ms "
       "FROM edges WHERE to_id=? AND to_ver=? AND name=? ORDER BY created_at_ms ASC;");
+    if (!r) return r;
+
+    r = prep(&st_edges_to_role_,
+      "SELECT from_id, from_ver, to_id, to_ver, name, role, props_cbor, created_at_ms "
+      "FROM edges WHERE to_id=? AND to_ver=? AND role=? ORDER BY created_at_ms ASC;");
+    if (!r) return r;
+
+    r = prep(&st_edges_to_named_role_,
+      "SELECT from_id, from_ver, to_id, to_ver, name, role, props_cbor, created_at_ms "
+      "FROM edges WHERE to_id=? AND to_ver=? AND name=? AND role=? ORDER BY created_at_ms ASC;");
     if (!r) return r;
   }
 
@@ -231,14 +263,22 @@ Result<void> SqliteStore::rollback() { return exec("ROLLBACK;"); }
 // -----------------------------
 // Core operations
 // -----------------------------
-Result<ObjectRecord> SqliteStore::create_object(TypeID type, const Bytes& payload_cbor) {
+Result<ObjectRecord> SqliteStore::create_object(TypeID type, ObjectID definition_id,
+                                                const Bytes& payload_cbor) {
+  return create_object_with_id(ObjectID::random(), type, definition_id, payload_cbor);
+}
+
+Result<ObjectRecord> SqliteStore::create_object_with_id(ObjectID object_id, TypeID type,
+                                                        ObjectID definition_id,
+                                                        const Bytes& payload_cbor) {
   if (!db_) return Result<ObjectRecord>::err("db not open");
   if (!st_insert_object_) return Result<ObjectRecord>::err("insert statement not prepared");
 
   ObjectRecord rec;
-  rec.ref.id = ObjectID::random();
+  rec.ref.id = object_id;
   rec.ref.ver = Version{1};
   rec.type = type;
+  rec.definition_id = definition_id;
   rec.payload_cbor = payload_cbor;
   rec.created_at_unix_ms = unix_ms_now();
 
@@ -248,8 +288,9 @@ Result<ObjectRecord> SqliteStore::create_object(TypeID type, const Bytes& payloa
   bind_blob(st_insert_object_, 1, rec.ref.id.bytes.data(), 16);
   sqlite3_bind_int64(st_insert_object_, 2, (sqlite3_int64)rec.ref.ver.v);
   sqlite3_bind_int64(st_insert_object_, 3, (sqlite3_int64)rec.type.v);
-  bind_blob(st_insert_object_, 4, rec.payload_cbor.data(), (int)rec.payload_cbor.size());
-  sqlite3_bind_int64(st_insert_object_, 5, (sqlite3_int64)rec.created_at_unix_ms);
+  bind_blob(st_insert_object_, 4, rec.definition_id.bytes.data(), 16);
+  bind_blob(st_insert_object_, 5, rec.payload_cbor.data(), (int)rec.payload_cbor.size());
+  sqlite3_bind_int64(st_insert_object_, 6, (sqlite3_int64)rec.created_at_unix_ms);
 
   int rc = sqlite3_step(st_insert_object_);
   if (rc != SQLITE_DONE) {
@@ -283,8 +324,13 @@ Result<std::optional<ObjectRecord>> SqliteStore::get_object(ObjectRef ref) {
     }
     rec.ref.ver = Version{ (std::uint64_t)sqlite3_column_int64(st_get_object_, 1) };
     rec.type = TypeID{ (std::uint64_t)sqlite3_column_int64(st_get_object_, 2) };
-    rec.payload_cbor = col_blob(st_get_object_, 3);
-    rec.created_at_unix_ms = (std::uint64_t)sqlite3_column_int64(st_get_object_, 4);
+    {
+      auto def_id = col_blob(st_get_object_, 3);
+      if (def_id.size() == 16) std::memcpy(rec.definition_id.bytes.data(), def_id.data(), 16);
+      else return Result<std::optional<ObjectRecord>>::err("definition_id blob was not 16 bytes");
+    }
+    rec.payload_cbor = col_blob(st_get_object_, 4);
+    rec.created_at_unix_ms = (std::uint64_t)sqlite3_column_int64(st_get_object_, 5);
 
     sqlite3_reset(st_get_object_);
     sqlite3_clear_bindings(st_get_object_);
@@ -318,8 +364,12 @@ Result<std::optional<ObjectRecord>> SqliteStore::get_latest(ObjectID id) {
     }
     rec.ref.ver = Version{ (std::uint64_t)sqlite3_column_int64(st_get_latest_, 1) };
     rec.type = TypeID{ (std::uint64_t)sqlite3_column_int64(st_get_latest_, 2) };
-    rec.payload_cbor = col_blob(st_get_latest_, 3);
-    rec.created_at_unix_ms = (std::uint64_t)sqlite3_column_int64(st_get_latest_, 4);
+    {
+      auto def_id = col_blob(st_get_latest_, 3);
+      if (def_id.size() == 16) std::memcpy(rec.definition_id.bytes.data(), def_id.data(), 16);
+    }
+    rec.payload_cbor = col_blob(st_get_latest_, 4);
+    rec.created_at_unix_ms = (std::uint64_t)sqlite3_column_int64(st_get_latest_, 5);
     sqlite3_reset(st_get_latest_);
     sqlite3_clear_bindings(st_get_latest_);
     return Result<std::optional<ObjectRecord>>::ok(std::optional<ObjectRecord>(std::move(rec)));
@@ -362,8 +412,12 @@ Result<std::vector<ObjectRecord>> SqliteStore::list_by_type(TypeID type) {
     std::copy(id_bytes.begin(), id_bytes.end(), rec.ref.id.bytes.begin());
     rec.ref.ver = Version{(std::uint64_t)sqlite3_column_int64(st_list_by_type_, 1)};
     rec.type = TypeID{(std::uint64_t)sqlite3_column_int64(st_list_by_type_, 2)};
-    rec.payload_cbor = col_blob(st_list_by_type_, 3);
-    rec.created_at_unix_ms = (std::uint64_t)sqlite3_column_int64(st_list_by_type_, 4);
+    {
+      auto def_id = col_blob(st_list_by_type_, 3);
+      if (def_id.size() == 16) std::copy(def_id.begin(), def_id.end(), rec.definition_id.bytes.begin());
+    }
+    rec.payload_cbor = col_blob(st_list_by_type_, 4);
+    rec.created_at_unix_ms = (std::uint64_t)sqlite3_column_int64(st_list_by_type_, 5);
 
     out.push_back(std::move(rec));
   }
@@ -376,7 +430,8 @@ Result<std::vector<ObjectRecord>> SqliteStore::list_by_type(TypeID type) {
 // -----------------------------
 // Edges
 // -----------------------------
-Result<void> SqliteStore::add_edge(ObjectRef from, ObjectRef to, std::string name, const Bytes& props_cbor) {
+Result<void> SqliteStore::add_edge(ObjectRef from, ObjectRef to, std::string name, std::string role,
+                                   const Bytes& props_cbor) {
   if (!db_) return Result<void>::err("db not open");
   if (!st_insert_edge_) return Result<void>::err("insert_edge statement not prepared");
 
@@ -388,8 +443,9 @@ Result<void> SqliteStore::add_edge(ObjectRef from, ObjectRef to, std::string nam
   bind_blob(st_insert_edge_, 3, to.id.bytes.data(), 16);
   sqlite3_bind_int64(st_insert_edge_, 4, (sqlite3_int64)to.ver.v);
   bind_text(st_insert_edge_, 5, name);
-  bind_blob(st_insert_edge_, 6, props_cbor.data(), (int)props_cbor.size());
-  sqlite3_bind_int64(st_insert_edge_, 7, (sqlite3_int64)unix_ms_now());
+  bind_text(st_insert_edge_, 6, role);
+  bind_blob(st_insert_edge_, 7, props_cbor.data(), (int)props_cbor.size());
+  sqlite3_bind_int64(st_insert_edge_, 8, (sqlite3_int64)unix_ms_now());
 
   int rc = sqlite3_step(st_insert_edge_);
   if (rc != SQLITE_DONE) {
@@ -419,8 +475,9 @@ static Result<std::vector<EdgeRecord>> read_edges(sqlite3* db, sqlite3_stmt* st)
       }
       e.to.ver = Version{ (std::uint64_t)sqlite3_column_int64(st, 3) };
       e.name = SqliteStore::col_text(st, 4);
-      e.props_cbor = SqliteStore::col_blob(st, 5);
-      e.created_at_unix_ms = (std::uint64_t)sqlite3_column_int64(st, 6);
+      e.role = SqliteStore::col_text(st, 5);
+      e.props_cbor = SqliteStore::col_blob(st, 6);
+      e.created_at_unix_ms = (std::uint64_t)sqlite3_column_int64(st, 7);
       out.push_back(std::move(e));
       continue;
     }
@@ -434,36 +491,62 @@ static Result<std::vector<EdgeRecord>> read_edges(sqlite3* db, sqlite3_stmt* st)
   return Result<std::vector<EdgeRecord>>::ok(std::move(out));
 }
 
-Result<std::vector<EdgeRecord>> SqliteStore::edges_from(ObjectRef from, std::optional<std::string> name_filter) {
+Result<std::vector<EdgeRecord>> SqliteStore::edges_from(ObjectRef from,
+                                                        std::optional<std::string> name_filter,
+                                                        std::optional<std::string> role_filter) {
   if (!db_) return Result<std::vector<EdgeRecord>>::err("db not open");
-  if (!st_edges_from_ || !st_edges_from_named_) {
+  if (!st_edges_from_ || !st_edges_from_named_ || !st_edges_from_role_ || !st_edges_from_named_role_) {
     return Result<std::vector<EdgeRecord>>::err("edges_from statement not prepared");
   }
 
-  sqlite3_stmt* st = name_filter ? st_edges_from_named_ : st_edges_from_;
+  sqlite3_stmt* st = nullptr;
+  if (name_filter && role_filter) st = st_edges_from_named_role_;
+  else if (name_filter) st = st_edges_from_named_;
+  else if (role_filter) st = st_edges_from_role_;
+  else st = st_edges_from_;
   sqlite3_reset(st);
   sqlite3_clear_bindings(st);
 
   bind_blob(st, 1, from.id.bytes.data(), 16);
   sqlite3_bind_int64(st, 2, (sqlite3_int64)from.ver.v);
-  if (name_filter) bind_text(st, 3, *name_filter);
+  if (name_filter && role_filter) {
+    bind_text(st, 3, *name_filter);
+    bind_text(st, 4, *role_filter);
+  } else if (name_filter) {
+    bind_text(st, 3, *name_filter);
+  } else if (role_filter) {
+    bind_text(st, 3, *role_filter);
+  }
 
   return read_edges(db_, st);
 }
 
-Result<std::vector<EdgeRecord>> SqliteStore::edges_to(ObjectRef to, std::optional<std::string> name_filter) {
+Result<std::vector<EdgeRecord>> SqliteStore::edges_to(ObjectRef to,
+                                                      std::optional<std::string> name_filter,
+                                                      std::optional<std::string> role_filter) {
   if (!db_) return Result<std::vector<EdgeRecord>>::err("db not open");
-  if (!st_edges_to_ || !st_edges_to_named_) {
+  if (!st_edges_to_ || !st_edges_to_named_ || !st_edges_to_role_ || !st_edges_to_named_role_) {
     return Result<std::vector<EdgeRecord>>::err("edges_to statement not prepared");
   }
 
-  sqlite3_stmt* st = name_filter ? st_edges_to_named_ : st_edges_to_;
+  sqlite3_stmt* st = nullptr;
+  if (name_filter && role_filter) st = st_edges_to_named_role_;
+  else if (name_filter) st = st_edges_to_named_;
+  else if (role_filter) st = st_edges_to_role_;
+  else st = st_edges_to_;
   sqlite3_reset(st);
   sqlite3_clear_bindings(st);
 
   bind_blob(st, 1, to.id.bytes.data(), 16);
   sqlite3_bind_int64(st, 2, (sqlite3_int64)to.ver.v);
-  if (name_filter) bind_text(st, 3, *name_filter);
+  if (name_filter && role_filter) {
+    bind_text(st, 3, *name_filter);
+    bind_text(st, 4, *role_filter);
+  } else if (name_filter) {
+    bind_text(st, 3, *name_filter);
+  } else if (role_filter) {
+    bind_text(st, 3, *role_filter);
+  }
 
   return read_edges(db_, st);
 }

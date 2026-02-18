@@ -158,7 +158,8 @@ referee::Result<DefinitionRecord> SchemaRegistry::register_definition(const Type
   if (def.type_id.v == 0) return referee::Result<DefinitionRecord>::err("type_id is zero");
 
   auto payload = encode_definition(def);
-  auto createR = store_.create_object(kTypeDefinitionType, payload);
+  auto definition_id = referee::ObjectID::random();
+  auto createR = store_.create_object_with_id(definition_id, kTypeDefinitionType, definition_id, payload);
   if (!createR) return referee::Result<DefinitionRecord>::err(createR.error->message);
 
   return record_from_object(createR.value.value());
