@@ -56,21 +56,23 @@ Result<void> SqliteStore::open() {
 Result<void> SqliteStore::close() {
   if (!db_) return Result<void>::ok();
 
-  auto finalize = [&](sqlite3_stmt*& st) {
-    if (st) sqlite3_finalize(st);
-    st = nullptr;
-  };
+  // Finalize via SQLite's internal list to avoid stale/invalid stmt pointers.
+  for (sqlite3_stmt* st = sqlite3_next_stmt(db_, nullptr);
+       st != nullptr;
+       st = sqlite3_next_stmt(db_, st)) {
+    sqlite3_finalize(st);
+  }
 
-  finalize(st_insert_object_);
-  finalize(st_get_object_);
-  finalize(st_get_latest_);
-  finalize(st_list_by_type_);
+  st_insert_object_ = nullptr;
+  st_get_object_ = nullptr;
+  st_get_latest_ = nullptr;
+  st_list_by_type_ = nullptr;
 
-  finalize(st_insert_edge_);
-  finalize(st_edges_from_);
-  finalize(st_edges_from_named_);
-  finalize(st_edges_to_);
-  finalize(st_edges_to_named_);
+  st_insert_edge_ = nullptr;
+  st_edges_from_ = nullptr;
+  st_edges_from_named_ = nullptr;
+  st_edges_to_ = nullptr;
+  st_edges_to_named_ = nullptr;
 
   sqlite3_close(db_);
   db_ = nullptr;
