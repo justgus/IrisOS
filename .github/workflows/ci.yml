@@ -40,13 +40,22 @@ jobs:
           ulimit -c unlimited
           make check V=1 || {
             echo "make check failed; running gdb on test_referee_core"
+            make -C tests test_referee_core || true
+            if [ -x tests/.libs/test_referee_core ]; then
+              TARGET=tests/.libs/test_referee_core
+            elif [ -x tests/test_referee_core ]; then
+              TARGET=tests/test_referee_core
+            else
+              echo "test_referee_core binary not found" > tests/gdb-test_referee_core.txt
+              exit 1
+            fi
             CK_FORK=no LD_LIBRARY_PATH="$PWD/src/.libs" \
               gdb -q \
                 -ex "set pagination off" \
                 -ex "set detach-on-fork off" \
                 -ex "set follow-fork-mode child" \
                 -ex run -ex bt -ex quit \
-                --args tests/.libs/test_referee_core \
+                --args "$TARGET" \
                 > tests/gdb-test_referee_core.txt 2>&1 || true
             exit 1
           }
