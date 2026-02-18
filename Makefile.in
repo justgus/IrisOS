@@ -829,6 +829,13 @@ uninstall-am:
 .PRECIOUS: Makefile
 
 
+.PHONY: asan-check
+asan-check:
+	$(MAKE) clean
+	$(MAKE) CXXFLAGS="$(CXXFLAGS) -O0 -g -fsanitize=address,undefined -fno-omit-frame-pointer" \
+		LDFLAGS="$(LDFLAGS) -fsanitize=address,undefined" \
+		check
+
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

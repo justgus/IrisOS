@@ -37,6 +37,7 @@ public:
   Result<ObjectRecord> create_object(TypeID type, const Bytes& payload_cbor);
   Result<std::optional<ObjectRecord>> get_object(ObjectRef ref);
   Result<std::optional<ObjectRecord>> get_latest(ObjectID id);
+  Result<std::vector<ObjectRecord>> list_by_type(TypeID type);
 
   // Edge operations
   Result<void> add_edge(ObjectRef from, ObjectRef to, std::string name, const Bytes& props_cbor);
@@ -63,6 +64,7 @@ private:
   sqlite3_stmt* st_insert_object_{nullptr};
   sqlite3_stmt* st_get_object_{nullptr};
   sqlite3_stmt* st_get_latest_{nullptr};
+  sqlite3_stmt* st_list_by_type_{nullptr};
 
   sqlite3_stmt* st_insert_edge_{nullptr};
   sqlite3_stmt* st_edges_from_{nullptr};

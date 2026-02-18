@@ -5,9 +5,26 @@ extern "C" {
 #include "referee/referee.h"
 #include "referee_sqlite/sqlite_store.h"
 
+#include <cstdlib>
 #include <string>
 
 using namespace referee;
+
+namespace {
+
+template <typename T>
+const char* result_message(const Result<T>& r) {
+  return r.error.has_value() ? r.error->message.c_str() : "ok";
+}
+
+template <typename T>
+std::optional<T> require_optional(const Result<std::optional<T>>& r, const char* context) {
+  ck_assert_msg(r, "%s: %s", context, result_message(r));
+  ck_assert_msg(r.value.has_value(), "%s: missing optional container", context);
+  return r.value.value();
+}
+
+} // namespace
 
 START_TEST(test_create_and_get_object_roundtrip)
 {
@@ -21,13 +38,10 @@ START_TEST(test_create_and_get_object_roundtrip)
   auto payload = cbor_from_json_string(R"({"displayName":"Ship Propulsion"})");
 
   auto createdR = store.create_object(demoType, payload);
-  ck_assert_msg(createdR, "create_object failed: %s", createdR.error->message.c_str());
+  ck_assert_msg(createdR, "create_object failed: %s", result_message(createdR));
 
   auto getR = store.get_object(createdR.value->ref);
-  ck_assert_msg(getR, "get_object failed: %s", getR.error->message.c_str());
-  ck_assert_msg(getR.value->has_value(), "expected object present");
-
-  auto& opt = getR.value.value();     // inner optional<ObjectRecord>
+  auto opt = require_optional(getR, "get_object");
   ck_assert_msg(opt.has_value(), "expected object present");
 
   const auto& obj = opt.value();      // ObjectRecord
@@ -91,8 +105,10 @@ Suite* referee_suite(void) {
 }
 
 int main(void) {
+  setenv("CK_FORK", "no", 1);
   Suite* s = referee_suite();
   SRunner* sr = srunner_create(s);
+  srunner_set_fork_status(sr, CK_NOFORK);
   srunner_run_all(sr, CK_NORMAL);
   int failures = srunner_ntests_failed(sr);
   srunner_free(sr);

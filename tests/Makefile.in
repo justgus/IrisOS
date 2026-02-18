@@ -87,7 +87,8 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-TESTS = test_referee_core$(EXEEXT)
+TESTS = test_referee_core$(EXEEXT) test_service_ipc$(EXEEXT) \
+	test_refract_registry$(EXEEXT)
 check_PROGRAMS = $(am__EXEEXT_1)
 subdir = tests
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -102,7 +103,8 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config.h
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am__EXEEXT_1 = test_referee_core$(EXEEXT)
+am__EXEEXT_1 = test_referee_core$(EXEEXT) test_service_ipc$(EXEEXT) \
+	test_refract_registry$(EXEEXT)
 am_test_referee_core_OBJECTS = test_referee_core.$(OBJEXT)
 test_referee_core_OBJECTS = $(am_test_referee_core_OBJECTS)
 am__DEPENDENCIES_1 =
@@ -112,6 +114,14 @@ AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+am_test_refract_registry_OBJECTS = test_refract_registry.$(OBJEXT)
+test_refract_registry_OBJECTS = $(am_test_refract_registry_OBJECTS)
+test_refract_registry_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(top_builddir)/src/libreferee.la
+am_test_service_ipc_OBJECTS = test_service_ipc.$(OBJEXT)
+test_service_ipc_OBJECTS = $(am_test_service_ipc_OBJECTS)
+test_service_ipc_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(top_builddir)/src/libreferee.la
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -127,7 +137,9 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/test_referee_core.Po
+am__depfiles_remade = ./$(DEPDIR)/test_referee_core.Po \
+	./$(DEPDIR)/test_refract_registry.Po \
+	./$(DEPDIR)/test_service_ipc.Po
 am__mv = mv -f
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -147,8 +159,10 @@ AM_V_CXXLD = $(am__v_CXXLD_@AM_V@)
 am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
-SOURCES = $(test_referee_core_SOURCES)
-DIST_SOURCES = $(test_referee_core_SOURCES)
+SOURCES = $(test_referee_core_SOURCES) \
+	$(test_refract_registry_SOURCES) $(test_service_ipc_SOURCES)
+DIST_SOURCES = $(test_referee_core_SOURCES) \
+	$(test_refract_registry_SOURCES) $(test_service_ipc_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -513,8 +527,13 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CXXFLAGS = -Wall -Wextra -Wpedantic
 AM_CPPFLAGS = -I$(top_srcdir)/src $(CHECK_CFLAGS)
+AM_TESTS_ENVIRONMENT = CK_FORK=no
 test_referee_core_SOURCES = test_referee_core.cc
 test_referee_core_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
+test_service_ipc_SOURCES = test_service_ipc.cc
+test_service_ipc_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
+test_refract_registry_SOURCES = test_refract_registry.cc
+test_refract_registry_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
 all: all-am
 
 .SUFFIXES:
@@ -562,6 +581,14 @@ test_referee_core$(EXEEXT): $(test_referee_core_OBJECTS) $(test_referee_core_DEP
 	@rm -f test_referee_core$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(test_referee_core_OBJECTS) $(test_referee_core_LDADD) $(LIBS)
 
+test_refract_registry$(EXEEXT): $(test_refract_registry_OBJECTS) $(test_refract_registry_DEPENDENCIES) $(EXTRA_test_refract_registry_DEPENDENCIES) 
+	@rm -f test_refract_registry$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(test_refract_registry_OBJECTS) $(test_refract_registry_LDADD) $(LIBS)
+
+test_service_ipc$(EXEEXT): $(test_service_ipc_OBJECTS) $(test_service_ipc_DEPENDENCIES) $(EXTRA_test_service_ipc_DEPENDENCIES) 
+	@rm -f test_service_ipc$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(test_service_ipc_OBJECTS) $(test_service_ipc_LDADD) $(LIBS)
+
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
@@ -569,6 +596,8 @@ distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_referee_core.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_refract_registry.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_service_ipc.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -806,6 +835,20 @@ test_referee_core.log: test_referee_core$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test_service_ipc.log: test_service_ipc$(EXEEXT)
+	@p='test_service_ipc$(EXEEXT)'; \
+	b='test_service_ipc'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test_refract_registry.log: test_refract_registry$(EXEEXT)
+	@p='test_refract_registry$(EXEEXT)'; \
+	b='test_refract_registry'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 .test.log:
 	@p='$<'; \
 	$(am__set_b); \
@@ -899,6 +942,8 @@ clean-am: clean-checkPROGRAMS clean-generic clean-libtool \
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/test_referee_core.Po
+	-rm -f ./$(DEPDIR)/test_refract_registry.Po
+	-rm -f ./$(DEPDIR)/test_service_ipc.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -945,6 +990,8 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/test_referee_core.Po
+	-rm -f ./$(DEPDIR)/test_refract_registry.Po
+	-rm -f ./$(DEPDIR)/test_service_ipc.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
