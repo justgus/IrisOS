@@ -12,5 +12,8 @@ src/services/.dirstamp
 config.log
 config.status
 build.log
+Makefile
+**/Makefile
+autom4te.cache/
 tests/test_*
 !tests/test_*.cc
