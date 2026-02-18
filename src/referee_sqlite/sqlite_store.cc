@@ -251,8 +251,12 @@ Result<ObjectRecord> SqliteStore::create_object(TypeID type, const Bytes& payloa
 
   int rc = sqlite3_step(st_insert_object_);
   if (rc != SQLITE_DONE) {
+    sqlite3_reset(st_insert_object_);
+    sqlite3_clear_bindings(st_insert_object_);
     return Result<ObjectRecord>::err(sqlite_err(db_, "insert object failed"));
   }
+  sqlite3_reset(st_insert_object_);
+  sqlite3_clear_bindings(st_insert_object_);
   return Result<ObjectRecord>::ok(std::move(rec));
 }
 
@@ -386,7 +390,13 @@ Result<void> SqliteStore::add_edge(ObjectRef from, ObjectRef to, std::string nam
   sqlite3_bind_int64(st_insert_edge_, 7, (sqlite3_int64)unix_ms_now());
 
   int rc = sqlite3_step(st_insert_edge_);
-  if (rc != SQLITE_DONE) return Result<void>::err(sqlite_err(db_, "insert edge failed"));
+  if (rc != SQLITE_DONE) {
+    sqlite3_reset(st_insert_edge_);
+    sqlite3_clear_bindings(st_insert_edge_);
+    return Result<void>::err(sqlite_err(db_, "insert edge failed"));
+  }
+  sqlite3_reset(st_insert_edge_);
+  sqlite3_clear_bindings(st_insert_edge_);
   return Result<void>::ok();
 }
 
