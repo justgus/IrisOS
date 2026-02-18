@@ -34,15 +34,22 @@ public:
   Result<void> rollback();
 
   // Core operations (immutable objects)
-  Result<ObjectRecord> create_object(TypeID type, const Bytes& payload_cbor);
+  Result<ObjectRecord> create_object(TypeID type, ObjectID definition_id, const Bytes& payload_cbor);
+  Result<ObjectRecord> create_object_with_id(ObjectID object_id, TypeID type, ObjectID definition_id,
+                                             const Bytes& payload_cbor);
   Result<std::optional<ObjectRecord>> get_object(ObjectRef ref);
   Result<std::optional<ObjectRecord>> get_latest(ObjectID id);
   Result<std::vector<ObjectRecord>> list_by_type(TypeID type);
 
   // Edge operations
-  Result<void> add_edge(ObjectRef from, ObjectRef to, std::string name, const Bytes& props_cbor);
-  Result<std::vector<EdgeRecord>> edges_from(ObjectRef from, std::optional<std::string> name_filter = std::nullopt);
-  Result<std::vector<EdgeRecord>> edges_to(ObjectRef to, std::optional<std::string> name_filter = std::nullopt);
+  Result<void> add_edge(ObjectRef from, ObjectRef to, std::string name, std::string role,
+                        const Bytes& props_cbor);
+  Result<std::vector<EdgeRecord>> edges_from(ObjectRef from,
+                                             std::optional<std::string> name_filter = std::nullopt,
+                                             std::optional<std::string> role_filter = std::nullopt);
+  Result<std::vector<EdgeRecord>> edges_to(ObjectRef to,
+                                           std::optional<std::string> name_filter = std::nullopt,
+                                           std::optional<std::string> role_filter = std::nullopt);
 
   // read helpers
   static Bytes col_blob(sqlite3_stmt* st, int col);
@@ -69,8 +76,12 @@ private:
   sqlite3_stmt* st_insert_edge_{nullptr};
   sqlite3_stmt* st_edges_from_{nullptr};
   sqlite3_stmt* st_edges_from_named_{nullptr};
+  sqlite3_stmt* st_edges_from_role_{nullptr};
+  sqlite3_stmt* st_edges_from_named_role_{nullptr};
   sqlite3_stmt* st_edges_to_{nullptr};
   sqlite3_stmt* st_edges_to_named_{nullptr};
+  sqlite3_stmt* st_edges_to_role_{nullptr};
+  sqlite3_stmt* st_edges_to_named_role_{nullptr};
 };
 
 } // namespace referee

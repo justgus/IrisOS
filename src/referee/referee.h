@@ -55,6 +55,7 @@ using Bytes = std::vector<std::uint8_t>;
 struct ObjectRecord {
   ObjectRef ref{};
   TypeID type{};
+  ObjectID definition_id{};
   Bytes payload_cbor{};
   std::uint64_t created_at_unix_ms{};
 };
@@ -63,6 +64,7 @@ struct EdgeRecord {
   ObjectRef from{};
   ObjectRef to{};
   std::string name;          // optional name; empty allowed
+  std::string role;          // optional role; empty allowed
   Bytes props_cbor{};        // optional props; empty allowed
   std::uint64_t created_at_unix_ms{};
 };
