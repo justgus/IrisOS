@@ -22,6 +22,7 @@ jobs:
             autoconf automake libtool pkg-config autoconf-archive \
             sqlite3 libsqlite3-dev \
             check \
+            gdb \
             valgrind \
             nlohmann-json3-dev
 
@@ -39,7 +40,7 @@ jobs:
           ulimit -c unlimited
           make check V=1 || {
             echo "make check failed; running gdb on test_referee_core"
-            gdb -q -ex run -ex bt -ex quit --args tests/test_referee_core \
+            gdb -q -ex run -ex bt -ex quit --args tests/.libs/test_referee_core \
               > tests/gdb-test_referee_core.txt 2>&1 || true
             exit 1
           }
