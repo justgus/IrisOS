@@ -40,8 +40,13 @@ jobs:
           ulimit -c unlimited
           make check V=1 || {
             echo "make check failed; running gdb on test_referee_core"
-            LD_LIBRARY_PATH="$PWD/src/.libs" \
-              gdb -q -ex run -ex bt -ex quit --args tests/.libs/test_referee_core \
+            CK_FORK=no LD_LIBRARY_PATH="$PWD/src/.libs" \
+              gdb -q \
+                -ex "set pagination off" \
+                -ex "set detach-on-fork off" \
+                -ex "set follow-fork-mode child" \
+                -ex run -ex bt -ex quit \
+                --args tests/.libs/test_referee_core \
                 > tests/gdb-test_referee_core.txt 2>&1 || true
             exit 1
           }
