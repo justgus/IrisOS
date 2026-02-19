@@ -76,3 +76,8 @@ edges by name/role with indexes for Conch and Refract lookups.
   - `make check`
 - Manual checks:
   - Create object + edges and verify queries.
+
+## Implementation Notes
+
+- Sprint 4 review: functionality appears implemented in `src/referee_sqlite/sqlite_store.cc` and
+  covered by `tests/test_referee_core.cc`. Status remains Draft until System Engineer verification.
