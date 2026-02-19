@@ -10,7 +10,7 @@
 
 - ER ID: ER-0006
 - Title: Phase 2 Milestone 2 — Exec Waitables v0
-- Status: Draft
+- Status: Verified
 - Date: 2026-02-16
 - Owners: Mike
 - Type: Enhancement
