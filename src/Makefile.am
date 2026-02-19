@@ -12,6 +12,8 @@ libreferee_la_SOURCES = \
    referee/referee.cc \
    services/service.h \
    services/service.cc \
+   refract/bootstrap.h \
+   refract/bootstrap.cc \
    refract/schema_registry.h \
    refract/schema_registry.cc \
    referee_sqlite/sqlite_store.h \
