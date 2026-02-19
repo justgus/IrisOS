@@ -10,6 +10,8 @@ lib_LTLIBRARIES = libreferee.la
 libreferee_la_SOURCES = \
    referee/referee.h \
    referee/referee.cc \
+   ceo/task_registry.h \
+   ceo/task_registry.cc \
    services/service.h \
    services/service.cc \
    refract/bootstrap.h \
@@ -24,4 +26,5 @@ libreferee_la_LIBADD = $(SQLITE_LIBS)
 
 include_HEADERS = referee/referee.h \
    services/service.h \
-   refract/schema_registry.h
+   refract/schema_registry.h \
+   ceo/task_registry.h
