@@ -141,6 +141,7 @@ libreferee_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
 am__dirstamp = $(am__leading_dot)dirstamp
 am_libreferee_la_OBJECTS = referee/libreferee_la-referee.lo \
 	ceo/libreferee_la-task_registry.lo \
+	exec/libreferee_la-waitables.lo \
 	services/libreferee_la-service.lo \
 	refract/libreferee_la-bootstrap.lo \
 	refract/libreferee_la-schema_registry.lo \
@@ -170,6 +171,7 @@ depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ceo/$(DEPDIR)/libreferee_la-task_registry.Plo \
 	conch_shell/$(DEPDIR)/conch.Po \
+	exec/$(DEPDIR)/libreferee_la-waitables.Plo \
 	referee/$(DEPDIR)/libreferee_la-referee.Plo \
 	referee_sqlite/$(DEPDIR)/libreferee_la-sqlite_store.Plo \
 	refract/$(DEPDIR)/libreferee_la-bootstrap.Plo \
@@ -382,6 +384,8 @@ libreferee_la_SOURCES = \
    referee/referee.cc \
    ceo/task_registry.h \
    ceo/task_registry.cc \
+   exec/waitables.h \
+   exec/waitables.cc \
    services/service.h \
    services/service.cc \
    refract/bootstrap.h \
@@ -396,7 +400,8 @@ libreferee_la_LIBADD = $(SQLITE_LIBS)
 include_HEADERS = referee/referee.h \
    services/service.h \
    refract/schema_registry.h \
-   ceo/task_registry.h
+   ceo/task_registry.h \
+   exec/waitables.h
 
 all: all-am
 
@@ -531,6 +536,14 @@ ceo/$(DEPDIR)/$(am__dirstamp):
 	@: > ceo/$(DEPDIR)/$(am__dirstamp)
 ceo/libreferee_la-task_registry.lo: ceo/$(am__dirstamp) \
 	ceo/$(DEPDIR)/$(am__dirstamp)
+exec/$(am__dirstamp):
+	@$(MKDIR_P) exec
+	@: > exec/$(am__dirstamp)
+exec/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) exec/$(DEPDIR)
+	@: > exec/$(DEPDIR)/$(am__dirstamp)
+exec/libreferee_la-waitables.lo: exec/$(am__dirstamp) \
+	exec/$(DEPDIR)/$(am__dirstamp)
 services/$(am__dirstamp):
 	@$(MKDIR_P) services
 	@: > services/$(am__dirstamp)
@@ -579,6 +592,8 @@ mostlyclean-compile:
 	-rm -f ceo/*.$(OBJEXT)
 	-rm -f ceo/*.lo
 	-rm -f conch_shell/*.$(OBJEXT)
+	-rm -f exec/*.$(OBJEXT)
+	-rm -f exec/*.lo
 	-rm -f referee/*.$(OBJEXT)
 	-rm -f referee/*.lo
 	-rm -f referee_sqlite/*.$(OBJEXT)
@@ -593,6 +608,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@ceo/$(DEPDIR)/libreferee_la-task_registry.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@conch_shell/$(DEPDIR)/conch.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@exec/$(DEPDIR)/libreferee_la-waitables.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@referee/$(DEPDIR)/libreferee_la-referee.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@referee_sqlite/$(DEPDIR)/libreferee_la-sqlite_store.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@refract/$(DEPDIR)/libreferee_la-bootstrap.Plo@am__quote@ # am--include-marker
@@ -643,6 +659,13 @@ ceo/libreferee_la-task_registry.lo: ceo/task_registry.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libreferee_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o ceo/libreferee_la-task_registry.lo `test -f 'ceo/task_registry.cc' || echo '$(srcdir)/'`ceo/task_registry.cc
 
+exec/libreferee_la-waitables.lo: exec/waitables.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libreferee_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT exec/libreferee_la-waitables.lo -MD -MP -MF exec/$(DEPDIR)/libreferee_la-waitables.Tpo -c -o exec/libreferee_la-waitables.lo `test -f 'exec/waitables.cc' || echo '$(srcdir)/'`exec/waitables.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) exec/$(DEPDIR)/libreferee_la-waitables.Tpo exec/$(DEPDIR)/libreferee_la-waitables.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='exec/waitables.cc' object='exec/libreferee_la-waitables.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libreferee_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o exec/libreferee_la-waitables.lo `test -f 'exec/waitables.cc' || echo '$(srcdir)/'`exec/waitables.cc
+
 services/libreferee_la-service.lo: services/service.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libreferee_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT services/libreferee_la-service.lo -MD -MP -MF services/$(DEPDIR)/libreferee_la-service.Tpo -c -o services/libreferee_la-service.lo `test -f 'services/service.cc' || echo '$(srcdir)/'`services/service.cc
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) services/$(DEPDIR)/libreferee_la-service.Tpo services/$(DEPDIR)/libreferee_la-service.Plo
@@ -677,6 +700,7 @@ mostlyclean-libtool:
 clean-libtool:
 	-rm -rf .libs _libs
 	-rm -rf ceo/.libs ceo/_libs
+	-rm -rf exec/.libs exec/_libs
 	-rm -rf referee/.libs referee/_libs
 	-rm -rf referee_sqlite/.libs referee_sqlite/_libs
 	-rm -rf refract/.libs refract/_libs
@@ -826,6 +850,8 @@ distclean-generic:
 	-rm -f ceo/$(am__dirstamp)
 	-rm -f conch_shell/$(DEPDIR)/$(am__dirstamp)
 	-rm -f conch_shell/$(am__dirstamp)
+	-rm -f exec/$(DEPDIR)/$(am__dirstamp)
+	-rm -f exec/$(am__dirstamp)
 	-rm -f referee/$(DEPDIR)/$(am__dirstamp)
 	-rm -f referee/$(am__dirstamp)
 	-rm -f referee_sqlite/$(DEPDIR)/$(am__dirstamp)
@@ -846,6 +872,7 @@ clean-am: clean-binPROGRAMS clean-generic clean-libLTLIBRARIES \
 distclean: distclean-am
 		-rm -f ceo/$(DEPDIR)/libreferee_la-task_registry.Plo
 	-rm -f conch_shell/$(DEPDIR)/conch.Po
+	-rm -f exec/$(DEPDIR)/libreferee_la-waitables.Plo
 	-rm -f referee/$(DEPDIR)/libreferee_la-referee.Plo
 	-rm -f referee_sqlite/$(DEPDIR)/libreferee_la-sqlite_store.Plo
 	-rm -f refract/$(DEPDIR)/libreferee_la-bootstrap.Plo
@@ -898,6 +925,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 		-rm -f ceo/$(DEPDIR)/libreferee_la-task_registry.Plo
 	-rm -f conch_shell/$(DEPDIR)/conch.Po
+	-rm -f exec/$(DEPDIR)/libreferee_la-waitables.Plo
 	-rm -f referee/$(DEPDIR)/libreferee_la-referee.Plo
 	-rm -f referee_sqlite/$(DEPDIR)/libreferee_la-sqlite_store.Plo
 	-rm -f refract/$(DEPDIR)/libreferee_la-bootstrap.Plo
