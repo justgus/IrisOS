@@ -15,5 +15,6 @@ build.log
 Makefile
 **/Makefile
 autom4te.cache/
+src/conch
 tests/test_*
 !tests/test_*.cc
