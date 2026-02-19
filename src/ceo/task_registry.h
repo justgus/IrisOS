@@ -15,6 +15,7 @@ using TaskID = std::uint64_t;
 enum class TaskState {
   Created,
   Running,
+  Waiting,
   CancelRequested,
   Canceled,
   Completed,
@@ -38,6 +39,8 @@ public:
   referee::Result<TaskRecord> spawn_task(const referee::ObjectID& object_id,
                                          std::optional<TaskID> parent = std::nullopt,
                                          std::string name = {});
+  referee::Result<void> wait_task(TaskID id);
+  referee::Result<void> resume_task(TaskID id);
   referee::Result<void> cancel_task(TaskID id);
   referee::Result<void> mark_canceled(TaskID id);
   referee::Result<void> kill_task(TaskID id);

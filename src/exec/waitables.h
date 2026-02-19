@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ceo/task_registry.h"
-#include "referee/referee.h"
 
 #include <deque>
 #include <optional>

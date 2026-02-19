@@ -12,6 +12,8 @@ libreferee_la_SOURCES = \
    referee/referee.cc \
    ceo/task_registry.h \
    ceo/task_registry.cc \
+   exec/await.h \
+   exec/await.cc \
    exec/waitables.h \
    exec/waitables.cc \
    services/service.h \
@@ -30,4 +32,5 @@ include_HEADERS = referee/referee.h \
    services/service.h \
    refract/schema_registry.h \
    ceo/task_registry.h \
-   exec/waitables.h
+   exec/waitables.h \
+   exec/await.h
