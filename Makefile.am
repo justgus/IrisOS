@@ -1,4 +1,4 @@
-SUBDIRS = src tests
+SUBDIRS = src bin tests
 
 .PHONY: asan-check
 asan-check:
