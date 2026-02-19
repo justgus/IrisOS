@@ -148,7 +148,7 @@ AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-am_conch_OBJECTS = conch/conch.$(OBJEXT)
+am_conch_OBJECTS = conch_shell/conch.$(OBJEXT)
 conch_OBJECTS = $(am_conch_OBJECTS)
 conch_DEPENDENCIES = libreferee.la
 AM_V_P = $(am__v_P_@AM_V@)
@@ -166,7 +166,7 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = conch/$(DEPDIR)/conch.Po \
+am__depfiles_remade = conch_shell/$(DEPDIR)/conch.Po \
 	referee/$(DEPDIR)/libreferee_la-referee.Plo \
 	referee_sqlite/$(DEPDIR)/libreferee_la-sqlite_store.Plo \
 	refract/$(DEPDIR)/libreferee_la-schema_registry.Plo \
@@ -369,7 +369,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CXXFLAGS = -Wall -Wextra -Wpedantic -Werror
 conch_SOURCES = \
-   conch/conch.cc
+   conch_shell/conch.cc
 
 conch_LDADD = libreferee.la
 lib_LTLIBRARIES = libreferee.la
@@ -542,14 +542,14 @@ referee_sqlite/libreferee_la-sqlite_store.lo:  \
 
 libreferee.la: $(libreferee_la_OBJECTS) $(libreferee_la_DEPENDENCIES) $(EXTRA_libreferee_la_DEPENDENCIES) 
 	$(AM_V_CXXLD)$(CXXLINK) -rpath $(libdir) $(libreferee_la_OBJECTS) $(libreferee_la_LIBADD) $(LIBS)
-conch/$(am__dirstamp):
-	@$(MKDIR_P) conch
-	@: > conch/$(am__dirstamp)
-conch/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) conch/$(DEPDIR)
-	@: > conch/$(DEPDIR)/$(am__dirstamp)
-conch/conch.$(OBJEXT): conch/$(am__dirstamp) \
-	conch/$(DEPDIR)/$(am__dirstamp)
+conch_shell/$(am__dirstamp):
+	@$(MKDIR_P) conch_shell
+	@: > conch_shell/$(am__dirstamp)
+conch_shell/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) conch_shell/$(DEPDIR)
+	@: > conch_shell/$(DEPDIR)/$(am__dirstamp)
+conch_shell/conch.$(OBJEXT): conch_shell/$(am__dirstamp) \
+	conch_shell/$(DEPDIR)/$(am__dirstamp)
 
 conch$(EXEEXT): $(conch_OBJECTS) $(conch_DEPENDENCIES) $(EXTRA_conch_DEPENDENCIES) 
 	@rm -f conch$(EXEEXT)
@@ -557,7 +557,7 @@ conch$(EXEEXT): $(conch_OBJECTS) $(conch_DEPENDENCIES) $(EXTRA_conch_DEPENDENCIE
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
-	-rm -f conch/*.$(OBJEXT)
+	-rm -f conch_shell/*.$(OBJEXT)
 	-rm -f referee/*.$(OBJEXT)
 	-rm -f referee/*.lo
 	-rm -f referee_sqlite/*.$(OBJEXT)
@@ -570,7 +570,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@conch/$(DEPDIR)/conch.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@conch_shell/$(DEPDIR)/conch.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@referee/$(DEPDIR)/libreferee_la-referee.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@referee_sqlite/$(DEPDIR)/libreferee_la-sqlite_store.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@refract/$(DEPDIR)/libreferee_la-schema_registry.Plo@am__quote@ # am--include-marker
@@ -784,8 +784,8 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
-	-rm -f conch/$(DEPDIR)/$(am__dirstamp)
-	-rm -f conch/$(am__dirstamp)
+	-rm -f conch_shell/$(DEPDIR)/$(am__dirstamp)
+	-rm -f conch_shell/$(am__dirstamp)
 	-rm -f referee/$(DEPDIR)/$(am__dirstamp)
 	-rm -f referee/$(am__dirstamp)
 	-rm -f referee_sqlite/$(DEPDIR)/$(am__dirstamp)
@@ -804,7 +804,7 @@ clean-am: clean-binPROGRAMS clean-generic clean-libLTLIBRARIES \
 	clean-libtool mostlyclean-am
 
 distclean: distclean-am
-		-rm -f conch/$(DEPDIR)/conch.Po
+		-rm -f conch_shell/$(DEPDIR)/conch.Po
 	-rm -f referee/$(DEPDIR)/libreferee_la-referee.Plo
 	-rm -f referee_sqlite/$(DEPDIR)/libreferee_la-sqlite_store.Plo
 	-rm -f refract/$(DEPDIR)/libreferee_la-schema_registry.Plo
@@ -854,7 +854,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f conch/$(DEPDIR)/conch.Po
+		-rm -f conch_shell/$(DEPDIR)/conch.Po
 	-rm -f referee/$(DEPDIR)/libreferee_la-referee.Plo
 	-rm -f referee_sqlite/$(DEPDIR)/libreferee_la-sqlite_store.Plo
 	-rm -f refract/$(DEPDIR)/libreferee_la-schema_registry.Plo
