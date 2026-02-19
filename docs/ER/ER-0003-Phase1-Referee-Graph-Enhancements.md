@@ -10,7 +10,7 @@
 
 - ER ID: ER-0003
 - Title: Phase 1 Milestone 2 — Referee Graph Enhancements v0
-- Status: Draft
+- Status: Verified
 - Date: 2026-02-16
 - Owners: Mike
 - Type: Enhancement

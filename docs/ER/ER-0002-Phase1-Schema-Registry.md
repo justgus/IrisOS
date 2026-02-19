@@ -10,7 +10,7 @@
 
 - ER ID: ER-0002
 - Title: Phase 1 Milestone 1 — Refract Schema Registry v0
-- Status: In Progress
+- Status: Verified
 - Date: 2026-02-16
 - Owners: Mike
 - Type: Enhancement
