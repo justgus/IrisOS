@@ -16,6 +16,8 @@ Makefile
 **/Makefile
 autom4te.cache/
 src/conch
+bin/conch
+bin/.dirstamp
 *.db
 *.db-shm
 *.db-wal

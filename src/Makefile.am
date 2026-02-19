@@ -1,11 +1,5 @@
 AM_CXXFLAGS = -Wall -Wextra -Wpedantic -Werror
 
-bin_PROGRAMS = conch
-
-conch_SOURCES = \
-   conch_shell/conch.cc
-conch_LDADD = libreferee.la
-
 lib_LTLIBRARIES = libreferee.la
 libreferee_la_SOURCES = \
    referee/referee.h \

@@ -18,6 +18,7 @@ PKG_CHECK_MODULES([CHECK],[check])
 
 AC_CONFIG_FILES([
   Makefile
+  bin/Makefile
   src/Makefile
   tests/Makefile
 ])
