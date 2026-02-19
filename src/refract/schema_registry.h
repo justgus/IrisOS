@@ -68,6 +68,8 @@ public:
   explicit SchemaRegistry(referee::SqliteStore& store);
 
   referee::Result<DefinitionRecord> register_definition(const TypeDefinition& def);
+  referee::Result<DefinitionRecord> register_definition_with_id(const TypeDefinition& def,
+                                                                referee::ObjectID definition_id);
   referee::Result<std::optional<DefinitionRecord>> get_definition_by_id(referee::ObjectID id);
   referee::Result<std::optional<DefinitionRecord>> get_definition_by_type(referee::TypeID type);
   referee::Result<std::vector<TypeSummary>> list_types();
