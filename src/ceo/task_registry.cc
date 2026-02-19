@@ -40,6 +40,22 @@ referee::Result<TaskRecord> TaskRegistry::spawn_task(const referee::ObjectID& ob
   return referee::Result<TaskRecord>::ok(insert.first->second);
 }
 
+referee::Result<void> TaskRegistry::wait_task(TaskID id) {
+  auto* rec = find_task(id);
+  if (!rec) return referee::Result<void>::err("task not found");
+  if (is_terminal(rec->state)) return referee::Result<void>::err("task already terminal");
+  rec->state = TaskState::Waiting;
+  return referee::Result<void>::ok();
+}
+
+referee::Result<void> TaskRegistry::resume_task(TaskID id) {
+  auto* rec = find_task(id);
+  if (!rec) return referee::Result<void>::err("task not found");
+  if (is_terminal(rec->state)) return referee::Result<void>::err("task already terminal");
+  rec->state = TaskState::Running;
+  return referee::Result<void>::ok();
+}
+
 referee::Result<void> TaskRegistry::cancel_task(TaskID id) {
   auto* rec = find_task(id);
   if (!rec) return referee::Result<void>::err("task not found");
@@ -111,6 +127,7 @@ const char* to_string(TaskState state) {
   switch (state) {
     case TaskState::Created: return "Created";
     case TaskState::Running: return "Running";
+    case TaskState::Waiting: return "Waiting";
     case TaskState::CancelRequested: return "CancelRequested";
     case TaskState::Canceled: return "Canceled";
     case TaskState::Completed: return "Completed";

@@ -43,6 +43,20 @@ START_TEST(test_state_transitions)
 }
 END_TEST
 
+START_TEST(test_wait_and_resume)
+{
+  TaskRegistry registry;
+  auto task = registry.spawn_task(referee::ObjectID::random());
+  ck_assert_msg(task, "spawn failed");
+
+  auto waitR = registry.wait_task(task.value->id);
+  ck_assert_msg(waitR, "wait_task failed");
+
+  auto resumeR = registry.resume_task(task.value->id);
+  ck_assert_msg(resumeR, "resume_task failed");
+}
+END_TEST
+
 START_TEST(test_invalid_parent)
 {
   TaskRegistry registry;
@@ -57,6 +71,7 @@ Suite* ceo_task_suite(void) {
 
   tcase_add_test(tc, test_spawn_and_parent_child);
   tcase_add_test(tc, test_state_transitions);
+  tcase_add_test(tc, test_wait_and_resume);
   tcase_add_test(tc, test_invalid_parent);
 
   suite_add_tcase(s, tc);
