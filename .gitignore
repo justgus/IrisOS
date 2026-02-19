@@ -16,5 +16,8 @@ Makefile
 **/Makefile
 autom4te.cache/
 src/conch
+*.db
+*.db-shm
+*.db-wal
 tests/test_*
 !tests/test_*.cc

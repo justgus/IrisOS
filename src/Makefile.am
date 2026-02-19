@@ -12,6 +12,8 @@ libreferee_la_SOURCES = \
    referee/referee.cc \
    ceo/task_registry.h \
    ceo/task_registry.cc \
+   exec/waitables.h \
+   exec/waitables.cc \
    services/service.h \
    services/service.cc \
    refract/bootstrap.h \
@@ -27,4 +29,5 @@ libreferee_la_LIBADD = $(SQLITE_LIBS)
 include_HEADERS = referee/referee.h \
    services/service.h \
    refract/schema_registry.h \
-   ceo/task_registry.h
+   ceo/task_registry.h \
+   exec/waitables.h
