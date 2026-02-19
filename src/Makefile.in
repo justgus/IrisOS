@@ -150,7 +150,7 @@ am__v_lt_0 = --silent
 am__v_lt_1 = 
 am_conch_OBJECTS = conch/conch.$(OBJEXT)
 conch_OBJECTS = $(am_conch_OBJECTS)
-conch_DEPENDENCIES = $(top_builddir)/src/libreferee.la
+conch_DEPENDENCIES = libreferee.la
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -371,7 +371,7 @@ AM_CXXFLAGS = -Wall -Wextra -Wpedantic -Werror
 conch_SOURCES = \
    conch/conch.cc
 
-conch_LDADD = $(top_builddir)/src/libreferee.la
+conch_LDADD = libreferee.la
 lib_LTLIBRARIES = libreferee.la
 libreferee_la_SOURCES = \
    referee/referee.h \

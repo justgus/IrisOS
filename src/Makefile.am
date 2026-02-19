@@ -4,7 +4,7 @@ bin_PROGRAMS = conch
 
 conch_SOURCES = \
    conch/conch.cc
-conch_LDADD = $(top_builddir)/src/libreferee.la
+conch_LDADD = libreferee.la
 
 lib_LTLIBRARIES = libreferee.la
 libreferee_la_SOURCES = \
