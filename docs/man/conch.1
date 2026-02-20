@@ -1,0 +1,77 @@
+.TH CONCH 1 "2026-02-20" "IrisOS" "User Commands"
+.SH NAME
+conch \- IrisOS object shell
+.SH SYNOPSIS
+.B conch
+[\fB--db\fR \fIPATH\fR]
+.SH DESCRIPTION
+Conch is the IrisOS object shell. It connects to the Referee object store and
+the Refract schema registry to list, inspect, define, and instantiate objects.
+The shell operates on types and objects rather than files or programs.
+.SH OPTIONS
+.TP
+\fB--db\fR \fIPATH\fR
+Path to the Referee SQLite database. Default: \fBreferee.db\fR.
+.SH COMMANDS
+.TP
+\fBhelp\fR
+Show available commands.
+.TP
+\fBls\fR
+List registered types and their objects.
+.TP
+\fBobjects\fR
+List all object IDs in the store with their type names.
+.TP
+\fBshow\fR \fIOBJECT_ID\fR
+Show object details and Refract schema metadata.
+.TP
+\fBedges\fR \fIOBJECT_ID\fR
+List edges from and to the given object.
+.TP
+\fBfind type\fR \fITYPE_NAME\fR
+Find a type by name (supports \fINamespace::Name\fR).
+.TP
+\fBdefine type\fR \fITYPE_NAME\fR \fBfields\fR \fIfield\fR:\fItype\fR[\fB?\fR],...
+Define a new type using inline field specs. A trailing \fB?\fR on the field name
+makes it optional.
+.TP
+\fBdefine type --json\fR \fISPEC\fR
+Define a new type from a JSON specification.
+.TP
+\fBnew\fR \fITYPE_NAME\fR \fIfield\fR:=\fIvalue\fR ...
+Instantiate a new object of the given type. Returns the new ObjectID.
+.TP
+\fBnew --json\fR \fISPEC\fR
+Instantiate a new object from a JSON specification.
+.TP
+\fBcall\fR \fIOBJECT_ID\fR \fIOP_NAME\fR [\fIargs...\fR]
+Validate a call against the Refract signature.
+.TP
+\fBstart\fR \fIOBJECT_ID\fR
+Validate a start() call and create a task entry.
+.TP
+\fBps\fR
+List in-memory tasks.
+.TP
+\fBkill\fR \fITASK_ID\fR
+Remove a task entry.
+.TP
+\fBexit\fR
+Exit the shell.
+.SH JSON SPECIFICATIONS
+.SS define type --json
+Example:
+.IP
+{ "name":"Widget", "namespace":"Demo",
+  "fields":[{"name":"title","type":"String","required":true}] }
+.SS new --json
+Example:
+.IP
+{ "type":"Demo::Widget",
+  "payload":{"title":"Alpha"} }
+.SH NOTES
+Conch bootstraps core IrisOS types (Refract, Referee, Conch, Viz) on startup.
+User-defined types are stored in Referee via the Refract schema registry.
+.SH SEE ALSO
+referee(1)
