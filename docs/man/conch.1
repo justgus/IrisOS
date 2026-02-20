@@ -34,6 +34,22 @@ Filter namespaces using a regular expression.
 \fBobjects\fR
 List all object IDs in the store with their type names.
 .TP
+\fBlet\fR \fINAME\fR=\fIEXPR\fR
+Define a session alias. \fIEXPR\fR may be an ObjectID, another alias, or
+an inline \fBnew\fR expression.
+.TP
+\fBlet .\fR
+List session aliases.
+.TP
+\fBvar\fR \fINAME\fR=\fIEXPR\fR
+Define a persistent alias stored in Referee.
+.TP
+\fBvar .\fR
+List persistent aliases.
+.TP
+\fBalias\fR \fINAME\fR=\fIEXPR\fR
+Alias for \fBlet\fR.
+.TP
 \fBshow\fR \fIOBJECT_ID\fR
 Show object details and Refract schema metadata.
 .TP
