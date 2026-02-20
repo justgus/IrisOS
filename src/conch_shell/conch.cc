@@ -13,6 +13,7 @@
 #include <sstream>
 #include <set>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <nlohmann/json.hpp>
@@ -32,6 +33,14 @@ struct TaskEntry {
   ObjectRef target;
   std::string state;
 };
+
+struct AliasEntry {
+  std::string name;
+  ObjectID object_id{};
+};
+
+referee::Result<ObjectID> create_object(SchemaRegistry& registry, SqliteStore& store,
+                                        const std::vector<std::string>& tokens);
 
 std::vector<std::string> split_ws(const std::string& line) {
   std::istringstream iss(line);
@@ -58,6 +67,13 @@ std::string strip_quotes(std::string value) {
       return value.substr(1, value.size() - 2);
     }
   }
+  return value;
+}
+
+std::string trim_copy(std::string value) {
+  auto not_space = [](unsigned char c) { return !std::isspace(c); };
+  value.erase(value.begin(), std::find_if(value.begin(), value.end(), not_space));
+  value.erase(std::find_if(value.rbegin(), value.rend(), not_space).base(), value.end());
   return value;
 }
 
@@ -136,6 +152,68 @@ std::optional<ObjectID> parse_object_id(const std::string& token, std::string* e
   }
 }
 
+std::optional<ObjectID> parse_object_id_or_alias(
+    const std::string& token,
+    const std::unordered_map<std::string, ObjectID>& session_aliases,
+    SqliteStore& store,
+    SchemaRegistry& registry,
+    std::string* err_out) {
+  std::string id_err;
+  auto parsed = parse_object_id(token, &id_err);
+  if (parsed.has_value()) return parsed;
+  if (token.size() == 32 && !id_err.empty()) {
+    if (err_out) *err_out = id_err;
+    return std::nullopt;
+  }
+
+  std::string name = token;
+  if (!name.empty() && name.front() == '@') name = name.substr(1);
+  if (name.empty()) {
+    if (err_out) *err_out = "empty alias";
+    return std::nullopt;
+  }
+  auto it = session_aliases.find(name);
+  if (it != session_aliases.end()) return it->second;
+
+  auto typesR = registry.list_types();
+  if (!typesR) {
+    if (err_out) *err_out = typesR.error->message;
+    return std::nullopt;
+  }
+  std::optional<TypeSummary> alias_type;
+  for (const auto& summary : typesR.value.value()) {
+    if (summary.namespace_name == "Conch" && summary.name == "Alias") {
+      alias_type = summary;
+      break;
+    }
+  }
+  if (!alias_type.has_value()) {
+    if (err_out) *err_out = "alias type not registered";
+    return std::nullopt;
+  }
+
+  auto listR = store.list_by_type(alias_type->type_id);
+  if (!listR) {
+    if (err_out) *err_out = listR.error->message;
+    return std::nullopt;
+  }
+  for (const auto& rec : listR.value.value()) {
+    try {
+      auto json = nlohmann::json::from_cbor(rec.payload_cbor);
+      if (json.value("name", "") == name) {
+        auto oid_text = json.value("object_id", "");
+        if (oid_text.empty()) continue;
+        return parse_object_id(oid_text, err_out);
+      }
+    } catch (const std::exception&) {
+      continue;
+    }
+  }
+
+  if (err_out) *err_out = "alias not found";
+  return std::nullopt;
+}
+
 std::optional<ObjectRef> latest_ref(SqliteStore& store, const ObjectID& id, std::string* err_out) {
   auto recR = store.get_latest(id);
   if (!recR) {
@@ -200,6 +278,11 @@ void print_help() {
   std::cout << "  ls --regex <pattern>\n";
   std::cout << "  ls --regex --namespaces <pattern>\n";
   std::cout << "  objects\n";
+  std::cout << "  let <name>=<expr>\n";
+  std::cout << "  let .\n";
+  std::cout << "  var <name>=<expr>\n";
+  std::cout << "  var .\n";
+  std::cout << "  alias <name>=<expr>\n";
   std::cout << "  show <ObjectID>\n";
   std::cout << "  edges <ObjectID>\n";
   std::cout << "  find type <TypeName>\n";
@@ -487,63 +570,16 @@ void cmd_define_type(SchemaRegistry& registry, const std::vector<std::string>& t
 }
 
 void cmd_new_object(SchemaRegistry& registry, SqliteStore& store, const std::vector<std::string>& tokens) {
-  if (tokens.size() < 2) {
-    std::cout << "error: usage: new <TypeName> field:=value ...\n";
-    return;
-  }
-  std::string type_name;
-  nlohmann::json payload = nlohmann::json::object();
-
-  if (tokens[1] == "--json") {
-    auto json_text = strip_quotes(join_tokens(tokens, 2));
-    try {
-      auto j = nlohmann::json::parse(json_text);
-      type_name = j.value("type", "");
-      if (type_name.empty()) {
-        std::cout << "error: json missing type\n";
-        return;
-      }
-      if (j.contains("payload")) payload = j.at("payload");
-    } catch (const std::exception& ex) {
-      std::cout << "error: " << ex.what() << "\n";
+  try {
+    auto createR = create_object(registry, store, tokens);
+    if (!createR) {
+      std::cout << "error: " << createR.error->message << "\n";
       return;
     }
-  } else {
-    type_name = tokens[1];
-    for (size_t i = 2; i < tokens.size(); ++i) {
-      auto pos = tokens[i].find(":=");
-      if (pos == std::string::npos) {
-        std::cout << "error: expected field:=value\n";
-        return;
-      }
-      auto field = tokens[i].substr(0, pos);
-      auto value = strip_quotes(tokens[i].substr(pos + 2));
-      bool b = false;
-      std::int64_t n = 0;
-      if (parse_bool(value, &b)) {
-        payload[field] = b;
-      } else if (parse_int(value, &n)) {
-        payload[field] = n;
-      } else {
-        payload[field] = value;
-      }
-    }
+    std::cout << "created " << createR.value->to_hex() << "\n";
+  } catch (const std::exception& ex) {
+    std::cout << "error: " << ex.what() << "\n";
   }
-
-  std::string err;
-  auto type_summary = resolve_type(registry, type_name, &err);
-  if (!type_summary.has_value()) {
-    std::cout << "error: " << err << "\n";
-    return;
-  }
-
-  auto cbor = nlohmann::json::to_cbor(payload);
-  auto createR = store.create_object(type_summary->type_id, type_summary->definition_id, cbor);
-  if (!createR) {
-    std::cout << "error: " << createR.error->message << "\n";
-    return;
-  }
-  std::cout << "created " << createR.value->ref.id.to_hex() << "\n";
 }
 
 void cmd_find_type(SchemaRegistry& registry, const std::string& name) {
@@ -725,6 +761,191 @@ bool cmd_call(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id,
   return true;
 }
 
+referee::Result<ObjectID> create_object(SchemaRegistry& registry, SqliteStore& store,
+                                        const std::vector<std::string>& tokens) {
+  if (tokens.size() < 2) {
+    return referee::Result<ObjectID>::err("usage: new <TypeName> field:=value ...");
+  }
+  std::string type_name;
+  nlohmann::json payload = nlohmann::json::object();
+
+  if (tokens[1] == "--json") {
+    auto json_text = strip_quotes(join_tokens(tokens, 2));
+    auto j = nlohmann::json::parse(json_text);
+    type_name = j.value("type", "");
+    if (type_name.empty()) {
+      return referee::Result<ObjectID>::err("json missing type");
+    }
+    if (j.contains("payload")) payload = j.at("payload");
+  } else {
+    type_name = tokens[1];
+    for (size_t i = 2; i < tokens.size(); ++i) {
+      auto pos = tokens[i].find(":=");
+      if (pos == std::string::npos) {
+        return referee::Result<ObjectID>::err("expected field:=value");
+      }
+      auto field = tokens[i].substr(0, pos);
+      auto value = strip_quotes(tokens[i].substr(pos + 2));
+      bool b = false;
+      std::int64_t n = 0;
+      if (parse_bool(value, &b)) {
+        payload[field] = b;
+      } else if (parse_int(value, &n)) {
+        payload[field] = n;
+      } else {
+        payload[field] = value;
+      }
+    }
+  }
+
+  std::string err;
+  auto type_summary = resolve_type(registry, type_name, &err);
+  if (!type_summary.has_value()) {
+    return referee::Result<ObjectID>::err(err);
+  }
+
+  auto cbor = nlohmann::json::to_cbor(payload);
+  auto createR = store.create_object(type_summary->type_id, type_summary->definition_id, cbor);
+  if (!createR) {
+    return referee::Result<ObjectID>::err(createR.error->message);
+  }
+  return referee::Result<ObjectID>::ok(createR.value->ref.id);
+}
+
+referee::Result<void> persist_alias(SqliteStore& store, SchemaRegistry& registry,
+                                    const std::string& name, const ObjectID& object_id) {
+  auto typesR = registry.list_types();
+  if (!typesR) return referee::Result<void>::err(typesR.error->message);
+  std::optional<TypeSummary> alias_type;
+  for (const auto& summary : typesR.value.value()) {
+    if (summary.namespace_name == "Conch" && summary.name == "Alias") {
+      alias_type = summary;
+      break;
+    }
+  }
+  if (!alias_type.has_value()) return referee::Result<void>::err("alias type not registered");
+
+  nlohmann::json payload;
+  payload["name"] = name;
+  payload["object_id"] = object_id.to_hex();
+  auto cbor = nlohmann::json::to_cbor(payload);
+  auto createR = store.create_object(alias_type->type_id, alias_type->definition_id, cbor);
+  if (!createR) return referee::Result<void>::err(createR.error->message);
+  return referee::Result<void>::ok();
+}
+
+void cmd_list_aliases(SqliteStore& store, SchemaRegistry& registry,
+                      const std::unordered_map<std::string, ObjectID>& session_aliases,
+                      bool persistent) {
+  if (!persistent) {
+    if (session_aliases.empty()) {
+      std::cout << "no aliases\n";
+      return;
+    }
+    for (const auto& it : session_aliases) {
+      std::cout << it.first << " = " << it.second.to_hex() << "\n";
+    }
+    return;
+  }
+
+  auto typesR = registry.list_types();
+  if (!typesR) {
+    std::cout << "error: " << typesR.error->message << "\n";
+    return;
+  }
+  std::optional<TypeSummary> alias_type;
+  for (const auto& summary : typesR.value.value()) {
+    if (summary.namespace_name == "Conch" && summary.name == "Alias") {
+      alias_type = summary;
+      break;
+    }
+  }
+  if (!alias_type.has_value()) {
+    std::cout << "error: alias type not registered\n";
+    return;
+  }
+  auto listR = store.list_by_type(alias_type->type_id);
+  if (!listR) {
+    std::cout << "error: " << listR.error->message << "\n";
+    return;
+  }
+  if (listR.value->empty()) {
+    std::cout << "no aliases\n";
+    return;
+  }
+  for (const auto& rec : listR.value.value()) {
+    try {
+      auto json = nlohmann::json::from_cbor(rec.payload_cbor);
+      auto name = json.value("name", "");
+      auto oid = json.value("object_id", "");
+      if (!name.empty() && !oid.empty()) {
+        std::cout << name << " = " << oid << "\n";
+      }
+    } catch (const std::exception&) {
+      continue;
+    }
+  }
+}
+
+void cmd_alias_assignment(const std::string& line,
+                          const std::string& keyword,
+                          bool persistent,
+                          SchemaRegistry& registry,
+                          SqliteStore& store,
+                          std::unordered_map<std::string, ObjectID>& session_aliases) {
+  auto rest = trim_copy(line.substr(keyword.size()));
+  if (rest == ".") {
+    cmd_list_aliases(store, registry, session_aliases, persistent);
+    return;
+  }
+  auto eq = rest.find('=');
+  if (eq == std::string::npos) {
+    std::cout << "error: expected name=expression\n";
+    return;
+  }
+  auto name = trim_copy(rest.substr(0, eq));
+  auto expr = trim_copy(rest.substr(eq + 1));
+  if (name.empty() || expr.empty()) {
+    std::cout << "error: expected name=expression\n";
+    return;
+  }
+
+  ObjectID id{};
+  if (expr.rfind("new ", 0) == 0) {
+    auto tokens = split_ws(expr);
+    try {
+      auto createR = create_object(registry, store, tokens);
+      if (!createR) {
+        std::cout << "error: " << createR.error->message << "\n";
+        return;
+      }
+      id = createR.value.value();
+    } catch (const std::exception& ex) {
+      std::cout << "error: " << ex.what() << "\n";
+      return;
+    }
+  } else {
+    std::string err;
+    auto resolved = parse_object_id_or_alias(expr, session_aliases, store, registry, &err);
+    if (!resolved.has_value()) {
+      std::cout << "error: " << err << "\n";
+      return;
+    }
+    id = resolved.value();
+  }
+
+  if (persistent) {
+    auto persistR = persist_alias(store, registry, name, id);
+    if (!persistR) {
+      std::cout << "error: " << persistR.error->message << "\n";
+      return;
+    }
+  } else {
+    session_aliases[name] = id;
+  }
+  std::cout << name << " = " << id.to_hex() << "\n";
+}
+
 } // namespace
 
 int main(int argc, char** argv) {
@@ -761,6 +982,7 @@ int main(int argc, char** argv) {
     return 1;
   }
   std::vector<TaskEntry> tasks;
+  std::unordered_map<std::string, ObjectID> session_aliases;
   std::uint64_t next_task_id = 1;
 
   std::string line;
@@ -769,6 +991,18 @@ int main(int argc, char** argv) {
     if (tokens.empty()) continue;
 
     const auto& cmd = tokens[0];
+    if (cmd == "let") {
+      cmd_alias_assignment(line, "let", false, registry, store, session_aliases);
+      continue;
+    }
+    if (cmd == "var") {
+      cmd_alias_assignment(line, "var", true, registry, store, session_aliases);
+      continue;
+    }
+    if (cmd == "alias") {
+      cmd_alias_assignment(line, "alias", false, registry, store, session_aliases);
+      continue;
+    }
     if (cmd == "exit" || cmd == "quit") break;
     if (cmd == "help") {
       print_help();
@@ -823,7 +1057,7 @@ int main(int argc, char** argv) {
     }
     if (cmd == "show" && tokens.size() == 2) {
       std::string err;
-      auto id = parse_object_id(tokens[1], &err);
+      auto id = parse_object_id_or_alias(tokens[1], session_aliases, store, registry, &err);
       if (!id.has_value()) {
         std::cout << "error: " << err << "\n";
         continue;
@@ -833,7 +1067,7 @@ int main(int argc, char** argv) {
     }
     if (cmd == "edges" && tokens.size() == 2) {
       std::string err;
-      auto id = parse_object_id(tokens[1], &err);
+      auto id = parse_object_id_or_alias(tokens[1], session_aliases, store, registry, &err);
       if (!id.has_value()) {
         std::cout << "error: " << err << "\n";
         continue;
@@ -843,7 +1077,7 @@ int main(int argc, char** argv) {
     }
     if (cmd == "call" && tokens.size() >= 3) {
       std::string err;
-      auto id = parse_object_id(tokens[1], &err);
+      auto id = parse_object_id_or_alias(tokens[1], session_aliases, store, registry, &err);
       if (!id.has_value()) {
         std::cout << "error: " << err << "\n";
         continue;
@@ -853,7 +1087,7 @@ int main(int argc, char** argv) {
     }
     if (cmd == "start" && tokens.size() == 2) {
       std::string err;
-      auto id = parse_object_id(tokens[1], &err);
+      auto id = parse_object_id_or_alias(tokens[1], session_aliases, store, registry, &err);
       if (!id.has_value()) {
         std::cout << "error: " << err << "\n";
         continue;
