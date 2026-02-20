@@ -17,8 +17,19 @@ Path to the Referee SQLite database. Default: \fBreferee.db\fR.
 \fBhelp\fR
 Show available commands.
 .TP
-\fBls\fR
-List registered types and their objects.
+\fBls\fR [\fIPATTERN\fR]
+List registered types and their objects. If \fIPATTERN\fR is provided, only
+matching types are shown. Glob patterns like \fBViz::*\fR are supported.
+.TP
+\fBls --regex\fR \fIPATTERN\fR
+Filter types using a regular expression.
+.TP
+\fBls --namespaces\fR [\fIPATTERN\fR]
+List namespaces in the registry. If \fIPATTERN\fR is provided, only matching
+namespaces are shown.
+.TP
+\fBls --regex --namespaces\fR \fIPATTERN\fR
+Filter namespaces using a regular expression.
 .TP
 \fBobjects\fR
 List all object IDs in the store with their type names.

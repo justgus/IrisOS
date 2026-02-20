@@ -9,7 +9,9 @@
 #include <iomanip>
 #include <iostream>
 #include <optional>
+#include <regex>
 #include <sstream>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -62,6 +64,39 @@ std::string strip_quotes(std::string value) {
 std::string type_display_name(const TypeSummary& summary) {
   if (summary.namespace_name.empty()) return summary.name;
   return summary.namespace_name + "::" + summary.name;
+}
+
+std::string glob_to_regex(std::string_view pattern) {
+  std::string out;
+  out.reserve(pattern.size() * 2);
+  out.push_back('^');
+  for (char c : pattern) {
+    switch (c) {
+      case '*': out.append(".*"); break;
+      case '?': out.push_back('.'); break;
+      case '.': case '+': case '(': case ')': case '[': case ']':
+      case '{': case '}': case '^': case '$': case '|': case '\\':
+        out.push_back('\\');
+        out.push_back(c);
+        break;
+      default:
+        out.push_back(c);
+        break;
+    }
+  }
+  out.push_back('$');
+  return out;
+}
+
+bool match_pattern(std::string_view value, std::string_view pattern, bool regex_mode, std::string* err_out) {
+  try {
+    std::string expr = regex_mode ? std::string(pattern) : glob_to_regex(pattern);
+    std::regex re(expr);
+    return std::regex_match(value.begin(), value.end(), re);
+  } catch (const std::exception& ex) {
+    if (err_out) *err_out = ex.what();
+    return false;
+  }
 }
 
 std::optional<TypeSummary> find_type_summary(const std::vector<TypeSummary>& types,
@@ -160,6 +195,10 @@ bool parse_int(std::string_view v, std::int64_t* out) {
 void print_help() {
   std::cout << "Commands:\n";
   std::cout << "  ls\n";
+  std::cout << "  ls --namespaces [pattern]\n";
+  std::cout << "  ls [pattern]\n";
+  std::cout << "  ls --regex <pattern>\n";
+  std::cout << "  ls --regex --namespaces <pattern>\n";
   std::cout << "  objects\n";
   std::cout << "  show <ObjectID>\n";
   std::cout << "  edges <ObjectID>\n";
@@ -176,7 +215,10 @@ void print_help() {
   std::cout << "  exit\n";
 }
 
-void cmd_ls(SchemaRegistry& registry, SqliteStore& store) {
+void cmd_ls(SchemaRegistry& registry, SqliteStore& store,
+            const std::optional<std::string>& filter,
+            bool regex_mode,
+            bool namespaces_only) {
   auto typesR = registry.list_types();
   if (!typesR) {
     std::cout << "error: " << typesR.error->message << "\n";
@@ -187,7 +229,43 @@ void cmd_ls(SchemaRegistry& registry, SqliteStore& store) {
     return;
   }
 
+  if (namespaces_only) {
+    std::set<std::string> namespaces;
+    for (const auto& summary : typesR.value.value()) {
+      if (!summary.namespace_name.empty()) namespaces.insert(summary.namespace_name);
+    }
+    if (namespaces.empty()) {
+      std::cout << "no namespaces\n";
+      return;
+    }
+    for (const auto& ns : namespaces) {
+      if (filter.has_value()) {
+        std::string err;
+        if (!match_pattern(ns, *filter, regex_mode, &err)) {
+          if (!err.empty()) {
+            std::cout << "error: " << err << "\n";
+            return;
+          }
+          continue;
+        }
+      }
+      std::cout << ns << "\n";
+    }
+    return;
+  }
+
   for (const auto& summary : typesR.value.value()) {
+    auto display = type_display_name(summary);
+    if (filter.has_value()) {
+      std::string err;
+      if (!match_pattern(display, *filter, regex_mode, &err)) {
+        if (!err.empty()) {
+          std::cout << "error: " << err << "\n";
+          return;
+        }
+        continue;
+      }
+    }
     std::cout << "type " << type_display_name(summary) << " (0x" << std::hex << summary.type_id.v
               << std::dec << ")\n";
     auto listR = store.list_by_type(summary.type_id);
@@ -697,7 +775,34 @@ int main(int argc, char** argv) {
       continue;
     }
     if (cmd == "ls") {
-      cmd_ls(registry, store);
+      bool regex_mode = false;
+      bool namespaces_only = false;
+      std::optional<std::string> filter;
+
+      bool bad_args = false;
+      for (size_t i = 1; i < tokens.size(); ++i) {
+        if (tokens[i] == "--regex") {
+          regex_mode = true;
+          continue;
+        }
+        if (tokens[i] == "--namespaces") {
+          namespaces_only = true;
+          continue;
+        }
+        if (!filter.has_value()) {
+          filter = tokens[i];
+        } else {
+          std::cout << "error: unexpected argument\n";
+          bad_args = true;
+          break;
+        }
+      }
+      if (bad_args) continue;
+      if (tokens.size() > 1 && !filter.has_value() && regex_mode) {
+        std::cout << "error: --regex requires a pattern\n";
+        continue;
+      }
+      cmd_ls(registry, store, filter, regex_mode, namespaces_only);
       continue;
     }
     if (cmd == "objects") {
