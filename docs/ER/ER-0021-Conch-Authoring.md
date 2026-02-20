@@ -10,7 +10,7 @@
 
 - ER ID: ER-0021
 - Title: Conch Schema and Object Authoring
-- Status: Draft
+- Status: In Progress
 - Date: 2026-02-19
 - Owners: Mike
 - Type: Enhancement
