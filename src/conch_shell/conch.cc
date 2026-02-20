@@ -1,15 +1,19 @@
+#include "refract/bootstrap.h"
 #include "refract/schema_registry.h"
 #include "referee/referee.h"
 #include "referee_sqlite/sqlite_store.h"
 
 #include <algorithm>
 #include <cctype>
+#include <cstdlib>
 #include <iomanip>
 #include <iostream>
 #include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
+
+#include <nlohmann/json.hpp>
 
 using iris::refract::SchemaRegistry;
 using iris::refract::TypeSummary;
@@ -33,6 +37,26 @@ std::vector<std::string> split_ws(const std::string& line) {
   std::string tok;
   while (iss >> tok) out.push_back(tok);
   return out;
+}
+
+std::string join_tokens(const std::vector<std::string>& tokens, size_t start) {
+  std::ostringstream os;
+  for (size_t i = start; i < tokens.size(); ++i) {
+    if (i > start) os << ' ';
+    os << tokens[i];
+  }
+  return os.str();
+}
+
+std::string strip_quotes(std::string value) {
+  if (value.size() >= 2) {
+    char first = value.front();
+    char last = value.back();
+    if ((first == '"' && last == '"') || (first == '\'' && last == '\'')) {
+      return value.substr(1, value.size() - 2);
+    }
+  }
+  return value;
 }
 
 std::string type_display_name(const TypeSummary& summary) {
@@ -90,12 +114,60 @@ std::optional<ObjectRef> latest_ref(SqliteStore& store, const ObjectID& id, std:
   return recR.value->value().ref;
 }
 
+std::pair<std::string, std::string> split_type_name(const std::string& full) {
+  auto pos = full.find("::");
+  if (pos == std::string::npos) return {"", full};
+  return {full.substr(0, pos), full.substr(pos + 2)};
+}
+
+std::uint64_t fnv1a_64(std::string_view input) {
+  std::uint64_t hash = 1469598103934665603ULL;
+  for (unsigned char c : input) {
+    hash ^= c;
+    hash *= 1099511628211ULL;
+  }
+  if (hash == 0) hash = 1;
+  return hash;
+}
+
+std::optional<TypeSummary> resolve_type(SchemaRegistry& registry,
+                                        const std::string& name,
+                                        std::string* err_out) {
+  auto typesR = registry.list_types();
+  if (!typesR) {
+    if (err_out) *err_out = typesR.error->message;
+    return std::nullopt;
+  }
+  return find_type_summary(typesR.value.value(), name, err_out);
+}
+
+bool parse_bool(std::string_view v, bool* out) {
+  if (v == "true") { *out = true; return true; }
+  if (v == "false") { *out = false; return true; }
+  return false;
+}
+
+bool parse_int(std::string_view v, std::int64_t* out) {
+  if (v.empty()) return false;
+  char* end = nullptr;
+  std::string tmp(v);
+  long long val = std::strtoll(tmp.c_str(), &end, 10);
+  if (!end || *end != '\0') return false;
+  *out = (std::int64_t)val;
+  return true;
+}
+
 void print_help() {
   std::cout << "Commands:\n";
   std::cout << "  ls\n";
+  std::cout << "  objects\n";
   std::cout << "  show <ObjectID>\n";
   std::cout << "  edges <ObjectID>\n";
   std::cout << "  find type <TypeName>\n";
+  std::cout << "  define type <TypeName> fields <field>:<type>[?],...\n";
+  std::cout << "  define type --json <spec>\n";
+  std::cout << "  new <TypeName> field:=value ...\n";
+  std::cout << "  new --json <spec>\n";
   std::cout << "  call <ObjectID> <opName> [args...]\n";
   std::cout << "  start <ObjectID>\n";
   std::cout << "  ps\n";
@@ -131,6 +203,269 @@ void cmd_ls(SchemaRegistry& registry, SqliteStore& store) {
       std::cout << "  " << rec.ref.id.to_hex() << " v" << rec.ref.ver.v << "\n";
     }
   }
+}
+
+void cmd_objects(SchemaRegistry& registry, SqliteStore& store) {
+  auto typesR = registry.list_types();
+  if (!typesR) {
+    std::cout << "error: " << typesR.error->message << "\n";
+    return;
+  }
+  bool any = false;
+  for (const auto& summary : typesR.value.value()) {
+    auto listR = store.list_by_type(summary.type_id);
+    if (!listR) {
+      std::cout << "error: " << listR.error->message << "\n";
+      return;
+    }
+    for (const auto& rec : listR.value.value()) {
+      any = true;
+      std::cout << rec.ref.id.to_hex() << " type=" << type_display_name(summary)
+                << " v" << rec.ref.ver.v << "\n";
+    }
+  }
+  if (!any) std::cout << "no objects\n";
+}
+
+std::optional<iris::refract::FieldDefinition> parse_field_spec(
+    SchemaRegistry& registry, const std::string& token, std::string* err_out) {
+  auto pos = token.find(':');
+  if (pos == std::string::npos) {
+    if (err_out) *err_out = "field spec missing ':'";
+    return std::nullopt;
+  }
+  std::string name = token.substr(0, pos);
+  std::string type_name = token.substr(pos + 1);
+  if (name.empty() || type_name.empty()) {
+    if (err_out) *err_out = "field spec missing name or type";
+    return std::nullopt;
+  }
+  bool required = true;
+  if (!name.empty() && name.back() == '?') {
+    required = false;
+    name.pop_back();
+  }
+
+  std::string err;
+  auto type_summary = resolve_type(registry, type_name, &err);
+  if (!type_summary.has_value()) {
+    if (err_out) *err_out = "unknown field type: " + err;
+    return std::nullopt;
+  }
+
+  iris::refract::FieldDefinition field;
+  field.name = name;
+  field.type = type_summary->type_id;
+  field.required = required;
+  return field;
+}
+
+std::optional<iris::refract::TypeDefinition> parse_define_inline(
+    SchemaRegistry& registry, const std::vector<std::string>& tokens, std::string* err_out) {
+  if (tokens.size() < 5) {
+    if (err_out) *err_out = "usage: define type <TypeName> fields <field>:<type>[?],...";
+    return std::nullopt;
+  }
+  auto type_name = tokens[2];
+  if (tokens[3] != "fields") {
+    if (err_out) *err_out = "missing fields clause";
+    return std::nullopt;
+  }
+  auto field_text = join_tokens(tokens, 4);
+  std::vector<std::string> field_specs;
+  std::string current;
+  for (char c : field_text) {
+    if (c == ',') {
+      if (!current.empty()) field_specs.push_back(current);
+      current.clear();
+      continue;
+    }
+    if (c != ' ' && c != '\t') current.push_back(c);
+  }
+  if (!current.empty()) field_specs.push_back(current);
+  if (field_specs.empty()) {
+    if (err_out) *err_out = "no fields defined";
+    return std::nullopt;
+  }
+
+  auto [ns, name] = split_type_name(type_name);
+  iris::refract::TypeDefinition def;
+  def.name = name;
+  def.namespace_name = ns;
+  def.version = 1;
+
+  for (const auto& spec : field_specs) {
+    std::string err;
+    auto field = parse_field_spec(registry, spec, &err);
+    if (!field.has_value()) {
+      if (err_out) *err_out = err;
+      return std::nullopt;
+    }
+    def.fields.push_back(field.value());
+  }
+
+  std::string full = ns.empty() ? name : ns + "::" + name;
+  def.type_id = referee::TypeID{fnv1a_64(full)};
+  return def;
+}
+
+std::optional<iris::refract::TypeDefinition> parse_define_json(
+    SchemaRegistry& registry, const std::string& json_text, std::string* err_out) {
+  try {
+    auto j = nlohmann::json::parse(json_text);
+    iris::refract::TypeDefinition def;
+    def.name = j.value("name", "");
+    def.namespace_name = j.value("namespace", "");
+    def.version = j.value("version", 1ULL);
+    if (def.name.empty()) {
+      if (err_out) *err_out = "json missing name";
+      return std::nullopt;
+    }
+
+    if (j.contains("fields")) {
+      for (const auto& item : j.at("fields")) {
+        std::string field_name = item.value("name", "");
+        std::string field_type = item.value("type", "");
+        bool required = item.value("required", false);
+        if (field_name.empty() || field_type.empty()) {
+          if (err_out) *err_out = "field missing name or type";
+          return std::nullopt;
+        }
+        std::string err;
+        auto type_summary = resolve_type(registry, field_type, &err);
+        if (!type_summary.has_value()) {
+          if (err_out) *err_out = "unknown field type: " + err;
+          return std::nullopt;
+        }
+        iris::refract::FieldDefinition field;
+        field.name = field_name;
+        field.type = type_summary->type_id;
+        field.required = required;
+        def.fields.push_back(std::move(field));
+      }
+    }
+
+    if (j.contains("type_id")) {
+      def.type_id = referee::TypeID{j.at("type_id").get<std::uint64_t>()};
+    } else {
+      std::string full = def.namespace_name.empty()
+        ? def.name
+        : def.namespace_name + "::" + def.name;
+      def.type_id = referee::TypeID{fnv1a_64(full)};
+    }
+    return def;
+  } catch (const std::exception& ex) {
+    if (err_out) *err_out = ex.what();
+    return std::nullopt;
+  }
+}
+
+void cmd_define_type(SchemaRegistry& registry, const std::vector<std::string>& tokens) {
+  std::string err;
+  iris::refract::TypeDefinition def;
+  bool ok = false;
+
+  if (tokens.size() >= 3 && tokens[2] == "--json") {
+    auto json_text = strip_quotes(join_tokens(tokens, 3));
+    auto parsed = parse_define_json(registry, json_text, &err);
+    if (parsed.has_value()) {
+      def = std::move(parsed.value());
+      ok = true;
+    }
+  } else {
+    auto parsed = parse_define_inline(registry, tokens, &err);
+    if (parsed.has_value()) {
+      def = std::move(parsed.value());
+      ok = true;
+    }
+  }
+
+  if (!ok) {
+    std::cout << "error: " << err << "\n";
+    return;
+  }
+
+  auto existing = registry.get_definition_by_type(def.type_id);
+  if (!existing) {
+    std::cout << "error: " << existing.error->message << "\n";
+    return;
+  }
+  if (existing.value->has_value()) {
+    std::cout << "error: type already exists\n";
+    return;
+  }
+
+  auto reg = registry.register_definition(def);
+  if (!reg) {
+    std::cout << "error: " << reg.error->message << "\n";
+    return;
+  }
+  std::string display = def.namespace_name.empty()
+    ? def.name
+    : def.namespace_name + "::" + def.name;
+  std::cout << "defined type " << display
+            << " id=0x" << std::hex << def.type_id.v << std::dec
+            << " def=" << reg.value->ref.id.to_hex() << "\n";
+}
+
+void cmd_new_object(SchemaRegistry& registry, SqliteStore& store, const std::vector<std::string>& tokens) {
+  if (tokens.size() < 2) {
+    std::cout << "error: usage: new <TypeName> field:=value ...\n";
+    return;
+  }
+  std::string type_name;
+  nlohmann::json payload = nlohmann::json::object();
+
+  if (tokens[1] == "--json") {
+    auto json_text = strip_quotes(join_tokens(tokens, 2));
+    try {
+      auto j = nlohmann::json::parse(json_text);
+      type_name = j.value("type", "");
+      if (type_name.empty()) {
+        std::cout << "error: json missing type\n";
+        return;
+      }
+      if (j.contains("payload")) payload = j.at("payload");
+    } catch (const std::exception& ex) {
+      std::cout << "error: " << ex.what() << "\n";
+      return;
+    }
+  } else {
+    type_name = tokens[1];
+    for (size_t i = 2; i < tokens.size(); ++i) {
+      auto pos = tokens[i].find(":=");
+      if (pos == std::string::npos) {
+        std::cout << "error: expected field:=value\n";
+        return;
+      }
+      auto field = tokens[i].substr(0, pos);
+      auto value = strip_quotes(tokens[i].substr(pos + 2));
+      bool b = false;
+      std::int64_t n = 0;
+      if (parse_bool(value, &b)) {
+        payload[field] = b;
+      } else if (parse_int(value, &n)) {
+        payload[field] = n;
+      } else {
+        payload[field] = value;
+      }
+    }
+  }
+
+  std::string err;
+  auto type_summary = resolve_type(registry, type_name, &err);
+  if (!type_summary.has_value()) {
+    std::cout << "error: " << err << "\n";
+    return;
+  }
+
+  auto cbor = nlohmann::json::to_cbor(payload);
+  auto createR = store.create_object(type_summary->type_id, type_summary->definition_id, cbor);
+  if (!createR) {
+    std::cout << "error: " << createR.error->message << "\n";
+    return;
+  }
+  std::cout << "created " << createR.value->ref.id.to_hex() << "\n";
 }
 
 void cmd_find_type(SchemaRegistry& registry, const std::string& name) {
@@ -342,6 +677,11 @@ int main(int argc, char** argv) {
   }
 
   SchemaRegistry registry(store);
+  auto bootstrapR = iris::refract::bootstrap_core_schema(registry);
+  if (!bootstrapR) {
+    std::cout << "error: bootstrap failed: " << bootstrapR.error->message << "\n";
+    return 1;
+  }
   std::vector<TaskEntry> tasks;
   std::uint64_t next_task_id = 1;
 
@@ -358,6 +698,18 @@ int main(int argc, char** argv) {
     }
     if (cmd == "ls") {
       cmd_ls(registry, store);
+      continue;
+    }
+    if (cmd == "objects") {
+      cmd_objects(registry, store);
+      continue;
+    }
+    if (cmd == "define" && tokens.size() >= 3 && tokens[1] == "type") {
+      cmd_define_type(registry, tokens);
+      continue;
+    }
+    if (cmd == "new") {
+      cmd_new_object(registry, store, tokens);
       continue;
     }
     if (cmd == "find" && tokens.size() >= 3 && tokens[1] == "type") {
