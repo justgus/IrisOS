@@ -109,7 +109,7 @@ am_conch_OBJECTS = $(top_builddir)/src/conch_shell/conch.$(OBJEXT)
 conch_OBJECTS = $(am_conch_OBJECTS)
 am__DEPENDENCIES_1 =
 conch_DEPENDENCIES = $(top_builddir)/src/libreferee.la \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -247,6 +247,7 @@ PKG_CONFIG = @PKG_CONFIG@
 PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
 PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 RANLIB = @RANLIB@
+READLINE_LIBS = @READLINE_LIBS@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
@@ -311,7 +312,7 @@ top_srcdir = @top_srcdir@
 AM_CXXFLAGS = -Wall -Wextra -Wpedantic -Werror
 AM_CPPFLAGS = -I$(top_srcdir)/src $(SQLITE_CFLAGS)
 conch_SOURCES = $(top_srcdir)/src/conch_shell/conch.cc
-conch_LDADD = $(top_builddir)/src/libreferee.la $(SQLITE_LIBS)
+conch_LDADD = $(top_builddir)/src/libreferee.la $(SQLITE_LIBS) $(READLINE_LIBS)
 all: all-am
 
 .SUFFIXES:

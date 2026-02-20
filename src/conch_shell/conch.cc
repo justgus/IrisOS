@@ -17,6 +17,10 @@
 #include <vector>
 
 #include <nlohmann/json.hpp>
+#include <readline/history.h>
+#include <readline/readline.h>
+
+#include <unistd.h>
 
 using iris::refract::SchemaRegistry;
 using iris::refract::TypeSummary;
@@ -48,6 +52,20 @@ std::vector<std::string> split_ws(const std::string& line) {
   std::string tok;
   while (iss >> tok) out.push_back(tok);
   return out;
+}
+
+std::optional<std::string> read_line(const char* prompt) {
+  if (!::isatty(STDIN_FILENO)) {
+    std::string line;
+    if (!std::getline(std::cin, line)) return std::nullopt;
+    return line;
+  }
+  char* input = readline(prompt);
+  if (!input) return std::nullopt;
+  if (*input != '\0') add_history(input);
+  std::string line(input);
+  std::free(input);
+  return line;
 }
 
 std::string join_tokens(const std::vector<std::string>& tokens, size_t start) {
@@ -284,6 +302,7 @@ void print_help() {
   std::cout << "  var .\n";
   std::cout << "  alias <name>=<expr>\n";
   std::cout << "  show <ObjectID>\n";
+  std::cout << "  show type <TypeName>\n";
   std::cout << "  edges <ObjectID>\n";
   std::cout << "  find type <TypeName>\n";
   std::cout << "  define type <TypeName> fields <field>:<type>[?],...\n";
@@ -596,6 +615,53 @@ void cmd_find_type(SchemaRegistry& registry, const std::string& name) {
   }
   std::cout << "type " << type_display_name(*match) << " id=0x" << std::hex << match->type_id.v
             << std::dec << " def=" << match->definition_id.to_hex() << "\n";
+}
+
+void cmd_show_type(SchemaRegistry& registry, const std::string& name) {
+  std::string err;
+  auto match = resolve_type(registry, name, &err);
+  if (!match.has_value()) {
+    std::cout << "error: " << err << "\n";
+    return;
+  }
+  auto defR = registry.get_definition_by_type(match->type_id);
+  if (!defR) {
+    std::cout << "error: " << defR.error->message << "\n";
+    return;
+  }
+  if (!defR.value->has_value()) {
+    std::cout << "error: definition not found\n";
+    return;
+  }
+
+  const auto& def = defR.value->value().definition;
+  std::cout << "type " << type_display_name(*match) << " v" << def.version << "\n";
+  if (!def.fields.empty()) {
+    std::cout << "fields\n";
+    for (const auto& field : def.fields) {
+      std::cout << "  " << field.name << " type=0x" << std::hex << field.type.v << std::dec;
+      if (field.required) std::cout << " required";
+      if (field.default_json.has_value()) std::cout << " default=" << field.default_json.value();
+      std::cout << "\n";
+    }
+  }
+  if (!def.operations.empty()) {
+    std::cout << "operations\n";
+    for (const auto& op : def.operations) {
+      std::cout << "  " << op.name << "(";
+      for (size_t i = 0; i < op.signature.params.size(); ++i) {
+        const auto& param = op.signature.params[i];
+        if (i > 0) std::cout << ", ";
+        std::cout << param.name;
+        if (param.optional) std::cout << "?";
+      }
+      std::cout << ")";
+      if (op.signature.return_type.has_value()) {
+        std::cout << " -> 0x" << std::hex << op.signature.return_type->v << std::dec;
+      }
+      std::cout << "\n";
+    }
+  }
 }
 
 void cmd_show(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id) {
@@ -985,8 +1051,10 @@ int main(int argc, char** argv) {
   std::unordered_map<std::string, ObjectID> session_aliases;
   std::uint64_t next_task_id = 1;
 
-  std::string line;
-  while (std::cout << "conch> " && std::getline(std::cin, line)) {
+  for (;;) {
+    auto line_opt = read_line("conch> ");
+    if (!line_opt.has_value()) break;
+    const auto& line = line_opt.value();
     auto tokens = split_ws(line);
     if (tokens.empty()) continue;
 
@@ -1053,6 +1121,10 @@ int main(int argc, char** argv) {
     }
     if (cmd == "find" && tokens.size() >= 3 && tokens[1] == "type") {
       cmd_find_type(registry, tokens[2]);
+      continue;
+    }
+    if (cmd == "show" && tokens.size() == 3 && tokens[1] == "type") {
+      cmd_show_type(registry, tokens[2]);
       continue;
     }
     if (cmd == "show" && tokens.size() == 2) {

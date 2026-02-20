@@ -13,6 +13,13 @@ AX_CXX_COMPILE_STDCXX([20],[noext],[mandatory])
 # SQLite
 PKG_CHECK_MODULES([SQLITE],[sqlite3])
 
+# Readline
+AC_CHECK_HEADERS([readline/readline.h readline/history.h], [],
+  [AC_MSG_ERROR([readline headers not found])])
+AC_CHECK_LIB([readline],[readline], [READLINE_LIBS="-lreadline"],
+  [AC_MSG_ERROR([libreadline not found])])
+AC_SUBST([READLINE_LIBS])
+
 # Unit test framework (Check)
 PKG_CHECK_MODULES([CHECK],[check])
 
