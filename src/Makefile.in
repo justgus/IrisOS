@@ -138,6 +138,7 @@ am__dirstamp = $(am__leading_dot)dirstamp
 am_libreferee_la_OBJECTS = referee/libreferee_la-referee.lo \
 	ceo/libreferee_la-task_registry.lo exec/libreferee_la-await.lo \
 	exec/libreferee_la-waitables.lo \
+	vizier/libreferee_la-routing.lo \
 	services/libreferee_la-service.lo \
 	refract/libreferee_la-bootstrap.lo \
 	refract/libreferee_la-schema_registry.lo \
@@ -169,7 +170,8 @@ am__depfiles_remade = ceo/$(DEPDIR)/libreferee_la-task_registry.Plo \
 	referee_sqlite/$(DEPDIR)/libreferee_la-sqlite_store.Plo \
 	refract/$(DEPDIR)/libreferee_la-bootstrap.Plo \
 	refract/$(DEPDIR)/libreferee_la-schema_registry.Plo \
-	services/$(DEPDIR)/libreferee_la-service.Plo
+	services/$(DEPDIR)/libreferee_la-service.Plo \
+	vizier/$(DEPDIR)/libreferee_la-routing.Plo
 am__mv = mv -f
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -377,6 +379,8 @@ libreferee_la_SOURCES = \
    exec/await.cc \
    exec/waitables.h \
    exec/waitables.cc \
+   vizier/routing.h \
+   vizier/routing.cc \
    services/service.h \
    services/service.cc \
    refract/bootstrap.h \
@@ -393,7 +397,8 @@ include_HEADERS = referee/referee.h \
    refract/schema_registry.h \
    ceo/task_registry.h \
    exec/waitables.h \
-   exec/await.h
+   exec/await.h \
+   vizier/routing.h
 
 all: all-am
 
@@ -489,6 +494,14 @@ exec/libreferee_la-await.lo: exec/$(am__dirstamp) \
 	exec/$(DEPDIR)/$(am__dirstamp)
 exec/libreferee_la-waitables.lo: exec/$(am__dirstamp) \
 	exec/$(DEPDIR)/$(am__dirstamp)
+vizier/$(am__dirstamp):
+	@$(MKDIR_P) vizier
+	@: > vizier/$(am__dirstamp)
+vizier/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) vizier/$(DEPDIR)
+	@: > vizier/$(DEPDIR)/$(am__dirstamp)
+vizier/libreferee_la-routing.lo: vizier/$(am__dirstamp) \
+	vizier/$(DEPDIR)/$(am__dirstamp)
 services/$(am__dirstamp):
 	@$(MKDIR_P) services
 	@: > services/$(am__dirstamp)
@@ -534,6 +547,8 @@ mostlyclean-compile:
 	-rm -f refract/*.lo
 	-rm -f services/*.$(OBJEXT)
 	-rm -f services/*.lo
+	-rm -f vizier/*.$(OBJEXT)
+	-rm -f vizier/*.lo
 
 distclean-compile:
 	-rm -f *.tab.c
@@ -546,6 +561,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@refract/$(DEPDIR)/libreferee_la-bootstrap.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@refract/$(DEPDIR)/libreferee_la-schema_registry.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@services/$(DEPDIR)/libreferee_la-service.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@vizier/$(DEPDIR)/libreferee_la-routing.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -605,6 +621,13 @@ exec/libreferee_la-waitables.lo: exec/waitables.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libreferee_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o exec/libreferee_la-waitables.lo `test -f 'exec/waitables.cc' || echo '$(srcdir)/'`exec/waitables.cc
 
+vizier/libreferee_la-routing.lo: vizier/routing.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libreferee_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT vizier/libreferee_la-routing.lo -MD -MP -MF vizier/$(DEPDIR)/libreferee_la-routing.Tpo -c -o vizier/libreferee_la-routing.lo `test -f 'vizier/routing.cc' || echo '$(srcdir)/'`vizier/routing.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) vizier/$(DEPDIR)/libreferee_la-routing.Tpo vizier/$(DEPDIR)/libreferee_la-routing.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='vizier/routing.cc' object='vizier/libreferee_la-routing.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libreferee_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o vizier/libreferee_la-routing.lo `test -f 'vizier/routing.cc' || echo '$(srcdir)/'`vizier/routing.cc
+
 services/libreferee_la-service.lo: services/service.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libreferee_la_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT services/libreferee_la-service.lo -MD -MP -MF services/$(DEPDIR)/libreferee_la-service.Tpo -c -o services/libreferee_la-service.lo `test -f 'services/service.cc' || echo '$(srcdir)/'`services/service.cc
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) services/$(DEPDIR)/libreferee_la-service.Tpo services/$(DEPDIR)/libreferee_la-service.Plo
@@ -644,6 +667,7 @@ clean-libtool:
 	-rm -rf referee_sqlite/.libs referee_sqlite/_libs
 	-rm -rf refract/.libs refract/_libs
 	-rm -rf services/.libs services/_libs
+	-rm -rf vizier/.libs vizier/_libs
 install-includeHEADERS: $(include_HEADERS)
 	@$(NORMAL_INSTALL)
 	@list='$(include_HEADERS)'; test -n "$(includedir)" || list=; \
@@ -795,6 +819,8 @@ distclean-generic:
 	-rm -f refract/$(am__dirstamp)
 	-rm -f services/$(DEPDIR)/$(am__dirstamp)
 	-rm -f services/$(am__dirstamp)
+	-rm -f vizier/$(DEPDIR)/$(am__dirstamp)
+	-rm -f vizier/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -813,6 +839,7 @@ distclean: distclean-am
 	-rm -f refract/$(DEPDIR)/libreferee_la-bootstrap.Plo
 	-rm -f refract/$(DEPDIR)/libreferee_la-schema_registry.Plo
 	-rm -f services/$(DEPDIR)/libreferee_la-service.Plo
+	-rm -f vizier/$(DEPDIR)/libreferee_la-routing.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -866,6 +893,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f refract/$(DEPDIR)/libreferee_la-bootstrap.Plo
 	-rm -f refract/$(DEPDIR)/libreferee_la-schema_registry.Plo
 	-rm -f services/$(DEPDIR)/libreferee_la-service.Plo
+	-rm -f vizier/$(DEPDIR)/libreferee_la-routing.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

@@ -90,7 +90,7 @@ host_triplet = @host@
 TESTS = test_referee_core$(EXEEXT) test_service_ipc$(EXEEXT) \
 	test_refract_registry$(EXEEXT) test_refract_bootstrap$(EXEEXT) \
 	test_ceo_tasks$(EXEEXT) test_exec_waitables$(EXEEXT) \
-	test_exec_integration$(EXEEXT)
+	test_exec_integration$(EXEEXT) test_vizier_routing$(EXEEXT)
 check_PROGRAMS = $(am__EXEEXT_1)
 subdir = tests
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -108,7 +108,7 @@ CONFIG_CLEAN_VPATH_FILES =
 am__EXEEXT_1 = test_referee_core$(EXEEXT) test_service_ipc$(EXEEXT) \
 	test_refract_registry$(EXEEXT) test_refract_bootstrap$(EXEEXT) \
 	test_ceo_tasks$(EXEEXT) test_exec_waitables$(EXEEXT) \
-	test_exec_integration$(EXEEXT)
+	test_exec_integration$(EXEEXT) test_vizier_routing$(EXEEXT)
 am_test_ceo_tasks_OBJECTS = test_ceo_tasks.$(OBJEXT)
 test_ceo_tasks_OBJECTS = $(am_test_ceo_tasks_OBJECTS)
 am__DEPENDENCIES_1 =
@@ -142,6 +142,10 @@ am_test_service_ipc_OBJECTS = test_service_ipc.$(OBJEXT)
 test_service_ipc_OBJECTS = $(am_test_service_ipc_OBJECTS)
 test_service_ipc_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/libreferee.la
+am_test_vizier_routing_OBJECTS = test_vizier_routing.$(OBJEXT)
+test_vizier_routing_OBJECTS = $(am_test_vizier_routing_OBJECTS)
+test_vizier_routing_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(top_builddir)/src/libreferee.la
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -163,7 +167,8 @@ am__depfiles_remade = ./$(DEPDIR)/test_ceo_tasks.Po \
 	./$(DEPDIR)/test_referee_core.Po \
 	./$(DEPDIR)/test_refract_bootstrap.Po \
 	./$(DEPDIR)/test_refract_registry.Po \
-	./$(DEPDIR)/test_service_ipc.Po
+	./$(DEPDIR)/test_service_ipc.Po \
+	./$(DEPDIR)/test_vizier_routing.Po
 am__mv = mv -f
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
@@ -186,12 +191,14 @@ am__v_CXXLD_1 =
 SOURCES = $(test_ceo_tasks_SOURCES) $(test_exec_integration_SOURCES) \
 	$(test_exec_waitables_SOURCES) $(test_referee_core_SOURCES) \
 	$(test_refract_bootstrap_SOURCES) \
-	$(test_refract_registry_SOURCES) $(test_service_ipc_SOURCES)
+	$(test_refract_registry_SOURCES) $(test_service_ipc_SOURCES) \
+	$(test_vizier_routing_SOURCES)
 DIST_SOURCES = $(test_ceo_tasks_SOURCES) \
 	$(test_exec_integration_SOURCES) \
 	$(test_exec_waitables_SOURCES) $(test_referee_core_SOURCES) \
 	$(test_refract_bootstrap_SOURCES) \
-	$(test_refract_registry_SOURCES) $(test_service_ipc_SOURCES)
+	$(test_refract_registry_SOURCES) $(test_service_ipc_SOURCES) \
+	$(test_vizier_routing_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -571,6 +578,8 @@ test_exec_waitables_SOURCES = test_exec_waitables.cc
 test_exec_waitables_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
 test_exec_integration_SOURCES = test_exec_integration.cc
 test_exec_integration_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
+test_vizier_routing_SOURCES = test_vizier_routing.cc
+test_vizier_routing_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
 all: all-am
 
 .SUFFIXES:
@@ -642,6 +651,10 @@ test_service_ipc$(EXEEXT): $(test_service_ipc_OBJECTS) $(test_service_ipc_DEPEND
 	@rm -f test_service_ipc$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(test_service_ipc_OBJECTS) $(test_service_ipc_LDADD) $(LIBS)
 
+test_vizier_routing$(EXEEXT): $(test_vizier_routing_OBJECTS) $(test_vizier_routing_DEPENDENCIES) $(EXTRA_test_vizier_routing_DEPENDENCIES) 
+	@rm -f test_vizier_routing$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(test_vizier_routing_OBJECTS) $(test_vizier_routing_LDADD) $(LIBS)
+
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 
@@ -655,6 +668,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_refract_bootstrap.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_refract_registry.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_service_ipc.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_vizier_routing.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -934,6 +948,13 @@ test_exec_integration.log: test_exec_integration$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test_vizier_routing.log: test_vizier_routing$(EXEEXT)
+	@p='test_vizier_routing$(EXEEXT)'; \
+	b='test_vizier_routing'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 .test.log:
 	@p='$<'; \
 	$(am__set_b); \
@@ -1033,6 +1054,7 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/test_refract_bootstrap.Po
 	-rm -f ./$(DEPDIR)/test_refract_registry.Po
 	-rm -f ./$(DEPDIR)/test_service_ipc.Po
+	-rm -f ./$(DEPDIR)/test_vizier_routing.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -1085,6 +1107,7 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/test_refract_bootstrap.Po
 	-rm -f ./$(DEPDIR)/test_refract_registry.Po
 	-rm -f ./$(DEPDIR)/test_service_ipc.Po
+	-rm -f ./$(DEPDIR)/test_vizier_routing.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

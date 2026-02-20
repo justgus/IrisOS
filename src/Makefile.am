@@ -10,6 +10,8 @@ libreferee_la_SOURCES = \
    exec/await.cc \
    exec/waitables.h \
    exec/waitables.cc \
+   vizier/routing.h \
+   vizier/routing.cc \
    services/service.h \
    services/service.cc \
    refract/bootstrap.h \
@@ -27,4 +29,5 @@ include_HEADERS = referee/referee.h \
    refract/schema_registry.h \
    ceo/task_registry.h \
    exec/waitables.h \
-   exec/await.h
+   exec/await.h \
+   vizier/routing.h
