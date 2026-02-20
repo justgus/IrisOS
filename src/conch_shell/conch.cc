@@ -1,3 +1,7 @@
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include "refract/bootstrap.h"
 #include "refract/schema_registry.h"
 #include "referee/referee.h"
@@ -17,8 +21,11 @@
 #include <vector>
 
 #include <nlohmann/json.hpp>
+
+#if defined(HAVE_READLINE)
 #include <readline/history.h>
 #include <readline/readline.h>
+#endif
 
 #include <unistd.h>
 
@@ -55,6 +62,7 @@ std::vector<std::string> split_ws(const std::string& line) {
 }
 
 std::optional<std::string> read_line(const char* prompt) {
+#if defined(HAVE_READLINE)
   if (!::isatty(STDIN_FILENO)) {
     std::string line;
     if (!std::getline(std::cin, line)) return std::nullopt;
@@ -66,6 +74,12 @@ std::optional<std::string> read_line(const char* prompt) {
   std::string line(input);
   std::free(input);
   return line;
+#else
+  (void)prompt;
+  std::string line;
+  if (!std::getline(std::cin, line)) return std::nullopt;
+  return line;
+#endif
 }
 
 std::string join_tokens(const std::vector<std::string>& tokens, size_t start) {

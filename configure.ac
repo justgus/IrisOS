@@ -13,11 +13,20 @@ AX_CXX_COMPILE_STDCXX([20],[noext],[mandatory])
 # SQLite
 PKG_CHECK_MODULES([SQLITE],[sqlite3])
 
-# Readline
-AC_CHECK_HEADERS([readline/readline.h readline/history.h], [],
-  [AC_MSG_ERROR([readline headers not found])])
-AC_CHECK_LIB([readline],[readline], [READLINE_LIBS="-lreadline"],
-  [AC_MSG_ERROR([libreadline not found])])
+# Readline (optional)
+AC_CHECK_HEADERS([readline/readline.h readline/history.h],
+  [have_readline_headers=yes],
+  [have_readline_headers=no])
+AC_CHECK_LIB([readline],[readline],
+  [have_readline_lib=yes],
+  [have_readline_lib=no])
+if test "x$have_readline_headers" = "xyes" && test "x$have_readline_lib" = "xyes"; then
+  AC_DEFINE([HAVE_READLINE],[1],[Define if readline is available])
+  READLINE_LIBS="-lreadline"
+else
+  AC_MSG_WARN([readline not found; conch history disabled])
+  READLINE_LIBS=""
+fi
 AC_SUBST([READLINE_LIBS])
 
 # Unit test framework (Check)
