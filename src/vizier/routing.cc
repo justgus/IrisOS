@@ -16,4 +16,15 @@ std::optional<Route> route_for_type(const iris::refract::TypeSummary& summary) {
   return std::nullopt;
 }
 
+std::optional<Route> route_for_type_id(iris::refract::SchemaRegistry& registry,
+                                       referee::TypeID type_id) {
+  auto listR = registry.list_types();
+  if (!listR) return std::nullopt;
+
+  for (const auto& summary : listR.value.value()) {
+    if (summary.type_id == type_id) return route_for_type(summary);
+  }
+  return std::nullopt;
+}
+
 } // namespace iris::vizier

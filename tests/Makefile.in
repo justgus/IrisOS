@@ -91,7 +91,7 @@ TESTS = test_referee_core$(EXEEXT) test_service_ipc$(EXEEXT) \
 	test_refract_registry$(EXEEXT) test_refract_bootstrap$(EXEEXT) \
 	test_ceo_tasks$(EXEEXT) test_exec_waitables$(EXEEXT) \
 	test_exec_integration$(EXEEXT) test_vizier_routing$(EXEEXT) \
-	test_viz_artifacts$(EXEEXT)
+	test_viz_artifacts$(EXEEXT) test_phase3_integration$(EXEEXT)
 check_PROGRAMS = $(am__EXEEXT_1)
 subdir = tests
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -110,7 +110,7 @@ am__EXEEXT_1 = test_referee_core$(EXEEXT) test_service_ipc$(EXEEXT) \
 	test_refract_registry$(EXEEXT) test_refract_bootstrap$(EXEEXT) \
 	test_ceo_tasks$(EXEEXT) test_exec_waitables$(EXEEXT) \
 	test_exec_integration$(EXEEXT) test_vizier_routing$(EXEEXT) \
-	test_viz_artifacts$(EXEEXT)
+	test_viz_artifacts$(EXEEXT) test_phase3_integration$(EXEEXT)
 am_test_ceo_tasks_OBJECTS = test_ceo_tasks.$(OBJEXT)
 test_ceo_tasks_OBJECTS = $(am_test_ceo_tasks_OBJECTS)
 am__DEPENDENCIES_1 =
@@ -127,6 +127,12 @@ test_exec_integration_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 am_test_exec_waitables_OBJECTS = test_exec_waitables.$(OBJEXT)
 test_exec_waitables_OBJECTS = $(am_test_exec_waitables_OBJECTS)
 test_exec_waitables_DEPENDENCIES = $(am__DEPENDENCIES_1) \
+	$(top_builddir)/src/libreferee.la
+am_test_phase3_integration_OBJECTS =  \
+	test_phase3_integration.$(OBJEXT)
+test_phase3_integration_OBJECTS =  \
+	$(am_test_phase3_integration_OBJECTS)
+test_phase3_integration_DEPENDENCIES = $(am__DEPENDENCIES_1) \
 	$(top_builddir)/src/libreferee.la
 am_test_referee_core_OBJECTS = test_referee_core.$(OBJEXT)
 test_referee_core_OBJECTS = $(am_test_referee_core_OBJECTS)
@@ -170,6 +176,7 @@ am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/test_ceo_tasks.Po \
 	./$(DEPDIR)/test_exec_integration.Po \
 	./$(DEPDIR)/test_exec_waitables.Po \
+	./$(DEPDIR)/test_phase3_integration.Po \
 	./$(DEPDIR)/test_referee_core.Po \
 	./$(DEPDIR)/test_refract_bootstrap.Po \
 	./$(DEPDIR)/test_refract_registry.Po \
@@ -196,14 +203,16 @@ am__v_CXXLD_ = $(am__v_CXXLD_@AM_DEFAULT_V@)
 am__v_CXXLD_0 = @echo "  CXXLD   " $@;
 am__v_CXXLD_1 = 
 SOURCES = $(test_ceo_tasks_SOURCES) $(test_exec_integration_SOURCES) \
-	$(test_exec_waitables_SOURCES) $(test_referee_core_SOURCES) \
-	$(test_refract_bootstrap_SOURCES) \
+	$(test_exec_waitables_SOURCES) \
+	$(test_phase3_integration_SOURCES) \
+	$(test_referee_core_SOURCES) $(test_refract_bootstrap_SOURCES) \
 	$(test_refract_registry_SOURCES) $(test_service_ipc_SOURCES) \
 	$(test_viz_artifacts_SOURCES) $(test_vizier_routing_SOURCES)
 DIST_SOURCES = $(test_ceo_tasks_SOURCES) \
 	$(test_exec_integration_SOURCES) \
-	$(test_exec_waitables_SOURCES) $(test_referee_core_SOURCES) \
-	$(test_refract_bootstrap_SOURCES) \
+	$(test_exec_waitables_SOURCES) \
+	$(test_phase3_integration_SOURCES) \
+	$(test_referee_core_SOURCES) $(test_refract_bootstrap_SOURCES) \
 	$(test_refract_registry_SOURCES) $(test_service_ipc_SOURCES) \
 	$(test_viz_artifacts_SOURCES) $(test_vizier_routing_SOURCES)
 am__can_run_installinfo = \
@@ -589,6 +598,8 @@ test_vizier_routing_SOURCES = test_vizier_routing.cc
 test_vizier_routing_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
 test_viz_artifacts_SOURCES = test_viz_artifacts.cc
 test_viz_artifacts_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
+test_phase3_integration_SOURCES = test_phase3_integration.cc
+test_phase3_integration_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
 all: all-am
 
 .SUFFIXES:
@@ -644,6 +655,10 @@ test_exec_waitables$(EXEEXT): $(test_exec_waitables_OBJECTS) $(test_exec_waitabl
 	@rm -f test_exec_waitables$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(test_exec_waitables_OBJECTS) $(test_exec_waitables_LDADD) $(LIBS)
 
+test_phase3_integration$(EXEEXT): $(test_phase3_integration_OBJECTS) $(test_phase3_integration_DEPENDENCIES) $(EXTRA_test_phase3_integration_DEPENDENCIES) 
+	@rm -f test_phase3_integration$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(test_phase3_integration_OBJECTS) $(test_phase3_integration_LDADD) $(LIBS)
+
 test_referee_core$(EXEEXT): $(test_referee_core_OBJECTS) $(test_referee_core_DEPENDENCIES) $(EXTRA_test_referee_core_DEPENDENCIES) 
 	@rm -f test_referee_core$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(test_referee_core_OBJECTS) $(test_referee_core_LDADD) $(LIBS)
@@ -677,6 +692,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_ceo_tasks.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_exec_integration.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_exec_waitables.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_phase3_integration.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_referee_core.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_refract_bootstrap.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_refract_registry.Po@am__quote@ # am--include-marker
@@ -976,6 +992,13 @@ test_viz_artifacts.log: test_viz_artifacts$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+test_phase3_integration.log: test_phase3_integration$(EXEEXT)
+	@p='test_phase3_integration$(EXEEXT)'; \
+	b='test_phase3_integration'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 .test.log:
 	@p='$<'; \
 	$(am__set_b); \
@@ -1071,6 +1094,7 @@ distclean: distclean-am
 		-rm -f ./$(DEPDIR)/test_ceo_tasks.Po
 	-rm -f ./$(DEPDIR)/test_exec_integration.Po
 	-rm -f ./$(DEPDIR)/test_exec_waitables.Po
+	-rm -f ./$(DEPDIR)/test_phase3_integration.Po
 	-rm -f ./$(DEPDIR)/test_referee_core.Po
 	-rm -f ./$(DEPDIR)/test_refract_bootstrap.Po
 	-rm -f ./$(DEPDIR)/test_refract_registry.Po
@@ -1125,6 +1149,7 @@ maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/test_ceo_tasks.Po
 	-rm -f ./$(DEPDIR)/test_exec_integration.Po
 	-rm -f ./$(DEPDIR)/test_exec_waitables.Po
+	-rm -f ./$(DEPDIR)/test_phase3_integration.Po
 	-rm -f ./$(DEPDIR)/test_referee_core.Po
 	-rm -f ./$(DEPDIR)/test_refract_bootstrap.Po
 	-rm -f ./$(DEPDIR)/test_refract_registry.Po
