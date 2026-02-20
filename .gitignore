@@ -23,3 +23,5 @@ bin/.dirstamp
 *.db-wal
 tests/test_*
 !tests/test_*.cc
+config.status
+configure~
