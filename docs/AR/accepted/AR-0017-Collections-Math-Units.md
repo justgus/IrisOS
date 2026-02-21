@@ -2,9 +2,9 @@
 GitHub-Issue: N/A
 ---
 
-# AR-0017 — Collections, Math Types, and Units (Proposal)
+# AR-0017 — Collections, Math Types, and Units
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-02-21
 - Owners: Mike
 
