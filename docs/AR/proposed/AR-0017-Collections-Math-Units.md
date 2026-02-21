@@ -25,6 +25,12 @@ Expand Refract's core type system with:
 
 Treat these as first-class Refract types with definitions stored in the Refract registry.
 
+### Naming
+
+- Collections subsystem: **Crate**
+- Math subsystem: **Astra**
+- Units subsystem: **Caliper**
+
 ## Goals
 
 - Provide a common collection vocabulary usable by Conch and system services.
@@ -59,6 +65,17 @@ type parameterization in Refract (e.g., `List<String>`).
 - **Vector**: 1-D numeric collection (element type + length).
 - **Matrix**: 2-D numeric collection (element type + rows/cols).
 - **Tensor**: N-D numeric collection (element type + shape).
+
+### Quantities
+
+Define quantity types as first-class wrappers to combine values with constraints or units:
+
+- **Angle**
+- **Duration**
+- **Span**
+- **Range**
+- **Percentage**
+- **Ratio**
 
 ### Units of Measure
 
