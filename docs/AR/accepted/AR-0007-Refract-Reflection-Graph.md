@@ -1,3 +1,7 @@
+---
+GitHub-Issue: N/A
+---
+
 # AR-0007 — Refract Reflection Graph (Recommendation)
 
 - Status: Accepted

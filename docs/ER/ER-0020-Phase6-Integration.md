@@ -1,3 +1,7 @@
+---
+GitHub-Issue: N/A
+---
+
 # ER-0020 — Phase 6 Integration: Hardening and Alignment
 
 ## Roles

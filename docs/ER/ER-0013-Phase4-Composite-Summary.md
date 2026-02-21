@@ -1,3 +1,7 @@
+---
+GitHub-Issue: N/A
+---
+
 # ER-0013 — Phase 4 Milestone 2: Composite Summary Pattern
 
 ## Roles

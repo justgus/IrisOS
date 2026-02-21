@@ -1,3 +1,7 @@
+---
+GitHub-Issue: N/A
+---
+
 # AR-0002 — Object Identity and Versioning Semantics
 
 - Status: Accepted

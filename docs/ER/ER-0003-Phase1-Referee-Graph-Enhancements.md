@@ -1,3 +1,7 @@
+---
+GitHub-Issue: N/A
+---
+
 # ER-0003 — Phase 1 Milestone 2: Referee Graph Enhancements v0
 
 ## Roles

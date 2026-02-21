@@ -1,3 +1,7 @@
+---
+GitHub-Issue: N/A
+---
+
 # AR-0006 — CEO/Exec Runtime Model (Recommendation)
 
 - Status: Accepted

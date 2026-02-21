@@ -1,3 +1,7 @@
+---
+GitHub-Issue: N/A
+---
+
 # ER-0004 — Phase 1 Integration: Schema Registry + Referee Graph
 
 ## Roles

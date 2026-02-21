@@ -1,3 +1,7 @@
+---
+GitHub-Issue: N/A
+---
+
 # AR-0010 — Comms Subsystem (Recommendation)
 
 - Status: Accepted

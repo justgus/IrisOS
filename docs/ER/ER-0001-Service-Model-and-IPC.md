@@ -1,3 +1,7 @@
+---
+GitHub-Issue: N/A
+---
+
 # ER-0001 — Service Model and IPC Foundation
 
 ## Roles

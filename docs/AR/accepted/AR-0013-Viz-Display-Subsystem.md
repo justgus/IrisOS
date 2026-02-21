@@ -1,3 +1,7 @@
+---
+GitHub-Issue: N/A
+---
+
 # AR-0013 — Viz Display Subsystem (Recommendation)
 
 - Status: Accepted
