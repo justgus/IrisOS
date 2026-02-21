@@ -1,3 +1,7 @@
+---
+GitHub-Issue: N/A
+---
+
 # AR-0008 — Erector Subsystems (Recommendation)
 
 - Status: Accepted

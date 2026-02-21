@@ -1,3 +1,7 @@
+---
+GitHub-Issue: N/A
+---
+
 # AR-0003 — Storage Layout Strategy
 
 - Status: Accepted

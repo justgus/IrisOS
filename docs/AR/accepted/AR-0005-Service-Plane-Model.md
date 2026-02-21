@@ -1,3 +1,7 @@
+---
+GitHub-Issue: N/A
+---
+
 # AR-0005 — Service Plane Model (Recommendation)
 
 - Status: Accepted

@@ -1,3 +1,7 @@
+---
+GitHub-Issue: N/A
+---
+
 # AR-0011 — Vizier Interpretation Layer (Recommendation)
 
 - Status: Accepted

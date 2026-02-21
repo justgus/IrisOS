@@ -1,3 +1,7 @@
+---
+GitHub-Issue: N/A
+---
+
 # AR-0004 — Index and Graph Storage Strategy (Recommendation)
 
 - Status: Accepted

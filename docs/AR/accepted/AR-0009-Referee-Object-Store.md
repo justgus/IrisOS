@@ -1,3 +1,7 @@
+---
+GitHub-Issue: N/A
+---
+
 # AR-0009 — Referee Object Store (Recommendation)
 
 - Status: Accepted

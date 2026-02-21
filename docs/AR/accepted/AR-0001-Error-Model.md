@@ -1,3 +1,7 @@
+---
+GitHub-Issue: N/A
+---
+
 # AR-0001 — Expected-Style Error Model
 
 - Status: Accepted
