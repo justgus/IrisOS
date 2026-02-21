@@ -28,6 +28,10 @@ Define a standalone Conch parser class that converts a single input line into a 
 The parser is a dedicated component (not embedded in command handlers), with a small, explicit
 grammar and a deterministic tokenizer.
 
+### Naming
+
+Subsystem name: **Prism** (parser and tokenizer).
+
 ### Goals
 
 - Preserve existing commands and semantics.

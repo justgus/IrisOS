@@ -27,8 +27,7 @@ Define a formal Operations and Dispatch Model that:
 
 ### Naming
 
-Proposed subsystem name: **Dispatch** (preferred), or **Ops** if we want to keep it short.
-The name should emphasize resolution + invocation rather than storage.
+Subsystem name: **Conduit**.
 
 ## Concepts
 
