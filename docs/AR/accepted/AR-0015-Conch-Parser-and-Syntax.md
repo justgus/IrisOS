@@ -2,9 +2,9 @@
 GitHub-Issue: N/A
 ---
 
-# AR-0015 — Conch Parser and Syntax (Proposal)
+# AR-0015 — Conch Parser and Syntax
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-02-21
 - Owners: Mike
 
