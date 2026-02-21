@@ -12,7 +12,7 @@ purpose-built for IrisOS.
 - `ar` Architecture Recommendation
 - `er` Engineering Request
 - `dr` Defect Report
-- `docs` Documentation or process
+- `documentation` Documentation or process
 - `how-to` Usage guidance or walkthroughs
 
 ## Status Labels
