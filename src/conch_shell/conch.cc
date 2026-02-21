@@ -17,6 +17,7 @@
 #include <sstream>
 #include <set>
 #include <string>
+#include <string_view>
 #include <unordered_map>
 #include <vector>
 
@@ -51,7 +52,9 @@ struct AliasEntry {
 };
 
 referee::Result<ObjectID> create_object(SchemaRegistry& registry, SqliteStore& store,
-                                        const std::vector<std::string>& tokens);
+                                        const std::string& expr);
+bool parse_bool(std::string_view v, bool* out);
+bool parse_int(std::string_view v, std::int64_t* out);
 
 std::vector<std::string> split_ws(const std::string& line) {
   std::istringstream iss(line);
@@ -113,6 +116,121 @@ std::string trim_copy(std::string value) {
   value.erase(value.begin(), std::find_if(value.begin(), value.end(), not_space));
   value.erase(std::find_if(value.rbegin(), value.rend(), not_space).base(), value.end());
   return value;
+}
+
+bool parse_kv_payload(const std::string& text, nlohmann::json* payload, std::string* err_out) {
+  size_t i = 0;
+  auto fail = [&](const std::string& msg) {
+    if (err_out) *err_out = msg;
+    return false;
+  };
+
+  while (i < text.size()) {
+    while (i < text.size() && std::isspace(static_cast<unsigned char>(text[i]))) ++i;
+    if (i >= text.size()) break;
+
+    size_t name_start = i;
+    while (i < text.size() && !std::isspace(static_cast<unsigned char>(text[i]))
+           && text[i] != ':' && text[i] != '=') {
+      ++i;
+    }
+    if (i == name_start) return fail("expected field:=value");
+    std::string field = text.substr(name_start, i - name_start);
+
+    while (i < text.size() && std::isspace(static_cast<unsigned char>(text[i]))) ++i;
+    if (i >= text.size() || text[i] != ':') return fail("expected field:=value");
+    ++i;
+    while (i < text.size() && std::isspace(static_cast<unsigned char>(text[i]))) ++i;
+    if (i >= text.size() || text[i] != '=') return fail("expected field:=value");
+    ++i;
+
+    while (i < text.size() && std::isspace(static_cast<unsigned char>(text[i]))) ++i;
+    if (i >= text.size()) return fail("expected field:=value");
+
+    std::string value;
+    char quote = text[i];
+    if (quote == '"' || quote == '\'') {
+      ++i;
+      while (i < text.size()) {
+        char c = text[i];
+        if (c == quote) {
+          ++i;
+          break;
+        }
+        if (c == '\\' && i + 1 < text.size()) {
+          value.push_back(text[i + 1]);
+          i += 2;
+          continue;
+        }
+        value.push_back(c);
+        ++i;
+      }
+      if (i > text.size() || (i == text.size() && (text.empty() || text.back() != quote))) {
+        return fail("unterminated quoted value");
+      }
+    } else {
+      size_t value_start = i;
+      while (i < text.size() && !std::isspace(static_cast<unsigned char>(text[i]))) ++i;
+      value = text.substr(value_start, i - value_start);
+    }
+
+    bool b = false;
+    std::int64_t n = 0;
+    if (parse_bool(std::string_view(value), &b)) {
+      (*payload)[field] = b;
+    } else if (parse_int(std::string_view(value), &n)) {
+      (*payload)[field] = n;
+    } else {
+      (*payload)[field] = value;
+    }
+  }
+  return true;
+}
+
+referee::Result<void> parse_new_expr(const std::string& expr,
+                                     std::string* type_name_out,
+                                     nlohmann::json* payload_out) {
+  std::string err;
+  auto s = trim_copy(expr);
+  if (s.rfind("new", 0) != 0) {
+    return referee::Result<void>::err("usage: new <TypeName> field:=value ...");
+  }
+  s = trim_copy(s.substr(3));
+  if (s.empty()) {
+    return referee::Result<void>::err("usage: new <TypeName> field:=value ...");
+  }
+
+  if (s.rfind("--json", 0) == 0) {
+    auto json_text = trim_copy(s.substr(6));
+    json_text = strip_quotes(json_text);
+    auto j = nlohmann::json::parse(json_text);
+    auto type_name = j.value("type", "");
+    if (type_name.empty()) {
+      return referee::Result<void>::err("json missing type");
+    }
+    *type_name_out = type_name;
+    if (j.contains("payload")) {
+      *payload_out = j.at("payload");
+    } else {
+      *payload_out = nlohmann::json::object();
+    }
+    return referee::Result<void>::ok();
+  }
+
+  size_t i = 0;
+  while (i < s.size() && !std::isspace(static_cast<unsigned char>(s[i]))) ++i;
+  *type_name_out = s.substr(0, i);
+  if (type_name_out->empty()) {
+    return referee::Result<void>::err("usage: new <TypeName> field:=value ...");
+  }
+  auto rest = trim_copy(s.substr(i));
+  *payload_out = nlohmann::json::object();
+  if (rest.empty()) return referee::Result<void>::ok();
+
+  if (!parse_kv_payload(rest, payload_out, &err)) {
+    return referee::Result<void>::err(err);
+  }
+  return referee::Result<void>::ok();
 }
 
 std::string type_display_name(const TypeSummary& summary) {
@@ -608,9 +726,9 @@ void cmd_define_type(SchemaRegistry& registry, const std::vector<std::string>& t
             << " def=" << reg.value->ref.id.to_hex() << "\n";
 }
 
-void cmd_new_object(SchemaRegistry& registry, SqliteStore& store, const std::vector<std::string>& tokens) {
+void cmd_new_object(SchemaRegistry& registry, SqliteStore& store, const std::string& line) {
   try {
-    auto createR = create_object(registry, store, tokens);
+    auto createR = create_object(registry, store, line);
     if (!createR) {
       std::cout << "error: " << createR.error->message << "\n";
       return;
@@ -848,41 +966,11 @@ bool cmd_call(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id,
 }
 
 referee::Result<ObjectID> create_object(SchemaRegistry& registry, SqliteStore& store,
-                                        const std::vector<std::string>& tokens) {
-  if (tokens.size() < 2) {
-    return referee::Result<ObjectID>::err("usage: new <TypeName> field:=value ...");
-  }
+                                        const std::string& expr) {
   std::string type_name;
   nlohmann::json payload = nlohmann::json::object();
-
-  if (tokens[1] == "--json") {
-    auto json_text = strip_quotes(join_tokens(tokens, 2));
-    auto j = nlohmann::json::parse(json_text);
-    type_name = j.value("type", "");
-    if (type_name.empty()) {
-      return referee::Result<ObjectID>::err("json missing type");
-    }
-    if (j.contains("payload")) payload = j.at("payload");
-  } else {
-    type_name = tokens[1];
-    for (size_t i = 2; i < tokens.size(); ++i) {
-      auto pos = tokens[i].find(":=");
-      if (pos == std::string::npos) {
-        return referee::Result<ObjectID>::err("expected field:=value");
-      }
-      auto field = tokens[i].substr(0, pos);
-      auto value = strip_quotes(tokens[i].substr(pos + 2));
-      bool b = false;
-      std::int64_t n = 0;
-      if (parse_bool(value, &b)) {
-        payload[field] = b;
-      } else if (parse_int(value, &n)) {
-        payload[field] = n;
-      } else {
-        payload[field] = value;
-      }
-    }
-  }
+  auto parseR = parse_new_expr(expr, &type_name, &payload);
+  if (!parseR) return referee::Result<ObjectID>::err(parseR.error->message);
 
   std::string err;
   auto type_summary = resolve_type(registry, type_name, &err);
@@ -998,9 +1086,8 @@ void cmd_alias_assignment(const std::string& line,
 
   ObjectID id{};
   if (expr.rfind("new ", 0) == 0) {
-    auto tokens = split_ws(expr);
     try {
-      auto createR = create_object(registry, store, tokens);
+      auto createR = create_object(registry, store, expr);
       if (!createR) {
         std::cout << "error: " << createR.error->message << "\n";
         return;
@@ -1141,7 +1228,7 @@ int main(int argc, char** argv) {
       continue;
     }
     if (cmd == "new") {
-      cmd_new_object(registry, store, tokens);
+      cmd_new_object(registry, store, line);
       continue;
     }
     if (cmd == "find" && tokens.size() >= 3 && tokens[1] == "type") {
