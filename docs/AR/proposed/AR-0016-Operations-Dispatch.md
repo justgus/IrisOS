@@ -33,7 +33,7 @@ The name should emphasize resolution + invocation rather than storage.
 ## Concepts
 
 - **OperationDefinition**: describes name, scope (class/object), signature, effects, and permissions.
-- **Signature**: ordered parameters with type IDs, optional/variadic markers, and return type.
+- **Signature**: ordered input and output parameter lists with type IDs and optional markers.
 - **Scope**:
   - **Class**: callable without an instance (e.g., `Type::create(...)`)
   - **Object**: callable on an instance (e.g., `obj.update(...)`)
@@ -62,9 +62,16 @@ The name should emphasize resolution + invocation rather than storage.
 - Each OperationDefinition includes:
   - name
   - scope: `class` or `object`
-  - signature (params + return type)
+  - signature (input list + output list, ordered)
   - effects: `pure`, `mutating`, `spawns_task`, etc.
   - permissions (future)
+  - optionality markers on inputs/outputs (optional outputs may be `null`)
+
+### Inputs and Outputs
+
+- Inputs and outputs are lists, not sets. Order is preserved to distinguish same-typed parameters.
+- Optional parameters are allowed on both inputs and outputs.
+- Optional outputs may be `null` when not produced.
 
 ### Dispatch Rules (Sketch)
 
@@ -82,6 +89,15 @@ The name should emphasize resolution + invocation rather than storage.
 
 - If a derived type doesn't define an operation, dispatch may fall back to base/interface operations.
 - If a derived type defines an override with identical signature, it wins.
+
+### Introspection
+
+Operations should be listable by:
+
+- declared on the type
+- inherited from base/interface types
+- class-level vs object-level
+- overload sets for a given name
 
 ## Open Questions
 
