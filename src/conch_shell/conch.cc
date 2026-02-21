@@ -75,7 +75,10 @@ std::optional<std::string> read_line(const char* prompt) {
   std::free(input);
   return line;
 #else
-  (void)prompt;
+  if (::isatty(STDIN_FILENO)) {
+    std::cout << prompt;
+    std::cout.flush();
+  }
   std::string line;
   if (!std::getline(std::cin, line)) return std::nullopt;
   return line;
@@ -1061,6 +1064,11 @@ int main(int argc, char** argv) {
     std::cout << "error: bootstrap failed: " << bootstrapR.error->message << "\n";
     return 1;
   }
+#if !defined(HAVE_READLINE)
+  if (::isatty(STDIN_FILENO)) {
+    std::cout << "note: readline not available; history disabled\n";
+  }
+#endif
   std::vector<TaskEntry> tasks;
   std::unordered_map<std::string, ObjectID> session_aliases;
   std::uint64_t next_task_id = 1;
