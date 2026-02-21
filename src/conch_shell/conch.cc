@@ -1167,6 +1167,12 @@ int main(int argc, char** argv) {
     auto line_opt = read_line("conch> ");
     if (!line_opt.has_value()) break;
     const auto& line = line_opt.value();
+    if (line.empty()) {
+      if (::isatty(STDIN_FILENO)) {
+        std::cout << "\n";
+      }
+      continue;
+    }
     auto tokens = split_ws(line);
     if (tokens.empty()) continue;
 
