@@ -68,7 +68,10 @@ std::optional<std::string> read_line(const char* prompt) {
     if (!std::getline(std::cin, line)) return std::nullopt;
     return line;
   }
-  char* input = readline(prompt);
+  std::cout << prompt;
+  std::cout.flush();
+  rl_already_prompted = 1;
+  char* input = readline("");
   if (!input) return std::nullopt;
   if (*input != '\0') add_history(input);
   std::string line(input);
