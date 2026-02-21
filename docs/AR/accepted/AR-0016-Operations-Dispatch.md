@@ -2,9 +2,9 @@
 GitHub-Issue: N/A
 ---
 
-# AR-0016 — Operations and Dispatch Model (Proposal)
+# AR-0016 — Operations and Dispatch Model
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-02-21
 - Owners: Mike
 
