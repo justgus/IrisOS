@@ -1,5 +1,6 @@
 ---
 GitHub-Issue: #73
+ER-Dependencies: ER-0002, ER-0003, ER-0004
 ---
 
 # AR-0009 — Referee Object Store (Recommendation)

@@ -1,5 +1,6 @@
 ---
 GitHub-Issue: #77
+ER-Dependencies: ER-0010, ER-0011
 ---
 
 # AR-0013 — Viz Display Subsystem (Recommendation)
