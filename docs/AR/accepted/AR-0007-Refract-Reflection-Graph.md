@@ -1,5 +1,6 @@
 ---
 GitHub-Issue: #71
+ER-Dependencies: ER-0002
 ---
 
 # AR-0007 — Refract Reflection Graph (Recommendation)

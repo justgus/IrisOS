@@ -1,5 +1,6 @@
 ---
 GitHub-Issue: #69
+ER-Dependencies: ER-0001
 ---
 
 # AR-0005 — Service Plane Model (Recommendation)

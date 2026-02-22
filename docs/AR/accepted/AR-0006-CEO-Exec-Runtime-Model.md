@@ -1,5 +1,6 @@
 ---
 GitHub-Issue: #70
+ER-Dependencies: ER-0005, ER-0006, ER-0007
 ---
 
 # AR-0006 — CEO/Exec Runtime Model (Recommendation)

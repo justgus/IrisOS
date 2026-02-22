@@ -1,5 +1,6 @@
 ---
 GitHub-Issue: #67
+ER-Dependencies: ER-0018, ER-0019, ER-0020
 ---
 
 # AR-0003 — Storage Layout Strategy

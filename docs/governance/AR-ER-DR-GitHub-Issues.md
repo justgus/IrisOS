@@ -44,3 +44,6 @@ require explicit opt-in and standard metadata in the document front matter.
 
 For manual sync, use `scripts/issue_sync.sh <doc_path>` to create/update the Issue and keep the
 document front matter and labels aligned.
+
+When `ER-Dependencies` is present in an AR, the sync script will close the AR Issue automatically
+once all referenced ERs are marked Verified.

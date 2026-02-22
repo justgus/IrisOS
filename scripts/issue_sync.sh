@@ -58,6 +58,19 @@ if [[ -z "$issue_line" ]]; then
 fi
 issue_value="${issue_line#GitHub-Issue: }"
 
+deps=()
+deps_line="$(grep -m1 -E '^ER-Dependencies:' "$doc_path" || true)"
+if [[ -n "$deps_line" ]]; then
+  deps_raw="${deps_line#ER-Dependencies: }"
+  IFS=',' read -ra deps_items <<< "$deps_raw"
+  for item in "${deps_items[@]}"; do
+    dep="$(echo "$item" | xargs)"
+    if [[ -n "$dep" ]]; then
+      deps+=("$dep")
+    fi
+  done
+fi
+
 map_status_label() {
   local status="$1"
   status="${status// /}"
@@ -79,6 +92,11 @@ Doc: \`$doc_path\`
 Status: $status_raw
 EOF
 )"
+if [[ ${#deps[@]} -gt 0 ]]; then
+  deps_joined="$(printf "%s, " "${deps[@]}")"
+  deps_joined="${deps_joined%, }"
+  issue_body="${issue_body}"$'\n'"ER-Dependencies: ${deps_joined}"
+fi
 
 ensure_labels() {
   local issue_number="$1"
@@ -99,8 +117,50 @@ ensure_labels() {
   gh issue edit "$issue_number" --add-label "$doc_type" --add-label "$status_label" >/dev/null
 }
 
+er_verified() {
+  local er_id="$1"
+  local er_doc
+  er_doc="$(ls "docs/ER/${er_id}-"*.md 2>/dev/null | head -n1 || true)"
+  if [[ -z "$er_doc" ]]; then
+    return 2
+  fi
+  local er_status_line
+  er_status_line="$(grep -m1 -E '^- Status:' "$er_doc" || true)"
+  if [[ -z "$er_status_line" ]]; then
+    return 1
+  fi
+  local er_status
+  er_status="${er_status_line#- Status: }"
+  er_status="${er_status%% *}"
+  if [[ "$er_status" == "Verified" ]]; then
+    return 0
+  fi
+  return 1
+}
+
 close_or_reopen() {
   local issue_number="$1"
+  if [[ "$doc_type" == "ar" && ${#deps[@]} -gt 0 ]]; then
+    for dep in "${deps[@]}"; do
+      er_verified "$dep"
+      case $? in
+        0) ;;
+        1)
+          gh issue reopen "$issue_number" >/dev/null
+          return
+          ;;
+        2)
+          echo "error: missing ER doc for dependency: $dep"
+          exit 1
+          ;;
+      esac
+    done
+    gh issue close "$issue_number" --comment "Auto-closed by issue_sync: all ER dependencies verified." >/dev/null
+    return
+  fi
+  if [[ "$doc_type" == "ar" && ${#deps[@]} -eq 0 ]]; then
+    return
+  fi
   if [[ "$status_label" == "status:done" ]]; then
     gh issue close "$issue_number" --comment "Auto-closed by issue_sync: status=$status_raw" >/dev/null
   else
