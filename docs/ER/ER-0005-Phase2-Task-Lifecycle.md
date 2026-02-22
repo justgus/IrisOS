@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #86
 ---
 
 # ER-0005 — Phase 2 Milestone 1: CEO Task Lifecycle v0

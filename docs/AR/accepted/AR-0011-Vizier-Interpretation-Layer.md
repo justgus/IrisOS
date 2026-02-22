@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #75
 ---
 
 # AR-0011 — Vizier Interpretation Layer (Recommendation)

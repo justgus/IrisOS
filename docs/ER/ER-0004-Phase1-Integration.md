@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #85
 ---
 
 # ER-0004 — Phase 1 Integration: Schema Registry + Referee Graph

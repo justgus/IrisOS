@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #73
 ---
 
 # AR-0009 — Referee Object Store (Recommendation)

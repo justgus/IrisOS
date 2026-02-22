@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #87
 ---
 
 # ER-0006 — Phase 2 Milestone 2: Exec Waitables v0

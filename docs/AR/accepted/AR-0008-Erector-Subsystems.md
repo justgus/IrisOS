@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #72
 ---
 
 # AR-0008 — Erector Subsystems (Recommendation)

@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #96
 ---
 
 # ER-0015 — Phase 5 Milestone 1: Comms Primitives v0

@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #82
 ---
 
 # ER-0001 — Service Model and IPC Foundation

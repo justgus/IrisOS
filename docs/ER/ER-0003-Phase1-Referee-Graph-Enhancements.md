@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #84
 ---
 
 # ER-0003 — Phase 1 Milestone 2: Referee Graph Enhancements v0

@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #67
 ---
 
 # AR-0003 — Storage Layout Strategy

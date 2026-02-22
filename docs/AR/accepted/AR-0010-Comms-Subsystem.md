@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #74
 ---
 
 # AR-0010 — Comms Subsystem (Recommendation)
