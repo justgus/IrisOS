@@ -39,3 +39,8 @@ Status is tracked by labels:
 There is no automatic Issue creation by default. If we want automation later, we can add a small
 script or GitHub Action that creates an Issue when a new AR/ER/DR doc appears in a PR. That would
 require explicit opt-in and standard metadata in the document front matter.
+
+## Manual Sync Script
+
+For manual sync, use `scripts/issue_sync.sh <doc_path>` to create/update the Issue and keep the
+document front matter and labels aligned.
