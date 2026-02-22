@@ -1244,6 +1244,21 @@ void print_route_for(iris::refract::SchemaRegistry& registry, referee::TypeID ty
   std::cout << "route: " << routeR->concho << "\n";
 }
 
+void maybe_spawn_concho(iris::refract::SchemaRegistry& registry,
+                        referee::SqliteStore& store,
+                        const referee::ObjectID& artifact_id) {
+  auto conchoR = iris::vizier::spawn_concho_for_artifact(registry, store, artifact_id);
+  if (!conchoR) {
+    std::cout << "error: " << conchoR.error->message << "\n";
+    return;
+  }
+  if (!conchoR.value->has_value()) {
+    std::cout << "concho: none\n";
+    return;
+  }
+  std::cout << "concho: " << conchoR.value->value().to_hex() << "\n";
+}
+
 void cmd_emit_viz(SchemaRegistry& registry, SqliteStore& store,
                   const std::unordered_map<std::string, ObjectID>& session_aliases,
                   const std::vector<std::string>& tokens) {
@@ -1274,6 +1289,7 @@ void cmd_emit_viz(SchemaRegistry& registry, SqliteStore& store,
     auto id = idR.value.value();
     std::cout << "created Viz::TextLog " << id.to_hex() << "\n";
     print_route_for(registry, iris::viz::kTypeVizTextLog);
+    maybe_spawn_concho(registry, store, id);
     if (flags.produced_by.has_value()) {
       auto from_id = parse_object_id_or_alias(flags.produced_by.value(), session_aliases,
                                               store, registry, &err);
@@ -1321,6 +1337,7 @@ void cmd_emit_viz(SchemaRegistry& registry, SqliteStore& store,
     auto id = idR.value.value();
     std::cout << "created Viz::Metric " << id.to_hex() << "\n";
     print_route_for(registry, iris::viz::kTypeVizMetric);
+    maybe_spawn_concho(registry, store, id);
     if (flags.produced_by.has_value()) {
       auto from_id = parse_object_id_or_alias(flags.produced_by.value(), session_aliases,
                                               store, registry, &err);
@@ -1359,6 +1376,7 @@ void cmd_emit_viz(SchemaRegistry& registry, SqliteStore& store,
     auto id = idR.value.value();
     std::cout << "created Viz::Table " << id.to_hex() << "\n";
     print_route_for(registry, iris::viz::kTypeVizTable);
+    maybe_spawn_concho(registry, store, id);
     if (flags.produced_by.has_value()) {
       auto from_id = parse_object_id_or_alias(flags.produced_by.value(), session_aliases,
                                               store, registry, &err);
@@ -1396,6 +1414,7 @@ void cmd_emit_viz(SchemaRegistry& registry, SqliteStore& store,
     auto id = idR.value.value();
     std::cout << "created Viz::Tree " << id.to_hex() << "\n";
     print_route_for(registry, iris::viz::kTypeVizTree);
+    maybe_spawn_concho(registry, store, id);
     if (flags.produced_by.has_value()) {
       auto from_id = parse_object_id_or_alias(flags.produced_by.value(), session_aliases,
                                               store, registry, &err);
@@ -1433,6 +1452,7 @@ void cmd_emit_viz(SchemaRegistry& registry, SqliteStore& store,
     auto id = idR.value.value();
     std::cout << "created Viz::Panel " << id.to_hex() << "\n";
     print_route_for(registry, iris::viz::kTypeVizPanel);
+    maybe_spawn_concho(registry, store, id);
     if (flags.produced_by.has_value()) {
       auto from_id = parse_object_id_or_alias(flags.produced_by.value(), session_aliases,
                                               store, registry, &err);
@@ -1488,6 +1508,9 @@ void cmd_edge(SqliteStore& store, SchemaRegistry& registry,
     return;
   }
   std::cout << "edge added\n";
+  if (name == "produced" || name == "progress" || name == "diagnostic") {
+    maybe_spawn_concho(registry, store, to_id.value());
+  }
 }
 
 void cmd_route_type(SchemaRegistry& registry, const std::string& type_name) {
