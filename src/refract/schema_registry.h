@@ -47,6 +47,7 @@ struct TypeDefinition {
   std::vector<FieldDefinition> fields;
   std::vector<OperationDefinition> operations;
   std::vector<RelationshipSpec> relationships;
+  std::optional<std::string> preferred_renderer;
 };
 
 struct TypeSummary {
@@ -54,6 +55,7 @@ struct TypeSummary {
   referee::ObjectID definition_id{};
   std::string name;
   std::string namespace_name;
+  std::optional<std::string> preferred_renderer;
 };
 
 struct DefinitionRecord {

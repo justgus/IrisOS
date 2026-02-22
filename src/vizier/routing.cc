@@ -8,6 +8,9 @@ static std::string display_name(const iris::refract::TypeSummary& summary) {
 }
 
 std::optional<Route> route_for_type(const iris::refract::TypeSummary& summary) {
+  if (summary.preferred_renderer.has_value() && !summary.preferred_renderer->empty()) {
+    return Route{summary.preferred_renderer.value()};
+  }
   auto full = display_name(summary);
   if (full == "Viz::TextLog") return Route{"Log"};
   if (full == "Viz::Metric") return Route{"Metric"};

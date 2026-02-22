@@ -52,6 +52,7 @@ static nlohmann::json to_json(const TypeDefinition& def) {
   j["name"] = def.name;
   j["namespace"] = def.namespace_name;
   j["version"] = def.version;
+  if (def.preferred_renderer.has_value()) j["preferred_renderer"] = def.preferred_renderer.value();
 
   j["fields"] = nlohmann::json::array();
   for (const auto& field : def.fields) j["fields"].push_back(to_json(field));
@@ -112,6 +113,9 @@ static TypeDefinition definition_from_json(const nlohmann::json& j) {
   def.name = j.value("name", "");
   def.namespace_name = j.value("namespace", "");
   def.version = j.value("version", 1ULL);
+  if (j.contains("preferred_renderer")) {
+    def.preferred_renderer = j.at("preferred_renderer").get<std::string>();
+  }
 
   if (j.contains("fields")) {
     for (const auto& item : j.at("fields")) def.fields.push_back(field_from_json(item));
@@ -226,6 +230,7 @@ referee::Result<std::vector<TypeSummary>> SchemaRegistry::list_types() {
     summary.definition_id = defR.value->ref.id;
     summary.name = defR.value->definition.name;
     summary.namespace_name = defR.value->definition.namespace_name;
+    summary.preferred_renderer = defR.value->definition.preferred_renderer;
 
     out.push_back(std::move(summary));
   }
