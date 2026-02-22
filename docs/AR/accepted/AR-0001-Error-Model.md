@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #65
 ---
 
 # AR-0001 — Expected-Style Error Model

@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #66
 ---
 
 # AR-0002 — Object Identity and Versioning Semantics

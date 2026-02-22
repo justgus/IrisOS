@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #68
 ---
 
 # AR-0004 — Index and Graph Storage Strategy (Recommendation)

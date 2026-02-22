@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #77
 ---
 
 # AR-0013 — Viz Display Subsystem (Recommendation)

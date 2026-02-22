@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #83
 ---
 
 # ER-0002 — Phase 1 Milestone 1: Refract Schema Registry v0

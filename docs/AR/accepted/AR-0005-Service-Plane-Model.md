@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #69
 ---
 
 # AR-0005 — Service Plane Model (Recommendation)

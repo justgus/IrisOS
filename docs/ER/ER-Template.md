@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #115
 ---
 
 # ER Template — Enhancement Request / Epic / Sprint

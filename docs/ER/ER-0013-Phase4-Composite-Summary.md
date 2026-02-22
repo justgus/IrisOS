@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #94
 ---
 
 # ER-0013 — Phase 4 Milestone 2: Composite Summary Pattern

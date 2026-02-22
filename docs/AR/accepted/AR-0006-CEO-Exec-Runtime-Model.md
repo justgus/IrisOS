@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #70
 ---
 
 # AR-0006 — CEO/Exec Runtime Model (Recommendation)

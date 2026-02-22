@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #71
 ---
 
 # AR-0007 — Refract Reflection Graph (Recommendation)
