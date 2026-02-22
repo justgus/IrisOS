@@ -369,6 +369,45 @@ std::optional<ObjectID> parse_object_id_or_alias(
     }
   }
 
+  if (name.size() >= 4 && name.size() < 32 && name.front() != '@') {
+    bool hex_only = true;
+    for (char c : name) {
+      if (!std::isxdigit(static_cast<unsigned char>(c))) {
+        hex_only = false;
+        break;
+      }
+    }
+    if (hex_only) {
+      std::optional<ObjectID> match;
+      bool ambiguous = false;
+      for (const auto& summary : typesR.value.value()) {
+        auto objsR = store.list_by_type(summary.type_id);
+        if (!objsR) {
+          if (err_out) *err_out = objsR.error->message;
+          return std::nullopt;
+        }
+        for (const auto& rec : objsR.value.value()) {
+          auto hex = rec.ref.id.to_hex();
+          if (hex.rfind(name, 0) == 0) {
+            if (match.has_value() && match->to_hex() != hex) {
+              ambiguous = true;
+              break;
+            }
+            match = rec.ref.id;
+          }
+        }
+        if (ambiguous) break;
+      }
+      if (ambiguous) {
+        if (err_out) *err_out = "ambiguous ObjectID prefix";
+        return std::nullopt;
+      }
+      if (match.has_value()) return match;
+      if (err_out) *err_out = "ObjectID prefix not found";
+      return std::nullopt;
+    }
+  }
+
   if (err_out) *err_out = "alias not found";
   return std::nullopt;
 }
@@ -467,6 +506,7 @@ void print_help() {
   std::cout << "  edge <fromObjectID> <toObjectID> <name> [role]\n";
   std::cout << "  emit viz <textlog|metric|table|tree|panel> [args...]\n";
   std::cout << "    [--produced-by <id>] [--progress-of <id>] [--diagnostic-of <id>] [--role <role>]\n";
+  std::cout << "  note: ObjectID prefixes (>=4 hex chars) resolve when unambiguous\n";
   std::cout << "  help\n";
   std::cout << "  exit\n";
 }
