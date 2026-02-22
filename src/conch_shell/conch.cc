@@ -506,6 +506,8 @@ void print_help() {
   std::cout << "  edge <fromObjectID> <toObjectID> <name> [role]\n";
   std::cout << "  emit viz <textlog|metric|table|tree|panel> [args...]\n";
   std::cout << "    [--produced-by <id>] [--progress-of <id>] [--diagnostic-of <id>] [--role <role>]\n";
+  std::cout << "  route <ObjectID>\n";
+  std::cout << "  route type <TypeName>\n";
   std::cout << "  note: ObjectID prefixes (>=4 hex chars) resolve when unambiguous\n";
   std::cout << "  help\n";
   std::cout << "  exit\n";
@@ -1488,6 +1490,47 @@ void cmd_edge(SqliteStore& store, SchemaRegistry& registry,
   std::cout << "edge added\n";
 }
 
+void cmd_route_type(SchemaRegistry& registry, const std::string& type_name) {
+  std::string err;
+  auto summary = resolve_type(registry, type_name, &err);
+  if (!summary.has_value()) {
+    std::cout << "error: " << err << "\n";
+    return;
+  }
+  auto route = iris::vizier::route_for_type(summary.value());
+  if (!route.has_value()) {
+    std::cout << "route: none\n";
+    return;
+  }
+  std::cout << "route: " << route->concho << "\n";
+}
+
+void cmd_route_object(SchemaRegistry& registry, SqliteStore& store,
+                      const std::unordered_map<std::string, ObjectID>& session_aliases,
+                      const std::string& token) {
+  std::string err;
+  auto id = parse_object_id_or_alias(token, session_aliases, store, registry, &err);
+  if (!id.has_value()) {
+    std::cout << "error: " << err << "\n";
+    return;
+  }
+  auto recR = store.get_latest(id.value());
+  if (!recR) {
+    std::cout << "error: " << recR.error->message << "\n";
+    return;
+  }
+  if (!recR.value->has_value()) {
+    std::cout << "error: object not found\n";
+    return;
+  }
+  auto route = iris::vizier::route_for_type_id(registry, recR.value->value().type);
+  if (!route.has_value()) {
+    std::cout << "route: none\n";
+    return;
+  }
+  std::cout << "route: " << route->concho << "\n";
+}
+
 } // namespace
 
 int main(int argc, char** argv) {
@@ -1691,6 +1734,18 @@ int main(int argc, char** argv) {
     }
     if (cmd == "emit") {
       cmd_emit_viz(registry, store, session_aliases, tokens);
+      continue;
+    }
+    if (cmd == "route") {
+      if (tokens.size() == 3 && tokens[1] == "type") {
+        cmd_route_type(registry, tokens[2]);
+        continue;
+      }
+      if (tokens.size() == 2) {
+        cmd_route_object(registry, store, session_aliases, tokens[1]);
+        continue;
+      }
+      std::cout << "error: usage: route <ObjectID> | route type <TypeName>\n";
       continue;
     }
 
