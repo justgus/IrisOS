@@ -192,6 +192,7 @@ TypeDefinition make_viz_text_log() {
   def.name = "TextLog";
   def.namespace_name = "Viz";
   def.version = 1;
+  def.preferred_renderer = "Log";
   return def;
 }
 
@@ -201,6 +202,7 @@ TypeDefinition make_viz_metric() {
   def.name = "Metric";
   def.namespace_name = "Viz";
   def.version = 1;
+  def.preferred_renderer = "Metric";
   return def;
 }
 
@@ -210,6 +212,7 @@ TypeDefinition make_viz_table() {
   def.name = "Table";
   def.namespace_name = "Viz";
   def.version = 1;
+  def.preferred_renderer = "Table";
   return def;
 }
 
@@ -219,6 +222,7 @@ TypeDefinition make_viz_tree() {
   def.name = "Tree";
   def.namespace_name = "Viz";
   def.version = 1;
+  def.preferred_renderer = "Tree";
   return def;
 }
 

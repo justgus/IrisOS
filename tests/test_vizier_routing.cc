@@ -31,12 +31,23 @@ START_TEST(test_unknown_route)
 }
 END_TEST
 
+START_TEST(test_preferred_renderer_route)
+{
+  TypeSummary custom{referee::TypeID{6}, referee::ObjectID{}, "Widget", "Demo"};
+  custom.preferred_renderer = "Panel";
+  auto route = route_for_type(custom);
+  ck_assert(route.has_value());
+  ck_assert_str_eq(route->concho.c_str(), "Panel");
+}
+END_TEST
+
 Suite* vizier_routing_suite(void) {
   Suite* s = suite_create("VizierRouting");
   TCase* tc = tcase_create("core");
 
   tcase_add_test(tc, test_viz_routes);
   tcase_add_test(tc, test_unknown_route);
+  tcase_add_test(tc, test_preferred_renderer_route);
 
   suite_add_tcase(s, tc);
   return s;
