@@ -464,7 +464,9 @@ void print_help() {
   std::cout << "  start <ObjectID>\n";
   std::cout << "  ps\n";
   std::cout << "  kill <TaskID>\n";
+  std::cout << "  edge <fromObjectID> <toObjectID> <name> [role]\n";
   std::cout << "  emit viz <textlog|metric|table|tree|panel> [args...]\n";
+  std::cout << "    [--produced-by <id>] [--progress-of <id>] [--diagnostic-of <id>] [--role <role>]\n";
   std::cout << "  help\n";
   std::cout << "  exit\n";
 }
@@ -1133,6 +1135,64 @@ void cmd_alias_assignment(const std::string& line,
   std::cout << name << " = " << id.to_hex() << "\n";
 }
 
+struct EmitFlags {
+  std::vector<std::string> positional;
+  std::optional<std::string> produced_by;
+  std::optional<std::string> progress_of;
+  std::optional<std::string> diagnostic_of;
+  std::string role{"artifact"};
+};
+
+bool parse_emit_flags(const std::vector<std::string>& tokens, size_t start,
+                      EmitFlags* out, std::string* err_out) {
+  EmitFlags flags;
+  for (size_t i = start; i < tokens.size(); ++i) {
+    const auto& tok = tokens[i];
+    if (tok == "--produced-by" || tok == "--progress-of" || tok == "--diagnostic-of") {
+      if (i + 1 >= tokens.size()) {
+        if (err_out) *err_out = "missing id after " + tok;
+        return false;
+      }
+      const auto& value = tokens[++i];
+      if (tok == "--produced-by") flags.produced_by = value;
+      if (tok == "--progress-of") flags.progress_of = value;
+      if (tok == "--diagnostic-of") flags.diagnostic_of = value;
+      continue;
+    }
+    if (tok == "--role") {
+      if (i + 1 >= tokens.size()) {
+        if (err_out) *err_out = "missing role after --role";
+        return false;
+      }
+      flags.role = tokens[++i];
+      continue;
+    }
+    if (!tok.empty() && tok[0] == '-') {
+      if (err_out) *err_out = "unknown option: " + tok;
+      return false;
+    }
+    flags.positional.push_back(tok);
+  }
+  if (out) *out = std::move(flags);
+  return true;
+}
+
+bool add_edge_named(SqliteStore& store, const ObjectID& from_id, const ObjectID& to_id,
+                    const std::string& name, const std::string& role,
+                    std::string* err_out) {
+  auto from_ref = latest_ref(store, from_id, err_out);
+  if (!from_ref.has_value()) return false;
+  auto to_ref = latest_ref(store, to_id, err_out);
+  if (!to_ref.has_value()) return false;
+  referee::Bytes props;
+  auto edgeR = store.add_edge(from_ref.value(), to_ref.value(), name, role, props);
+  if (!edgeR) {
+    if (err_out) *err_out = edgeR.error->message;
+    return false;
+  }
+  return true;
+}
+
 void print_route_for(iris::refract::SchemaRegistry& registry, referee::TypeID type_id) {
   auto routeR = iris::vizier::route_for_type_id(registry, type_id);
   if (!routeR.has_value()) {
@@ -1143,6 +1203,7 @@ void print_route_for(iris::refract::SchemaRegistry& registry, referee::TypeID ty
 }
 
 void cmd_emit_viz(SchemaRegistry& registry, SqliteStore& store,
+                  const std::unordered_map<std::string, ObjectID>& session_aliases,
                   const std::vector<std::string>& tokens) {
   if (tokens.size() < 3 || tokens[1] != "viz") {
     std::cout << "usage: emit viz <textlog|metric|table|tree|panel> [args...]\n";
@@ -1150,10 +1211,16 @@ void cmd_emit_viz(SchemaRegistry& registry, SqliteStore& store,
   }
 
   const auto& kind = tokens[2];
+  EmitFlags flags;
+  std::string err;
+  if (!parse_emit_flags(tokens, 3, &flags, &err)) {
+    std::cout << "error: " << err << "\n";
+    return;
+  }
   if (kind == "textlog" || kind == "log") {
     iris::viz::TextLog log;
-    if (tokens.size() > 3) {
-      for (size_t i = 3; i < tokens.size(); ++i) log.lines.push_back(tokens[i]);
+    if (!flags.positional.empty()) {
+      for (const auto& line : flags.positional) log.lines.push_back(line);
     } else {
       log.lines = {"hello", "world"};
     }
@@ -1162,18 +1229,43 @@ void cmd_emit_viz(SchemaRegistry& registry, SqliteStore& store,
       std::cout << "error: " << idR.error->message << "\n";
       return;
     }
-    std::cout << "created Viz::TextLog " << idR.value.value().to_hex() << "\n";
+    auto id = idR.value.value();
+    std::cout << "created Viz::TextLog " << id.to_hex() << "\n";
     print_route_for(registry, iris::viz::kTypeVizTextLog);
+    if (flags.produced_by.has_value()) {
+      auto from_id = parse_object_id_or_alias(flags.produced_by.value(), session_aliases,
+                                              store, registry, &err);
+      if (!from_id.has_value()
+          || !add_edge_named(store, from_id.value(), id, "produced", flags.role, &err)) {
+        std::cout << "error: " << err << "\n";
+      }
+    }
+    if (flags.progress_of.has_value()) {
+      auto from_id = parse_object_id_or_alias(flags.progress_of.value(), session_aliases,
+                                              store, registry, &err);
+      if (!from_id.has_value()
+          || !add_edge_named(store, from_id.value(), id, "progress", flags.role, &err)) {
+        std::cout << "error: " << err << "\n";
+      }
+    }
+    if (flags.diagnostic_of.has_value()) {
+      auto from_id = parse_object_id_or_alias(flags.diagnostic_of.value(), session_aliases,
+                                              store, registry, &err);
+      if (!from_id.has_value()
+          || !add_edge_named(store, from_id.value(), id, "diagnostic", flags.role, &err)) {
+        std::cout << "error: " << err << "\n";
+      }
+    }
     return;
   }
   if (kind == "metric") {
     iris::viz::Metric metric;
     metric.name = "load";
     metric.value = 0.42;
-    if (tokens.size() >= 4) metric.name = tokens[3];
-    if (tokens.size() >= 5) {
+    if (flags.positional.size() >= 1) metric.name = flags.positional[0];
+    if (flags.positional.size() >= 2) {
       double parsed = 0.0;
-      if (!parse_double(tokens[4], &parsed)) {
+      if (!parse_double(flags.positional[1], &parsed)) {
         std::cout << "error: invalid metric value\n";
         return;
       }
@@ -1184,8 +1276,33 @@ void cmd_emit_viz(SchemaRegistry& registry, SqliteStore& store,
       std::cout << "error: " << idR.error->message << "\n";
       return;
     }
-    std::cout << "created Viz::Metric " << idR.value.value().to_hex() << "\n";
+    auto id = idR.value.value();
+    std::cout << "created Viz::Metric " << id.to_hex() << "\n";
     print_route_for(registry, iris::viz::kTypeVizMetric);
+    if (flags.produced_by.has_value()) {
+      auto from_id = parse_object_id_or_alias(flags.produced_by.value(), session_aliases,
+                                              store, registry, &err);
+      if (!from_id.has_value()
+          || !add_edge_named(store, from_id.value(), id, "produced", flags.role, &err)) {
+        std::cout << "error: " << err << "\n";
+      }
+    }
+    if (flags.progress_of.has_value()) {
+      auto from_id = parse_object_id_or_alias(flags.progress_of.value(), session_aliases,
+                                              store, registry, &err);
+      if (!from_id.has_value()
+          || !add_edge_named(store, from_id.value(), id, "progress", flags.role, &err)) {
+        std::cout << "error: " << err << "\n";
+      }
+    }
+    if (flags.diagnostic_of.has_value()) {
+      auto from_id = parse_object_id_or_alias(flags.diagnostic_of.value(), session_aliases,
+                                              store, registry, &err);
+      if (!from_id.has_value()
+          || !add_edge_named(store, from_id.value(), id, "diagnostic", flags.role, &err)) {
+        std::cout << "error: " << err << "\n";
+      }
+    }
     return;
   }
   if (kind == "table") {
@@ -1197,36 +1314,138 @@ void cmd_emit_viz(SchemaRegistry& registry, SqliteStore& store,
       std::cout << "error: " << idR.error->message << "\n";
       return;
     }
-    std::cout << "created Viz::Table " << idR.value.value().to_hex() << "\n";
+    auto id = idR.value.value();
+    std::cout << "created Viz::Table " << id.to_hex() << "\n";
     print_route_for(registry, iris::viz::kTypeVizTable);
+    if (flags.produced_by.has_value()) {
+      auto from_id = parse_object_id_or_alias(flags.produced_by.value(), session_aliases,
+                                              store, registry, &err);
+      if (!from_id.has_value()
+          || !add_edge_named(store, from_id.value(), id, "produced", flags.role, &err)) {
+        std::cout << "error: " << err << "\n";
+      }
+    }
+    if (flags.progress_of.has_value()) {
+      auto from_id = parse_object_id_or_alias(flags.progress_of.value(), session_aliases,
+                                              store, registry, &err);
+      if (!from_id.has_value()
+          || !add_edge_named(store, from_id.value(), id, "progress", flags.role, &err)) {
+        std::cout << "error: " << err << "\n";
+      }
+    }
+    if (flags.diagnostic_of.has_value()) {
+      auto from_id = parse_object_id_or_alias(flags.diagnostic_of.value(), session_aliases,
+                                              store, registry, &err);
+      if (!from_id.has_value()
+          || !add_edge_named(store, from_id.value(), id, "diagnostic", flags.role, &err)) {
+        std::cout << "error: " << err << "\n";
+      }
+    }
     return;
   }
   if (kind == "tree") {
     iris::viz::Tree tree;
-    tree.label = tokens.size() >= 4 ? tokens[3] : "root";
+    tree.label = flags.positional.empty() ? "root" : flags.positional[0];
     auto idR = iris::viz::create_tree(registry, store, tree);
     if (!idR) {
       std::cout << "error: " << idR.error->message << "\n";
       return;
     }
-    std::cout << "created Viz::Tree " << idR.value.value().to_hex() << "\n";
+    auto id = idR.value.value();
+    std::cout << "created Viz::Tree " << id.to_hex() << "\n";
     print_route_for(registry, iris::viz::kTypeVizTree);
+    if (flags.produced_by.has_value()) {
+      auto from_id = parse_object_id_or_alias(flags.produced_by.value(), session_aliases,
+                                              store, registry, &err);
+      if (!from_id.has_value()
+          || !add_edge_named(store, from_id.value(), id, "produced", flags.role, &err)) {
+        std::cout << "error: " << err << "\n";
+      }
+    }
+    if (flags.progress_of.has_value()) {
+      auto from_id = parse_object_id_or_alias(flags.progress_of.value(), session_aliases,
+                                              store, registry, &err);
+      if (!from_id.has_value()
+          || !add_edge_named(store, from_id.value(), id, "progress", flags.role, &err)) {
+        std::cout << "error: " << err << "\n";
+      }
+    }
+    if (flags.diagnostic_of.has_value()) {
+      auto from_id = parse_object_id_or_alias(flags.diagnostic_of.value(), session_aliases,
+                                              store, registry, &err);
+      if (!from_id.has_value()
+          || !add_edge_named(store, from_id.value(), id, "diagnostic", flags.role, &err)) {
+        std::cout << "error: " << err << "\n";
+      }
+    }
     return;
   }
   if (kind == "panel") {
     iris::viz::Panel panel;
-    panel.title = tokens.size() >= 4 ? tokens[3] : "Panel";
+    panel.title = flags.positional.empty() ? "Panel" : flags.positional[0];
     auto idR = iris::viz::create_panel(registry, store, panel);
     if (!idR) {
       std::cout << "error: " << idR.error->message << "\n";
       return;
     }
-    std::cout << "created Viz::Panel " << idR.value.value().to_hex() << "\n";
+    auto id = idR.value.value();
+    std::cout << "created Viz::Panel " << id.to_hex() << "\n";
     print_route_for(registry, iris::viz::kTypeVizPanel);
+    if (flags.produced_by.has_value()) {
+      auto from_id = parse_object_id_or_alias(flags.produced_by.value(), session_aliases,
+                                              store, registry, &err);
+      if (!from_id.has_value()
+          || !add_edge_named(store, from_id.value(), id, "produced", flags.role, &err)) {
+        std::cout << "error: " << err << "\n";
+      }
+    }
+    if (flags.progress_of.has_value()) {
+      auto from_id = parse_object_id_or_alias(flags.progress_of.value(), session_aliases,
+                                              store, registry, &err);
+      if (!from_id.has_value()
+          || !add_edge_named(store, from_id.value(), id, "progress", flags.role, &err)) {
+        std::cout << "error: " << err << "\n";
+      }
+    }
+    if (flags.diagnostic_of.has_value()) {
+      auto from_id = parse_object_id_or_alias(flags.diagnostic_of.value(), session_aliases,
+                                              store, registry, &err);
+      if (!from_id.has_value()
+          || !add_edge_named(store, from_id.value(), id, "diagnostic", flags.role, &err)) {
+        std::cout << "error: " << err << "\n";
+      }
+    }
     return;
   }
 
   std::cout << "error: unknown viz artifact\n";
+}
+
+void cmd_edge(SqliteStore& store, SchemaRegistry& registry,
+              const std::unordered_map<std::string, ObjectID>& session_aliases,
+              const std::vector<std::string>& tokens) {
+  if (tokens.size() < 4) {
+    std::cout << "usage: edge <fromObjectID> <toObjectID> <name> [role]\n";
+    return;
+  }
+  std::string err;
+  auto from_id = parse_object_id_or_alias(tokens[1], session_aliases, store, registry, &err);
+  if (!from_id.has_value()) {
+    std::cout << "error: " << err << "\n";
+    return;
+  }
+  auto to_id = parse_object_id_or_alias(tokens[2], session_aliases, store, registry, &err);
+  if (!to_id.has_value()) {
+    std::cout << "error: " << err << "\n";
+    return;
+  }
+  const std::string& name = tokens[3];
+  std::string role = tokens.size() >= 5 ? tokens[4] : "artifact";
+  if (!add_edge_named(store, from_id.value(), to_id.value(), name, role, &err)) {
+    std::cout << "error: " << err << "\n";
+    return;
+  }
+  std::cout << "edge added\n";
 }
 
 } // namespace
@@ -1426,8 +1645,12 @@ int main(int argc, char** argv) {
       tasks.erase(it);
       continue;
     }
+    if (cmd == "edge") {
+      cmd_edge(store, registry, session_aliases, tokens);
+      continue;
+    }
     if (cmd == "emit") {
-      cmd_emit_viz(registry, store, tokens);
+      cmd_emit_viz(registry, store, session_aliases, tokens);
       continue;
     }
 
