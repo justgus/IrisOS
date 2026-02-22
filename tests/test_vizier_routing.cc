@@ -12,10 +12,10 @@ using iris::vizier::route_for_type;
 
 START_TEST(test_viz_routes)
 {
-  TypeSummary log{referee::TypeID{1}, referee::ObjectID{}, "TextLog", "Viz"};
-  TypeSummary metric{referee::TypeID{2}, referee::ObjectID{}, "Metric", "Viz"};
-  TypeSummary table{referee::TypeID{3}, referee::ObjectID{}, "Table", "Viz"};
-  TypeSummary tree{referee::TypeID{4}, referee::ObjectID{}, "Tree", "Viz"};
+  TypeSummary log{referee::TypeID{1}, referee::ObjectID{}, "TextLog", "Viz", std::nullopt};
+  TypeSummary metric{referee::TypeID{2}, referee::ObjectID{}, "Metric", "Viz", std::nullopt};
+  TypeSummary table{referee::TypeID{3}, referee::ObjectID{}, "Table", "Viz", std::nullopt};
+  TypeSummary tree{referee::TypeID{4}, referee::ObjectID{}, "Tree", "Viz", std::nullopt};
 
   ck_assert(route_for_type(log).has_value());
   ck_assert(route_for_type(metric).has_value());
@@ -26,14 +26,14 @@ END_TEST
 
 START_TEST(test_unknown_route)
 {
-  TypeSummary other{referee::TypeID{5}, referee::ObjectID{}, "Panel", "Viz"};
+  TypeSummary other{referee::TypeID{5}, referee::ObjectID{}, "Panel", "Viz", std::nullopt};
   ck_assert(!route_for_type(other).has_value());
 }
 END_TEST
 
 START_TEST(test_preferred_renderer_route)
 {
-  TypeSummary custom{referee::TypeID{6}, referee::ObjectID{}, "Widget", "Demo"};
+  TypeSummary custom{referee::TypeID{6}, referee::ObjectID{}, "Widget", "Demo", std::nullopt};
   custom.preferred_renderer = "Panel";
   auto route = route_for_type(custom);
   ck_assert(route.has_value());
