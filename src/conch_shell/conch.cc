@@ -6,6 +6,8 @@
 #include "refract/schema_registry.h"
 #include "referee/referee.h"
 #include "referee_sqlite/sqlite_store.h"
+#include "viz/artifacts.h"
+#include "vizier/routing.h"
 
 #include <algorithm>
 #include <cctype>
@@ -55,6 +57,7 @@ referee::Result<ObjectID> create_object(SchemaRegistry& registry, SqliteStore& s
                                         const std::string& expr);
 bool parse_bool(std::string_view v, bool* out);
 bool parse_int(std::string_view v, std::int64_t* out);
+bool parse_double(std::string_view v, double* out);
 
 std::vector<std::string> split_ws(const std::string& line) {
   std::istringstream iss(line);
@@ -426,6 +429,16 @@ bool parse_int(std::string_view v, std::int64_t* out) {
   return true;
 }
 
+bool parse_double(std::string_view v, double* out) {
+  if (v.empty()) return false;
+  char* end = nullptr;
+  std::string tmp(v);
+  double val = std::strtod(tmp.c_str(), &end);
+  if (!end || *end != '\0') return false;
+  *out = val;
+  return true;
+}
+
 void print_help() {
   std::cout << "Commands:\n";
   std::cout << "  ls\n";
@@ -451,6 +464,7 @@ void print_help() {
   std::cout << "  start <ObjectID>\n";
   std::cout << "  ps\n";
   std::cout << "  kill <TaskID>\n";
+  std::cout << "  emit viz <textlog|metric|table|tree|panel> [args...]\n";
   std::cout << "  help\n";
   std::cout << "  exit\n";
 }
@@ -1119,6 +1133,102 @@ void cmd_alias_assignment(const std::string& line,
   std::cout << name << " = " << id.to_hex() << "\n";
 }
 
+void print_route_for(iris::refract::SchemaRegistry& registry, referee::TypeID type_id) {
+  auto routeR = iris::vizier::route_for_type_id(registry, type_id);
+  if (!routeR.has_value()) {
+    std::cout << "route: none\n";
+    return;
+  }
+  std::cout << "route: " << routeR->concho << "\n";
+}
+
+void cmd_emit_viz(SchemaRegistry& registry, SqliteStore& store,
+                  const std::vector<std::string>& tokens) {
+  if (tokens.size() < 3 || tokens[1] != "viz") {
+    std::cout << "usage: emit viz <textlog|metric|table|tree|panel> [args...]\n";
+    return;
+  }
+
+  const auto& kind = tokens[2];
+  if (kind == "textlog" || kind == "log") {
+    iris::viz::TextLog log;
+    if (tokens.size() > 3) {
+      for (size_t i = 3; i < tokens.size(); ++i) log.lines.push_back(tokens[i]);
+    } else {
+      log.lines = {"hello", "world"};
+    }
+    auto idR = iris::viz::create_text_log(registry, store, log);
+    if (!idR) {
+      std::cout << "error: " << idR.error->message << "\n";
+      return;
+    }
+    std::cout << "created Viz::TextLog " << idR.value.value().to_hex() << "\n";
+    print_route_for(registry, iris::viz::kTypeVizTextLog);
+    return;
+  }
+  if (kind == "metric") {
+    iris::viz::Metric metric;
+    metric.name = "load";
+    metric.value = 0.42;
+    if (tokens.size() >= 4) metric.name = tokens[3];
+    if (tokens.size() >= 5) {
+      double parsed = 0.0;
+      if (!parse_double(tokens[4], &parsed)) {
+        std::cout << "error: invalid metric value\n";
+        return;
+      }
+      metric.value = parsed;
+    }
+    auto idR = iris::viz::create_metric(registry, store, metric);
+    if (!idR) {
+      std::cout << "error: " << idR.error->message << "\n";
+      return;
+    }
+    std::cout << "created Viz::Metric " << idR.value.value().to_hex() << "\n";
+    print_route_for(registry, iris::viz::kTypeVizMetric);
+    return;
+  }
+  if (kind == "table") {
+    iris::viz::Table table;
+    table.columns = {"name", "value"};
+    table.rows = {{"alpha", "1"}, {"beta", "2"}};
+    auto idR = iris::viz::create_table(registry, store, table);
+    if (!idR) {
+      std::cout << "error: " << idR.error->message << "\n";
+      return;
+    }
+    std::cout << "created Viz::Table " << idR.value.value().to_hex() << "\n";
+    print_route_for(registry, iris::viz::kTypeVizTable);
+    return;
+  }
+  if (kind == "tree") {
+    iris::viz::Tree tree;
+    tree.label = tokens.size() >= 4 ? tokens[3] : "root";
+    auto idR = iris::viz::create_tree(registry, store, tree);
+    if (!idR) {
+      std::cout << "error: " << idR.error->message << "\n";
+      return;
+    }
+    std::cout << "created Viz::Tree " << idR.value.value().to_hex() << "\n";
+    print_route_for(registry, iris::viz::kTypeVizTree);
+    return;
+  }
+  if (kind == "panel") {
+    iris::viz::Panel panel;
+    panel.title = tokens.size() >= 4 ? tokens[3] : "Panel";
+    auto idR = iris::viz::create_panel(registry, store, panel);
+    if (!idR) {
+      std::cout << "error: " << idR.error->message << "\n";
+      return;
+    }
+    std::cout << "created Viz::Panel " << idR.value.value().to_hex() << "\n";
+    print_route_for(registry, iris::viz::kTypeVizPanel);
+    return;
+  }
+
+  std::cout << "error: unknown viz artifact\n";
+}
+
 } // namespace
 
 int main(int argc, char** argv) {
@@ -1314,6 +1424,10 @@ int main(int argc, char** argv) {
       }
       std::cout << "killed " << it->id << "\n";
       tasks.erase(it);
+      continue;
+    }
+    if (cmd == "emit") {
+      cmd_emit_viz(registry, store, tokens);
       continue;
     }
 
