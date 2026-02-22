@@ -73,12 +73,40 @@ START_TEST(test_viz_metric_create)
 }
 END_TEST
 
+START_TEST(test_viz_schema_definitions)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+  auto boot = bootstrap_core_schema(registry);
+  ck_assert_msg(boot, "bootstrap failed: %s", result_message(boot));
+
+  auto logDefR = registry.get_definition_by_type(kTypeVizTextLog);
+  ck_assert_msg(logDefR, "get_definition_by_type failed: %s", result_message(logDefR));
+  ck_assert_msg(logDefR.value->has_value(), "expected TextLog definition");
+  ck_assert_int_eq((int)logDefR.value->value().definition.fields.size(), 1);
+  ck_assert_str_eq(logDefR.value->value().definition.fields[0].name.c_str(), "lines");
+
+  auto metricDefR = registry.get_definition_by_type(kTypeVizMetric);
+  ck_assert_msg(metricDefR, "get_definition_by_type failed: %s", result_message(metricDefR));
+  ck_assert_msg(metricDefR.value->has_value(), "expected Metric definition");
+  ck_assert_int_eq((int)metricDefR.value->value().definition.fields.size(), 2);
+  ck_assert_str_eq(metricDefR.value->value().definition.fields[0].name.c_str(), "name");
+  ck_assert_str_eq(metricDefR.value->value().definition.fields[1].name.c_str(), "value");
+
+  ck_assert_msg(store.close(), "close failed");
+}
+END_TEST
+
 Suite* viz_artifact_suite(void) {
   Suite* s = suite_create("VizArtifacts");
   TCase* tc = tcase_create("core");
 
   tcase_add_test(tc, test_viz_artifact_create);
   tcase_add_test(tc, test_viz_metric_create);
+  tcase_add_test(tc, test_viz_schema_definitions);
 
   suite_add_tcase(s, tc);
   return s;

@@ -14,6 +14,7 @@ constexpr referee::TypeID kTypeObjectID{0x1004ULL};
 constexpr referee::TypeID kTypeTypeID{0x1005ULL};
 constexpr referee::TypeID kTypeVersion{0x1006ULL};
 constexpr referee::TypeID kTypeBytes{0x1007ULL};
+constexpr referee::TypeID kTypeF64{0x1008ULL};
 
 constexpr referee::TypeID kTypeFieldDefinition{0x5246524346000001ULL};
 constexpr referee::TypeID kTypeOperationDefinition{0x5246524346000002ULL};
@@ -183,6 +184,7 @@ TypeDefinition make_viz_panel() {
   def.name = "Panel";
   def.namespace_name = "Viz";
   def.version = 1;
+  def.fields.push_back(FieldDefinition{ "title", kTypeString, false, std::nullopt });
   return def;
 }
 
@@ -193,6 +195,7 @@ TypeDefinition make_viz_text_log() {
   def.namespace_name = "Viz";
   def.version = 1;
   def.preferred_renderer = "Log";
+  def.fields.push_back(FieldDefinition{ "lines", kTypeBytes, false, std::nullopt });
   return def;
 }
 
@@ -203,6 +206,8 @@ TypeDefinition make_viz_metric() {
   def.namespace_name = "Viz";
   def.version = 1;
   def.preferred_renderer = "Metric";
+  def.fields.push_back(FieldDefinition{ "name", kTypeString, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "value", kTypeF64, true, std::nullopt });
   return def;
 }
 
@@ -213,6 +218,8 @@ TypeDefinition make_viz_table() {
   def.namespace_name = "Viz";
   def.version = 1;
   def.preferred_renderer = "Table";
+  def.fields.push_back(FieldDefinition{ "columns", kTypeBytes, false, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "rows", kTypeBytes, false, std::nullopt });
   return def;
 }
 
@@ -223,6 +230,8 @@ TypeDefinition make_viz_tree() {
   def.namespace_name = "Viz";
   def.version = 1;
   def.preferred_renderer = "Tree";
+  def.fields.push_back(FieldDefinition{ "label", kTypeString, false, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "children", kTypeBytes, false, std::nullopt });
   return def;
 }
 
@@ -230,7 +239,7 @@ TypeDefinition make_viz_tree() {
 
 std::vector<TypeDefinition> core_schema_definitions() {
   std::vector<TypeDefinition> defs;
-  defs.reserve(20);
+  defs.reserve(21);
   defs.push_back(make_primitive(kTypeString, "String"));
   defs.push_back(make_primitive(kTypeU64, "U64"));
   defs.push_back(make_primitive(kTypeBool, "Bool"));
@@ -238,6 +247,7 @@ std::vector<TypeDefinition> core_schema_definitions() {
   defs.push_back(make_primitive(kTypeTypeID, "TypeID"));
   defs.push_back(make_primitive(kTypeVersion, "Version"));
   defs.push_back(make_primitive(kTypeBytes, "Bytes"));
+  defs.push_back(make_primitive(kTypeF64, "F64"));
   defs.push_back(make_type_definition());
   defs.push_back(make_field_definition());
   defs.push_back(make_signature_definition());
