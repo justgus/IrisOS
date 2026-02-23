@@ -32,6 +32,7 @@ public:
   explicit Tokenizer(std::string symbols = "(){}[],:=");
 
   TokenizeResult tokenize(std::string_view input) const;
+  TokenizeResult tokenize_loose(std::string_view input) const;
 
 private:
   bool is_symbol(char c) const;
