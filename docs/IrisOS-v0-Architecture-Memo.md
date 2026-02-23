@@ -499,3 +499,22 @@ Best move: start with Option 2 for speed, but design toward Option 1 as the end 
 
 Internally, schema is Refract objects. Externally, schema can be exported/imported as JSON/YAML/TOML
 for tooling and inspection.
+
+---
+
+## 9) v0 Limitations and v1 Roadmap
+
+### v0 Limitations (current)
+
+- Referee uses SQLite (`referee.db`) rather than the segment/index layout from AR-0003.
+- Index/graph storage relies on SQLite tables and indexes; rebuild-from-segment is deferred.
+- Conch is terminal-first; Conchos are object records without a full UI renderer.
+- CEO + Exec + Comms are in-memory primitives; no OS-level I/O adapters or network stack.
+- No schema migration tooling beyond selecting newer Definition versions.
+
+### v1 Roadmap (next)
+
+- Implement segment/index storage layout and recovery/rebuild workflows (AR-0003/AR-0004).
+- Introduce a real Conch renderer and richer Concho layout/tiling behavior.
+- Add transport adapters for Comms (serial/TCP loopback) and reactor polling integration.
+- Add schema migration tooling, validation enforcement, and definition supersedes chains.
