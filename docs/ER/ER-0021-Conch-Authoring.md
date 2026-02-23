@@ -14,7 +14,7 @@ GitHub-Issue: #102
 
 - ER ID: ER-0021
 - Title: Conch Schema and Object Authoring
-- Status: Implemented
+- Status: Verified
 - Date: 2026-02-19
 - Owners: Mike
 - Type: Enhancement
