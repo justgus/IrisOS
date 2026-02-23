@@ -10,6 +10,8 @@ libreferee_la_SOURCES = \
    exec/await.cc \
    exec/waitables.h \
    exec/waitables.cc \
+   comms/primitives.h \
+   comms/primitives.cc \
    vizier/routing.h \
    vizier/routing.cc \
    viz/artifacts.h \
@@ -32,5 +34,6 @@ include_HEADERS = referee/referee.h \
    ceo/task_registry.h \
    exec/waitables.h \
    exec/await.h \
+   comms/primitives.h \
    vizier/routing.h \
    viz/artifacts.h
