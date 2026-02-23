@@ -2,7 +2,7 @@ AM_CXXFLAGS = -Wall -Wextra -Wpedantic
 AM_CPPFLAGS = -I$(top_srcdir)/src $(CHECK_CFLAGS)
 AM_TESTS_ENVIRONMENT = CK_FORK=no
 
-TESTS = test_referee_core test_service_ipc test_refract_registry test_refract_bootstrap test_ceo_tasks test_exec_waitables test_exec_integration test_vizier_routing test_viz_artifacts test_phase3_integration test_comms_primitives test_ceo_io_reactor test_phase5_integration test_phase6_persistence
+TESTS = test_referee_core test_service_ipc test_refract_registry test_refract_bootstrap test_ceo_tasks test_exec_waitables test_exec_integration test_vizier_routing test_viz_artifacts test_phase3_integration test_comms_primitives test_ceo_io_reactor test_phase5_integration test_phase6_persistence test_conch_authoring
 check_PROGRAMS = $(TESTS)
 
 test_referee_core_SOURCES = test_referee_core.cc
@@ -46,3 +46,6 @@ test_phase5_integration_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
 
 test_phase6_persistence_SOURCES = test_phase6_persistence.cc
 test_phase6_persistence_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
+
+test_conch_authoring_SOURCES = test_conch_authoring.cc
+test_conch_authoring_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
