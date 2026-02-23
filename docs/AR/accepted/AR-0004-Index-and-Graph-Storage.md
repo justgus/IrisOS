@@ -27,6 +27,12 @@ AR-0004 should decide on an index/graph storage backend and its invariants,
 with a bias toward deterministic, portable, dependency-light choices that
 fit the project's ABI and CI constraints.
 
+### V0 Alignment (2026-02-23)
+
+For v0, Referee uses SQLite tables for object records and edge records.
+SQLite indexes provide ObjectID lookup and edge traversal; rebuilding
+from segment files is deferred until the post-v0 storage layout is implemented.
+
 ### Suggested Decision Criteria
 
 - Deterministic on-disk format and recovery behavior
