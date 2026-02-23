@@ -10,10 +10,11 @@ extern "C" {
 
 using namespace iris::ceo;
 using namespace iris::comms;
+using namespace iris::exec;
 
 namespace {
 
-const char* result_message(const referee::Result<exec::WaitResult>& r) {
+const char* result_message(const referee::Result<WaitResult>& r) {
   return r.error.has_value() ? r.error->message.c_str() : "ok";
 }
 
