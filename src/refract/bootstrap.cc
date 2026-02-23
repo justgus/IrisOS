@@ -34,6 +34,10 @@ constexpr referee::TypeID kTypeVizMetric{0x56495A0000000003ULL};
 constexpr referee::TypeID kTypeVizTable{0x56495A0000000004ULL};
 constexpr referee::TypeID kTypeVizTree{0x56495A0000000005ULL};
 
+constexpr referee::TypeID kTypeDemoPropulsionSynth{0x44454D4F00000001ULL};
+constexpr referee::TypeID kTypeDemoSummary{0x44454D4F00000002ULL};
+constexpr referee::TypeID kTypeDemoDetail{0x44454D4F00000003ULL};
+
 referee::ObjectID definition_id_for(referee::TypeID type_id) {
   referee::ObjectID id{};
   std::array<std::uint8_t, 8> tag = { 'R','E','F','R','A','C','T','0' };
@@ -235,11 +239,60 @@ TypeDefinition make_viz_tree() {
   return def;
 }
 
+TypeDefinition make_demo_propulsion_synth() {
+  TypeDefinition def;
+  def.type_id = kTypeDemoPropulsionSynth;
+  def.name = "PropulsionSynth";
+  def.namespace_name = "Demo";
+  def.version = 1;
+
+  def.fields.push_back(FieldDefinition{ "name", kTypeString, false, std::nullopt });
+
+  OperationDefinition start_op;
+  start_op.name = "start";
+  def.operations.push_back(std::move(start_op));
+
+  def.relationships.push_back(RelationshipSpec{ "summary", "one", "Demo::Summary" });
+  return def;
+}
+
+TypeDefinition make_demo_summary() {
+  TypeDefinition def;
+  def.type_id = kTypeDemoSummary;
+  def.name = "Summary";
+  def.namespace_name = "Demo";
+  def.version = 1;
+
+  def.fields.push_back(FieldDefinition{ "title", kTypeString, false, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "level", kTypeU64, false, std::nullopt });
+
+  OperationDefinition expand_op;
+  expand_op.name = "expand";
+  expand_op.signature.params.push_back(ParameterDefinition{ "level", kTypeU64, true });
+  def.operations.push_back(std::move(expand_op));
+
+  def.relationships.push_back(RelationshipSpec{ "detail", "many", "Demo::Detail" });
+  return def;
+}
+
+TypeDefinition make_demo_detail() {
+  TypeDefinition def;
+  def.type_id = kTypeDemoDetail;
+  def.name = "Detail";
+  def.namespace_name = "Demo";
+  def.version = 1;
+
+  def.fields.push_back(FieldDefinition{ "title", kTypeString, false, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "level", kTypeU64, false, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "index", kTypeU64, false, std::nullopt });
+  return def;
+}
+
 } // namespace
 
 std::vector<TypeDefinition> core_schema_definitions() {
   std::vector<TypeDefinition> defs;
-  defs.reserve(21);
+  defs.reserve(24);
   defs.push_back(make_primitive(kTypeString, "String"));
   defs.push_back(make_primitive(kTypeU64, "U64"));
   defs.push_back(make_primitive(kTypeBool, "Bool"));
@@ -263,6 +316,9 @@ std::vector<TypeDefinition> core_schema_definitions() {
   defs.push_back(make_viz_metric());
   defs.push_back(make_viz_table());
   defs.push_back(make_viz_tree());
+  defs.push_back(make_demo_propulsion_synth());
+  defs.push_back(make_demo_summary());
+  defs.push_back(make_demo_detail());
   return defs;
 }
 
