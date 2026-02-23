@@ -25,6 +25,12 @@ indexes, and metadata. The layout must support:
 Referee uses a simple, versioned, directory-based storage layout with
 append-only data segments and separate indexes.
 
+### V0 Alignment (2026-02-23)
+
+For v0, Referee uses SQLite as the backing store (`referee.db`). The
+segment/index layout described below remains the target direction after
+v0; its implementation is deferred until a later phase.
+
 ### Layout
 
 - Root directory contains:
