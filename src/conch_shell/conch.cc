@@ -32,6 +32,8 @@
 
 #include <unistd.h>
 
+#include "parser/conch_command.h"
+
 using iris::refract::SchemaRegistry;
 using iris::refract::TypeSummary;
 using referee::ObjectID;
@@ -62,14 +64,6 @@ referee::Result<void> demo_expand(SchemaRegistry& registry, SqliteStore& store,
 bool parse_bool(std::string_view v, bool* out);
 bool parse_int(std::string_view v, std::int64_t* out);
 bool parse_double(std::string_view v, double* out);
-
-std::vector<std::string> split_ws(const std::string& line) {
-  std::istringstream iss(line);
-  std::vector<std::string> out;
-  std::string tok;
-  while (iss >> tok) out.push_back(tok);
-  return out;
-}
 
 std::optional<std::string> read_line(const char* prompt) {
 #if defined(HAVE_READLINE)
@@ -1753,10 +1747,17 @@ int main(int argc, char** argv) {
       }
       continue;
     }
-    auto tokens = split_ws(line);
-    if (tokens.empty()) continue;
+    auto parsed = iris::parser::parse_conch_command(line);
+    if (!parsed.errors.empty()) {
+      for (const auto& err : parsed.errors) {
+        std::cout << "parse error: " << err.message
+                  << " at " << err.line << ":" << err.column << "\n";
+      }
+      continue;
+    }
+    if (parsed.name.empty()) continue;
 
-    const auto& cmd = tokens[0];
+    const auto& cmd = parsed.name;
     if (cmd == "let") {
       cmd_alias_assignment(line, "let", false, registry, store, session_aliases);
       continue;
@@ -1780,17 +1781,17 @@ int main(int argc, char** argv) {
       std::optional<std::string> filter;
 
       bool bad_args = false;
-      for (size_t i = 1; i < tokens.size(); ++i) {
-        if (tokens[i] == "--regex") {
+      for (size_t i = 0; i < parsed.args.size(); ++i) {
+        if (parsed.args[i] == "--regex") {
           regex_mode = true;
           continue;
         }
-        if (tokens[i] == "--namespaces") {
+        if (parsed.args[i] == "--namespaces") {
           namespaces_only = true;
           continue;
         }
         if (!filter.has_value()) {
-          filter = tokens[i];
+          filter = parsed.args[i];
         } else {
           std::cout << "error: unexpected argument\n";
           bad_args = true;
@@ -1798,7 +1799,7 @@ int main(int argc, char** argv) {
         }
       }
       if (bad_args) continue;
-      if (tokens.size() > 1 && !filter.has_value() && regex_mode) {
+      if (!parsed.args.empty() && !filter.has_value() && regex_mode) {
         std::cout << "error: --regex requires a pattern\n";
         continue;
       }
@@ -1809,7 +1810,11 @@ int main(int argc, char** argv) {
       cmd_objects(registry, store);
       continue;
     }
-    if (cmd == "define" && tokens.size() >= 3 && tokens[1] == "type") {
+    if (cmd == "define" && parsed.args.size() >= 2 && parsed.args[0] == "type") {
+      std::vector<std::string> tokens;
+      tokens.reserve(parsed.args.size() + 1);
+      tokens.push_back(cmd);
+      tokens.insert(tokens.end(), parsed.args.begin(), parsed.args.end());
       cmd_define_type(registry, tokens);
       continue;
     }
@@ -1817,17 +1822,17 @@ int main(int argc, char** argv) {
       cmd_new_object(registry, store, line);
       continue;
     }
-    if (cmd == "find" && tokens.size() >= 3 && tokens[1] == "type") {
-      cmd_find_type(registry, tokens[2]);
+    if (cmd == "find" && parsed.args.size() >= 2 && parsed.args[0] == "type") {
+      cmd_find_type(registry, parsed.args[1]);
       continue;
     }
-    if (cmd == "show" && tokens.size() == 3 && tokens[1] == "type") {
-      cmd_show_type(registry, tokens[2]);
+    if (cmd == "show" && parsed.args.size() == 2 && parsed.args[0] == "type") {
+      cmd_show_type(registry, parsed.args[1]);
       continue;
     }
-    if (cmd == "show" && tokens.size() == 2) {
+    if (cmd == "show" && parsed.args.size() == 1) {
       std::string err;
-      auto id = parse_object_id_or_alias(tokens[1], session_aliases, store, registry, &err);
+      auto id = parse_object_id_or_alias(parsed.args[0], session_aliases, store, registry, &err);
       if (!id.has_value()) {
         std::cout << "error: " << err << "\n";
         continue;
@@ -1835,9 +1840,9 @@ int main(int argc, char** argv) {
       cmd_show(registry, store, id.value());
       continue;
     }
-    if (cmd == "edges" && tokens.size() == 2) {
+    if (cmd == "edges" && parsed.args.size() == 1) {
       std::string err;
-      auto id = parse_object_id_or_alias(tokens[1], session_aliases, store, registry, &err);
+      auto id = parse_object_id_or_alias(parsed.args[0], session_aliases, store, registry, &err);
       if (!id.has_value()) {
         std::cout << "error: " << err << "\n";
         continue;
@@ -1845,23 +1850,23 @@ int main(int argc, char** argv) {
       cmd_edges(store, id.value());
       continue;
     }
-    if (cmd == "call" && tokens.size() >= 3) {
+    if (cmd == "call" && parsed.args.size() >= 2) {
       std::string err;
-      auto id = parse_object_id_or_alias(tokens[1], session_aliases, store, registry, &err);
+      auto id = parse_object_id_or_alias(parsed.args[0], session_aliases, store, registry, &err);
       if (!id.has_value()) {
         std::cout << "error: " << err << "\n";
         continue;
       }
       std::vector<std::string> args;
-      if (tokens.size() > 3) {
-        args.assign(tokens.begin() + 3, tokens.end());
+      if (parsed.args.size() > 2) {
+        args.assign(parsed.args.begin() + 2, parsed.args.end());
       }
-      cmd_call(registry, store, id.value(), tokens[2], args);
+      cmd_call(registry, store, id.value(), parsed.args[1], args);
       continue;
     }
-    if (cmd == "start" && tokens.size() == 2) {
+    if (cmd == "start" && parsed.args.size() == 1) {
       std::string err;
-      auto id = parse_object_id_or_alias(tokens[1], session_aliases, store, registry, &err);
+      auto id = parse_object_id_or_alias(parsed.args[0], session_aliases, store, registry, &err);
       if (!id.has_value()) {
         std::cout << "error: " << err << "\n";
         continue;
@@ -1889,9 +1894,9 @@ int main(int argc, char** argv) {
       }
       continue;
     }
-    if (cmd == "kill" && tokens.size() == 2) {
+    if (cmd == "kill" && parsed.args.size() == 1) {
       auto it = std::find_if(tasks.begin(), tasks.end(),
-                             [&](const TaskEntry& t) { return t.id == tokens[1]; });
+                             [&](const TaskEntry& t) { return t.id == parsed.args[0]; });
       if (it == tasks.end()) {
         std::cout << "error: task not found\n";
         continue;
@@ -1901,20 +1906,28 @@ int main(int argc, char** argv) {
       continue;
     }
     if (cmd == "edge") {
+      std::vector<std::string> tokens;
+      tokens.reserve(parsed.args.size() + 1);
+      tokens.push_back(cmd);
+      tokens.insert(tokens.end(), parsed.args.begin(), parsed.args.end());
       cmd_edge(store, registry, session_aliases, tokens);
       continue;
     }
     if (cmd == "emit") {
+      std::vector<std::string> tokens;
+      tokens.reserve(parsed.args.size() + 1);
+      tokens.push_back(cmd);
+      tokens.insert(tokens.end(), parsed.args.begin(), parsed.args.end());
       cmd_emit_viz(registry, store, session_aliases, tokens);
       continue;
     }
     if (cmd == "route") {
-      if (tokens.size() == 3 && tokens[1] == "type") {
-        cmd_route_type(registry, tokens[2]);
+      if (parsed.args.size() == 2 && parsed.args[0] == "type") {
+        cmd_route_type(registry, parsed.args[1]);
         continue;
       }
-      if (tokens.size() == 2) {
-        cmd_route_object(registry, store, session_aliases, tokens[1]);
+      if (parsed.args.size() == 1) {
+        cmd_route_object(registry, store, session_aliases, parsed.args[0]);
         continue;
       }
       std::cout << "error: usage: route <ObjectID> | route type <TypeName>\n";
