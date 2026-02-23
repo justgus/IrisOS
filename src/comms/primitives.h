@@ -15,10 +15,11 @@ namespace iris::comms {
 
 using Bytes = std::vector<std::uint8_t>;
 
-class ByteStream {
+class ByteStream : public exec::Waitable {
 public:
   ByteStream() = default;
 
+  exec::WaitResult wait(ceo::TaskID task) override;
   exec::WaitResult wait_readable(ceo::TaskID task);
   std::size_t available() const { return buffer_.size(); }
   Bytes recv(std::size_t max_bytes);
@@ -30,11 +31,12 @@ private:
   std::deque<std::uint8_t> buffer_{};
 };
 
-class Channel {
+class Channel : public exec::Waitable {
 public:
   Channel(std::shared_ptr<ByteStream> incoming,
           std::shared_ptr<ByteStream> outgoing);
 
+  exec::WaitResult wait(ceo::TaskID task) override;
   exec::WaitResult wait_readable(ceo::TaskID task);
   std::size_t available() const;
   Bytes recv(std::size_t max_bytes);
@@ -47,10 +49,11 @@ private:
   std::shared_ptr<ByteStream> outgoing_;
 };
 
-class DatagramPort {
+class DatagramPort : public exec::Waitable {
 public:
   DatagramPort() = default;
 
+  exec::WaitResult wait(ceo::TaskID task) override;
   exec::WaitResult wait_readable(ceo::TaskID task);
   std::optional<Bytes> recv();
   exec::WaitResult send(const Bytes& data);

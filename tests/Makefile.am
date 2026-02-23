@@ -2,7 +2,7 @@ AM_CXXFLAGS = -Wall -Wextra -Wpedantic
 AM_CPPFLAGS = -I$(top_srcdir)/src $(CHECK_CFLAGS)
 AM_TESTS_ENVIRONMENT = CK_FORK=no
 
-TESTS = test_referee_core test_service_ipc test_refract_registry test_refract_bootstrap test_ceo_tasks test_exec_waitables test_exec_integration test_vizier_routing test_viz_artifacts test_phase3_integration test_comms_primitives
+TESTS = test_referee_core test_service_ipc test_refract_registry test_refract_bootstrap test_ceo_tasks test_exec_waitables test_exec_integration test_vizier_routing test_viz_artifacts test_phase3_integration test_comms_primitives test_ceo_io_reactor
 check_PROGRAMS = $(TESTS)
 
 test_referee_core_SOURCES = test_referee_core.cc
@@ -37,3 +37,6 @@ test_phase3_integration_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
 
 test_comms_primitives_SOURCES = test_comms_primitives.cc
 test_comms_primitives_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
+
+test_ceo_io_reactor_SOURCES = test_ceo_io_reactor.cc
+test_ceo_io_reactor_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
