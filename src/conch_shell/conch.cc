@@ -55,6 +55,10 @@ struct AliasEntry {
 
 referee::Result<ObjectID> create_object(SchemaRegistry& registry, SqliteStore& store,
                                         const std::string& expr);
+referee::Result<ObjectID> demo_start(SchemaRegistry& registry, SqliteStore& store,
+                                     const ObjectID& demo_id);
+referee::Result<void> demo_expand(SchemaRegistry& registry, SqliteStore& store,
+                                  const ObjectID& summary_id, std::uint64_t level);
 bool parse_bool(std::string_view v, bool* out);
 bool parse_int(std::string_view v, std::int64_t* out);
 bool parse_double(std::string_view v, double* out);
@@ -989,7 +993,7 @@ bool validate_call_args(const iris::refract::OperationDefinition& op, size_t arg
 }
 
 bool cmd_call(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id,
-              const std::string& op_name, size_t arg_count) {
+              const std::string& op_name, const std::vector<std::string>& args) {
   auto recR = store.get_latest(id);
   if (!recR) {
     std::cout << "error: " << recR.error->message << "\n";
@@ -1015,9 +1019,33 @@ bool cmd_call(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id,
     return false;
   }
   std::string err;
-  if (!validate_call_args(op.value(), arg_count, &err)) {
+  if (!validate_call_args(op.value(), args.size(), &err)) {
     std::cout << "error: " << err << "\n";
     return false;
+  }
+  if (def.namespace_name == "Demo" && def.name == "PropulsionSynth" && op_name == "start") {
+    auto demoR = demo_start(registry, store, id);
+    if (!demoR) {
+      std::cout << "error: " << demoR.error->message << "\n";
+      return false;
+    }
+    std::cout << "summary " << demoR.value->to_hex() << "\n";
+  }
+  if (def.namespace_name == "Demo" && def.name == "Summary" && op_name == "expand") {
+    std::uint64_t level = 1;
+    if (!args.empty()) {
+      std::int64_t parsed = 0;
+      if (!parse_int(args[0], &parsed) || parsed <= 0) {
+        std::cout << "error: invalid expand level\n";
+        return false;
+      }
+      level = static_cast<std::uint64_t>(parsed);
+    }
+    auto expandR = demo_expand(registry, store, id, level);
+    if (!expandR) {
+      std::cout << "error: " << expandR.error->message << "\n";
+      return false;
+    }
   }
   std::cout << "call ok\n";
   return true;
@@ -1257,6 +1285,123 @@ void maybe_spawn_concho(iris::refract::SchemaRegistry& registry,
     return;
   }
   std::cout << "concho: " << conchoR.value->value().to_hex() << "\n";
+}
+
+referee::Result<void> add_edge_or_err(SqliteStore& store, const ObjectID& from_id,
+                                      const ObjectID& to_id, const std::string& name,
+                                      const std::string& role) {
+  std::string err;
+  if (!add_edge_named(store, from_id, to_id, name, role, &err)) {
+    return referee::Result<void>::err(err);
+  }
+  return referee::Result<void>::ok();
+}
+
+referee::Result<ObjectID> create_demo_object(SchemaRegistry& registry, SqliteStore& store,
+                                             const std::string& type_name,
+                                             const nlohmann::json& payload) {
+  std::string err;
+  auto type_summary = resolve_type(registry, type_name, &err);
+  if (!type_summary.has_value()) {
+    return referee::Result<ObjectID>::err(err);
+  }
+  auto cbor = nlohmann::json::to_cbor(payload);
+  auto createR = store.create_object(type_summary->type_id, type_summary->definition_id, cbor);
+  if (!createR) {
+    return referee::Result<ObjectID>::err(createR.error->message);
+  }
+  return referee::Result<ObjectID>::ok(createR.value->ref.id);
+}
+
+referee::Result<void> emit_demo_artifacts(SchemaRegistry& registry, SqliteStore& store,
+                                          const ObjectID& owner_id,
+                                          const std::string& prefix,
+                                          double metric_value) {
+  iris::viz::TextLog log;
+  log.lines = {prefix + " online", prefix + " nominal"};
+  auto logR = iris::viz::create_text_log(registry, store, log);
+  if (!logR) return referee::Result<void>::err(logR.error->message);
+
+  iris::viz::Metric metric;
+  metric.name = "thrust";
+  metric.value = metric_value;
+  auto metricR = iris::viz::create_metric(registry, store, metric);
+  if (!metricR) return referee::Result<void>::err(metricR.error->message);
+
+  iris::viz::Table table;
+  table.columns = {"module", "status"};
+  table.rows = {{"ionizer", "ok"}, {"coolant", "nominal"}};
+  auto tableR = iris::viz::create_table(registry, store, table);
+  if (!tableR) return referee::Result<void>::err(tableR.error->message);
+
+  auto linkR = add_edge_or_err(store, owner_id, logR.value.value(), "produced", "artifact");
+  if (!linkR) return linkR;
+  maybe_spawn_concho(registry, store, logR.value.value());
+
+  linkR = add_edge_or_err(store, owner_id, metricR.value.value(), "produced", "artifact");
+  if (!linkR) return linkR;
+  maybe_spawn_concho(registry, store, metricR.value.value());
+
+  linkR = add_edge_or_err(store, owner_id, tableR.value.value(), "produced", "artifact");
+  if (!linkR) return linkR;
+  maybe_spawn_concho(registry, store, tableR.value.value());
+
+  return referee::Result<void>::ok();
+}
+
+referee::Result<ObjectID> demo_start(SchemaRegistry& registry, SqliteStore& store,
+                                     const ObjectID& demo_id) {
+  auto artifactsR = emit_demo_artifacts(registry, store, demo_id, "PropulsionSynth", 0.78);
+  if (!artifactsR) return referee::Result<ObjectID>::err(artifactsR.error->message);
+
+  nlohmann::json payload;
+  payload["title"] = "PropulsionSynth Summary";
+  payload["level"] = 0;
+  auto summaryR = create_demo_object(registry, store, "Demo::Summary", payload);
+  if (!summaryR) return summaryR;
+
+  auto linkR = add_edge_or_err(store, demo_id, summaryR.value.value(), "summary", "root");
+  if (!linkR) return referee::Result<ObjectID>::err(linkR.error->message);
+
+  return summaryR;
+}
+
+referee::Result<void> demo_expand(SchemaRegistry& registry, SqliteStore& store,
+                                  const ObjectID& summary_id, std::uint64_t level) {
+  std::size_t count = static_cast<std::size_t>(level) + 1;
+  for (std::size_t i = 0; i < count; ++i) {
+    nlohmann::json payload;
+    std::ostringstream title;
+    title << "Detail L" << level << "-" << (i + 1);
+    payload["title"] = title.str();
+    payload["level"] = level;
+    payload["index"] = static_cast<std::uint64_t>(i + 1);
+    auto detailR = create_demo_object(registry, store, "Demo::Detail", payload);
+    if (!detailR) return referee::Result<void>::err(detailR.error->message);
+
+    auto linkR = add_edge_or_err(store, summary_id, detailR.value.value(), "summarizes", "detail");
+    if (!linkR) return linkR;
+
+    iris::viz::TextLog log;
+    log.lines = {title.str(), "thrusters calibrated"};
+    auto logR = iris::viz::create_text_log(registry, store, log);
+    if (!logR) return referee::Result<void>::err(logR.error->message);
+
+    iris::viz::Metric metric;
+    metric.name = "thrust";
+    metric.value = 0.6 + (0.05 * static_cast<double>(i));
+    auto metricR = iris::viz::create_metric(registry, store, metric);
+    if (!metricR) return referee::Result<void>::err(metricR.error->message);
+
+    linkR = add_edge_or_err(store, detailR.value.value(), logR.value.value(), "produced", "artifact");
+    if (!linkR) return linkR;
+    maybe_spawn_concho(registry, store, logR.value.value());
+
+    linkR = add_edge_or_err(store, detailR.value.value(), metricR.value.value(), "produced", "artifact");
+    if (!linkR) return linkR;
+    maybe_spawn_concho(registry, store, metricR.value.value());
+  }
+  return referee::Result<void>::ok();
 }
 
 void cmd_emit_viz(SchemaRegistry& registry, SqliteStore& store,
@@ -1707,7 +1852,11 @@ int main(int argc, char** argv) {
         std::cout << "error: " << err << "\n";
         continue;
       }
-      cmd_call(registry, store, id.value(), tokens[2], tokens.size() - 3);
+      std::vector<std::string> args;
+      if (tokens.size() > 3) {
+        args.assign(tokens.begin() + 3, tokens.end());
+      }
+      cmd_call(registry, store, id.value(), tokens[2], args);
       continue;
     }
     if (cmd == "start" && tokens.size() == 2) {
@@ -1717,7 +1866,7 @@ int main(int argc, char** argv) {
         std::cout << "error: " << err << "\n";
         continue;
       }
-      bool ok = cmd_call(registry, store, id.value(), "start", 0);
+      bool ok = cmd_call(registry, store, id.value(), "start", {});
       if (ok) {
         std::ostringstream os;
         os << "task-" << std::setw(4) << std::setfill('0') << next_task_id++;
