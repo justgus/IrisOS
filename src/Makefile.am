@@ -12,6 +12,11 @@ libreferee_la_SOURCES = \
    exec/await.cc \
    exec/waitables.h \
    exec/waitables.cc \
+   parser/types.h \
+   parser/tokenizer.h \
+   parser/tokenizer.cc \
+   parser/parser.h \
+   parser/parser.cc \
    comms/primitives.h \
    comms/primitives.cc \
    vizier/routing.h \
@@ -37,6 +42,9 @@ include_HEADERS = referee/referee.h \
    ceo/io_reactor.h \
    exec/waitables.h \
    exec/await.h \
+   parser/types.h \
+   parser/tokenizer.h \
+   parser/parser.h \
    comms/primitives.h \
    vizier/routing.h \
    viz/artifacts.h
