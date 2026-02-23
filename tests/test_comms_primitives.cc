@@ -17,14 +17,14 @@ START_TEST(test_channel_loopback_roundtrip)
   Channel& a = pair.first;
   Channel& b = pair.second;
 
-  exec::WaitResult wait_before = b.wait_readable(1);
+  auto wait_before = b.wait_readable(1);
   ck_assert_msg(!wait_before.ready, "expected no data before send");
 
   Bytes payload = {0x10, 0x20, 0x30, 0x40};
   auto sendR = a.send(payload);
   ck_assert_msg(sendR.ready, "send should mark readable");
 
-  exec::WaitResult wait_after = b.wait_readable(2);
+  auto wait_after = b.wait_readable(2);
   ck_assert_msg(wait_after.ready, "expected data after send");
 
   auto recv = b.recv(10);
@@ -42,14 +42,14 @@ START_TEST(test_datagram_loopback_roundtrip)
   DatagramPort& a = pair.first;
   DatagramPort& b = pair.second;
 
-  exec::WaitResult wait_before = b.wait_readable(3);
+  auto wait_before = b.wait_readable(3);
   ck_assert_msg(!wait_before.ready, "expected no datagram before send");
 
   Bytes packet = {0xAB, 0xCD};
   auto sendR = a.send(packet);
   ck_assert_msg(sendR.ready, "send should mark readable");
 
-  exec::WaitResult wait_after = b.wait_readable(4);
+  auto wait_after = b.wait_readable(4);
   ck_assert_msg(wait_after.ready, "expected datagram after send");
 
   auto recv = b.recv();
