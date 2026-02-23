@@ -4,6 +4,10 @@
 
 namespace iris::comms {
 
+exec::WaitResult ByteStream::wait(ceo::TaskID task) {
+  return wait_readable(task);
+}
+
 exec::WaitResult ByteStream::wait_readable(ceo::TaskID task) {
   if (!buffer_.empty()) return exec::WaitResult{true, {}};
   return data_ready_.wait(task);
@@ -35,6 +39,10 @@ Channel::Channel(std::shared_ptr<ByteStream> incoming,
   : incoming_(std::move(incoming)),
     outgoing_(std::move(outgoing)) {}
 
+exec::WaitResult Channel::wait(ceo::TaskID task) {
+  return wait_readable(task);
+}
+
 exec::WaitResult Channel::wait_readable(ceo::TaskID task) {
   return incoming_->wait_readable(task);
 }
@@ -64,6 +72,10 @@ DatagramPort::DatagramPort(std::shared_ptr<Mailbox> inbox,
                            std::shared_ptr<Mailbox> outbox)
   : inbox_(std::move(inbox)),
     outbox_(std::move(outbox)) {}
+
+exec::WaitResult DatagramPort::wait(ceo::TaskID task) {
+  return wait_readable(task);
+}
 
 exec::WaitResult DatagramPort::wait_readable(ceo::TaskID task) {
   if (!inbox_ || !outbox_) return exec::WaitResult{false, {}};
