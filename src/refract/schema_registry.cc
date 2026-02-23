@@ -214,6 +214,26 @@ referee::Result<std::optional<DefinitionRecord>> SchemaRegistry::get_definition_
   return referee::Result<std::optional<DefinitionRecord>>::ok(std::optional<DefinitionRecord>{});
 }
 
+referee::Result<std::optional<DefinitionRecord>> SchemaRegistry::get_latest_definition_by_type(
+    referee::TypeID type) {
+  auto listR = store_.list_by_type(kTypeDefinitionType);
+  if (!listR) return referee::Result<std::optional<DefinitionRecord>>::err(listR.error->message);
+
+  std::optional<DefinitionRecord> latest;
+  for (const auto& rec : listR.value.value()) {
+    auto defR = record_from_object(rec);
+    if (!defR) return referee::Result<std::optional<DefinitionRecord>>::err(defR.error->message);
+    if (defR.value->definition.type_id != type) continue;
+
+    if (!latest.has_value()
+        || defR.value->definition.version > latest->definition.version) {
+      latest = defR.value.value();
+    }
+  }
+
+  return referee::Result<std::optional<DefinitionRecord>>::ok(std::move(latest));
+}
+
 referee::Result<std::vector<TypeSummary>> SchemaRegistry::list_types() {
   auto listR = store_.list_by_type(kTypeDefinitionType);
   if (!listR) return referee::Result<std::vector<TypeSummary>>::err(listR.error->message);

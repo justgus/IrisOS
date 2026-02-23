@@ -74,6 +74,7 @@ public:
                                                                 referee::ObjectID definition_id);
   referee::Result<std::optional<DefinitionRecord>> get_definition_by_id(referee::ObjectID id);
   referee::Result<std::optional<DefinitionRecord>> get_definition_by_type(referee::TypeID type);
+  referee::Result<std::optional<DefinitionRecord>> get_latest_definition_by_type(referee::TypeID type);
   referee::Result<std::vector<TypeSummary>> list_types();
 
 private:
