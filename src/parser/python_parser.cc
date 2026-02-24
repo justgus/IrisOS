@@ -70,7 +70,7 @@ TokenizeResult tokenize_python(std::string_view input) {
     out.tokens.push_back(std::move(tok));
   };
 
-  while (index <= input.size()) {
+  while (index < input.size()) {
     std::size_t line_start = index;
     while (index < input.size() && input[index] != '\n') {
       ++index;
