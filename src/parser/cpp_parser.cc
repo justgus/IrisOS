@@ -59,12 +59,17 @@ std::optional<CppParam> parse_param(ParserCursor& cursor, std::vector<ParseError
   while (!cursor.at_end()) {
     const Token& tok = cursor.peek();
     if (tok.kind == TokenKind::Symbol && (tok.text == "," || tok.text == ")")) break;
-    tokens.push_back(cursor.advance());
+    tokens.push_back(tok);
+    cursor.advance();
   }
 
   if (tokens.empty()) return std::nullopt;
   auto name_index = last_identifier_index(tokens);
   if (!name_index.has_value()) {
+    push_error(errors, tokens.back(), "expected parameter name");
+    return std::nullopt;
+  }
+  if (*name_index == 0) {
     push_error(errors, tokens.back(), "expected parameter name");
     return std::nullopt;
   }
@@ -104,12 +109,18 @@ std::optional<CppDecl> parse_decl(ParserCursor& cursor, std::vector<ParseError>&
     const Token& tok = cursor.peek();
     if (is_decl_delimiter(tok)) break;
     if (tok.kind == TokenKind::Symbol && tok.text == "{") break;
-    tokens.push_back(cursor.advance());
+    tokens.push_back(tok);
+    cursor.advance();
   }
 
   if (tokens.empty()) return std::nullopt;
   auto name_index = last_identifier_index(tokens);
   if (!name_index.has_value()) {
+    push_error(errors, tokens.back(), "expected declaration name");
+    skip_to_statement_end(cursor);
+    return std::nullopt;
+  }
+  if (*name_index == 0) {
     push_error(errors, tokens.back(), "expected declaration name");
     skip_to_statement_end(cursor);
     return std::nullopt;
