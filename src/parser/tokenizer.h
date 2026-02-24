@@ -13,6 +13,9 @@ enum class TokenKind {
   Number,
   String,
   Symbol,
+  Newline,
+  Indent,
+  Dedent,
   End
 };
 
