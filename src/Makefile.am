@@ -23,6 +23,8 @@ libreferee_la_SOURCES = \
    parser/json_parser.cc \
    parser/python_parser.h \
    parser/python_parser.cc \
+   parser/cpp_parser.h \
+   parser/cpp_parser.cc \
    parser/xml_parser.h \
    parser/xml_parser.cc \
    comms/primitives.h \
@@ -56,6 +58,7 @@ include_HEADERS = referee/referee.h \
    parser/conch_command.h \
    parser/json_parser.h \
    parser/python_parser.h \
+   parser/cpp_parser.h \
    parser/xml_parser.h \
    comms/primitives.h \
    vizier/routing.h \
