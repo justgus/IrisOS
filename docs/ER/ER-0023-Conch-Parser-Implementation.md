@@ -15,7 +15,7 @@ GitHub-Issue: #104
 
 - ER ID: ER-0023
 - Title: Conch Parser Implementation
-- Status: Proposed
+- Status: Verified
 - Date: 2026-02-21
 - Owners: Mike
 - Type: Enhancement
