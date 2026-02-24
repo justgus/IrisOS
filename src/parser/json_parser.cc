@@ -1,6 +1,7 @@
 #include "parser/json_parser.h"
 
 #include <cctype>
+#include <cstdint>
 #include <cstdlib>
 #include <string>
 
@@ -358,7 +359,7 @@ static std::optional<ValueNode> parse_value(Cursor& cursor) {
 } // namespace
 
 JsonParseResult parse_json(std::string_view input) {
-  Cursor cursor{input};
+  Cursor cursor{input, 0, 1, 1, {}};
   cursor.skip_ws();
 
   JsonParseResult out;
