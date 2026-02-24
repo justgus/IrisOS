@@ -2,7 +2,7 @@ AM_CXXFLAGS = -Wall -Wextra -Wpedantic
 AM_CPPFLAGS = -I$(top_srcdir)/src $(CHECK_CFLAGS)
 AM_TESTS_ENVIRONMENT = CK_FORK=no
 
-TESTS = test_referee_core test_service_ipc test_refract_registry test_refract_bootstrap test_ceo_tasks test_exec_waitables test_exec_integration test_vizier_routing test_viz_artifacts test_phase3_integration test_comms_primitives test_ceo_io_reactor test_phase5_integration test_phase6_persistence test_conch_authoring test_parser_core test_conch_parser test_json_parser test_cpp_parser test_xml_parser
+TESTS = test_referee_core test_service_ipc test_refract_registry test_refract_bootstrap test_ceo_tasks test_exec_waitables test_exec_integration test_vizier_routing test_viz_artifacts test_phase3_integration test_comms_primitives test_ceo_io_reactor test_phase5_integration test_phase6_persistence test_conch_authoring test_parser_core test_conch_parser test_json_parser test_cpp_parser test_python_parser test_xml_parser
 check_PROGRAMS = $(TESTS)
 
 test_referee_core_SOURCES = test_referee_core.cc
@@ -59,6 +59,8 @@ test_conch_parser_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
 test_json_parser_SOURCES = test_json_parser.cc
 test_json_parser_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
 
+test_python_parser_SOURCES = test_python_parser.cc
+test_python_parser_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
 test_cpp_parser_SOURCES = test_cpp_parser.cc
 test_cpp_parser_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
 test_xml_parser_SOURCES = test_xml_parser.cc
