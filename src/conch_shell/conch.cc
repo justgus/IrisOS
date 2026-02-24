@@ -22,6 +22,7 @@
 #include <string_view>
 #include <unordered_map>
 #include <vector>
+#include <variant>
 
 #include <nlohmann/json.hpp>
 
@@ -33,6 +34,7 @@
 #include <unistd.h>
 
 #include "parser/conch_command.h"
+#include "parser/json_parser.h"
 
 using iris::refract::SchemaRegistry;
 using iris::refract::TypeSummary;
@@ -64,6 +66,8 @@ referee::Result<void> demo_expand(SchemaRegistry& registry, SqliteStore& store,
 bool parse_bool(std::string_view v, bool* out);
 bool parse_int(std::string_view v, std::int64_t* out);
 bool parse_double(std::string_view v, double* out);
+bool value_to_json(const iris::parser::ValueNode& node, nlohmann::json* out,
+                   std::string* err_out);
 
 std::optional<std::string> read_line(const char* prompt) {
 #if defined(HAVE_READLINE)
@@ -188,6 +192,56 @@ bool parse_kv_payload(const std::string& text, nlohmann::json* payload, std::str
   return true;
 }
 
+bool value_to_json(const iris::parser::ValueNode& node, nlohmann::json* out,
+                   std::string* err_out) {
+  if (!out) return false;
+  auto fail = [&](const std::string& msg) {
+    if (err_out) *err_out = msg;
+    return false;
+  };
+
+  const auto& value = node.value;
+  if (std::holds_alternative<std::monostate>(value)) {
+    *out = nullptr;
+    return true;
+  }
+  if (std::holds_alternative<bool>(value)) {
+    *out = std::get<bool>(value);
+    return true;
+  }
+  if (std::holds_alternative<double>(value)) {
+    *out = std::get<double>(value);
+    return true;
+  }
+  if (std::holds_alternative<std::string>(value)) {
+    *out = std::get<std::string>(value);
+    return true;
+  }
+  if (std::holds_alternative<iris::parser::ValueArray>(value)) {
+    nlohmann::json arr = nlohmann::json::array();
+    const auto& items = std::get<iris::parser::ValueArray>(value);
+    for (const auto& item : items) {
+      nlohmann::json child;
+      if (!value_to_json(item, &child, err_out)) return false;
+      arr.push_back(std::move(child));
+    }
+    *out = std::move(arr);
+    return true;
+  }
+  if (std::holds_alternative<iris::parser::ValueObject>(value)) {
+    nlohmann::json obj = nlohmann::json::object();
+    const auto& items = std::get<iris::parser::ValueObject>(value);
+    for (const auto& [key, child_node] : items) {
+      nlohmann::json child;
+      if (!value_to_json(child_node, &child, err_out)) return false;
+      obj[key] = std::move(child);
+    }
+    *out = std::move(obj);
+    return true;
+  }
+  return fail("unsupported json value");
+}
+
 referee::Result<void> parse_new_expr(const std::string& expr,
                                      std::string* type_name_out,
                                      nlohmann::json* payload_out) {
@@ -204,7 +258,21 @@ referee::Result<void> parse_new_expr(const std::string& expr,
   if (s.rfind("--json", 0) == 0) {
     auto json_text = trim_copy(s.substr(6));
     json_text = strip_quotes(json_text);
-    auto j = nlohmann::json::parse(json_text);
+    auto parsed = iris::parser::parse_json(json_text);
+    if (!parsed.errors.empty()) {
+      const auto& err0 = parsed.errors.front();
+      std::ostringstream os;
+      os << "json parse error: " << err0.message
+         << " at " << err0.line << ":" << err0.column;
+      return referee::Result<void>::err(os.str());
+    }
+    if (!parsed.value.has_value()) {
+      return referee::Result<void>::err("json parse error");
+    }
+    nlohmann::json j;
+    if (!value_to_json(parsed.value.value(), &j, &err)) {
+      return referee::Result<void>::err(err.empty() ? "json parse error" : err);
+    }
     auto type_name = j.value("type", "");
     if (type_name.empty()) {
       return referee::Result<void>::err("json missing type");

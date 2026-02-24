@@ -19,6 +19,8 @@ libreferee_la_SOURCES = \
    parser/parser.cc \
    parser/conch_command.h \
    parser/conch_command.cc \
+   parser/json_parser.h \
+   parser/json_parser.cc \
    comms/primitives.h \
    comms/primitives.cc \
    vizier/routing.h \
@@ -48,6 +50,7 @@ include_HEADERS = referee/referee.h \
    parser/tokenizer.h \
    parser/parser.h \
    parser/conch_command.h \
+   parser/json_parser.h \
    comms/primitives.h \
    vizier/routing.h \
    viz/artifacts.h
