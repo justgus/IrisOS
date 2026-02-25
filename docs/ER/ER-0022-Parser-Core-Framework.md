@@ -15,8 +15,8 @@ GitHub-Issue: #103
 
 - ER ID: ER-0022
 - Title: Parser Core Framework
-- Status: Proposed
-- Date: 2026-02-21
+- Status: Implemented
+- Date: 2026-02-25
 - Owners: Mike
 - Type: Epic
 
