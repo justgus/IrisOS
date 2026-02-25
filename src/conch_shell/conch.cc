@@ -3,6 +3,7 @@
 #endif
 
 #include "refract/bootstrap.h"
+#include "refract/dispatch.h"
 #include "refract/schema_registry.h"
 #include "referee/referee.h"
 #include "referee_sqlite/sqlite_store.h"
@@ -38,6 +39,8 @@
 
 using iris::refract::SchemaRegistry;
 using iris::refract::TypeSummary;
+using iris::refract::DispatchEngine;
+using iris::refract::OperationScope;
 using referee::ObjectID;
 using referee::ObjectRef;
 using referee::SqliteConfig;
@@ -1053,31 +1056,6 @@ void cmd_edges(SqliteStore& store, const ObjectID& id) {
   }
 }
 
-std::optional<iris::refract::OperationDefinition> find_operation(
-    const iris::refract::TypeDefinition& def, const std::string& name) {
-  for (const auto& op : def.operations) {
-    if (op.name == name) return op;
-  }
-  return std::nullopt;
-}
-
-bool validate_call_args(const iris::refract::OperationDefinition& op, size_t arg_count,
-                        std::string* err_out) {
-  size_t required = 0;
-  for (const auto& param : op.signature.params) {
-    if (!param.optional) ++required;
-  }
-  if (arg_count < required) {
-    if (err_out) *err_out = "missing required args";
-    return false;
-  }
-  if (arg_count > op.signature.params.size()) {
-    if (err_out) *err_out = "too many args";
-    return false;
-  }
-  return true;
-}
-
 bool cmd_call(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id,
               const std::string& op_name, const std::vector<std::string>& args) {
   auto recR = store.get_latest(id);
@@ -1099,14 +1077,10 @@ bool cmd_call(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id,
     return false;
   }
   const auto& def = defR.value->value().definition;
-  auto op = find_operation(def, op_name);
-  if (!op.has_value()) {
-    std::cout << "error: operation not found\n";
-    return false;
-  }
-  std::string err;
-  if (!validate_call_args(op.value(), args.size(), &err)) {
-    std::cout << "error: " << err << "\n";
+  DispatchEngine engine(registry);
+  auto matchR = engine.resolve(def.type_id, op_name, OperationScope::Object, {}, args.size(), true);
+  if (!matchR) {
+    std::cout << "error: " << matchR.error->message << "\n";
     return false;
   }
   if (def.namespace_name == "Demo" && def.name == "PropulsionSynth" && op_name == "start") {
