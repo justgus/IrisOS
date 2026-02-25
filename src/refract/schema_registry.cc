@@ -1,6 +1,7 @@
 #include "refract/schema_registry.h"
 
 #include <nlohmann/json.hpp>
+#include <string_view>
 
 namespace iris::refract {
 
@@ -27,13 +28,24 @@ static nlohmann::json to_json(const SignatureDefinition& sig) {
   nlohmann::json j;
   j["params"] = nlohmann::json::array();
   for (const auto& param : sig.params) j["params"].push_back(to_json(param));
-  if (sig.return_type.has_value()) j["return_type"] = sig.return_type->v;
+  j["outputs"] = nlohmann::json::array();
+  for (const auto& out : sig.outputs) j["outputs"].push_back(to_json(out));
   return j;
+}
+
+static std::string scope_to_string(OperationScope scope) {
+  return scope == OperationScope::Class ? "class" : "object";
+}
+
+static OperationScope scope_from_string(std::string_view scope) {
+  if (scope == "class") return OperationScope::Class;
+  return OperationScope::Object;
 }
 
 static nlohmann::json to_json(const OperationDefinition& op) {
   nlohmann::json j;
   j["name"] = op.name;
+  j["scope"] = scope_to_string(op.scope);
   j["signature"] = to_json(op.signature);
   return j;
 }
@@ -88,13 +100,22 @@ static SignatureDefinition signature_from_json(const nlohmann::json& j) {
   if (j.contains("params")) {
     for (const auto& item : j.at("params")) sig.params.push_back(param_from_json(item));
   }
-  if (j.contains("return_type")) sig.return_type = referee::TypeID{j.at("return_type").get<std::uint64_t>()};
+  if (j.contains("outputs")) {
+    for (const auto& item : j.at("outputs")) sig.outputs.push_back(param_from_json(item));
+  } else if (j.contains("return_type")) {
+    ParameterDefinition out;
+    out.name = "result";
+    out.type = referee::TypeID{j.at("return_type").get<std::uint64_t>()};
+    out.optional = false;
+    sig.outputs.push_back(std::move(out));
+  }
   return sig;
 }
 
 static OperationDefinition operation_from_json(const nlohmann::json& j) {
   OperationDefinition op;
   op.name = j.value("name", "");
+  if (j.contains("scope")) op.scope = scope_from_string(j.at("scope").get<std::string>());
   if (j.contains("signature")) op.signature = signature_from_json(j.at("signature"));
   return op;
 }

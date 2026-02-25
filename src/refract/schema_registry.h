@@ -25,11 +25,17 @@ struct ParameterDefinition {
 
 struct SignatureDefinition {
   std::vector<ParameterDefinition> params;
-  std::optional<referee::TypeID> return_type;
+  std::vector<ParameterDefinition> outputs;
+};
+
+enum class OperationScope {
+  Class,
+  Object
 };
 
 struct OperationDefinition {
   std::string name;
+  OperationScope scope{OperationScope::Object};
   SignatureDefinition signature;
 };
 

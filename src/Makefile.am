@@ -37,6 +37,8 @@ libreferee_la_SOURCES = \
    services/service.cc \
    refract/bootstrap.h \
    refract/bootstrap.cc \
+   refract/operation_registry.h \
+   refract/operation_registry.cc \
    refract/schema_registry.h \
    refract/schema_registry.cc \
    referee_sqlite/sqlite_store.h \
@@ -47,6 +49,7 @@ libreferee_la_LIBADD = $(SQLITE_LIBS)
 
 include_HEADERS = referee/referee.h \
    services/service.h \
+   refract/operation_registry.h \
    refract/schema_registry.h \
    ceo/task_registry.h \
    ceo/io_reactor.h \

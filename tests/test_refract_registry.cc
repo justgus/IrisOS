@@ -5,6 +5,7 @@ extern "C" {
 #undef fail
 #endif
 
+#include "refract/operation_registry.h"
 #include "refract/schema_registry.h"
 #include "referee/referee.h"
 #include "referee_sqlite/sqlite_store.h"
@@ -41,10 +42,11 @@ static TypeDefinition make_definition(TypeID type_id, std::string name, std::str
 
   SignatureDefinition sig;
   sig.params.push_back(param);
-  sig.return_type = TypeID{0x1003ULL};
+  sig.outputs.push_back(ParameterDefinition{ "result", TypeID{0x1003ULL}, false });
 
   OperationDefinition op;
   op.name = "lookup";
+  op.scope = OperationScope::Object;
   op.signature = sig;
   def.operations.push_back(op);
 
@@ -92,11 +94,56 @@ START_TEST(test_schema_registry_roundtrip)
 }
 END_TEST
 
+START_TEST(test_operation_registry_scope_and_inheritance)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+
+  auto base = make_definition(TypeID{0xB1ULL}, "Base", "Demo");
+  base.operations.clear();
+  OperationDefinition base_class_op;
+  base_class_op.name = "create";
+  base_class_op.scope = OperationScope::Class;
+  base.operations.push_back(base_class_op);
+
+  auto derived = make_definition(TypeID{0xB2ULL}, "Derived", "Demo");
+  derived.operations.clear();
+  OperationDefinition derived_obj_op;
+  derived_obj_op.name = "update";
+  derived_obj_op.scope = OperationScope::Object;
+  derived.operations.push_back(derived_obj_op);
+
+  ck_assert_msg(registry.register_definition(base), "register base failed");
+  ck_assert_msg(registry.register_definition(derived), "register derived failed");
+
+  OperationRegistry op_registry(
+      registry,
+      [](TypeID type_id) -> std::vector<TypeID> {
+        if (type_id.v == 0xB2ULL) return { TypeID{0xB1ULL} };
+        return {};
+      });
+
+  auto objR = op_registry.list_operations(TypeID{0xB2ULL}, OperationScope::Object, true);
+  ck_assert_msg(objR, "list object ops failed: %s", result_message(objR));
+  ck_assert_int_eq((int)objR.value->size(), 1);
+  ck_assert_str_eq(objR.value->at(0).name.c_str(), "update");
+
+  auto classR = op_registry.list_operations(TypeID{0xB2ULL}, OperationScope::Class, true);
+  ck_assert_msg(classR, "list class ops failed: %s", result_message(classR));
+  ck_assert_int_eq((int)classR.value->size(), 1);
+  ck_assert_str_eq(classR.value->at(0).name.c_str(), "create");
+}
+END_TEST
+
 Suite* refract_registry_suite(void) {
   Suite* s = suite_create("RefractRegistry");
   TCase* tc = tcase_create("core");
 
   tcase_add_test(tc, test_schema_registry_roundtrip);
+  tcase_add_test(tc, test_operation_registry_scope_and_inheritance);
 
   suite_add_tcase(s, tc);
   return s;
