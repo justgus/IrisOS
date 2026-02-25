@@ -15,8 +15,8 @@ GitHub-Issue: #106
 
 - ER ID: ER-0025
 - Title: XML Parser
-- Status: Proposed
-- Date: 2026-02-21
+- Status: Verified
+- Date: 2026-02-24
 - Owners: Mike
 - Type: Enhancement
 

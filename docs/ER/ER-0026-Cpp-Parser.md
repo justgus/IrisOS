@@ -15,8 +15,8 @@ GitHub-Issue: #107
 
 - ER ID: ER-0026
 - Title: C++ Parser
-- Status: Proposed
-- Date: 2026-02-21
+- Status: Verified
+- Date: 2026-02-24
 - Owners: Mike
 - Type: Enhancement
 
