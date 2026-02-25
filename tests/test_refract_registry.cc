@@ -5,6 +5,7 @@ extern "C" {
 #undef fail
 #endif
 
+#include "refract/dispatch.h"
 #include "refract/operation_registry.h"
 #include "refract/schema_registry.h"
 #include "referee/referee.h"
@@ -138,12 +139,93 @@ START_TEST(test_operation_registry_scope_and_inheritance)
 }
 END_TEST
 
+START_TEST(test_dispatch_resolution)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+
+  auto base = make_definition(TypeID{0xC1ULL}, "Base", "Demo");
+  base.operations.clear();
+  OperationDefinition base_op;
+  base_op.name = "ping";
+  base_op.scope = OperationScope::Object;
+  base_op.signature.params.push_back(ParameterDefinition{ "name", TypeID{0x1001ULL}, false });
+  base.operations.push_back(base_op);
+
+  auto derived = make_definition(TypeID{0xC2ULL}, "Derived", "Demo");
+  derived.operations.clear();
+  OperationDefinition derived_op = base_op;
+  derived.operations.push_back(derived_op);
+
+  auto overloads = make_definition(TypeID{0xD1ULL}, "Overloads", "Demo");
+  overloads.operations.clear();
+  OperationDefinition op_string;
+  op_string.name = "op";
+  op_string.scope = OperationScope::Object;
+  op_string.signature.params.push_back(ParameterDefinition{ "s", TypeID{0x1001ULL}, false });
+  overloads.operations.push_back(op_string);
+  OperationDefinition op_num;
+  op_num.name = "op";
+  op_num.scope = OperationScope::Object;
+  op_num.signature.params.push_back(ParameterDefinition{ "n", TypeID{0x1002ULL}, false });
+  overloads.operations.push_back(op_num);
+
+  ck_assert_msg(registry.register_definition(base), "register base failed");
+  ck_assert_msg(registry.register_definition(derived), "register derived failed");
+  ck_assert_msg(registry.register_definition(overloads), "register overloads failed");
+
+  DispatchEngine engine(
+      registry,
+      [](TypeID type_id) -> std::vector<TypeID> {
+        if (type_id.v == 0xC2ULL) return { TypeID{0xC1ULL} };
+        return {};
+      });
+
+  auto overrideR = engine.resolve(
+      TypeID{0xC2ULL},
+      "ping",
+      OperationScope::Object,
+      { TypeID{0x1001ULL} },
+      1,
+      true);
+  ck_assert_msg(overrideR, "dispatch override failed: %s", result_message(overrideR));
+  ck_assert_int_eq(overrideR.value->owner_type.v, 0xC2ULL);
+
+  auto overloadR = engine.resolve(
+      TypeID{0xD1ULL},
+      "op",
+      OperationScope::Object,
+      { TypeID{0x1002ULL} },
+      1,
+      false);
+  ck_assert_msg(overloadR, "dispatch overload failed: %s", result_message(overloadR));
+  ck_assert_str_eq(overloadR.value->operation.name.c_str(), "op");
+  ck_assert_int_eq(overloadR.value->operation.signature.params[0].type.v, 0x1002ULL);
+
+  auto ambigR = engine.resolve(
+      TypeID{0xD1ULL},
+      "op",
+      OperationScope::Object,
+      {},
+      1,
+      false);
+  ck_assert_msg(!ambigR, "expected ambiguous dispatch failure");
+  ck_assert_msg(ambigR.error.has_value(), "expected error for ambiguous dispatch");
+  ck_assert_msg(ambigR.error->message.find("ambiguous") != std::string::npos,
+                "expected ambiguous error, got: %s", ambigR.error->message.c_str());
+}
+END_TEST
+
 Suite* refract_registry_suite(void) {
   Suite* s = suite_create("RefractRegistry");
   TCase* tc = tcase_create("core");
 
   tcase_add_test(tc, test_schema_registry_roundtrip);
   tcase_add_test(tc, test_operation_registry_scope_and_inheritance);
+  tcase_add_test(tc, test_dispatch_resolution);
 
   suite_add_tcase(s, tc);
   return s;
