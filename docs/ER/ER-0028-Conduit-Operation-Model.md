@@ -15,8 +15,8 @@ GitHub-Issue: #109
 
 - ER ID: ER-0028
 - Title: Conduit Operation Model
-- Status: Proposed
-- Date: 2026-02-21
+- Status: Implemented
+- Date: 2026-02-25
 - Owners: Mike
 - Type: Epic
 

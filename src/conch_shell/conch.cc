@@ -918,8 +918,20 @@ void cmd_show_type(SchemaRegistry& registry, const std::string& name) {
         if (param.optional) std::cout << "?";
       }
       std::cout << ")";
-      if (op.signature.return_type.has_value()) {
-        std::cout << " -> 0x" << std::hex << op.signature.return_type->v << std::dec;
+      if (!op.signature.outputs.empty()) {
+        std::cout << " -> ";
+        if (op.signature.outputs.size() > 1) std::cout << "(";
+        for (size_t i = 0; i < op.signature.outputs.size(); ++i) {
+          if (i > 0) std::cout << ", ";
+          const auto& out = op.signature.outputs[i];
+          if (!out.name.empty()) {
+            std::cout << out.name;
+          } else {
+            std::cout << "result";
+          }
+          if (out.optional) std::cout << "?";
+        }
+        if (op.signature.outputs.size() > 1) std::cout << ")";
       }
       std::cout << "\n";
     }
@@ -982,8 +994,20 @@ void cmd_show(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id) 
         if (param.optional) std::cout << "?";
       }
       std::cout << ")";
-      if (op.signature.return_type.has_value()) {
-        std::cout << " -> 0x" << std::hex << op.signature.return_type->v << std::dec;
+      if (!op.signature.outputs.empty()) {
+        std::cout << " -> ";
+        if (op.signature.outputs.size() > 1) std::cout << "(";
+        for (size_t i = 0; i < op.signature.outputs.size(); ++i) {
+          if (i > 0) std::cout << ", ";
+          const auto& out = op.signature.outputs[i];
+          if (!out.name.empty()) {
+            std::cout << out.name;
+          } else {
+            std::cout << "result";
+          }
+          if (out.optional) std::cout << "?";
+        }
+        if (op.signature.outputs.size() > 1) std::cout << ")";
       }
       std::cout << "\n";
     }

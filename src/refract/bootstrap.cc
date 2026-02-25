@@ -93,6 +93,8 @@ TypeDefinition make_signature_definition() {
   def.name = "SignatureDefinition";
   def.namespace_name = "Refract";
   def.version = 1;
+  def.fields.push_back(FieldDefinition{ "params", kTypeBytes, false, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "outputs", kTypeBytes, false, std::nullopt });
   return def;
 }
 
@@ -102,6 +104,9 @@ TypeDefinition make_operation_definition() {
   def.name = "OperationDefinition";
   def.namespace_name = "Refract";
   def.version = 1;
+  def.fields.push_back(FieldDefinition{ "name", kTypeString, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "scope", kTypeString, false, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "signature", kTypeBytes, false, std::nullopt });
   return def;
 }
 
@@ -250,6 +255,7 @@ TypeDefinition make_demo_propulsion_synth() {
 
   OperationDefinition start_op;
   start_op.name = "start";
+  start_op.scope = OperationScope::Object;
   def.operations.push_back(std::move(start_op));
 
   def.relationships.push_back(RelationshipSpec{ "summary", "one", "Demo::Summary" });
@@ -268,6 +274,7 @@ TypeDefinition make_demo_summary() {
 
   OperationDefinition expand_op;
   expand_op.name = "expand";
+  expand_op.scope = OperationScope::Object;
   expand_op.signature.params.push_back(ParameterDefinition{ "level", kTypeU64, true });
   def.operations.push_back(std::move(expand_op));
 
