@@ -15,8 +15,8 @@ GitHub-Issue: #111
 
 - ER ID: ER-0030
 - Title: Conduit Conch Integration
-- Status: Proposed
-- Date: 2026-02-21
+- Status: Implemented
+- Date: 2026-02-25
 - Owners: Mike
 - Type: Enhancement
 

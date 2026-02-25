@@ -13,8 +13,10 @@
 #include <algorithm>
 #include <cctype>
 #include <cstdlib>
+#include <deque>
 #include <iomanip>
 #include <iostream>
+#include <map>
 #include <optional>
 #include <regex>
 #include <sstream>
@@ -22,6 +24,7 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include <variant>
 
@@ -521,6 +524,159 @@ std::optional<TypeSummary> resolve_type(SchemaRegistry& registry,
   return find_type_summary(typesR.value.value(), name, err_out);
 }
 
+struct OperationListing {
+  iris::refract::OperationDefinition operation;
+  TypeID owner{};
+  std::size_t depth{0};
+};
+
+bool is_base_role(std::string_view role) {
+  return role == "base" || role == "extends";
+}
+
+std::vector<TypeID> resolve_base_types(const iris::refract::TypeDefinition& def,
+                                       const std::vector<TypeSummary>& types) {
+  std::vector<TypeID> out;
+  for (const auto& rel : def.relationships) {
+    if (!is_base_role(rel.role)) continue;
+    auto base = find_type_summary(types, rel.target, nullptr);
+    if (base.has_value()) out.push_back(base->type_id);
+  }
+  return out;
+}
+
+referee::Result<std::vector<OperationListing>> list_operations_with_inheritance(
+    SchemaRegistry& registry,
+    const std::vector<TypeSummary>& types,
+    TypeID root_type,
+    bool include_inherited) {
+  std::vector<OperationListing> out;
+  std::deque<std::pair<TypeID, std::size_t>> queue;
+  std::unordered_set<std::uint64_t> visited;
+
+  queue.push_back({ root_type, 0 });
+  visited.insert(root_type.v);
+
+  while (!queue.empty()) {
+    auto [current, depth] = queue.front();
+    queue.pop_front();
+
+    auto defR = registry.get_latest_definition_by_type(current);
+    if (!defR) {
+      return referee::Result<std::vector<OperationListing>>::err(defR.error->message);
+    }
+    if (!defR.value->has_value()) {
+      return referee::Result<std::vector<OperationListing>>::err("definition not found");
+    }
+
+    const auto& def = defR.value->value().definition;
+    for (const auto& op : def.operations) {
+      OperationListing entry;
+      entry.operation = op;
+      entry.owner = current;
+      entry.depth = depth;
+      out.push_back(std::move(entry));
+    }
+
+    if (include_inherited) {
+      for (const auto& base : resolve_base_types(def, types)) {
+        if (visited.insert(base.v).second) {
+          queue.push_back({ base, depth + 1 });
+        }
+      }
+    }
+  }
+
+  return referee::Result<std::vector<OperationListing>>::ok(std::move(out));
+}
+
+std::string type_display_name_for(const std::vector<TypeSummary>& types, TypeID type_id) {
+  for (const auto& t : types) {
+    if (t.type_id.v == type_id.v) return type_display_name(t);
+  }
+  std::ostringstream os;
+  os << "0x" << std::hex << type_id.v << std::dec;
+  return os.str();
+}
+
+std::string format_signature(const iris::refract::OperationDefinition& op) {
+  std::ostringstream os;
+  os << "(";
+  for (size_t i = 0; i < op.signature.params.size(); ++i) {
+    if (i > 0) os << ", ";
+    const auto& param = op.signature.params[i];
+    if (!param.name.empty()) os << param.name << ":";
+    os << "0x" << std::hex << param.type.v << std::dec;
+    if (param.optional) os << "?";
+  }
+  os << ")";
+  if (!op.signature.outputs.empty()) {
+    os << " -> ";
+    if (op.signature.outputs.size() > 1) os << "(";
+    for (size_t i = 0; i < op.signature.outputs.size(); ++i) {
+      if (i > 0) os << ", ";
+      const auto& out = op.signature.outputs[i];
+      if (!out.name.empty()) {
+        os << out.name << ":";
+      }
+      os << "0x" << std::hex << out.type.v << std::dec;
+      if (out.optional) os << "?";
+    }
+    if (op.signature.outputs.size() > 1) os << ")";
+  }
+  return os.str();
+}
+
+const char* scope_label(OperationScope scope) {
+  return scope == OperationScope::Class ? "class" : "object";
+}
+
+void print_operations(SchemaRegistry& registry,
+                      const std::vector<TypeSummary>& types,
+                      TypeID type_id,
+                      std::optional<OperationScope> scope_filter,
+                      bool include_inherited) {
+  auto listR = list_operations_with_inheritance(registry, types, type_id, include_inherited);
+  if (!listR) {
+    std::cout << "error: " << listR.error->message << "\n";
+    return;
+  }
+
+  std::map<OperationScope, std::map<std::string, std::vector<OperationListing>>> grouped;
+  for (const auto& entry : listR.value.value()) {
+    if (scope_filter.has_value() && entry.operation.scope != scope_filter.value()) continue;
+    grouped[entry.operation.scope][entry.operation.name].push_back(entry);
+  }
+
+  if (grouped.empty()) return;
+
+  std::cout << "operations\n";
+  for (OperationScope scope : { OperationScope::Class, OperationScope::Object }) {
+    auto scope_it = grouped.find(scope);
+    if (scope_it == grouped.end()) continue;
+    std::cout << "  " << scope_label(scope) << "\n";
+    for (const auto& [name, overloads] : scope_it->second) {
+      if (overloads.size() == 1) {
+        const auto& entry = overloads.front();
+        std::cout << "    " << name << format_signature(entry.operation);
+        if (entry.depth > 0) {
+          std::cout << " [from " << type_display_name_for(types, entry.owner) << "]";
+        }
+        std::cout << "\n";
+        continue;
+      }
+      std::cout << "    " << name << "\n";
+      for (const auto& entry : overloads) {
+        std::cout << "      " << format_signature(entry.operation);
+        if (entry.depth > 0) {
+          std::cout << " [from " << type_display_name_for(types, entry.owner) << "]";
+        }
+        std::cout << "\n";
+      }
+    }
+  }
+}
+
 bool parse_bool(std::string_view v, bool* out) {
   if (v == "true") { *out = true; return true; }
   if (v == "false") { *out = false; return true; }
@@ -562,6 +718,7 @@ void print_help() {
   std::cout << "  alias <name>=<expr>\n";
   std::cout << "  show <ObjectID>\n";
   std::cout << "  show type <TypeName>\n";
+  std::cout << "  ops <TypeName> [--class|--object] [--declared]\n";
   std::cout << "  edges <ObjectID>\n";
   std::cout << "  find type <TypeName>\n";
   std::cout << "  define type <TypeName> fields <field>:<type>[?],...\n";
@@ -883,8 +1040,13 @@ void cmd_find_type(SchemaRegistry& registry, const std::string& name) {
 }
 
 void cmd_show_type(SchemaRegistry& registry, const std::string& name) {
+  auto typesR = registry.list_types();
+  if (!typesR) {
+    std::cout << "error: " << typesR.error->message << "\n";
+    return;
+  }
   std::string err;
-  auto match = resolve_type(registry, name, &err);
+  auto match = find_type_summary(typesR.value.value(), name, &err);
   if (!match.has_value()) {
     std::cout << "error: " << err << "\n";
     return;
@@ -910,35 +1072,50 @@ void cmd_show_type(SchemaRegistry& registry, const std::string& name) {
       std::cout << "\n";
     }
   }
-  if (!def.operations.empty()) {
-    std::cout << "operations\n";
-    for (const auto& op : def.operations) {
-      std::cout << "  " << op.name << "(";
-      for (size_t i = 0; i < op.signature.params.size(); ++i) {
-        const auto& param = op.signature.params[i];
-        if (i > 0) std::cout << ", ";
-        std::cout << param.name;
-        if (param.optional) std::cout << "?";
-      }
-      std::cout << ")";
-      if (!op.signature.outputs.empty()) {
-        std::cout << " -> ";
-        if (op.signature.outputs.size() > 1) std::cout << "(";
-        for (size_t i = 0; i < op.signature.outputs.size(); ++i) {
-          if (i > 0) std::cout << ", ";
-          const auto& out = op.signature.outputs[i];
-          if (!out.name.empty()) {
-            std::cout << out.name;
-          } else {
-            std::cout << "result";
-          }
-          if (out.optional) std::cout << "?";
-        }
-        if (op.signature.outputs.size() > 1) std::cout << ")";
-      }
-      std::cout << "\n";
-    }
+  print_operations(registry, typesR.value.value(), match->type_id, std::nullopt, true);
+}
+
+void cmd_ops(SchemaRegistry& registry, const std::vector<std::string>& args) {
+  if (args.empty()) {
+    std::cout << "error: ops <type> [--class|--object] [--declared]\n";
+    return;
   }
+
+  auto typesR = registry.list_types();
+  if (!typesR) {
+    std::cout << "error: " << typesR.error->message << "\n";
+    return;
+  }
+
+  std::string err;
+  auto match = find_type_summary(typesR.value.value(), args[0], &err);
+  if (!match.has_value()) {
+    std::cout << "error: " << err << "\n";
+    return;
+  }
+
+  std::optional<OperationScope> scope_filter;
+  bool include_inherited = true;
+
+  for (size_t i = 1; i < args.size(); ++i) {
+    const auto& token = args[i];
+    if (token == "--class") {
+      scope_filter = OperationScope::Class;
+      continue;
+    }
+    if (token == "--object") {
+      scope_filter = OperationScope::Object;
+      continue;
+    }
+    if (token == "--declared") {
+      include_inherited = false;
+      continue;
+    }
+    std::cout << "error: unknown option '" << token << "'\n";
+    return;
+  }
+
+  print_operations(registry, typesR.value.value(), match->type_id, scope_filter, include_inherited);
 }
 
 void cmd_show(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id) {
@@ -1894,6 +2071,10 @@ int main(int argc, char** argv) {
     }
     if (cmd == "show" && parsed.args.size() == 2 && parsed.args[0] == "type") {
       cmd_show_type(registry, parsed.args[1]);
+      continue;
+    }
+    if (cmd == "ops" && !parsed.args.empty()) {
+      cmd_ops(registry, parsed.args);
       continue;
     }
     if (cmd == "show" && parsed.args.size() == 1) {
