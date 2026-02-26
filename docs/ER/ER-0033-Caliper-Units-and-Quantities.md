@@ -15,7 +15,7 @@ GitHub-Issue: #114
 
 - ER ID: ER-0033
 - Title: Caliper Units and Quantities
-- Status: Proposed
+- Status: Verified
 - Date: 2026-02-21
 - Owners: Mike
 - Type: Enhancement
