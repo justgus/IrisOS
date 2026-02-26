@@ -1978,6 +1978,11 @@ int main(int argc, char** argv) {
     std::cout << "error: bootstrap failed: " << bootstrapR.error->message << "\n";
     return 1;
   }
+  auto catalogR = iris::refract::bootstrap_core_catalog(registry, store);
+  if (!catalogR) {
+    std::cout << "error: bootstrap catalog failed: " << catalogR.error->message << "\n";
+    return 1;
+  }
 #if !defined(HAVE_READLINE)
   if (::isatty(STDIN_FILENO)) {
     std::cout << "note: readline not available; history disabled\n";

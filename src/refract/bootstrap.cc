@@ -2,6 +2,11 @@
 
 #include <array>
 #include <cstdint>
+#include <map>
+#include <optional>
+#include <string_view>
+
+#include <nlohmann/json.hpp>
 
 namespace iris::refract {
 
@@ -27,6 +32,15 @@ constexpr referee::TypeID kTypeAstraDouble{0x4153545200000002ULL};
 constexpr referee::TypeID kTypeAstraVector{0x4153545200000003ULL};
 constexpr referee::TypeID kTypeAstraMatrix{0x4153545200000004ULL};
 constexpr referee::TypeID kTypeAstraTensor{0x4153545200000005ULL};
+
+constexpr referee::TypeID kTypeCaliperDimension{0x43414C5000000001ULL};
+constexpr referee::TypeID kTypeCaliperUnit{0x43414C5000000002ULL};
+constexpr referee::TypeID kTypeCaliperAngle{0x43414C5000000003ULL};
+constexpr referee::TypeID kTypeCaliperDuration{0x43414C5000000004ULL};
+constexpr referee::TypeID kTypeCaliperSpan{0x43414C5000000005ULL};
+constexpr referee::TypeID kTypeCaliperRange{0x43414C5000000006ULL};
+constexpr referee::TypeID kTypeCaliperPercentage{0x43414C5000000007ULL};
+constexpr referee::TypeID kTypeCaliperRatio{0x43414C5000000008ULL};
 
 constexpr referee::TypeID kTypeFieldDefinition{0x5246524346000001ULL};
 constexpr referee::TypeID kTypeOperationDefinition{0x5246524346000002ULL};
@@ -103,6 +117,25 @@ void add_contains_operation(TypeDefinition& def, referee::TypeID value_type) {
   op.scope = OperationScope::Object;
   op.signature.params.push_back(ParameterDefinition{ "value", value_type, false });
   op.signature.outputs.push_back(ParameterDefinition{ "present", kTypeBool, false });
+  def.operations.push_back(std::move(op));
+}
+
+void add_compatible_operation(TypeDefinition& def, referee::TypeID other_type) {
+  OperationDefinition op;
+  op.name = "compatible";
+  op.scope = OperationScope::Object;
+  op.signature.params.push_back(ParameterDefinition{ "other", other_type, false });
+  op.signature.outputs.push_back(ParameterDefinition{ "compatible", kTypeBool, false });
+  def.operations.push_back(std::move(op));
+}
+
+void add_convert_operation(TypeDefinition& def, referee::TypeID value_type, referee::TypeID unit_type) {
+  OperationDefinition op;
+  op.name = "convert";
+  op.scope = OperationScope::Object;
+  op.signature.params.push_back(ParameterDefinition{ "value", value_type, false });
+  op.signature.params.push_back(ParameterDefinition{ "to_unit", unit_type, false });
+  op.signature.outputs.push_back(ParameterDefinition{ "result", value_type, false });
   def.operations.push_back(std::move(op));
 }
 
@@ -255,6 +288,104 @@ TypeDefinition make_astra_tensor() {
   add_iterate_operation(def);
   add_index_operation(def, kTypeU64, kTypeBytes);
   add_contains_operation(def, kTypeBytes);
+  return def;
+}
+
+TypeDefinition make_caliper_dimension() {
+  TypeDefinition def;
+  def.type_id = kTypeCaliperDimension;
+  def.name = "Dimension";
+  def.namespace_name = "Caliper";
+  def.version = 1;
+  def.fields.push_back(FieldDefinition{ "name", kTypeString, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "symbol", kTypeString, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "components", kTypeBytes, false, std::nullopt });
+  add_compatible_operation(def, kTypeCaliperDimension);
+  return def;
+}
+
+TypeDefinition make_caliper_unit() {
+  TypeDefinition def;
+  def.type_id = kTypeCaliperUnit;
+  def.name = "Unit";
+  def.namespace_name = "Caliper";
+  def.version = 1;
+  def.fields.push_back(FieldDefinition{ "name", kTypeString, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "symbol", kTypeString, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "dimension_id", kTypeObjectID, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "system", kTypeString, false, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "scale", kTypeF64, false, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "offset", kTypeF64, false, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "base_unit_id", kTypeObjectID, false, std::nullopt });
+  add_compatible_operation(def, kTypeCaliperUnit);
+  add_convert_operation(def, kTypeBytes, kTypeCaliperUnit);
+  return def;
+}
+
+TypeDefinition make_caliper_angle() {
+  TypeDefinition def;
+  def.type_id = kTypeCaliperAngle;
+  def.name = "Angle";
+  def.namespace_name = "Caliper";
+  def.version = 1;
+  def.fields.push_back(FieldDefinition{ "value", kTypeBytes, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "unit_id", kTypeObjectID, false, std::nullopt });
+  return def;
+}
+
+TypeDefinition make_caliper_duration() {
+  TypeDefinition def;
+  def.type_id = kTypeCaliperDuration;
+  def.name = "Duration";
+  def.namespace_name = "Caliper";
+  def.version = 1;
+  def.fields.push_back(FieldDefinition{ "value", kTypeBytes, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "unit_id", kTypeObjectID, false, std::nullopt });
+  return def;
+}
+
+TypeDefinition make_caliper_span() {
+  TypeDefinition def;
+  def.type_id = kTypeCaliperSpan;
+  def.name = "Span";
+  def.namespace_name = "Caliper";
+  def.version = 1;
+  def.fields.push_back(FieldDefinition{ "value", kTypeBytes, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "unit_id", kTypeObjectID, false, std::nullopt });
+  return def;
+}
+
+TypeDefinition make_caliper_range() {
+  TypeDefinition def;
+  def.type_id = kTypeCaliperRange;
+  def.name = "Range";
+  def.namespace_name = "Caliper";
+  def.version = 1;
+  def.fields.push_back(FieldDefinition{ "min_value", kTypeBytes, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "max_value", kTypeBytes, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "unit_id", kTypeObjectID, false, std::nullopt });
+  return def;
+}
+
+TypeDefinition make_caliper_percentage() {
+  TypeDefinition def;
+  def.type_id = kTypeCaliperPercentage;
+  def.name = "Percentage";
+  def.namespace_name = "Caliper";
+  def.version = 1;
+  def.fields.push_back(FieldDefinition{ "value", kTypeBytes, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "unit_id", kTypeObjectID, false, std::nullopt });
+  return def;
+}
+
+TypeDefinition make_caliper_ratio() {
+  TypeDefinition def;
+  def.type_id = kTypeCaliperRatio;
+  def.name = "Ratio";
+  def.namespace_name = "Caliper";
+  def.version = 1;
+  def.fields.push_back(FieldDefinition{ "value", kTypeBytes, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "unit_id", kTypeObjectID, false, std::nullopt });
   return def;
 }
 
@@ -483,7 +614,7 @@ TypeDefinition make_demo_detail() {
 
 std::vector<TypeDefinition> core_schema_definitions() {
   std::vector<TypeDefinition> defs;
-  defs.reserve(36);
+  defs.reserve(44);
   defs.push_back(make_primitive(kTypeString, "String"));
   defs.push_back(make_primitive(kTypeU64, "U64"));
   defs.push_back(make_primitive(kTypeBool, "Bool"));
@@ -502,6 +633,14 @@ std::vector<TypeDefinition> core_schema_definitions() {
   defs.push_back(make_astra_vector());
   defs.push_back(make_astra_matrix());
   defs.push_back(make_astra_tensor());
+  defs.push_back(make_caliper_dimension());
+  defs.push_back(make_caliper_unit());
+  defs.push_back(make_caliper_angle());
+  defs.push_back(make_caliper_duration());
+  defs.push_back(make_caliper_span());
+  defs.push_back(make_caliper_range());
+  defs.push_back(make_caliper_percentage());
+  defs.push_back(make_caliper_ratio());
   defs.push_back(make_type_definition());
   defs.push_back(make_field_definition());
   defs.push_back(make_signature_definition());
@@ -541,6 +680,205 @@ referee::Result<BootstrapResult> bootstrap_core_schema(SchemaRegistry& registry)
   }
 
   return referee::Result<BootstrapResult>::ok(out);
+}
+
+namespace {
+
+struct DimensionSeed {
+  std::string name;
+  std::string symbol;
+  nlohmann::json components;
+};
+
+struct UnitSeed {
+  std::string name;
+  std::string symbol;
+  std::string dimension;
+  std::string system;
+  std::optional<std::string> base_symbol;
+  std::optional<double> scale;
+  std::optional<double> offset;
+};
+
+referee::Result<DefinitionRecord> require_definition(SchemaRegistry& registry, referee::TypeID type_id) {
+  auto defR = registry.get_definition_by_type(type_id);
+  if (!defR) return referee::Result<DefinitionRecord>::err(defR.error->message);
+  if (!defR.value->has_value()) return referee::Result<DefinitionRecord>::err("definition not found");
+  return referee::Result<DefinitionRecord>::ok(defR.value->value());
+}
+
+std::map<std::string, referee::ObjectID> load_named_objects(
+    referee::SqliteStore& store,
+    referee::TypeID type_id,
+    std::string_view key) {
+  std::map<std::string, referee::ObjectID> out;
+  auto listR = store.list_by_type(type_id);
+  if (!listR) return out;
+  for (const auto& rec : listR.value.value()) {
+    try {
+      auto j = nlohmann::json::from_cbor(rec.payload_cbor);
+      if (!j.contains(key)) continue;
+      auto name = j.at(key).get<std::string>();
+      if (!name.empty()) out[name] = rec.ref.id;
+    } catch (const std::exception&) {
+      continue;
+    }
+  }
+  return out;
+}
+
+referee::Bytes cbor_from_json(const nlohmann::json& j) {
+  return nlohmann::json::to_cbor(j);
+}
+
+} // namespace
+
+referee::Result<CatalogBootstrapResult> bootstrap_core_catalog(SchemaRegistry& registry,
+                                                               referee::SqliteStore& store) {
+  CatalogBootstrapResult out;
+
+  auto dim_def = require_definition(registry, kTypeCaliperDimension);
+  if (!dim_def) return referee::Result<CatalogBootstrapResult>::err(dim_def.error->message);
+  auto unit_def = require_definition(registry, kTypeCaliperUnit);
+  if (!unit_def) return referee::Result<CatalogBootstrapResult>::err(unit_def.error->message);
+
+  std::map<std::string, referee::ObjectID> dimensions_by_name =
+      load_named_objects(store, kTypeCaliperDimension, "name");
+  std::map<std::string, referee::ObjectID> units_by_symbol =
+      load_named_objects(store, kTypeCaliperUnit, "symbol");
+
+  const std::vector<DimensionSeed> dimension_seeds = {
+    { "Dimensionless", "1", nlohmann::json::object() },
+    { "Length", "L", nlohmann::json{ { "Length", 1 } } },
+    { "Mass", "M", nlohmann::json{ { "Mass", 1 } } },
+    { "Time", "T", nlohmann::json{ { "Time", 1 } } },
+    { "Angle", "Ang", nlohmann::json{ { "Angle", 1 } } },
+    { "Temperature", "Temp", nlohmann::json{ { "Temperature", 1 } } },
+    { "Area", "L2", nlohmann::json{ { "Length", 2 } } },
+    { "Volume", "L3", nlohmann::json{ { "Length", 3 } } },
+    { "Velocity", "L/T", nlohmann::json{ { "Length", 1 }, { "Time", -1 } } },
+    { "Acceleration", "L/T2", nlohmann::json{ { "Length", 1 }, { "Time", -2 } } },
+    { "Force", "M*L/T2", nlohmann::json{ { "Mass", 1 }, { "Length", 1 }, { "Time", -2 } } },
+    { "Pressure", "M/L/T2", nlohmann::json{ { "Mass", 1 }, { "Length", -1 }, { "Time", -2 } } },
+    { "Energy", "M*L2/T2", nlohmann::json{ { "Mass", 1 }, { "Length", 2 }, { "Time", -2 } } },
+    { "Power", "M*L2/T3", nlohmann::json{ { "Mass", 1 }, { "Length", 2 }, { "Time", -3 } } },
+  };
+
+  for (const auto& seed : dimension_seeds) {
+    auto it = dimensions_by_name.find(seed.name);
+    if (it != dimensions_by_name.end()) {
+      ++out.existing;
+      continue;
+    }
+    nlohmann::json j;
+    j["name"] = seed.name;
+    j["symbol"] = seed.symbol;
+    j["components"] = seed.components;
+    auto createR = store.create_object(dim_def.value->definition.type_id,
+                                       dim_def.value->ref.id,
+                                       cbor_from_json(j));
+    if (!createR) return referee::Result<CatalogBootstrapResult>::err(createR.error->message);
+    dimensions_by_name[seed.name] = createR.value->ref.id;
+    ++out.inserted;
+  }
+
+  auto require_dimension = [&](const std::string& name) -> referee::Result<referee::ObjectID> {
+    auto it = dimensions_by_name.find(name);
+    if (it == dimensions_by_name.end()) {
+      return referee::Result<referee::ObjectID>::err("missing dimension: " + name);
+    }
+    return referee::Result<referee::ObjectID>::ok(it->second);
+  };
+
+  const std::vector<UnitSeed> unit_seeds = {
+    { "one", "1", "Dimensionless", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "percent", "%", "Dimensionless", "si", std::string("1"), 0.01, 0.0 },
+
+    { "meter", "m", "Length", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "millimeter", "mm", "Length", "si", std::string("m"), 0.001, 0.0 },
+    { "centimeter", "cm", "Length", "si", std::string("m"), 0.01, 0.0 },
+    { "kilometer", "km", "Length", "si", std::string("m"), 1000.0, 0.0 },
+    { "inch", "in", "Length", "imperial", std::string("m"), 0.0254, 0.0 },
+    { "foot", "ft", "Length", "imperial", std::string("m"), 0.3048, 0.0 },
+    { "yard", "yd", "Length", "imperial", std::string("m"), 0.9144, 0.0 },
+    { "mile", "mi", "Length", "imperial", std::string("m"), 1609.344, 0.0 },
+
+    { "kilogram", "kg", "Mass", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "gram", "g", "Mass", "si", std::string("kg"), 0.001, 0.0 },
+    { "tonne", "t", "Mass", "si", std::string("kg"), 1000.0, 0.0 },
+    { "pound", "lb", "Mass", "imperial", std::string("kg"), 0.45359237, 0.0 },
+    { "ounce", "oz", "Mass", "imperial", std::string("kg"), 0.028349523125, 0.0 },
+
+    { "second", "s", "Time", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "minute", "min", "Time", "si", std::string("s"), 60.0, 0.0 },
+    { "hour", "h", "Time", "si", std::string("s"), 3600.0, 0.0 },
+
+    { "radian", "rad", "Angle", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "degree", "deg", "Angle", "si", std::string("rad"), 0.017453292519943295, 0.0 },
+
+    { "kelvin", "K", "Temperature", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "celsius", "C", "Temperature", "si", std::string("K"), 1.0, 273.15 },
+    { "fahrenheit", "F", "Temperature", "imperial", std::string("K"), 0.5555555555555556, 255.3722222222222 },
+
+    { "square_meter", "m^2", "Area", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "square_foot", "ft^2", "Area", "imperial", std::string("m^2"), 0.09290304, 0.0 },
+
+    { "cubic_meter", "m^3", "Volume", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "liter", "L", "Volume", "si", std::string("m^3"), 0.001, 0.0 },
+    { "cubic_foot", "ft^3", "Volume", "imperial", std::string("m^3"), 0.028316846592, 0.0 },
+
+    { "meter_per_second", "m/s", "Velocity", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "kilometer_per_hour", "km/h", "Velocity", "si", std::string("m/s"), 0.2777777777777778, 0.0 },
+    { "mile_per_hour", "mph", "Velocity", "imperial", std::string("m/s"), 0.44704, 0.0 },
+
+    { "meter_per_second_sq", "m/s^2", "Acceleration", "si", std::nullopt, std::nullopt, std::nullopt },
+
+    { "newton", "N", "Force", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "pound_force", "lbf", "Force", "imperial", std::string("N"), 4.4482216152605, 0.0 },
+
+    { "pascal", "Pa", "Pressure", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "bar", "bar", "Pressure", "si", std::string("Pa"), 100000.0, 0.0 },
+    { "psi", "psi", "Pressure", "imperial", std::string("Pa"), 6894.757293168, 0.0 },
+
+    { "joule", "J", "Energy", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "kilojoule", "kJ", "Energy", "si", std::string("J"), 1000.0, 0.0 },
+    { "calorie", "cal", "Energy", "si", std::string("J"), 4.184, 0.0 },
+
+    { "watt", "W", "Power", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "horsepower", "hp", "Power", "imperial", std::string("W"), 745.69987158227022, 0.0 },
+  };
+
+  for (const auto& seed : unit_seeds) {
+    if (units_by_symbol.find(seed.symbol) != units_by_symbol.end()) {
+      ++out.existing;
+      continue;
+    }
+    auto dimR = require_dimension(seed.dimension);
+    if (!dimR) return referee::Result<CatalogBootstrapResult>::err(dimR.error->message);
+
+    nlohmann::json j;
+    j["name"] = seed.name;
+    j["symbol"] = seed.symbol;
+    j["dimension_id"] = dimR.value->to_hex();
+    if (!seed.system.empty()) j["system"] = seed.system;
+    if (seed.scale.has_value()) j["scale"] = seed.scale.value();
+    if (seed.offset.has_value()) j["offset"] = seed.offset.value();
+    if (seed.base_symbol.has_value()) {
+      auto base_it = units_by_symbol.find(seed.base_symbol.value());
+      if (base_it != units_by_symbol.end()) {
+        j["base_unit_id"] = base_it->second.to_hex();
+      }
+    }
+
+    auto createR = store.create_object(unit_def.value->definition.type_id,
+                                       unit_def.value->ref.id,
+                                       cbor_from_json(j));
+    if (!createR) return referee::Result<CatalogBootstrapResult>::err(createR.error->message);
+    units_by_symbol[seed.symbol] = createR.value->ref.id;
+    ++out.inserted;
+  }
+
+  return referee::Result<CatalogBootstrapResult>::ok(out);
 }
 
 } // namespace iris::refract
