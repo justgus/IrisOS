@@ -16,6 +16,12 @@ constexpr referee::TypeID kTypeVersion{0x1006ULL};
 constexpr referee::TypeID kTypeBytes{0x1007ULL};
 constexpr referee::TypeID kTypeF64{0x1008ULL};
 
+constexpr referee::TypeID kTypeCrateArray{0x4352415400000001ULL};
+constexpr referee::TypeID kTypeCrateList{0x4352415400000002ULL};
+constexpr referee::TypeID kTypeCrateSet{0x4352415400000003ULL};
+constexpr referee::TypeID kTypeCrateMap{0x4352415400000004ULL};
+constexpr referee::TypeID kTypeCrateTuple{0x4352415400000005ULL};
+
 constexpr referee::TypeID kTypeFieldDefinition{0x5246524346000001ULL};
 constexpr referee::TypeID kTypeOperationDefinition{0x5246524346000002ULL};
 constexpr referee::TypeID kTypeSignatureDefinition{0x5246524346000003ULL};
@@ -60,6 +66,40 @@ TypeDefinition make_primitive(referee::TypeID type_id, const std::string& name) 
   return def;
 }
 
+void add_size_operation(TypeDefinition& def) {
+  OperationDefinition op;
+  op.name = "size";
+  op.scope = OperationScope::Object;
+  op.signature.outputs.push_back(ParameterDefinition{ "count", kTypeU64, false });
+  def.operations.push_back(std::move(op));
+}
+
+void add_iterate_operation(TypeDefinition& def) {
+  OperationDefinition op;
+  op.name = "iterate";
+  op.scope = OperationScope::Object;
+  op.signature.outputs.push_back(ParameterDefinition{ "items", kTypeBytes, false });
+  def.operations.push_back(std::move(op));
+}
+
+void add_index_operation(TypeDefinition& def, referee::TypeID index_type, referee::TypeID value_type) {
+  OperationDefinition op;
+  op.name = "index";
+  op.scope = OperationScope::Object;
+  op.signature.params.push_back(ParameterDefinition{ "index", index_type, false });
+  op.signature.outputs.push_back(ParameterDefinition{ "value", value_type, false });
+  def.operations.push_back(std::move(op));
+}
+
+void add_contains_operation(TypeDefinition& def, referee::TypeID value_type) {
+  OperationDefinition op;
+  op.name = "contains";
+  op.scope = OperationScope::Object;
+  op.signature.params.push_back(ParameterDefinition{ "value", value_type, false });
+  op.signature.outputs.push_back(ParameterDefinition{ "present", kTypeBool, false });
+  def.operations.push_back(std::move(op));
+}
+
 TypeDefinition make_type_definition() {
   TypeDefinition def;
   def.type_id = kTypeDefinitionType;
@@ -71,6 +111,84 @@ TypeDefinition make_type_definition() {
   def.fields.push_back(FieldDefinition{ "name", kTypeString, true, std::nullopt });
   def.fields.push_back(FieldDefinition{ "namespace", kTypeString, true, std::nullopt });
   def.fields.push_back(FieldDefinition{ "version", kTypeU64, true, std::nullopt });
+  return def;
+}
+
+TypeDefinition make_bytes_definition() {
+  TypeDefinition def = make_primitive(kTypeBytes, "Bytes");
+  add_size_operation(def);
+  add_iterate_operation(def);
+  add_index_operation(def, kTypeU64, kTypeU64);
+  add_contains_operation(def, kTypeU64);
+  return def;
+}
+
+TypeDefinition make_crate_array() {
+  TypeDefinition def;
+  def.type_id = kTypeCrateArray;
+  def.name = "Array";
+  def.namespace_name = "Crate";
+  def.version = 1;
+  def.type_params = { "T" };
+  add_size_operation(def);
+  add_iterate_operation(def);
+  add_index_operation(def, kTypeU64, kTypeBytes);
+  add_contains_operation(def, kTypeBytes);
+  return def;
+}
+
+TypeDefinition make_crate_list() {
+  TypeDefinition def;
+  def.type_id = kTypeCrateList;
+  def.name = "List";
+  def.namespace_name = "Crate";
+  def.version = 1;
+  def.type_params = { "T" };
+  add_size_operation(def);
+  add_iterate_operation(def);
+  add_index_operation(def, kTypeU64, kTypeBytes);
+  add_contains_operation(def, kTypeBytes);
+  return def;
+}
+
+TypeDefinition make_crate_set() {
+  TypeDefinition def;
+  def.type_id = kTypeCrateSet;
+  def.name = "Set";
+  def.namespace_name = "Crate";
+  def.version = 1;
+  def.type_params = { "T" };
+  add_size_operation(def);
+  add_iterate_operation(def);
+  add_contains_operation(def, kTypeBytes);
+  return def;
+}
+
+TypeDefinition make_crate_map() {
+  TypeDefinition def;
+  def.type_id = kTypeCrateMap;
+  def.name = "Map";
+  def.namespace_name = "Crate";
+  def.version = 1;
+  def.type_params = { "K", "V" };
+  add_size_operation(def);
+  add_iterate_operation(def);
+  add_index_operation(def, kTypeBytes, kTypeBytes);
+  add_contains_operation(def, kTypeBytes);
+  return def;
+}
+
+TypeDefinition make_crate_tuple() {
+  TypeDefinition def;
+  def.type_id = kTypeCrateTuple;
+  def.name = "Tuple";
+  def.namespace_name = "Crate";
+  def.version = 1;
+  def.type_params = { "Ts" };
+  add_size_operation(def);
+  add_iterate_operation(def);
+  add_index_operation(def, kTypeU64, kTypeBytes);
+  add_contains_operation(def, kTypeBytes);
   return def;
 }
 
@@ -299,15 +417,20 @@ TypeDefinition make_demo_detail() {
 
 std::vector<TypeDefinition> core_schema_definitions() {
   std::vector<TypeDefinition> defs;
-  defs.reserve(24);
+  defs.reserve(31);
   defs.push_back(make_primitive(kTypeString, "String"));
   defs.push_back(make_primitive(kTypeU64, "U64"));
   defs.push_back(make_primitive(kTypeBool, "Bool"));
   defs.push_back(make_primitive(kTypeObjectID, "ObjectID"));
   defs.push_back(make_primitive(kTypeTypeID, "TypeID"));
   defs.push_back(make_primitive(kTypeVersion, "Version"));
-  defs.push_back(make_primitive(kTypeBytes, "Bytes"));
+  defs.push_back(make_bytes_definition());
   defs.push_back(make_primitive(kTypeF64, "F64"));
+  defs.push_back(make_crate_array());
+  defs.push_back(make_crate_list());
+  defs.push_back(make_crate_set());
+  defs.push_back(make_crate_map());
+  defs.push_back(make_crate_tuple());
   defs.push_back(make_type_definition());
   defs.push_back(make_field_definition());
   defs.push_back(make_signature_definition());
