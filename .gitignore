@@ -36,3 +36,4 @@ tests/test_*
 !tests/test_*.cc
 config.status
 configure~
+config.h.in~
