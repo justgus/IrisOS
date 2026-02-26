@@ -1063,6 +1063,13 @@ void cmd_show_type(SchemaRegistry& registry, const std::string& name) {
 
   const auto& def = defR.value->value().definition;
   std::cout << "type " << type_display_name(*match) << " v" << def.version << "\n";
+  if (!def.type_params.empty()) {
+    std::cout << "type params";
+    for (const auto& param : def.type_params) {
+      std::cout << " " << param;
+    }
+    std::cout << "\n";
+  }
   if (!def.fields.empty()) {
     std::cout << "fields\n";
     for (const auto& field : def.fields) {

@@ -50,6 +50,7 @@ struct TypeDefinition {
   std::string name;
   std::string namespace_name;
   std::uint64_t version{1};
+  std::vector<std::string> type_params;
   std::vector<FieldDefinition> fields;
   std::vector<OperationDefinition> operations;
   std::vector<RelationshipSpec> relationships;

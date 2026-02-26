@@ -65,6 +65,10 @@ static nlohmann::json to_json(const TypeDefinition& def) {
   j["namespace"] = def.namespace_name;
   j["version"] = def.version;
   if (def.preferred_renderer.has_value()) j["preferred_renderer"] = def.preferred_renderer.value();
+  if (!def.type_params.empty()) {
+    j["type_params"] = nlohmann::json::array();
+    for (const auto& param : def.type_params) j["type_params"].push_back(param);
+  }
 
   j["fields"] = nlohmann::json::array();
   for (const auto& field : def.fields) j["fields"].push_back(to_json(field));
@@ -136,6 +140,9 @@ static TypeDefinition definition_from_json(const nlohmann::json& j) {
   def.version = j.value("version", 1ULL);
   if (j.contains("preferred_renderer")) {
     def.preferred_renderer = j.at("preferred_renderer").get<std::string>();
+  }
+  if (j.contains("type_params")) {
+    for (const auto& item : j.at("type_params")) def.type_params.push_back(item.get<std::string>());
   }
 
   if (j.contains("fields")) {
