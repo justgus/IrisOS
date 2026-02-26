@@ -10,6 +10,7 @@ extern "C" {
 #include "referee/referee.h"
 #include "referee_sqlite/sqlite_store.h"
 
+#include <nlohmann/json.hpp>
 #include <optional>
 #include <string>
 #include <vector>
@@ -42,6 +43,15 @@ bool type_has_operation(const DefinitionRecord& record, const std::string& name)
 
 bool type_params_match(const DefinitionRecord& record, const std::vector<std::string>& params) {
   return record.definition.type_params == params;
+}
+
+bool payload_has_symbol(const referee::ObjectRecord& rec, const std::string& symbol) {
+  try {
+    auto j = nlohmann::json::from_cbor(rec.payload_cbor);
+    return j.value("symbol", "") == symbol;
+  } catch (const std::exception&) {
+    return false;
+  }
 }
 
 } // namespace
@@ -153,6 +163,53 @@ START_TEST(test_bootstrap_astra_math_types)
 }
 END_TEST
 
+START_TEST(test_bootstrap_caliper_units)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+
+  auto boot = bootstrap_core_schema(registry);
+  ck_assert_msg(boot, "bootstrap failed: %s", result_message(boot));
+
+  auto catalog = bootstrap_core_catalog(registry, store);
+  ck_assert_msg(catalog, "catalog bootstrap failed: %s", result_message(catalog));
+
+  auto listR = registry.list_types();
+  ck_assert_msg(listR, "list_types failed: %s", result_message(listR));
+  const auto& types = listR.value.value();
+
+  ck_assert_msg(find_type(types, "Caliper", "Unit").has_value(), "Caliper::Unit missing");
+  ck_assert_msg(find_type(types, "Caliper", "Dimension").has_value(), "Caliper::Dimension missing");
+  ck_assert_msg(find_type(types, "Caliper", "Angle").has_value(), "Caliper::Angle missing");
+  ck_assert_msg(find_type(types, "Caliper", "Duration").has_value(), "Caliper::Duration missing");
+  ck_assert_msg(find_type(types, "Caliper", "Span").has_value(), "Caliper::Span missing");
+  ck_assert_msg(find_type(types, "Caliper", "Range").has_value(), "Caliper::Range missing");
+  ck_assert_msg(find_type(types, "Caliper", "Percentage").has_value(), "Caliper::Percentage missing");
+  ck_assert_msg(find_type(types, "Caliper", "Ratio").has_value(), "Caliper::Ratio missing");
+
+  auto unit_type = find_type(types, "Caliper", "Unit");
+  ck_assert_msg(unit_type.has_value(), "Caliper::Unit missing");
+
+  auto unitsR = store.list_by_type(unit_type->type_id);
+  ck_assert_msg(unitsR, "list_by_type failed: %s", result_message(unitsR));
+  ck_assert_msg(!unitsR.value->empty(), "no units registered");
+
+  bool found_meter = false;
+  for (const auto& rec : unitsR.value.value()) {
+    if (payload_has_symbol(rec, "m")) {
+      found_meter = true;
+      break;
+    }
+  }
+  ck_assert_msg(found_meter, "meter unit missing");
+
+  ck_assert_msg(store.close(), "close failed");
+}
+END_TEST
+
 Suite* refract_bootstrap_suite(void) {
   Suite* s = suite_create("RefractBootstrap");
   TCase* tc = tcase_create("core");
@@ -160,6 +217,7 @@ Suite* refract_bootstrap_suite(void) {
   tcase_add_test(tc, test_bootstrap_idempotent);
   tcase_add_test(tc, test_bootstrap_crate_collections);
   tcase_add_test(tc, test_bootstrap_astra_math_types);
+  tcase_add_test(tc, test_bootstrap_caliper_units);
 
   suite_add_tcase(s, tc);
   return s;

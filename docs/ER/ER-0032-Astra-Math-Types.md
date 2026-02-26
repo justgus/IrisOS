@@ -15,7 +15,7 @@ GitHub-Issue: #113
 
 - ER ID: ER-0032
 - Title: Astra Math Types
-- Status: Proposed
+- Status: Verified
 - Date: 2026-02-21
 - Owners: Mike
 - Type: Enhancement
