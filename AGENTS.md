@@ -144,6 +144,10 @@ For each completed task, include:
 - Any assumptions or caveats
 - If Autotools regeneration occurred: the exact command(s) run and why
 
+## ER Status Policy
+- When implementing an ER, update the ER status in the same commit as the implementation.
+- Do not create separate docs-only commits for ER status updates.
+
 ---
 
 ## Definition of Done
