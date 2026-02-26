@@ -12,6 +12,7 @@ extern "C" {
 
 #include <optional>
 #include <string>
+#include <vector>
 
 using namespace referee;
 using namespace iris::refract;
@@ -37,6 +38,10 @@ bool type_has_operation(const DefinitionRecord& record, const std::string& name)
     if (op.name == name) return true;
   }
   return false;
+}
+
+bool type_params_match(const DefinitionRecord& record, const std::vector<std::string>& params) {
+  return record.definition.type_params == params;
 }
 
 } // namespace
@@ -101,12 +106,60 @@ START_TEST(test_bootstrap_crate_collections)
 }
 END_TEST
 
+START_TEST(test_bootstrap_astra_math_types)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+
+  auto boot = bootstrap_core_schema(registry);
+  ck_assert_msg(boot, "bootstrap failed: %s", result_message(boot));
+
+  auto listR = registry.list_types();
+  ck_assert_msg(listR, "list_types failed: %s", result_message(listR));
+  const auto& types = listR.value.value();
+
+  auto vector_type = find_type(types, "Astra", "Vector");
+  auto matrix_type = find_type(types, "Astra", "Matrix");
+  auto tensor_type = find_type(types, "Astra", "Tensor");
+
+  ck_assert_msg(find_type(types, "Astra", "Float").has_value(), "Astra::Float missing");
+  ck_assert_msg(find_type(types, "Astra", "Double").has_value(), "Astra::Double missing");
+  ck_assert_msg(vector_type.has_value(), "Astra::Vector missing");
+  ck_assert_msg(matrix_type.has_value(), "Astra::Matrix missing");
+  ck_assert_msg(tensor_type.has_value(), "Astra::Tensor missing");
+
+  auto vector_def = registry.get_definition_by_type(vector_type->type_id);
+  ck_assert_msg(vector_def, "Astra::Vector definition lookup failed: %s", result_message(vector_def));
+  ck_assert_msg(vector_def.value->has_value(), "Astra::Vector definition missing");
+  ck_assert_msg(type_params_match(vector_def.value->value(), {"T", "N"}),
+                "Astra::Vector type params missing");
+
+  auto matrix_def = registry.get_definition_by_type(matrix_type->type_id);
+  ck_assert_msg(matrix_def, "Astra::Matrix definition lookup failed: %s", result_message(matrix_def));
+  ck_assert_msg(matrix_def.value->has_value(), "Astra::Matrix definition missing");
+  ck_assert_msg(type_params_match(matrix_def.value->value(), {"T", "R", "C"}),
+                "Astra::Matrix type params missing");
+
+  auto tensor_def = registry.get_definition_by_type(tensor_type->type_id);
+  ck_assert_msg(tensor_def, "Astra::Tensor definition lookup failed: %s", result_message(tensor_def));
+  ck_assert_msg(tensor_def.value->has_value(), "Astra::Tensor definition missing");
+  ck_assert_msg(type_params_match(tensor_def.value->value(), {"T", "Dims..."}),
+                "Astra::Tensor type params missing");
+
+  ck_assert_msg(store.close(), "close failed");
+}
+END_TEST
+
 Suite* refract_bootstrap_suite(void) {
   Suite* s = suite_create("RefractBootstrap");
   TCase* tc = tcase_create("core");
 
   tcase_add_test(tc, test_bootstrap_idempotent);
   tcase_add_test(tc, test_bootstrap_crate_collections);
+  tcase_add_test(tc, test_bootstrap_astra_math_types);
 
   suite_add_tcase(s, tc);
   return s;
