@@ -22,6 +22,12 @@ constexpr referee::TypeID kTypeCrateSet{0x4352415400000003ULL};
 constexpr referee::TypeID kTypeCrateMap{0x4352415400000004ULL};
 constexpr referee::TypeID kTypeCrateTuple{0x4352415400000005ULL};
 
+constexpr referee::TypeID kTypeAstraFloat{0x4153545200000001ULL};
+constexpr referee::TypeID kTypeAstraDouble{0x4153545200000002ULL};
+constexpr referee::TypeID kTypeAstraVector{0x4153545200000003ULL};
+constexpr referee::TypeID kTypeAstraMatrix{0x4153545200000004ULL};
+constexpr referee::TypeID kTypeAstraTensor{0x4153545200000005ULL};
+
 constexpr referee::TypeID kTypeFieldDefinition{0x5246524346000001ULL};
 constexpr referee::TypeID kTypeOperationDefinition{0x5246524346000002ULL};
 constexpr referee::TypeID kTypeSignatureDefinition{0x5246524346000003ULL};
@@ -185,6 +191,66 @@ TypeDefinition make_crate_tuple() {
   def.namespace_name = "Crate";
   def.version = 1;
   def.type_params = { "Ts" };
+  add_size_operation(def);
+  add_iterate_operation(def);
+  add_index_operation(def, kTypeU64, kTypeBytes);
+  add_contains_operation(def, kTypeBytes);
+  return def;
+}
+
+TypeDefinition make_astra_float() {
+  TypeDefinition def;
+  def.type_id = kTypeAstraFloat;
+  def.name = "Float";
+  def.namespace_name = "Astra";
+  def.version = 1;
+  return def;
+}
+
+TypeDefinition make_astra_double() {
+  TypeDefinition def;
+  def.type_id = kTypeAstraDouble;
+  def.name = "Double";
+  def.namespace_name = "Astra";
+  def.version = 1;
+  return def;
+}
+
+TypeDefinition make_astra_vector() {
+  TypeDefinition def;
+  def.type_id = kTypeAstraVector;
+  def.name = "Vector";
+  def.namespace_name = "Astra";
+  def.version = 1;
+  def.type_params = { "T", "N" };
+  add_size_operation(def);
+  add_iterate_operation(def);
+  add_index_operation(def, kTypeU64, kTypeBytes);
+  add_contains_operation(def, kTypeBytes);
+  return def;
+}
+
+TypeDefinition make_astra_matrix() {
+  TypeDefinition def;
+  def.type_id = kTypeAstraMatrix;
+  def.name = "Matrix";
+  def.namespace_name = "Astra";
+  def.version = 1;
+  def.type_params = { "T", "R", "C" };
+  add_size_operation(def);
+  add_iterate_operation(def);
+  add_index_operation(def, kTypeU64, kTypeBytes);
+  add_contains_operation(def, kTypeBytes);
+  return def;
+}
+
+TypeDefinition make_astra_tensor() {
+  TypeDefinition def;
+  def.type_id = kTypeAstraTensor;
+  def.name = "Tensor";
+  def.namespace_name = "Astra";
+  def.version = 1;
+  def.type_params = { "T", "Dims..." };
   add_size_operation(def);
   add_iterate_operation(def);
   add_index_operation(def, kTypeU64, kTypeBytes);
@@ -417,7 +483,7 @@ TypeDefinition make_demo_detail() {
 
 std::vector<TypeDefinition> core_schema_definitions() {
   std::vector<TypeDefinition> defs;
-  defs.reserve(31);
+  defs.reserve(36);
   defs.push_back(make_primitive(kTypeString, "String"));
   defs.push_back(make_primitive(kTypeU64, "U64"));
   defs.push_back(make_primitive(kTypeBool, "Bool"));
@@ -431,6 +497,11 @@ std::vector<TypeDefinition> core_schema_definitions() {
   defs.push_back(make_crate_set());
   defs.push_back(make_crate_map());
   defs.push_back(make_crate_tuple());
+  defs.push_back(make_astra_float());
+  defs.push_back(make_astra_double());
+  defs.push_back(make_astra_vector());
+  defs.push_back(make_astra_matrix());
+  defs.push_back(make_astra_tensor());
   defs.push_back(make_type_definition());
   defs.push_back(make_field_definition());
   defs.push_back(make_signature_definition());

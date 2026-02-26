@@ -15,7 +15,7 @@ GitHub-Issue: #112
 
 - ER ID: ER-0031
 - Title: Crate Collections
-- Status: Proposed
+- Status: Verified
 - Date: 2026-02-21
 - Owners: Mike
 - Type: Epic
