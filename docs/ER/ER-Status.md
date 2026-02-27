@@ -23,7 +23,7 @@
 - ER-0019 — Verified
 - ER-0020 — Verified
 - ER-0021 — Verified
-- ER-0022 — Implemented
+- ER-0022 — Verified
 - ER-0023 — Verified
 - ER-0024 — Verified
 - ER-0025 — Verified
@@ -35,7 +35,7 @@
 - ER-0031 — Verified
 - ER-0032 — Verified
 - ER-0033 — Verified
-- ER-0034 — Proposed
+- ER-0034 — In Progress
 - ER-0035 — Proposed
 - ER-0036 — Proposed
 - ER-0037 — Proposed
