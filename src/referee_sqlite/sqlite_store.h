@@ -2,14 +2,21 @@
 
 #include "referee/referee.h"
 
-#include <sqlite3.h>
+#ifdef fail
+#undef fail
+#endif
+
+#include <cstdint>
+#include <fstream>
+#include <optional>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace referee {
 
 struct SqliteConfig {
-  std::string filename;     // e.g. "referee.db" or ":memory:"
+  std::string filename;     // base path for segment store (":memory:" for in-memory)
   bool enable_wal{true};
   bool enable_foreign_keys{true};
 };
@@ -25,7 +32,7 @@ public:
   Result<void> open();
   Result<void> close();
 
-  // Schema management
+  // Storage management
   Result<void> ensure_schema();
 
   // Transactions
@@ -51,37 +58,60 @@ public:
                                            std::optional<std::string> name_filter = std::nullopt,
                                            std::optional<std::string> role_filter = std::nullopt);
 
-  // read helpers
-  static Bytes col_blob(sqlite3_stmt* st, int col);
-  static std::string col_text(sqlite3_stmt* st, int col);
-
 private:
-  Result<void> exec(std::string_view sql);
-  Result<void> prepare_all();
+  struct ObjectRefKey {
+    ObjectID id{};
+    Version ver{};
 
-  // bind helpers
-  static void bind_blob(sqlite3_stmt* st, int idx, const std::uint8_t* data, int len);
-  static void bind_text(sqlite3_stmt* st, int idx, std::string_view s);
+    friend bool operator==(const ObjectRefKey& a, const ObjectRefKey& b) noexcept {
+      return a.id == b.id && a.ver == b.ver;
+    }
+  };
+
+  struct ObjectIDHash {
+    std::size_t operator()(const ObjectID& id) const noexcept;
+  };
+
+  struct ObjectRefKeyHash {
+    std::size_t operator()(const ObjectRefKey& key) const noexcept;
+  };
+
+  struct TypeIDHash {
+    std::size_t operator()(const TypeID& t) const noexcept {
+      return std::hash<std::uint64_t>{}(t.v);
+    }
+  };
+
+  Result<void> load_segments();
+  Result<void> append_object(const ObjectRecord& rec);
+  Result<void> append_edge(const EdgeRecord& rec);
+  void index_object(const ObjectRecord& rec);
+  void index_edge(const EdgeRecord& rec);
+
+  std::string base_dir() const;
+  static std::string store_dir_from_filename(std::string_view filename);
 
 private:
   SqliteConfig cfg_;
-  sqlite3* db_{nullptr};
+  bool open_{false};
+  bool memory_only_{false};
+  bool in_txn_{false};
 
-  // Prepared statements
-  sqlite3_stmt* st_insert_object_{nullptr};
-  sqlite3_stmt* st_get_object_{nullptr};
-  sqlite3_stmt* st_get_latest_{nullptr};
-  sqlite3_stmt* st_list_by_type_{nullptr};
+  std::ofstream object_seg_;
+  std::ofstream edge_seg_;
+  std::ofstream idx_objects_by_id_;
+  std::ofstream idx_objects_by_type_;
+  std::ofstream idx_edges_from_;
+  std::ofstream idx_edges_to_;
 
-  sqlite3_stmt* st_insert_edge_{nullptr};
-  sqlite3_stmt* st_edges_from_{nullptr};
-  sqlite3_stmt* st_edges_from_named_{nullptr};
-  sqlite3_stmt* st_edges_from_role_{nullptr};
-  sqlite3_stmt* st_edges_from_named_role_{nullptr};
-  sqlite3_stmt* st_edges_to_{nullptr};
-  sqlite3_stmt* st_edges_to_named_{nullptr};
-  sqlite3_stmt* st_edges_to_role_{nullptr};
-  sqlite3_stmt* st_edges_to_named_role_{nullptr};
+  std::vector<ObjectRecord> pending_objects_;
+  std::vector<EdgeRecord> pending_edges_;
+
+  std::unordered_map<ObjectRefKey, ObjectRecord, ObjectRefKeyHash> objects_by_ref_;
+  std::unordered_map<ObjectID, ObjectRecord, ObjectIDHash> latest_by_id_;
+  std::unordered_map<TypeID, std::vector<ObjectRecord>, TypeIDHash> objects_by_type_;
+  std::unordered_map<ObjectRefKey, std::vector<EdgeRecord>, ObjectRefKeyHash> edges_from_;
+  std::unordered_map<ObjectRefKey, std::vector<EdgeRecord>, ObjectRefKeyHash> edges_to_;
 };
 
 } // namespace referee
