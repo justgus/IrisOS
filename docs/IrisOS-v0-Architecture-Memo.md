@@ -69,9 +69,13 @@ Schema evolution becomes sane:
 
 - TypeID (stable, not typeid().name())
 - name (human)
-- kind (primitive/class/interface/enum/union)
+- kind (primitive/class/interface/enum/struct/packet/union)
 - namespace
 - doc (optional)
+
+TypeID encoding is explicit and human-readable by default, with optional hashing
+enabled by policy where obfuscation is required. Generic instantiations are computed
+on demand and cached in scoped type registries.
 
 ### Refract::Class : Type
 
@@ -89,6 +93,27 @@ Schema evolution becomes sane:
 - relationshipSpecs[] (RelationshipSpec refs)
 - supersedes (Definition ref)
 - doc
+
+### Structured Data Types (Refract)
+
+Structured types are first-class and define data layouts that can be validated,
+serialized, and introspected.
+
+- **Struct**: unordered collection of named type fields.
+- **Packet**: ordered collection of named bit sequences that define a concrete
+  binary layout.
+- **Enum**: named tags mapped to values. Enum identity is independent of the
+  underlying value type.
+- **Tuple**: ordered, unnamed structure (can be represented as a struct with
+  positional field names).
+- Arrays are first-class and may contain primitives, structs, packets, or enums.
+- Arrays of structs and arrays of packets are supported as regular collection
+  types.
+
+Structs and packets may participate in inheritance and polymorphism when the
+definition explicitly marks them as polymorphic. Operations can be defined on
+structs, packets, and enums via OperationDefinition and are discoverable in
+Conch.
 
 ### Refract::FieldDefinition
 
