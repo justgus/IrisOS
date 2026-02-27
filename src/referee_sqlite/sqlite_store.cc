@@ -1,268 +1,211 @@
 #include "referee_sqlite/sqlite_store.h"
 
 #include <algorithm>
-#include <cstring>
+#include <array>
+#include <filesystem>
+#include <fstream>
 #include <sstream>
 
 namespace referee {
+namespace {
 
-static std::string sqlite_err(sqlite3* db, const char* prefix) {
-  std::ostringstream os;
-  os << prefix << ": " << (db ? sqlite3_errmsg(db) : "no db");
-  return os.str();
+constexpr std::uint32_t kObjTag = 0x314a424f; // "OBJ1"
+constexpr std::uint32_t kEdgeTag = 0x31474445; // "EDG1"
+
+void write_u32(std::ostream& out, std::uint32_t v) {
+  std::array<std::uint8_t, 4> b{
+    static_cast<std::uint8_t>(v & 0xFFu),
+    static_cast<std::uint8_t>((v >> 8) & 0xFFu),
+    static_cast<std::uint8_t>((v >> 16) & 0xFFu),
+    static_cast<std::uint8_t>((v >> 24) & 0xFFu)
+  };
+  out.write(reinterpret_cast<const char*>(b.data()), b.size());
 }
 
-SqliteStore::SqliteStore(SqliteConfig cfg)
-  : cfg_(std::move(cfg)),
-    db_(nullptr),
-    st_insert_object_(nullptr),
-    st_get_object_(nullptr),
-    st_get_latest_(nullptr),
-    st_list_by_type_(nullptr),
-    st_insert_edge_(nullptr),
-    st_edges_from_(nullptr),
-    st_edges_from_named_(nullptr),
-    st_edges_from_role_(nullptr),
-    st_edges_from_named_role_(nullptr),
-    st_edges_to_(nullptr),
-    st_edges_to_named_(nullptr),
-    st_edges_to_role_(nullptr),
-    st_edges_to_named_role_(nullptr) {}
+void write_u64(std::ostream& out, std::uint64_t v) {
+  std::array<std::uint8_t, 8> b{
+    static_cast<std::uint8_t>(v & 0xFFu),
+    static_cast<std::uint8_t>((v >> 8) & 0xFFu),
+    static_cast<std::uint8_t>((v >> 16) & 0xFFu),
+    static_cast<std::uint8_t>((v >> 24) & 0xFFu),
+    static_cast<std::uint8_t>((v >> 32) & 0xFFu),
+    static_cast<std::uint8_t>((v >> 40) & 0xFFu),
+    static_cast<std::uint8_t>((v >> 48) & 0xFFu),
+    static_cast<std::uint8_t>((v >> 56) & 0xFFu)
+  };
+  out.write(reinterpret_cast<const char*>(b.data()), b.size());
+}
+
+bool read_exact(std::istream& in, void* dst, std::size_t n) {
+  in.read(reinterpret_cast<char*>(dst), static_cast<std::streamsize>(n));
+  return in.good();
+}
+
+bool read_u32(std::istream& in, std::uint32_t* out) {
+  std::array<std::uint8_t, 4> b{};
+  if (!read_exact(in, b.data(), b.size())) return false;
+  *out = (std::uint32_t)b[0]
+       | (std::uint32_t(b[1]) << 8)
+       | (std::uint32_t(b[2]) << 16)
+       | (std::uint32_t(b[3]) << 24);
+  return true;
+}
+
+bool read_u64(std::istream& in, std::uint64_t* out) {
+  std::array<std::uint8_t, 8> b{};
+  if (!read_exact(in, b.data(), b.size())) return false;
+  *out = (std::uint64_t)b[0]
+       | (std::uint64_t(b[1]) << 8)
+       | (std::uint64_t(b[2]) << 16)
+       | (std::uint64_t(b[3]) << 24)
+       | (std::uint64_t(b[4]) << 32)
+       | (std::uint64_t(b[5]) << 40)
+       | (std::uint64_t(b[6]) << 48)
+       | (std::uint64_t(b[7]) << 56);
+  return true;
+}
+
+std::string key_object_id(const ObjectID& id, std::uint64_t ver) {
+  return id.to_hex() + ":" + std::to_string(ver);
+}
+
+std::string key_type_id(const TypeID& type, const ObjectID& id, std::uint64_t ver) {
+  return std::to_string(type.v) + ":" + id.to_hex() + ":" + std::to_string(ver);
+}
+
+std::string key_edge_from(const EdgeRecord& rec) {
+  return rec.from.id.to_hex() + ":" + std::to_string(rec.from.ver.v) + ":" + rec.name + ":" + rec.role
+         + ":" + rec.to.id.to_hex() + ":" + std::to_string(rec.to.ver.v);
+}
+
+std::string key_edge_to(const EdgeRecord& rec) {
+  return rec.to.id.to_hex() + ":" + std::to_string(rec.to.ver.v) + ":" + rec.name + ":" + rec.role
+         + ":" + rec.from.id.to_hex() + ":" + std::to_string(rec.from.ver.v);
+}
+
+void append_index(std::ofstream& out, const std::string& key, std::uint64_t offset) {
+  if (!out.is_open()) return;
+  out << key << '\t' << offset << '\n';
+}
+
+} // namespace
+
+std::size_t SqliteStore::ObjectIDHash::operator()(const ObjectID& id) const noexcept {
+  std::size_t h = 0xcbf29ce484222325ULL;
+  for (auto b : id.bytes) {
+    h ^= static_cast<std::size_t>(b);
+    h *= 0x100000001b3ULL;
+  }
+  return h;
+}
+
+std::size_t SqliteStore::ObjectRefKeyHash::operator()(const ObjectRefKey& key) const noexcept {
+  std::size_t h = ObjectIDHash{}(key.id);
+  h ^= std::hash<std::uint64_t>{}(key.ver.v) + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2);
+  return h;
+}
+
+SqliteStore::SqliteStore(SqliteConfig cfg) : cfg_(std::move(cfg)) {}
 SqliteStore::~SqliteStore() { (void)close(); }
 
-//--------
+std::string SqliteStore::store_dir_from_filename(std::string_view filename) {
+  if (filename == ":memory:") return {};
+  std::string base(filename);
+  return base + ".segments";
+}
+
+std::string SqliteStore::base_dir() const {
+  return store_dir_from_filename(cfg_.filename);
+}
+
 Result<void> SqliteStore::open() {
-  if (db_) return Result<void>::ok();
-
-  if (sqlite3_open(cfg_.filename.c_str(), &db_) != SQLITE_OK) {
-    auto msg = sqlite_err(db_, "sqlite3_open failed");
-    sqlite3_close(db_);
-    db_ = nullptr;
-    return Result<void>::err(msg);
+  if (open_) return Result<void>::ok();
+  memory_only_ = (cfg_.filename == ":memory:");
+  if (memory_only_) {
+    open_ = true;
+    return Result<void>::ok();
   }
 
-  if (cfg_.enable_foreign_keys) {
-    auto r = exec("PRAGMA foreign_keys=ON;");
-    if (!r) return r;
-  }
-  if (cfg_.enable_wal) {
-    auto r = exec("PRAGMA journal_mode=WAL;");
-    if (!r) return r;
-    r = exec("PRAGMA synchronous=NORMAL;");
-    if (!r) return r;
-  }
+  const auto base = base_dir();
+  const auto segments_dir = std::filesystem::path(base) / "segments";
+  const auto indexes_dir = std::filesystem::path(base) / "indexes";
 
-  // IMPORTANT: do NOT prepare statements here; schema may not exist yet.
+  std::error_code ec;
+  std::filesystem::create_directories(segments_dir, ec);
+  if (ec) return Result<void>::err("failed to create segments directory");
+  std::filesystem::create_directories(indexes_dir, ec);
+  if (ec) return Result<void>::err("failed to create indexes directory");
+
+  const auto obj_path = segments_dir / "objects.seg";
+  const auto edge_path = segments_dir / "edges.seg";
+
+  object_seg_.open(obj_path, std::ios::binary | std::ios::app);
+  if (!object_seg_) return Result<void>::err("failed to open objects.seg");
+  edge_seg_.open(edge_path, std::ios::binary | std::ios::app);
+  if (!edge_seg_) return Result<void>::err("failed to open edges.seg");
+
+  idx_objects_by_id_.open(indexes_dir / "objects_by_id.idx", std::ios::app);
+  idx_objects_by_type_.open(indexes_dir / "objects_by_type.idx", std::ios::app);
+  idx_edges_from_.open(indexes_dir / "edges_from.idx", std::ios::app);
+  idx_edges_to_.open(indexes_dir / "edges_to.idx", std::ios::app);
+
+  auto r = load_segments();
+  if (!r) return r;
+
+  open_ = true;
   return Result<void>::ok();
 }
-//---------
 
 Result<void> SqliteStore::close() {
-  if (!db_) return Result<void>::ok();
-
-  // Finalize via SQLite's internal list to avoid stale/invalid stmt pointers.
-  for (sqlite3_stmt* st = sqlite3_next_stmt(db_, nullptr);
-       st != nullptr;
-       st = sqlite3_next_stmt(db_, st)) {
-    sqlite3_finalize(st);
-  }
-
-  st_insert_object_ = nullptr;
-  st_get_object_ = nullptr;
-  st_get_latest_ = nullptr;
-  st_list_by_type_ = nullptr;
-
-  st_insert_edge_ = nullptr;
-  st_edges_from_ = nullptr;
-  st_edges_from_named_ = nullptr;
-  st_edges_from_role_ = nullptr;
-  st_edges_from_named_role_ = nullptr;
-  st_edges_to_ = nullptr;
-  st_edges_to_named_ = nullptr;
-  st_edges_to_role_ = nullptr;
-  st_edges_to_named_role_ = nullptr;
-
-  sqlite3_close(db_);
-  db_ = nullptr;
-  return Result<void>::ok();
-}
-
-Result<void> SqliteStore::exec(std::string_view sql) {
-  char* err = nullptr;
-  int rc = sqlite3_exec(db_, std::string(sql).c_str(), nullptr, nullptr, &err);
-  if (rc != SQLITE_OK) {
-    std::string msg = err ? err : "sqlite3_exec failed";
-    sqlite3_free(err);
-    return Result<void>::err(msg);
-  }
+  if (!open_) return Result<void>::ok();
+  if (object_seg_.is_open()) object_seg_.close();
+  if (edge_seg_.is_open()) edge_seg_.close();
+  if (idx_objects_by_id_.is_open()) idx_objects_by_id_.close();
+  if (idx_objects_by_type_.is_open()) idx_objects_by_type_.close();
+  if (idx_edges_from_.is_open()) idx_edges_from_.close();
+  if (idx_edges_to_.is_open()) idx_edges_to_.close();
+  open_ = false;
   return Result<void>::ok();
 }
 
 Result<void> SqliteStore::ensure_schema() {
-  // Immutable objects: (object_id, version) primary key.
-  // Latest is max(version) for given object_id.
-  const char* schema_sql = R"SQL(
-    CREATE TABLE IF NOT EXISTS objects (
-      object_id   BLOB NOT NULL,
-      version     INTEGER NOT NULL,
-      type_id     INTEGER NOT NULL,
-      definition_id BLOB NOT NULL,
-      payload_cbor BLOB NOT NULL,
-      created_at_ms INTEGER NOT NULL,
-      PRIMARY KEY (object_id, version)
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_objects_type ON objects(type_id);
-    CREATE INDEX IF NOT EXISTS idx_objects_definition ON objects(definition_id);
-    CREATE INDEX IF NOT EXISTS idx_objects_oid ON objects(object_id);
-
-    CREATE TABLE IF NOT EXISTS edges (
-      from_id     BLOB NOT NULL,
-      from_ver    INTEGER NOT NULL,
-      to_id       BLOB NOT NULL,
-      to_ver      INTEGER NOT NULL,
-      name        TEXT NOT NULL,
-      role        TEXT NOT NULL,
-      props_cbor  BLOB NOT NULL,
-      created_at_ms INTEGER NOT NULL
-    );
-
-    CREATE INDEX IF NOT EXISTS idx_edges_from ON edges(from_id, from_ver, name, role);
-    CREATE INDEX IF NOT EXISTS idx_edges_to   ON edges(to_id, to_ver, name, role);
-  )SQL";
-
-//--------
-  auto r = exec(schema_sql);
-  if (!r) return r;
-
-  // Prepare statements now that schema exists
-  if (!st_insert_object_) {
-    auto p = prepare_all();
-    if (!p) return p;
-  }
-
-  return Result<void>::ok();
+  return open();
 }
-//---------
 
-
-Result<void> SqliteStore::prepare_all() {
-  auto prep = [&](sqlite3_stmt** out, const char* sql) -> Result<void> {
-    if (sqlite3_prepare_v2(db_, sql, -1, out, nullptr) != SQLITE_OK) {
-      return Result<void>::err(sqlite_err(db_, "sqlite3_prepare_v2 failed"));
-    }
-    return Result<void>::ok();
-  };
-
-  // objects
-  {
-    auto r = prep(&st_insert_object_,
-      "INSERT INTO objects(object_id, version, type_id, definition_id, payload_cbor, created_at_ms) "
-      "VALUES(?,?,?,?,?,?);");
-    if (!r) return r;
-
-    r = prep(&st_get_object_,
-      "SELECT object_id, version, type_id, definition_id, payload_cbor, created_at_ms "
-      "FROM objects WHERE object_id=? AND version=? LIMIT 1;");
-    if (!r) return r;
-
-    r = prep(&st_get_latest_,
-      "SELECT object_id, version, type_id, definition_id, payload_cbor, created_at_ms "
-      "FROM objects WHERE object_id=? ORDER BY version DESC LIMIT 1;");
-    if (!r) return r;
-
-    r = prep(&st_list_by_type_,
-      "SELECT object_id, version, type_id, definition_id, payload_cbor, created_at_ms "
-      "FROM objects WHERE type_id=? ORDER BY created_at_ms ASC;");
-    if (!r) return r;
-  }
-
-  // edges
-  {
-    auto r = prep(&st_insert_edge_,
-      "INSERT INTO edges(from_id, from_ver, to_id, to_ver, name, role, props_cbor, created_at_ms) "
-      "VALUES(?,?,?,?,?,?,?,?);");
-    if (!r) return r;
-
-    r = prep(&st_edges_from_,
-      "SELECT from_id, from_ver, to_id, to_ver, name, role, props_cbor, created_at_ms "
-      "FROM edges WHERE from_id=? AND from_ver=? ORDER BY created_at_ms ASC;");
-    if (!r) return r;
-
-    r = prep(&st_edges_from_named_,
-      "SELECT from_id, from_ver, to_id, to_ver, name, role, props_cbor, created_at_ms "
-      "FROM edges WHERE from_id=? AND from_ver=? AND name=? ORDER BY created_at_ms ASC;");
-    if (!r) return r;
-
-    r = prep(&st_edges_from_role_,
-      "SELECT from_id, from_ver, to_id, to_ver, name, role, props_cbor, created_at_ms "
-      "FROM edges WHERE from_id=? AND from_ver=? AND role=? ORDER BY created_at_ms ASC;");
-    if (!r) return r;
-
-    r = prep(&st_edges_from_named_role_,
-      "SELECT from_id, from_ver, to_id, to_ver, name, role, props_cbor, created_at_ms "
-      "FROM edges WHERE from_id=? AND from_ver=? AND name=? AND role=? ORDER BY created_at_ms ASC;");
-    if (!r) return r;
-
-    r = prep(&st_edges_to_,
-      "SELECT from_id, from_ver, to_id, to_ver, name, role, props_cbor, created_at_ms "
-      "FROM edges WHERE to_id=? AND to_ver=? ORDER BY created_at_ms ASC;");
-    if (!r) return r;
-
-    r = prep(&st_edges_to_named_,
-      "SELECT from_id, from_ver, to_id, to_ver, name, role, props_cbor, created_at_ms "
-      "FROM edges WHERE to_id=? AND to_ver=? AND name=? ORDER BY created_at_ms ASC;");
-    if (!r) return r;
-
-    r = prep(&st_edges_to_role_,
-      "SELECT from_id, from_ver, to_id, to_ver, name, role, props_cbor, created_at_ms "
-      "FROM edges WHERE to_id=? AND to_ver=? AND role=? ORDER BY created_at_ms ASC;");
-    if (!r) return r;
-
-    r = prep(&st_edges_to_named_role_,
-      "SELECT from_id, from_ver, to_id, to_ver, name, role, props_cbor, created_at_ms "
-      "FROM edges WHERE to_id=? AND to_ver=? AND name=? AND role=? ORDER BY created_at_ms ASC;");
-    if (!r) return r;
-  }
-
+Result<void> SqliteStore::begin() {
+  if (in_txn_) return Result<void>::err("transaction already open");
+  in_txn_ = true;
+  pending_objects_.clear();
+  pending_edges_.clear();
   return Result<void>::ok();
 }
 
-void SqliteStore::bind_blob(sqlite3_stmt* st, int idx, const std::uint8_t* data, int len) {
-  if (len <= 0) {
-    sqlite3_bind_blob(st, idx, "", 0, SQLITE_TRANSIENT);
-    return;
+Result<void> SqliteStore::commit() {
+  if (!in_txn_) return Result<void>::ok();
+  for (const auto& rec : pending_objects_) {
+    auto r = append_object(rec);
+    if (!r) return r;
+    index_object(rec);
   }
-  sqlite3_bind_blob(st, idx, data, len, SQLITE_TRANSIENT);
+  for (const auto& rec : pending_edges_) {
+    auto r = append_edge(rec);
+    if (!r) return r;
+    index_edge(rec);
+  }
+  pending_objects_.clear();
+  pending_edges_.clear();
+  in_txn_ = false;
+  return Result<void>::ok();
 }
 
-void SqliteStore::bind_text(sqlite3_stmt* st, int idx, std::string_view s) {
-  sqlite3_bind_text(st, idx, s.data(), (int)s.size(), SQLITE_TRANSIENT);
+Result<void> SqliteStore::rollback() {
+  if (!in_txn_) return Result<void>::ok();
+  pending_objects_.clear();
+  pending_edges_.clear();
+  in_txn_ = false;
+  return Result<void>::ok();
 }
 
-Bytes SqliteStore::col_blob(sqlite3_stmt* st, int col) {
-  const auto* p = (const std::uint8_t*)sqlite3_column_blob(st, col);
-  int n = sqlite3_column_bytes(st, col);
-  if (!p || n <= 0) return {};
-  return Bytes(p, p + n);
-}
-
-std::string SqliteStore::col_text(sqlite3_stmt* st, int col) {
-  const unsigned char* p = sqlite3_column_text(st, col);
-  if (!p) return {};
-  return std::string((const char*)p);
-}
-
-// -----------------------------
-// Transactions
-// -----------------------------
-Result<void> SqliteStore::begin()    { return exec("BEGIN IMMEDIATE;"); }
-Result<void> SqliteStore::commit()   { return exec("COMMIT;"); }
-Result<void> SqliteStore::rollback() { return exec("ROLLBACK;"); }
-
-// -----------------------------
-// Core operations
-// -----------------------------
 Result<ObjectRecord> SqliteStore::create_object(TypeID type, ObjectID definition_id,
                                                 const Bytes& payload_cbor) {
   return create_object_with_id(ObjectID::random(), type, definition_id, payload_cbor);
@@ -271,8 +214,7 @@ Result<ObjectRecord> SqliteStore::create_object(TypeID type, ObjectID definition
 Result<ObjectRecord> SqliteStore::create_object_with_id(ObjectID object_id, TypeID type,
                                                         ObjectID definition_id,
                                                         const Bytes& payload_cbor) {
-  if (!db_) return Result<ObjectRecord>::err("db not open");
-  if (!st_insert_object_) return Result<ObjectRecord>::err("insert statement not prepared");
+  if (!open_) return Result<ObjectRecord>::err("store not open");
 
   ObjectRecord rec;
   rec.ref.id = object_id;
@@ -282,273 +224,260 @@ Result<ObjectRecord> SqliteStore::create_object_with_id(ObjectID object_id, Type
   rec.payload_cbor = payload_cbor;
   rec.created_at_unix_ms = unix_ms_now();
 
-  sqlite3_reset(st_insert_object_);
-  sqlite3_clear_bindings(st_insert_object_);
-
-  bind_blob(st_insert_object_, 1, rec.ref.id.bytes.data(), 16);
-  sqlite3_bind_int64(st_insert_object_, 2, (sqlite3_int64)rec.ref.ver.v);
-  sqlite3_bind_int64(st_insert_object_, 3, (sqlite3_int64)rec.type.v);
-  bind_blob(st_insert_object_, 4, rec.definition_id.bytes.data(), 16);
-  bind_blob(st_insert_object_, 5, rec.payload_cbor.data(), (int)rec.payload_cbor.size());
-  sqlite3_bind_int64(st_insert_object_, 6, (sqlite3_int64)rec.created_at_unix_ms);
-
-  int rc = sqlite3_step(st_insert_object_);
-  if (rc != SQLITE_DONE) {
-    sqlite3_reset(st_insert_object_);
-    sqlite3_clear_bindings(st_insert_object_);
-    return Result<ObjectRecord>::err(sqlite_err(db_, "insert object failed"));
+  if (in_txn_) {
+    pending_objects_.push_back(rec);
+  } else {
+    auto r = append_object(rec);
+    if (!r) return Result<ObjectRecord>::err(r.error->message);
+    index_object(rec);
   }
-  sqlite3_reset(st_insert_object_);
-  sqlite3_clear_bindings(st_insert_object_);
+
   return Result<ObjectRecord>::ok(std::move(rec));
 }
 
 Result<std::optional<ObjectRecord>> SqliteStore::get_object(ObjectRef ref) {
-  if (!db_) return Result<std::optional<ObjectRecord>>::err("db not open");
-  if (!st_get_object_) return Result<std::optional<ObjectRecord>>::err("get_object statement not prepared");
-
-  sqlite3_reset(st_get_object_);
-  sqlite3_clear_bindings(st_get_object_);
-
-  bind_blob(st_get_object_, 1, ref.id.bytes.data(), 16);
-  sqlite3_bind_int64(st_get_object_, 2, (sqlite3_int64)ref.ver.v);
-
-  int rc = sqlite3_step(st_get_object_);
-  if (rc == SQLITE_ROW) {
-    ObjectRecord rec;
-    // More robust: read BLOB(16) directly
-    {
-      auto oid = col_blob(st_get_object_, 0);
-      if (oid.size() == 16) std::memcpy(rec.ref.id.bytes.data(), oid.data(), 16);
-      else return Result<std::optional<ObjectRecord>>::err("object_id blob was not 16 bytes");      
-    }
-    rec.ref.ver = Version{ (std::uint64_t)sqlite3_column_int64(st_get_object_, 1) };
-    rec.type = TypeID{ (std::uint64_t)sqlite3_column_int64(st_get_object_, 2) };
-    {
-      auto def_id = col_blob(st_get_object_, 3);
-      if (def_id.size() == 16) std::memcpy(rec.definition_id.bytes.data(), def_id.data(), 16);
-      else return Result<std::optional<ObjectRecord>>::err("definition_id blob was not 16 bytes");
-    }
-    rec.payload_cbor = col_blob(st_get_object_, 4);
-    rec.created_at_unix_ms = (std::uint64_t)sqlite3_column_int64(st_get_object_, 5);
-
-    sqlite3_reset(st_get_object_);
-    sqlite3_clear_bindings(st_get_object_);
-    return Result<std::optional<ObjectRecord>>::ok(std::optional<ObjectRecord>(std::move(rec)));
-  }
-  if (rc == SQLITE_DONE) {
-    sqlite3_reset(st_get_object_);
-    sqlite3_clear_bindings(st_get_object_);
-    return Result<std::optional<ObjectRecord>>::ok(std::nullopt);
-  }
-  sqlite3_reset(st_get_object_);
-  sqlite3_clear_bindings(st_get_object_);
-  return Result<std::optional<ObjectRecord>>::err(sqlite_err(db_, "get_object failed"));
+  if (!open_) return Result<std::optional<ObjectRecord>>::err("store not open");
+  ObjectRefKey key{ref.id, ref.ver};
+  auto it = objects_by_ref_.find(key);
+  if (it == objects_by_ref_.end()) return Result<std::optional<ObjectRecord>>::ok(std::nullopt);
+  return Result<std::optional<ObjectRecord>>::ok(std::optional<ObjectRecord>(it->second));
 }
 
 Result<std::optional<ObjectRecord>> SqliteStore::get_latest(ObjectID id) {
-  if (!db_) return Result<std::optional<ObjectRecord>>::err("db not open");
-  if (!st_get_latest_) return Result<std::optional<ObjectRecord>>::err("get_latest statement not prepared");
-
-  sqlite3_reset(st_get_latest_);
-  sqlite3_clear_bindings(st_get_latest_);
-
-  bind_blob(st_get_latest_, 1, id.bytes.data(), 16);
-
-  int rc = sqlite3_step(st_get_latest_);
-  if (rc == SQLITE_ROW) {
-    ObjectRecord rec;
-    {
-      auto oid = col_blob(st_get_latest_, 0);
-      if (oid.size() == 16) std::memcpy(rec.ref.id.bytes.data(), oid.data(), 16);
-    }
-    rec.ref.ver = Version{ (std::uint64_t)sqlite3_column_int64(st_get_latest_, 1) };
-    rec.type = TypeID{ (std::uint64_t)sqlite3_column_int64(st_get_latest_, 2) };
-    {
-      auto def_id = col_blob(st_get_latest_, 3);
-      if (def_id.size() == 16) std::memcpy(rec.definition_id.bytes.data(), def_id.data(), 16);
-    }
-    rec.payload_cbor = col_blob(st_get_latest_, 4);
-    rec.created_at_unix_ms = (std::uint64_t)sqlite3_column_int64(st_get_latest_, 5);
-    sqlite3_reset(st_get_latest_);
-    sqlite3_clear_bindings(st_get_latest_);
-    return Result<std::optional<ObjectRecord>>::ok(std::optional<ObjectRecord>(std::move(rec)));
-  }
-  if (rc == SQLITE_DONE) {
-    sqlite3_reset(st_get_latest_);
-    sqlite3_clear_bindings(st_get_latest_);
-    return Result<std::optional<ObjectRecord>>::ok(std::nullopt);
-  }
-  sqlite3_reset(st_get_latest_);
-  sqlite3_clear_bindings(st_get_latest_);
-  return Result<std::optional<ObjectRecord>>::err(sqlite_err(db_, "get_latest failed"));
+  if (!open_) return Result<std::optional<ObjectRecord>>::err("store not open");
+  auto it = latest_by_id_.find(id);
+  if (it == latest_by_id_.end()) return Result<std::optional<ObjectRecord>>::ok(std::nullopt);
+  return Result<std::optional<ObjectRecord>>::ok(std::optional<ObjectRecord>(it->second));
 }
 
 Result<std::vector<ObjectRecord>> SqliteStore::list_by_type(TypeID type) {
-  if (!db_) return Result<std::vector<ObjectRecord>>::err("db not open");
-  if (!st_list_by_type_) return Result<std::vector<ObjectRecord>>::err("list_by_type statement not prepared");
-
-  sqlite3_reset(st_list_by_type_);
-  sqlite3_clear_bindings(st_list_by_type_);
-
-  sqlite3_bind_int64(st_list_by_type_, 1, (sqlite3_int64)type.v);
-
-  std::vector<ObjectRecord> out;
-  for (;;) {
-    int rc = sqlite3_step(st_list_by_type_);
-    if (rc == SQLITE_DONE) break;
-    if (rc != SQLITE_ROW) {
-      sqlite3_reset(st_list_by_type_);
-      sqlite3_clear_bindings(st_list_by_type_);
-      return Result<std::vector<ObjectRecord>>::err(sqlite_err(db_, "list_by_type failed"));
-    }
-
-    auto id_bytes = col_blob(st_list_by_type_, 0);
-    if (id_bytes.size() != 16) {
-      return Result<std::vector<ObjectRecord>>::err("invalid object_id size");
-    }
-
-    ObjectRecord rec;
-    std::copy(id_bytes.begin(), id_bytes.end(), rec.ref.id.bytes.begin());
-    rec.ref.ver = Version{(std::uint64_t)sqlite3_column_int64(st_list_by_type_, 1)};
-    rec.type = TypeID{(std::uint64_t)sqlite3_column_int64(st_list_by_type_, 2)};
-    {
-      auto def_id = col_blob(st_list_by_type_, 3);
-      if (def_id.size() == 16) std::copy(def_id.begin(), def_id.end(), rec.definition_id.bytes.begin());
-    }
-    rec.payload_cbor = col_blob(st_list_by_type_, 4);
-    rec.created_at_unix_ms = (std::uint64_t)sqlite3_column_int64(st_list_by_type_, 5);
-
-    out.push_back(std::move(rec));
-  }
-
-  sqlite3_reset(st_list_by_type_);
-  sqlite3_clear_bindings(st_list_by_type_);
-  return Result<std::vector<ObjectRecord>>::ok(std::move(out));
+  if (!open_) return Result<std::vector<ObjectRecord>>::err("store not open");
+  auto it = objects_by_type_.find(type);
+  if (it == objects_by_type_.end()) return Result<std::vector<ObjectRecord>>::ok({});
+  return Result<std::vector<ObjectRecord>>::ok(it->second);
 }
 
-// -----------------------------
-// Edges
-// -----------------------------
 Result<void> SqliteStore::add_edge(ObjectRef from, ObjectRef to, std::string name, std::string role,
                                    const Bytes& props_cbor) {
-  if (!db_) return Result<void>::err("db not open");
-  if (!st_insert_edge_) return Result<void>::err("insert_edge statement not prepared");
+  if (!open_) return Result<void>::err("store not open");
 
-  sqlite3_reset(st_insert_edge_);
-  sqlite3_clear_bindings(st_insert_edge_);
+  EdgeRecord rec;
+  rec.from = from;
+  rec.to = to;
+  rec.name = std::move(name);
+  rec.role = std::move(role);
+  rec.props_cbor = props_cbor;
+  rec.created_at_unix_ms = unix_ms_now();
 
-  bind_blob(st_insert_edge_, 1, from.id.bytes.data(), 16);
-  sqlite3_bind_int64(st_insert_edge_, 2, (sqlite3_int64)from.ver.v);
-  bind_blob(st_insert_edge_, 3, to.id.bytes.data(), 16);
-  sqlite3_bind_int64(st_insert_edge_, 4, (sqlite3_int64)to.ver.v);
-  bind_text(st_insert_edge_, 5, name);
-  bind_text(st_insert_edge_, 6, role);
-  bind_blob(st_insert_edge_, 7, props_cbor.data(), (int)props_cbor.size());
-  sqlite3_bind_int64(st_insert_edge_, 8, (sqlite3_int64)unix_ms_now());
-
-  int rc = sqlite3_step(st_insert_edge_);
-  if (rc != SQLITE_DONE) {
-    sqlite3_reset(st_insert_edge_);
-    sqlite3_clear_bindings(st_insert_edge_);
-    return Result<void>::err(sqlite_err(db_, "insert edge failed"));
+  if (in_txn_) {
+    pending_edges_.push_back(rec);
+  } else {
+    auto r = append_edge(rec);
+    if (!r) return r;
+    index_edge(rec);
   }
-  sqlite3_reset(st_insert_edge_);
-  sqlite3_clear_bindings(st_insert_edge_);
+
   return Result<void>::ok();
-}
-
-static Result<std::vector<EdgeRecord>> read_edges(sqlite3* db, sqlite3_stmt* st) {
-  std::vector<EdgeRecord> out;
-  for (;;) {
-    int rc = sqlite3_step(st);
-    if (rc == SQLITE_ROW) {
-      EdgeRecord e;
-      {
-        auto b = SqliteStore::col_blob(st, 0);
-        if (b.size() == 16) std::memcpy(e.from.id.bytes.data(), b.data(), 16);
-      }
-      e.from.ver = Version{ (std::uint64_t)sqlite3_column_int64(st, 1) };
-      {
-        auto b = SqliteStore::col_blob(st, 2);
-        if (b.size() == 16) std::memcpy(e.to.id.bytes.data(), b.data(), 16);
-      }
-      e.to.ver = Version{ (std::uint64_t)sqlite3_column_int64(st, 3) };
-      e.name = SqliteStore::col_text(st, 4);
-      e.role = SqliteStore::col_text(st, 5);
-      e.props_cbor = SqliteStore::col_blob(st, 6);
-      e.created_at_unix_ms = (std::uint64_t)sqlite3_column_int64(st, 7);
-      out.push_back(std::move(e));
-      continue;
-    }
-    if (rc == SQLITE_DONE) break;
-    sqlite3_reset(st);
-    sqlite3_clear_bindings(st);
-    return Result<std::vector<EdgeRecord>>::err(sqlite_err(db, "read edges failed"));
-  }
-  sqlite3_reset(st);
-  sqlite3_clear_bindings(st);
-  return Result<std::vector<EdgeRecord>>::ok(std::move(out));
 }
 
 Result<std::vector<EdgeRecord>> SqliteStore::edges_from(ObjectRef from,
                                                         std::optional<std::string> name_filter,
                                                         std::optional<std::string> role_filter) {
-  if (!db_) return Result<std::vector<EdgeRecord>>::err("db not open");
-  if (!st_edges_from_ || !st_edges_from_named_ || !st_edges_from_role_ || !st_edges_from_named_role_) {
-    return Result<std::vector<EdgeRecord>>::err("edges_from statement not prepared");
+  if (!open_) return Result<std::vector<EdgeRecord>>::err("store not open");
+  ObjectRefKey key{from.id, from.ver};
+  auto it = edges_from_.find(key);
+  if (it == edges_from_.end()) return Result<std::vector<EdgeRecord>>::ok({});
+
+  std::vector<EdgeRecord> out;
+  for (const auto& e : it->second) {
+    if (name_filter && e.name != *name_filter) continue;
+    if (role_filter && e.role != *role_filter) continue;
+    out.push_back(e);
   }
-
-  sqlite3_stmt* st = nullptr;
-  if (name_filter && role_filter) st = st_edges_from_named_role_;
-  else if (name_filter) st = st_edges_from_named_;
-  else if (role_filter) st = st_edges_from_role_;
-  else st = st_edges_from_;
-  sqlite3_reset(st);
-  sqlite3_clear_bindings(st);
-
-  bind_blob(st, 1, from.id.bytes.data(), 16);
-  sqlite3_bind_int64(st, 2, (sqlite3_int64)from.ver.v);
-  if (name_filter && role_filter) {
-    bind_text(st, 3, *name_filter);
-    bind_text(st, 4, *role_filter);
-  } else if (name_filter) {
-    bind_text(st, 3, *name_filter);
-  } else if (role_filter) {
-    bind_text(st, 3, *role_filter);
-  }
-
-  return read_edges(db_, st);
+  return Result<std::vector<EdgeRecord>>::ok(std::move(out));
 }
 
 Result<std::vector<EdgeRecord>> SqliteStore::edges_to(ObjectRef to,
                                                       std::optional<std::string> name_filter,
                                                       std::optional<std::string> role_filter) {
-  if (!db_) return Result<std::vector<EdgeRecord>>::err("db not open");
-  if (!st_edges_to_ || !st_edges_to_named_ || !st_edges_to_role_ || !st_edges_to_named_role_) {
-    return Result<std::vector<EdgeRecord>>::err("edges_to statement not prepared");
+  if (!open_) return Result<std::vector<EdgeRecord>>::err("store not open");
+  ObjectRefKey key{to.id, to.ver};
+  auto it = edges_to_.find(key);
+  if (it == edges_to_.end()) return Result<std::vector<EdgeRecord>>::ok({});
+
+  std::vector<EdgeRecord> out;
+  for (const auto& e : it->second) {
+    if (name_filter && e.name != *name_filter) continue;
+    if (role_filter && e.role != *role_filter) continue;
+    out.push_back(e);
+  }
+  return Result<std::vector<EdgeRecord>>::ok(std::move(out));
+}
+
+Result<void> SqliteStore::append_object(const ObjectRecord& rec) {
+  if (memory_only_) return Result<void>::ok();
+  if (!object_seg_.is_open()) return Result<void>::err("objects segment not open");
+
+  const auto offset = static_cast<std::uint64_t>(object_seg_.tellp());
+
+  write_u32(object_seg_, kObjTag);
+  write_u32(object_seg_, static_cast<std::uint32_t>(rec.payload_cbor.size()));
+  write_u64(object_seg_, rec.ref.ver.v);
+  write_u64(object_seg_, rec.type.v);
+  write_u64(object_seg_, rec.created_at_unix_ms);
+  object_seg_.write(reinterpret_cast<const char*>(rec.ref.id.bytes.data()), rec.ref.id.bytes.size());
+  object_seg_.write(reinterpret_cast<const char*>(rec.definition_id.bytes.data()),
+                    rec.definition_id.bytes.size());
+  if (!rec.payload_cbor.empty()) {
+    object_seg_.write(reinterpret_cast<const char*>(rec.payload_cbor.data()),
+                      static_cast<std::streamsize>(rec.payload_cbor.size()));
+  }
+  object_seg_.flush();
+
+  append_index(idx_objects_by_id_, key_object_id(rec.ref.id, rec.ref.ver.v), offset);
+  append_index(idx_objects_by_type_, key_type_id(rec.type, rec.ref.id, rec.ref.ver.v), offset);
+
+  return Result<void>::ok();
+}
+
+Result<void> SqliteStore::append_edge(const EdgeRecord& rec) {
+  if (memory_only_) return Result<void>::ok();
+  if (!edge_seg_.is_open()) return Result<void>::err("edges segment not open");
+
+  const auto offset = static_cast<std::uint64_t>(edge_seg_.tellp());
+
+  write_u32(edge_seg_, kEdgeTag);
+  write_u32(edge_seg_, static_cast<std::uint32_t>(rec.name.size()));
+  write_u32(edge_seg_, static_cast<std::uint32_t>(rec.role.size()));
+  write_u32(edge_seg_, static_cast<std::uint32_t>(rec.props_cbor.size()));
+  write_u64(edge_seg_, rec.created_at_unix_ms);
+  edge_seg_.write(reinterpret_cast<const char*>(rec.from.id.bytes.data()), rec.from.id.bytes.size());
+  write_u64(edge_seg_, rec.from.ver.v);
+  edge_seg_.write(reinterpret_cast<const char*>(rec.to.id.bytes.data()), rec.to.id.bytes.size());
+  write_u64(edge_seg_, rec.to.ver.v);
+  if (!rec.name.empty()) edge_seg_.write(rec.name.data(), static_cast<std::streamsize>(rec.name.size()));
+  if (!rec.role.empty()) edge_seg_.write(rec.role.data(), static_cast<std::streamsize>(rec.role.size()));
+  if (!rec.props_cbor.empty()) {
+    edge_seg_.write(reinterpret_cast<const char*>(rec.props_cbor.data()),
+                    static_cast<std::streamsize>(rec.props_cbor.size()));
+  }
+  edge_seg_.flush();
+
+  append_index(idx_edges_from_, key_edge_from(rec), offset);
+  append_index(idx_edges_to_, key_edge_to(rec), offset);
+
+  return Result<void>::ok();
+}
+
+void SqliteStore::index_object(const ObjectRecord& rec) {
+  ObjectRefKey key{rec.ref.id, rec.ref.ver};
+  objects_by_ref_[key] = rec;
+  latest_by_id_[rec.ref.id] = rec;
+  objects_by_type_[rec.type].push_back(rec);
+}
+
+void SqliteStore::index_edge(const EdgeRecord& rec) {
+  ObjectRefKey from_key{rec.from.id, rec.from.ver};
+  ObjectRefKey to_key{rec.to.id, rec.to.ver};
+  edges_from_[from_key].push_back(rec);
+  edges_to_[to_key].push_back(rec);
+}
+
+Result<void> SqliteStore::load_segments() {
+  if (memory_only_) return Result<void>::ok();
+
+  const auto base = base_dir();
+  const auto segments_dir = std::filesystem::path(base) / "segments";
+  const auto obj_path = segments_dir / "objects.seg";
+  const auto edge_path = segments_dir / "edges.seg";
+
+  if (std::filesystem::exists(obj_path)) {
+    std::ifstream in(obj_path, std::ios::binary);
+    while (in.good()) {
+      std::uint32_t tag = 0;
+      if (!read_u32(in, &tag)) break;
+      if (tag != kObjTag) return Result<void>::err("invalid object segment tag");
+
+      std::uint32_t payload_size = 0;
+      std::uint64_t ver = 0;
+      std::uint64_t type = 0;
+      std::uint64_t created = 0;
+      if (!read_u32(in, &payload_size)) return Result<void>::err("object segment read failed");
+      if (!read_u64(in, &ver)) return Result<void>::err("object segment read failed");
+      if (!read_u64(in, &type)) return Result<void>::err("object segment read failed");
+      if (!read_u64(in, &created)) return Result<void>::err("object segment read failed");
+
+      ObjectRecord rec;
+      if (!read_exact(in, rec.ref.id.bytes.data(), rec.ref.id.bytes.size())) {
+        return Result<void>::err("object segment read failed");
+      }
+      if (!read_exact(in, rec.definition_id.bytes.data(), rec.definition_id.bytes.size())) {
+        return Result<void>::err("object segment read failed");
+      }
+
+      rec.ref.ver = Version{ver};
+      rec.type = TypeID{type};
+      rec.created_at_unix_ms = created;
+      rec.payload_cbor.resize(payload_size);
+      if (payload_size > 0 && !read_exact(in, rec.payload_cbor.data(), payload_size)) {
+        return Result<void>::err("object payload read failed");
+      }
+
+      index_object(rec);
+    }
   }
 
-  sqlite3_stmt* st = nullptr;
-  if (name_filter && role_filter) st = st_edges_to_named_role_;
-  else if (name_filter) st = st_edges_to_named_;
-  else if (role_filter) st = st_edges_to_role_;
-  else st = st_edges_to_;
-  sqlite3_reset(st);
-  sqlite3_clear_bindings(st);
+  if (std::filesystem::exists(edge_path)) {
+    std::ifstream in(edge_path, std::ios::binary);
+    while (in.good()) {
+      std::uint32_t tag = 0;
+      if (!read_u32(in, &tag)) break;
+      if (tag != kEdgeTag) return Result<void>::err("invalid edge segment tag");
 
-  bind_blob(st, 1, to.id.bytes.data(), 16);
-  sqlite3_bind_int64(st, 2, (sqlite3_int64)to.ver.v);
-  if (name_filter && role_filter) {
-    bind_text(st, 3, *name_filter);
-    bind_text(st, 4, *role_filter);
-  } else if (name_filter) {
-    bind_text(st, 3, *name_filter);
-  } else if (role_filter) {
-    bind_text(st, 3, *role_filter);
+      std::uint32_t name_len = 0;
+      std::uint32_t role_len = 0;
+      std::uint32_t props_len = 0;
+      std::uint64_t created = 0;
+      if (!read_u32(in, &name_len)) return Result<void>::err("edge segment read failed");
+      if (!read_u32(in, &role_len)) return Result<void>::err("edge segment read failed");
+      if (!read_u32(in, &props_len)) return Result<void>::err("edge segment read failed");
+      if (!read_u64(in, &created)) return Result<void>::err("edge segment read failed");
+
+      EdgeRecord rec;
+      if (!read_exact(in, rec.from.id.bytes.data(), rec.from.id.bytes.size())) {
+        return Result<void>::err("edge segment read failed");
+      }
+      std::uint64_t from_ver = 0;
+      if (!read_u64(in, &from_ver)) return Result<void>::err("edge segment read failed");
+      rec.from.ver = Version{from_ver};
+
+      if (!read_exact(in, rec.to.id.bytes.data(), rec.to.id.bytes.size())) {
+        return Result<void>::err("edge segment read failed");
+      }
+      std::uint64_t to_ver = 0;
+      if (!read_u64(in, &to_ver)) return Result<void>::err("edge segment read failed");
+      rec.to.ver = Version{to_ver};
+
+      rec.created_at_unix_ms = created;
+      rec.name.resize(name_len);
+      rec.role.resize(role_len);
+      rec.props_cbor.resize(props_len);
+
+      if (name_len > 0 && !read_exact(in, rec.name.data(), name_len)) {
+        return Result<void>::err("edge name read failed");
+      }
+      if (role_len > 0 && !read_exact(in, rec.role.data(), role_len)) {
+        return Result<void>::err("edge role read failed");
+      }
+      if (props_len > 0 && !read_exact(in, rec.props_cbor.data(), props_len)) {
+        return Result<void>::err("edge props read failed");
+      }
+
+      index_edge(rec);
+    }
   }
 
-  return read_edges(db_, st);
+  return Result<void>::ok();
 }
 
 } // namespace referee
