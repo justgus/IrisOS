@@ -237,6 +237,13 @@ Result<ObjectRecord> SqliteStore::create_object_with_id(ObjectID object_id, Type
 
 Result<std::optional<ObjectRecord>> SqliteStore::get_object(ObjectRef ref) {
   if (!open_) return Result<std::optional<ObjectRecord>>::err("store not open");
+  if (in_txn_) {
+    for (const auto& rec : pending_objects_) {
+      if (rec.ref == ref) {
+        return Result<std::optional<ObjectRecord>>::ok(std::optional<ObjectRecord>(rec));
+      }
+    }
+  }
   ObjectRefKey key{ref.id, ref.ver};
   auto it = objects_by_ref_.find(key);
   if (it == objects_by_ref_.end()) return Result<std::optional<ObjectRecord>>::ok(std::nullopt);
@@ -245,6 +252,19 @@ Result<std::optional<ObjectRecord>> SqliteStore::get_object(ObjectRef ref) {
 
 Result<std::optional<ObjectRecord>> SqliteStore::get_latest(ObjectID id) {
   if (!open_) return Result<std::optional<ObjectRecord>>::err("store not open");
+  if (in_txn_) {
+    const ObjectRecord* best = nullptr;
+    for (const auto& rec : pending_objects_) {
+      if (rec.ref.id == id) {
+        if (!best || rec.ref.ver.v > best->ref.ver.v) {
+          best = &rec;
+        }
+      }
+    }
+    if (best) {
+      return Result<std::optional<ObjectRecord>>::ok(std::optional<ObjectRecord>(*best));
+    }
+  }
   auto it = latest_by_id_.find(id);
   if (it == latest_by_id_.end()) return Result<std::optional<ObjectRecord>>::ok(std::nullopt);
   return Result<std::optional<ObjectRecord>>::ok(std::optional<ObjectRecord>(it->second));
@@ -252,9 +272,22 @@ Result<std::optional<ObjectRecord>> SqliteStore::get_latest(ObjectID id) {
 
 Result<std::vector<ObjectRecord>> SqliteStore::list_by_type(TypeID type) {
   if (!open_) return Result<std::vector<ObjectRecord>>::err("store not open");
+  std::vector<ObjectRecord> out;
   auto it = objects_by_type_.find(type);
-  if (it == objects_by_type_.end()) return Result<std::vector<ObjectRecord>>::ok({});
-  return Result<std::vector<ObjectRecord>>::ok(it->second);
+  if (it != objects_by_type_.end()) {
+    out = it->second;
+  }
+  if (in_txn_) {
+    for (const auto& rec : pending_objects_) {
+      if (rec.type == type) out.push_back(rec);
+    }
+  }
+  if (out.size() > 1) {
+    std::sort(out.begin(), out.end(), [](const ObjectRecord& a, const ObjectRecord& b) {
+      return a.created_at_unix_ms < b.created_at_unix_ms;
+    });
+  }
+  return Result<std::vector<ObjectRecord>>::ok(std::move(out));
 }
 
 Result<void> SqliteStore::add_edge(ObjectRef from, ObjectRef to, std::string name, std::string role,
@@ -285,14 +318,22 @@ Result<std::vector<EdgeRecord>> SqliteStore::edges_from(ObjectRef from,
                                                         std::optional<std::string> role_filter) {
   if (!open_) return Result<std::vector<EdgeRecord>>::err("store not open");
   ObjectRefKey key{from.id, from.ver};
-  auto it = edges_from_.find(key);
-  if (it == edges_from_.end()) return Result<std::vector<EdgeRecord>>::ok({});
-
   std::vector<EdgeRecord> out;
-  for (const auto& e : it->second) {
-    if (name_filter && e.name != *name_filter) continue;
-    if (role_filter && e.role != *role_filter) continue;
-    out.push_back(e);
+  auto it = edges_from_.find(key);
+  if (it != edges_from_.end()) {
+    for (const auto& e : it->second) {
+      if (name_filter && e.name != *name_filter) continue;
+      if (role_filter && e.role != *role_filter) continue;
+      out.push_back(e);
+    }
+  }
+  if (in_txn_) {
+    for (const auto& e : pending_edges_) {
+      if (e.from != from) continue;
+      if (name_filter && e.name != *name_filter) continue;
+      if (role_filter && e.role != *role_filter) continue;
+      out.push_back(e);
+    }
   }
   return Result<std::vector<EdgeRecord>>::ok(std::move(out));
 }
@@ -302,14 +343,22 @@ Result<std::vector<EdgeRecord>> SqliteStore::edges_to(ObjectRef to,
                                                       std::optional<std::string> role_filter) {
   if (!open_) return Result<std::vector<EdgeRecord>>::err("store not open");
   ObjectRefKey key{to.id, to.ver};
-  auto it = edges_to_.find(key);
-  if (it == edges_to_.end()) return Result<std::vector<EdgeRecord>>::ok({});
-
   std::vector<EdgeRecord> out;
-  for (const auto& e : it->second) {
-    if (name_filter && e.name != *name_filter) continue;
-    if (role_filter && e.role != *role_filter) continue;
-    out.push_back(e);
+  auto it = edges_to_.find(key);
+  if (it != edges_to_.end()) {
+    for (const auto& e : it->second) {
+      if (name_filter && e.name != *name_filter) continue;
+      if (role_filter && e.role != *role_filter) continue;
+      out.push_back(e);
+    }
+  }
+  if (in_txn_) {
+    for (const auto& e : pending_edges_) {
+      if (e.to != to) continue;
+      if (name_filter && e.name != *name_filter) continue;
+      if (role_filter && e.role != *role_filter) continue;
+      out.push_back(e);
+    }
   }
   return Result<std::vector<EdgeRecord>>::ok(std::move(out));
 }

@@ -2,6 +2,10 @@
 
 #include "referee/referee.h"
 
+#ifdef fail
+#undef fail
+#endif
+
 #include <cstdint>
 #include <fstream>
 #include <optional>
