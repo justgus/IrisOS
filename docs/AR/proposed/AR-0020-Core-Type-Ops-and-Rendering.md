@@ -5,7 +5,7 @@ GitHub-Issue: #TBD
 # AR-0020 — Core Type Operations and Rendering
 
 - Status: Proposed
-- Date: 2026-02-26
+- Date: 2026-02-27
 - Owners: Mike
 
 ## Context
@@ -56,7 +56,7 @@ All types may implement the following operations, but they are **not required**:
 
 **String**
 - `equals(other:String) -> Bool`
-- `compare(other:String) -> U64` (0/1/2 or -1/0/1; define exact semantics in ER)
+- `compare(other:String) -> Int` (signed; exact semantics in ER)
 - `concat(other:String) -> String`
 - `contains(substr:String) -> Bool`
 - `starts_with(prefix:String) -> Bool`
@@ -70,7 +70,7 @@ All types may implement the following operations, but they are **not required**:
 
 **U64**
 - `add/sub/mul/div/mod` (exact names to be defined in ER)
-- `compare(other:U64) -> U64` (exact semantics in ER)
+- `compare(other:U64) -> Int` (signed; exact semantics in ER)
 - `to_string() -> String`
 
 **Bool**
@@ -93,6 +93,9 @@ All types may implement the following operations, but they are **not required**:
 - `to_string` is pure and does not assume any display context.
 - `print` writes to the active console/context and may call `to_string`.
 - `render` is context-aware and may produce UI/graphics; in Conch it defaults to `print`.
+- `print` exists independent of Conch to support other tools such as compilers and debuggers.
+- When `print` is not defined for an instance, default output is its ObjectID.
+- When `print` is not defined for a type, default output is the type's standard name.
 
 ### Dispatch & Binding
 
@@ -124,9 +127,8 @@ All types may implement the following operations, but they are **not required**:
 
 ## Open Questions
 
-- What is the canonical return type for `compare` (signed vs enum)?
-- How should `print` be scoped across non-Conch contexts?
-- Should operations accept a context parameter for structured output?
+- Exact signed return type for `compare` and its ordering semantics.
+- Whether `render(context)` should accept a structured context object or a minimal handle.
 
 ## Next Steps
 
