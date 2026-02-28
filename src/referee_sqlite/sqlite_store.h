@@ -83,6 +83,7 @@ private:
   };
 
   Result<void> load_segments();
+  Result<void> rebuild_indexes();
   Result<void> append_object(const ObjectRecord& rec);
   Result<void> append_edge(const EdgeRecord& rec);
   void index_object(const ObjectRecord& rec);

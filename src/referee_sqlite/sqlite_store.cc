@@ -151,6 +151,8 @@ Result<void> SqliteStore::open() {
 
   auto r = load_segments();
   if (!r) return r;
+  r = rebuild_indexes();
+  if (!r) return r;
 
   open_ = true;
   return Result<void>::ok();
@@ -451,26 +453,20 @@ Result<void> SqliteStore::load_segments() {
       std::uint64_t ver = 0;
       std::uint64_t type = 0;
       std::uint64_t created = 0;
-      if (!read_u32(in, &payload_size)) return Result<void>::err("object segment read failed");
-      if (!read_u64(in, &ver)) return Result<void>::err("object segment read failed");
-      if (!read_u64(in, &type)) return Result<void>::err("object segment read failed");
-      if (!read_u64(in, &created)) return Result<void>::err("object segment read failed");
+      if (!read_u32(in, &payload_size)) break;
+      if (!read_u64(in, &ver)) break;
+      if (!read_u64(in, &type)) break;
+      if (!read_u64(in, &created)) break;
 
       ObjectRecord rec;
-      if (!read_exact(in, rec.ref.id.bytes.data(), rec.ref.id.bytes.size())) {
-        return Result<void>::err("object segment read failed");
-      }
-      if (!read_exact(in, rec.definition_id.bytes.data(), rec.definition_id.bytes.size())) {
-        return Result<void>::err("object segment read failed");
-      }
+      if (!read_exact(in, rec.ref.id.bytes.data(), rec.ref.id.bytes.size())) break;
+      if (!read_exact(in, rec.definition_id.bytes.data(), rec.definition_id.bytes.size())) break;
 
       rec.ref.ver = Version{ver};
       rec.type = TypeID{type};
       rec.created_at_unix_ms = created;
       rec.payload_cbor.resize(payload_size);
-      if (payload_size > 0 && !read_exact(in, rec.payload_cbor.data(), payload_size)) {
-        return Result<void>::err("object payload read failed");
-      }
+      if (payload_size > 0 && !read_exact(in, rec.payload_cbor.data(), payload_size)) break;
 
       index_object(rec);
     }
@@ -487,24 +483,20 @@ Result<void> SqliteStore::load_segments() {
       std::uint32_t role_len = 0;
       std::uint32_t props_len = 0;
       std::uint64_t created = 0;
-      if (!read_u32(in, &name_len)) return Result<void>::err("edge segment read failed");
-      if (!read_u32(in, &role_len)) return Result<void>::err("edge segment read failed");
-      if (!read_u32(in, &props_len)) return Result<void>::err("edge segment read failed");
-      if (!read_u64(in, &created)) return Result<void>::err("edge segment read failed");
+      if (!read_u32(in, &name_len)) break;
+      if (!read_u32(in, &role_len)) break;
+      if (!read_u32(in, &props_len)) break;
+      if (!read_u64(in, &created)) break;
 
       EdgeRecord rec;
-      if (!read_exact(in, rec.from.id.bytes.data(), rec.from.id.bytes.size())) {
-        return Result<void>::err("edge segment read failed");
-      }
+      if (!read_exact(in, rec.from.id.bytes.data(), rec.from.id.bytes.size())) break;
       std::uint64_t from_ver = 0;
-      if (!read_u64(in, &from_ver)) return Result<void>::err("edge segment read failed");
+      if (!read_u64(in, &from_ver)) break;
       rec.from.ver = Version{from_ver};
 
-      if (!read_exact(in, rec.to.id.bytes.data(), rec.to.id.bytes.size())) {
-        return Result<void>::err("edge segment read failed");
-      }
+      if (!read_exact(in, rec.to.id.bytes.data(), rec.to.id.bytes.size())) break;
       std::uint64_t to_ver = 0;
-      if (!read_u64(in, &to_ver)) return Result<void>::err("edge segment read failed");
+      if (!read_u64(in, &to_ver)) break;
       rec.to.ver = Version{to_ver};
 
       rec.created_at_unix_ms = created;
@@ -512,17 +504,115 @@ Result<void> SqliteStore::load_segments() {
       rec.role.resize(role_len);
       rec.props_cbor.resize(props_len);
 
-      if (name_len > 0 && !read_exact(in, rec.name.data(), name_len)) {
-        return Result<void>::err("edge name read failed");
-      }
-      if (role_len > 0 && !read_exact(in, rec.role.data(), role_len)) {
-        return Result<void>::err("edge role read failed");
-      }
-      if (props_len > 0 && !read_exact(in, rec.props_cbor.data(), props_len)) {
-        return Result<void>::err("edge props read failed");
-      }
+      if (name_len > 0 && !read_exact(in, rec.name.data(), name_len)) break;
+      if (role_len > 0 && !read_exact(in, rec.role.data(), role_len)) break;
+      if (props_len > 0 && !read_exact(in, rec.props_cbor.data(), props_len)) break;
 
       index_edge(rec);
+    }
+  }
+
+  return Result<void>::ok();
+}
+
+Result<void> SqliteStore::rebuild_indexes() {
+  if (memory_only_) return Result<void>::ok();
+  const auto base = base_dir();
+  const auto indexes_dir = std::filesystem::path(base) / "indexes";
+
+  idx_objects_by_id_.close();
+  idx_objects_by_type_.close();
+  idx_edges_from_.close();
+  idx_edges_to_.close();
+
+  idx_objects_by_id_.open(indexes_dir / "objects_by_id.idx", std::ios::trunc);
+  idx_objects_by_type_.open(indexes_dir / "objects_by_type.idx", std::ios::trunc);
+  idx_edges_from_.open(indexes_dir / "edges_from.idx", std::ios::trunc);
+  idx_edges_to_.open(indexes_dir / "edges_to.idx", std::ios::trunc);
+
+  if (!idx_objects_by_id_ || !idx_objects_by_type_ || !idx_edges_from_ || !idx_edges_to_) {
+    return Result<void>::err("failed to rebuild index files");
+  }
+
+  const auto segments_dir = std::filesystem::path(base) / "segments";
+  const auto obj_path = segments_dir / "objects.seg";
+  const auto edge_path = segments_dir / "edges.seg";
+
+  if (std::filesystem::exists(obj_path)) {
+    std::ifstream in(obj_path, std::ios::binary);
+    while (in.good()) {
+      auto start = in.tellg();
+      if (start < 0) break;
+      std::uint32_t tag = 0;
+      if (!read_u32(in, &tag)) break;
+      if (tag != kObjTag) break;
+
+      std::uint32_t payload_size = 0;
+      std::uint64_t ver = 0;
+      std::uint64_t type = 0;
+      std::uint64_t created = 0;
+      if (!read_u32(in, &payload_size)) break;
+      if (!read_u64(in, &ver)) break;
+      if (!read_u64(in, &type)) break;
+      if (!read_u64(in, &created)) break;
+
+      ObjectID id{};
+      ObjectID def{};
+      if (!read_exact(in, id.bytes.data(), id.bytes.size())) break;
+      if (!read_exact(in, def.bytes.data(), def.bytes.size())) break;
+      if (payload_size > 0) {
+        in.seekg(static_cast<std::streamoff>(payload_size), std::ios::cur);
+        if (!in.good()) break;
+      }
+
+      const auto offset = static_cast<std::uint64_t>(start);
+
+      append_index(idx_objects_by_id_, key_object_id(id, ver), offset);
+      append_index(idx_objects_by_type_, key_type_id(TypeID{type}, id, ver), offset);
+    }
+  }
+
+  if (std::filesystem::exists(edge_path)) {
+    std::ifstream in(edge_path, std::ios::binary);
+    while (in.good()) {
+      auto start = in.tellg();
+      if (start < 0) break;
+      std::uint32_t tag = 0;
+      if (!read_u32(in, &tag)) break;
+      if (tag != kEdgeTag) break;
+
+      std::uint32_t name_len = 0;
+      std::uint32_t role_len = 0;
+      std::uint32_t props_len = 0;
+      std::uint64_t created = 0;
+      if (!read_u32(in, &name_len)) break;
+      if (!read_u32(in, &role_len)) break;
+      if (!read_u32(in, &props_len)) break;
+      if (!read_u64(in, &created)) break;
+
+      EdgeRecord rec;
+      if (!read_exact(in, rec.from.id.bytes.data(), rec.from.id.bytes.size())) break;
+      std::uint64_t from_ver = 0;
+      if (!read_u64(in, &from_ver)) break;
+      rec.from.ver = Version{from_ver};
+
+      if (!read_exact(in, rec.to.id.bytes.data(), rec.to.id.bytes.size())) break;
+      std::uint64_t to_ver = 0;
+      if (!read_u64(in, &to_ver)) break;
+      rec.to.ver = Version{to_ver};
+
+      rec.name.resize(name_len);
+      rec.role.resize(role_len);
+      rec.props_cbor.resize(props_len);
+
+      if (name_len > 0 && !read_exact(in, rec.name.data(), name_len)) break;
+      if (role_len > 0 && !read_exact(in, rec.role.data(), role_len)) break;
+      if (props_len > 0 && !read_exact(in, rec.props_cbor.data(), props_len)) break;
+
+      const auto offset = static_cast<std::uint64_t>(start);
+
+      append_index(idx_edges_from_, key_edge_from(rec), offset);
+      append_index(idx_edges_to_, key_edge_to(rec), offset);
     }
   }
 

@@ -14,7 +14,7 @@ GitHub-Issue: #TBD
 
 - ER ID: ER-0035
 - Title: Referee Recovery and Rebuild Workflows
-- Status: Proposed
+- Status: In Progress
 - Date: 2026-02-27
 - Owners: Mike
 - Type: Enhancement
