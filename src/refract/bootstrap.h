@@ -20,6 +20,7 @@ struct CatalogBootstrapResult {
 std::vector<TypeDefinition> core_schema_definitions();
 
 // Ensures core schema definitions exist in Referee (idempotent).
+// When schemas already exist, no changes are made unless IRIS_REFRACT_SCHEMA_RECOVER is set.
 referee::Result<BootstrapResult> bootstrap_core_schema(SchemaRegistry& registry);
 
 // Ensures core catalog objects exist in Referee (idempotent).

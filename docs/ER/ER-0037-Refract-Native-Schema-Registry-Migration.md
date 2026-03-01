@@ -14,7 +14,7 @@ GitHub-Issue: #TBD
 
 - ER ID: ER-0037
 - Title: Refract-Native Schema Registry Migration
-- Status: Proposed
+- Status: Complete
 - Date: 2026-02-27
 - Owners: Mike
 - Type: Epic
@@ -73,6 +73,7 @@ GitHub-Issue: #TBD
 ## Implementation Notes
 
 - Notes for implementer: keep a fallback path for recovery of corrupt schema stores.
+- Recovery mode: set `IRIS_REFRACT_SCHEMA_RECOVER=1` to allow reseeding missing core schemas.
 
 ## Verification Plan
 
