@@ -35,8 +35,8 @@
 - ER-0031 — Verified
 - ER-0032 — Verified
 - ER-0033 — Verified
-- ER-0034 — In Progress
-- ER-0035 — In Progress
+- ER-0034 — Verified
+- ER-0035 — Verified
 - ER-0036 — Proposed
 - ER-0037 — Proposed
 - ER-0038 — Proposed
