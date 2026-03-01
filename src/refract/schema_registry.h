@@ -50,11 +50,13 @@ struct TypeDefinition {
   std::string name;
   std::string namespace_name;
   std::uint64_t version{1};
+  std::optional<referee::ObjectID> supersedes_definition_id{};
+  std::optional<std::string> migration_hook{};
   std::vector<std::string> type_params;
   std::vector<FieldDefinition> fields;
   std::vector<OperationDefinition> operations;
   std::vector<RelationshipSpec> relationships;
-  std::optional<std::string> preferred_renderer;
+  std::optional<std::string> preferred_renderer{};
 };
 
 struct TypeSummary {
@@ -70,6 +72,11 @@ struct DefinitionRecord {
   TypeDefinition definition{};
 };
 
+struct SupersedesLink {
+  DefinitionRecord prior{};
+  std::optional<std::string> migration_hook;
+};
+
 constexpr referee::TypeID kTypeDefinitionType{0x5246524354450001ULL};
 
 class SchemaRegistry {
@@ -83,6 +90,7 @@ public:
   referee::Result<std::optional<DefinitionRecord>> get_definition_by_type(referee::TypeID type);
   referee::Result<std::optional<DefinitionRecord>> get_latest_definition_by_type(referee::TypeID type);
   referee::Result<std::vector<TypeSummary>> list_types();
+  referee::Result<std::vector<SupersedesLink>> list_supersedes_chain(referee::ObjectID definition_id);
 
 private:
   referee::SqliteStore& store_;
