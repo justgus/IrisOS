@@ -2,6 +2,8 @@
 
 #include <array>
 #include <cstdint>
+#include <cstdlib>
+#include <cstring>
 #include <map>
 #include <optional>
 #include <string_view>
@@ -662,10 +664,33 @@ std::vector<TypeDefinition> core_schema_definitions() {
   return defs;
 }
 
+namespace {
+
+bool allow_schema_recovery_reseed() {
+  const char* raw = std::getenv("IRIS_REFRACT_SCHEMA_RECOVER");
+  if (!raw || !*raw) return false;
+  return std::strcmp(raw, "1") == 0
+      || std::strcmp(raw, "true") == 0
+      || std::strcmp(raw, "TRUE") == 0
+      || std::strcmp(raw, "yes") == 0
+      || std::strcmp(raw, "YES") == 0;
+}
+
+} // namespace
+
 referee::Result<BootstrapResult> bootstrap_core_schema(SchemaRegistry& registry) {
   BootstrapResult out;
-  auto defs = core_schema_definitions();
+  auto listR = registry.list_types();
+  if (!listR) return referee::Result<BootstrapResult>::err(listR.error->message);
 
+  if (!listR.value->empty()) {
+    out.existing = listR.value->size();
+    if (!allow_schema_recovery_reseed()) {
+      return referee::Result<BootstrapResult>::ok(out);
+    }
+  }
+
+  auto defs = core_schema_definitions();
   for (const auto& def : defs) {
     auto existing = registry.get_definition_by_type(def.type_id);
     if (!existing) return referee::Result<BootstrapResult>::err(existing.error->message);
