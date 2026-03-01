@@ -95,6 +95,41 @@ START_TEST(test_schema_registry_roundtrip)
 }
 END_TEST
 
+START_TEST(test_schema_registry_supersedes_chain)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+
+  auto defV1 = make_definition(TypeID{0xA1ULL}, "Widget", "Demo");
+  defV1.version = 1;
+
+  auto regV1 = registry.register_definition(defV1);
+  ck_assert_msg(regV1, "register_definition v1 failed: %s", result_message(regV1));
+
+  auto defV2 = make_definition(TypeID{0xA1ULL}, "Widget", "Demo");
+  defV2.version = 2;
+  defV2.supersedes_definition_id = regV1.value->ref.id;
+  defV2.migration_hook = "migrate_widget_v1_to_v2";
+
+  auto regV2 = registry.register_definition(defV2);
+  ck_assert_msg(regV2, "register_definition v2 failed: %s", result_message(regV2));
+
+  auto chainR = registry.list_supersedes_chain(regV2.value->ref.id);
+  ck_assert_msg(chainR, "list_supersedes_chain failed: %s", result_message(chainR));
+  ck_assert_int_eq((int)chainR.value->size(), 1);
+  ck_assert_str_eq(chainR.value->at(0).prior.definition.name.c_str(), "Widget");
+  ck_assert_msg(chainR.value->at(0).migration_hook.has_value(), "expected migration hook");
+  ck_assert_str_eq(chainR.value->at(0).migration_hook->c_str(), "migrate_widget_v1_to_v2");
+
+  auto emptyR = registry.list_supersedes_chain(regV1.value->ref.id);
+  ck_assert_msg(emptyR, "list_supersedes_chain empty failed: %s", result_message(emptyR));
+  ck_assert_int_eq((int)emptyR.value->size(), 0);
+}
+END_TEST
+
 START_TEST(test_operation_registry_scope_and_inheritance)
 {
   SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
@@ -224,6 +259,7 @@ Suite* refract_registry_suite(void) {
   TCase* tc = tcase_create("core");
 
   tcase_add_test(tc, test_schema_registry_roundtrip);
+  tcase_add_test(tc, test_schema_registry_supersedes_chain);
   tcase_add_test(tc, test_operation_registry_scope_and_inheritance);
   tcase_add_test(tc, test_dispatch_resolution);
 

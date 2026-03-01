@@ -181,6 +181,20 @@ static referee::Result<DefinitionRecord> record_from_object(const referee::Objec
   return referee::Result<DefinitionRecord>::ok(std::move(out));
 }
 
+static referee::Result<std::optional<std::string>> migration_hook_from_props(
+    const referee::Bytes& props_cbor) {
+  if (props_cbor.empty()) return referee::Result<std::optional<std::string>>::ok(std::nullopt);
+  try {
+    auto j = nlohmann::json::from_cbor(props_cbor);
+    if (!j.contains("hook")) {
+      return referee::Result<std::optional<std::string>>::err("migration_hook missing hook");
+    }
+    return referee::Result<std::optional<std::string>>::ok(j.at("hook").get<std::string>());
+  } catch (const std::exception& ex) {
+    return referee::Result<std::optional<std::string>>::err(ex.what());
+  }
+}
+
 } // namespace
 
 SchemaRegistry::SchemaRegistry(referee::SqliteStore& store) : store_(store) {}
@@ -191,8 +205,28 @@ referee::Result<DefinitionRecord> SchemaRegistry::register_definition(const Type
 
   auto payload = encode_definition(def);
   auto definition_id = referee::ObjectID::random();
-  auto createR = store_.create_object_with_id(definition_id, kTypeDefinitionType, definition_id, payload);
+  auto createR = store_.create_object_with_id(definition_id, kTypeDefinitionType, definition_id,
+                                              payload);
   if (!createR) return referee::Result<DefinitionRecord>::err(createR.error->message);
+
+  if (def.supersedes_definition_id.has_value()) {
+    auto priorR = store_.get_latest(def.supersedes_definition_id.value());
+    if (!priorR) return referee::Result<DefinitionRecord>::err(priorR.error->message);
+    if (!priorR.value->has_value()) {
+      return referee::Result<DefinitionRecord>::err("supersedes definition not found");
+    }
+    auto edgeR = store_.add_edge(createR.value->ref, priorR.value->value().ref,
+                                 "supersedes", "definition", {});
+    if (!edgeR) return referee::Result<DefinitionRecord>::err(edgeR.error->message);
+    if (def.migration_hook.has_value()) {
+      auto hookProps = referee::cbor_from_json_kv("hook", def.migration_hook.value());
+      auto hookR = store_.add_edge(createR.value->ref, priorR.value->value().ref,
+                                   "migration_hook", "definition", hookProps);
+      if (!hookR) return referee::Result<DefinitionRecord>::err(hookR.error->message);
+    }
+  } else if (def.migration_hook.has_value()) {
+    return referee::Result<DefinitionRecord>::err("migration_hook requires supersedes_definition_id");
+  }
 
   return record_from_object(createR.value.value());
 }
@@ -203,8 +237,28 @@ referee::Result<DefinitionRecord> SchemaRegistry::register_definition_with_id(
   if (def.type_id.v == 0) return referee::Result<DefinitionRecord>::err("type_id is zero");
 
   auto payload = encode_definition(def);
-  auto createR = store_.create_object_with_id(definition_id, kTypeDefinitionType, definition_id, payload);
+  auto createR = store_.create_object_with_id(definition_id, kTypeDefinitionType, definition_id,
+                                              payload);
   if (!createR) return referee::Result<DefinitionRecord>::err(createR.error->message);
+
+  if (def.supersedes_definition_id.has_value()) {
+    auto priorR = store_.get_latest(def.supersedes_definition_id.value());
+    if (!priorR) return referee::Result<DefinitionRecord>::err(priorR.error->message);
+    if (!priorR.value->has_value()) {
+      return referee::Result<DefinitionRecord>::err("supersedes definition not found");
+    }
+    auto edgeR = store_.add_edge(createR.value->ref, priorR.value->value().ref,
+                                 "supersedes", "definition", {});
+    if (!edgeR) return referee::Result<DefinitionRecord>::err(edgeR.error->message);
+    if (def.migration_hook.has_value()) {
+      auto hookProps = referee::cbor_from_json_kv("hook", def.migration_hook.value());
+      auto hookR = store_.add_edge(createR.value->ref, priorR.value->value().ref,
+                                   "migration_hook", "definition", hookProps);
+      if (!hookR) return referee::Result<DefinitionRecord>::err(hookR.error->message);
+    }
+  } else if (def.migration_hook.has_value()) {
+    return referee::Result<DefinitionRecord>::err("migration_hook requires supersedes_definition_id");
+  }
 
   return record_from_object(createR.value.value());
 }
@@ -284,6 +338,64 @@ referee::Result<std::vector<TypeSummary>> SchemaRegistry::list_types() {
   }
 
   return referee::Result<std::vector<TypeSummary>>::ok(std::move(out));
+}
+
+referee::Result<std::vector<SupersedesLink>> SchemaRegistry::list_supersedes_chain(
+    referee::ObjectID definition_id) {
+  auto currentR = store_.get_latest(definition_id);
+  if (!currentR) return referee::Result<std::vector<SupersedesLink>>::err(currentR.error->message);
+  if (!currentR.value->has_value()) {
+    return referee::Result<std::vector<SupersedesLink>>::err("definition not found");
+  }
+
+  auto current = currentR.value->value();
+  if (current.type.v != kTypeDefinitionType.v) {
+    return referee::Result<std::vector<SupersedesLink>>::err("object is not a type definition");
+  }
+
+  std::vector<SupersedesLink> chain;
+
+  while (true) {
+    auto edgesR = store_.edges_from(current.ref, "supersedes", "definition");
+    if (!edgesR) return referee::Result<std::vector<SupersedesLink>>::err(edgesR.error->message);
+    if (edgesR.value->empty()) break;
+    if (edgesR.value->size() > 1) {
+      return referee::Result<std::vector<SupersedesLink>>::err("multiple supersedes edges found");
+    }
+
+    const auto& edge = edgesR.value->front();
+    auto priorRecR = store_.get_object(edge.to);
+    if (!priorRecR) return referee::Result<std::vector<SupersedesLink>>::err(priorRecR.error->message);
+    if (!priorRecR.value->has_value()) {
+      return referee::Result<std::vector<SupersedesLink>>::err("supersedes target not found");
+    }
+    if (priorRecR.value->value().type.v != kTypeDefinitionType.v) {
+      return referee::Result<std::vector<SupersedesLink>>::err("supersedes target is not a type definition");
+    }
+
+    auto priorDefR = record_from_object(priorRecR.value->value());
+    if (!priorDefR) return referee::Result<std::vector<SupersedesLink>>::err(priorDefR.error->message);
+
+    SupersedesLink link;
+    link.prior = priorDefR.value.value();
+
+    auto hookEdgesR = store_.edges_from(current.ref, "migration_hook", "definition");
+    if (!hookEdgesR) return referee::Result<std::vector<SupersedesLink>>::err(hookEdgesR.error->message);
+    for (const auto& hookEdge : hookEdgesR.value.value()) {
+      if (hookEdge.to != edge.to) continue;
+      if (link.migration_hook.has_value()) {
+        return referee::Result<std::vector<SupersedesLink>>::err("multiple migration hooks found");
+      }
+      auto hookR = migration_hook_from_props(hookEdge.props_cbor);
+      if (!hookR) return referee::Result<std::vector<SupersedesLink>>::err(hookR.error->message);
+      link.migration_hook = hookR.value.value();
+    }
+
+    chain.push_back(std::move(link));
+    current = priorRecR.value->value();
+  }
+
+  return referee::Result<std::vector<SupersedesLink>>::ok(std::move(chain));
 }
 
 } // namespace iris::refract

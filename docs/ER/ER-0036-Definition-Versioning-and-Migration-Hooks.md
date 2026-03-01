@@ -14,7 +14,7 @@ GitHub-Issue: #TBD
 
 - ER ID: ER-0036
 - Title: Definition Versioning and Migration Hooks
-- Status: Proposed
+- Status: Complete
 - Date: 2026-02-27
 - Owners: Mike
 - Type: Enhancement
