@@ -24,7 +24,7 @@ const char* result_message(const Result<T>& r) {
 }
 
 static TypeDefinition make_definition(TypeID type_id, std::string name, std::string ns) {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = type_id;
   def.name = std::move(name);
   def.namespace_name = std::move(ns);
@@ -127,6 +127,58 @@ START_TEST(test_schema_registry_supersedes_chain)
   auto emptyR = registry.list_supersedes_chain(regV1.value->ref.id);
   ck_assert_msg(emptyR, "list_supersedes_chain empty failed: %s", result_message(emptyR));
   ck_assert_int_eq((int)emptyR.value->size(), 0);
+}
+END_TEST
+
+START_TEST(test_schema_registry_structured_metadata_roundtrip)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+
+  TypeDefinition enum_def{};
+  enum_def.type_id = TypeID{0xE1ULL};
+  enum_def.name = "Mode";
+  enum_def.namespace_name = "Demo";
+  enum_def.version = 1;
+  enum_def.kind = "enum";
+  enum_def.enum_value_type = TypeID{0x1002ULL};
+  enum_def.has_enum_value_type = true;
+  enum_def.enum_values.push_back(EnumValueDefinition{ "Off", "0" });
+  enum_def.enum_values.push_back(EnumValueDefinition{ "On", "1" });
+
+  auto enum_reg = registry.register_definition(enum_def);
+  ck_assert_msg(enum_reg, "register enum failed: %s", result_message(enum_reg));
+
+  auto enum_back = registry.get_definition_by_type(enum_def.type_id);
+  ck_assert_msg(enum_back, "get enum failed: %s", result_message(enum_back));
+  ck_assert_msg(enum_back.value->has_value(), "enum definition missing");
+  ck_assert_str_eq(enum_back.value->value().definition.kind->c_str(), "enum");
+  ck_assert_msg(enum_back.value->value().definition.has_enum_value_type,
+                "enum value type missing");
+  ck_assert_int_eq((int)enum_back.value->value().definition.enum_values.size(), 2);
+
+  TypeDefinition packet_def{};
+  packet_def.type_id = TypeID{0xE2ULL};
+  packet_def.name = "Header";
+  packet_def.namespace_name = "Demo";
+  packet_def.version = 1;
+  packet_def.kind = "packet";
+  packet_def.packet_byte_order = "be";
+  packet_def.packet_fields.push_back(PacketFieldDefinition{ "magic", TypeID{0x1002ULL}, 16 });
+  packet_def.packet_fields.push_back(PacketFieldDefinition{ "flags", TypeID{0x1002ULL}, 8 });
+
+  auto packet_reg = registry.register_definition(packet_def);
+  ck_assert_msg(packet_reg, "register packet failed: %s", result_message(packet_reg));
+
+  auto packet_back = registry.get_definition_by_type(packet_def.type_id);
+  ck_assert_msg(packet_back, "get packet failed: %s", result_message(packet_back));
+  ck_assert_msg(packet_back.value->has_value(), "packet definition missing");
+  ck_assert_str_eq(packet_back.value->value().definition.kind->c_str(), "packet");
+  ck_assert_int_eq((int)packet_back.value->value().definition.packet_fields.size(), 2);
+  ck_assert_str_eq(packet_back.value->value().definition.packet_fields[0].name.c_str(), "magic");
 }
 END_TEST
 
@@ -260,6 +312,7 @@ Suite* refract_registry_suite(void) {
 
   tcase_add_test(tc, test_schema_registry_roundtrip);
   tcase_add_test(tc, test_schema_registry_supersedes_chain);
+  tcase_add_test(tc, test_schema_registry_structured_metadata_roundtrip);
   tcase_add_test(tc, test_operation_registry_scope_and_inheritance);
   tcase_add_test(tc, test_dispatch_resolution);
 

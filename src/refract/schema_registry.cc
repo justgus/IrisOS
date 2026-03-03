@@ -58,12 +58,28 @@ static nlohmann::json to_json(const RelationshipSpec& rel) {
   return j;
 }
 
+static nlohmann::json to_json(const EnumValueDefinition& value) {
+  nlohmann::json j;
+  j["name"] = value.name;
+  j["value_json"] = value.value_json;
+  return j;
+}
+
+static nlohmann::json to_json(const PacketFieldDefinition& field) {
+  nlohmann::json j;
+  j["name"] = field.name;
+  j["type_id"] = field.type.v;
+  j["bit_width"] = field.bit_width;
+  return j;
+}
+
 static nlohmann::json to_json(const TypeDefinition& def) {
   nlohmann::json j;
   j["type_id"] = def.type_id.v;
   j["name"] = def.name;
   j["namespace"] = def.namespace_name;
   j["version"] = def.version;
+  if (def.kind.has_value()) j["kind"] = def.kind.value();
   if (def.preferred_renderer.has_value()) j["preferred_renderer"] = def.preferred_renderer.value();
   if (!def.type_params.empty()) {
     j["type_params"] = nlohmann::json::array();
@@ -72,6 +88,17 @@ static nlohmann::json to_json(const TypeDefinition& def) {
 
   j["fields"] = nlohmann::json::array();
   for (const auto& field : def.fields) j["fields"].push_back(to_json(field));
+
+  if (def.has_enum_value_type) j["enum_value_type"] = def.enum_value_type.v;
+  if (!def.enum_values.empty()) {
+    j["enum_values"] = nlohmann::json::array();
+    for (const auto& value : def.enum_values) j["enum_values"].push_back(to_json(value));
+  }
+  if (def.packet_byte_order.has_value()) j["packet_byte_order"] = def.packet_byte_order.value();
+  if (!def.packet_fields.empty()) {
+    j["packet_fields"] = nlohmann::json::array();
+    for (const auto& field : def.packet_fields) j["packet_fields"].push_back(to_json(field));
+  }
 
   j["operations"] = nlohmann::json::array();
   for (const auto& op : def.operations) j["operations"].push_back(to_json(op));
@@ -83,7 +110,7 @@ static nlohmann::json to_json(const TypeDefinition& def) {
 }
 
 static FieldDefinition field_from_json(const nlohmann::json& j) {
-  FieldDefinition f;
+  FieldDefinition f{};
   f.name = j.value("name", "");
   f.type = referee::TypeID{j.value("type_id", 0ULL)};
   f.required = j.value("required", false);
@@ -92,7 +119,7 @@ static FieldDefinition field_from_json(const nlohmann::json& j) {
 }
 
 static ParameterDefinition param_from_json(const nlohmann::json& j) {
-  ParameterDefinition p;
+  ParameterDefinition p{};
   p.name = j.value("name", "");
   p.type = referee::TypeID{j.value("type_id", 0ULL)};
   p.optional = j.value("optional", false);
@@ -100,7 +127,7 @@ static ParameterDefinition param_from_json(const nlohmann::json& j) {
 }
 
 static SignatureDefinition signature_from_json(const nlohmann::json& j) {
-  SignatureDefinition sig;
+  SignatureDefinition sig{};
   if (j.contains("params")) {
     for (const auto& item : j.at("params")) sig.params.push_back(param_from_json(item));
   }
@@ -117,7 +144,7 @@ static SignatureDefinition signature_from_json(const nlohmann::json& j) {
 }
 
 static OperationDefinition operation_from_json(const nlohmann::json& j) {
-  OperationDefinition op;
+  OperationDefinition op{};
   op.name = j.value("name", "");
   if (j.contains("scope")) op.scope = scope_from_string(j.at("scope").get<std::string>());
   if (j.contains("signature")) op.signature = signature_from_json(j.at("signature"));
@@ -125,19 +152,35 @@ static OperationDefinition operation_from_json(const nlohmann::json& j) {
 }
 
 static RelationshipSpec relationship_from_json(const nlohmann::json& j) {
-  RelationshipSpec rel;
+  RelationshipSpec rel{};
   rel.role = j.value("role", "");
   rel.cardinality = j.value("cardinality", "");
   rel.target = j.value("target", "");
   return rel;
 }
 
+static EnumValueDefinition enum_value_from_json(const nlohmann::json& j) {
+  EnumValueDefinition value{};
+  value.name = j.value("name", "");
+  value.value_json = j.value("value_json", "");
+  return value;
+}
+
+static PacketFieldDefinition packet_field_from_json(const nlohmann::json& j) {
+  PacketFieldDefinition field{};
+  field.name = j.value("name", "");
+  field.type = referee::TypeID{j.value("type_id", 0ULL)};
+  field.bit_width = j.value("bit_width", 0U);
+  return field;
+}
+
 static TypeDefinition definition_from_json(const nlohmann::json& j) {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = referee::TypeID{j.value("type_id", 0ULL)};
   def.name = j.value("name", "");
   def.namespace_name = j.value("namespace", "");
   def.version = j.value("version", 1ULL);
+  if (j.contains("kind")) def.kind = j.at("kind").get<std::string>();
   if (j.contains("preferred_renderer")) {
     def.preferred_renderer = j.at("preferred_renderer").get<std::string>();
   }
@@ -147,6 +190,19 @@ static TypeDefinition definition_from_json(const nlohmann::json& j) {
 
   if (j.contains("fields")) {
     for (const auto& item : j.at("fields")) def.fields.push_back(field_from_json(item));
+  }
+  if (j.contains("enum_value_type")) {
+    def.enum_value_type = referee::TypeID{j.at("enum_value_type").get<std::uint64_t>()};
+    def.has_enum_value_type = true;
+  }
+  if (j.contains("enum_values")) {
+    for (const auto& item : j.at("enum_values")) def.enum_values.push_back(enum_value_from_json(item));
+  }
+  if (j.contains("packet_byte_order")) {
+    def.packet_byte_order = j.at("packet_byte_order").get<std::string>();
+  }
+  if (j.contains("packet_fields")) {
+    for (const auto& item : j.at("packet_fields")) def.packet_fields.push_back(packet_field_from_json(item));
   }
   if (j.contains("operations")) {
     for (const auto& item : j.at("operations")) def.operations.push_back(operation_from_json(item));
@@ -175,9 +231,9 @@ static referee::Result<DefinitionRecord> record_from_object(const referee::Objec
   auto defR = decode_definition(rec.payload_cbor);
   if (!defR) return referee::Result<DefinitionRecord>::err(defR.error->message);
 
-  DefinitionRecord out;
+  DefinitionRecord out{};
   out.ref = rec.ref;
-  out.definition = std::move(defR.value.value());
+  out.definition = defR.value.value();
   return referee::Result<DefinitionRecord>::ok(std::move(out));
 }
 
