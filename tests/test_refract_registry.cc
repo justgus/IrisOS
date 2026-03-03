@@ -287,6 +287,45 @@ START_TEST(test_generic_instance_registry_roundtrip)
 }
 END_TEST
 
+START_TEST(test_scoped_type_registry_promotion)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+  auto boot = bootstrap_core_schema(registry);
+  ck_assert_msg(boot, "bootstrap failed: %s", result_message(boot));
+
+  GenericRegistry generics(registry, store);
+  ScopedTypeRegistry root(ScopedTypeRegistry::Scope::Global, generics);
+  ScopedTypeRegistry app(ScopedTypeRegistry::Scope::Application, generics, &root);
+  ScopedTypeRegistry op(ScopedTypeRegistry::Scope::Operation, generics, &app);
+
+  GenericInstance instance{};
+  instance.base_type = TypeID{0x4352415400000001ULL};
+  instance.args.push_back(GenericArg{ GenericArgKind::Type, TypeID{0x1001ULL}, {}, "", {} });
+
+  auto regR = op.resolve_or_register(instance, ScopedTypeRegistry::PromotionPolicy::Parent);
+  ck_assert_msg(regR, "register instance failed: %s", result_message(regR));
+
+  auto type_id = regR.value->instance.instance_type;
+  ck_assert_msg(op.find_local(type_id).has_value(), "op scope missing cache");
+  ck_assert_msg(app.find_local(type_id).has_value(), "app scope missing cache");
+  ck_assert_msg(!root.find_local(type_id).has_value(), "root scope should not be promoted");
+
+  GenericInstance instance2{};
+  instance2.base_type = TypeID{0x4352415400000001ULL};
+  instance2.args.push_back(GenericArg{ GenericArgKind::Type, TypeID{0x1002ULL}, {}, "", {} });
+
+  auto regR2 = op.resolve_or_register(instance2, ScopedTypeRegistry::PromotionPolicy::Root);
+  ck_assert_msg(regR2, "register instance2 failed: %s", result_message(regR2));
+
+  auto type_id2 = regR2.value->instance.instance_type;
+  ck_assert_msg(root.find_local(type_id2).has_value(), "root scope missing promotion");
+}
+END_TEST
+
 START_TEST(test_operation_registry_scope_and_inheritance)
 {
   SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
@@ -421,6 +460,7 @@ Suite* refract_registry_suite(void) {
   tcase_add_test(tc, test_schema_registry_collection_metadata_roundtrip);
   tcase_add_test(tc, test_generic_instance_type_id_deterministic);
   tcase_add_test(tc, test_generic_instance_registry_roundtrip);
+  tcase_add_test(tc, test_scoped_type_registry_promotion);
   tcase_add_test(tc, test_operation_registry_scope_and_inheritance);
   tcase_add_test(tc, test_dispatch_resolution);
 
