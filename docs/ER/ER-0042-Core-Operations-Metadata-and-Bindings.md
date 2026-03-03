@@ -14,7 +14,7 @@ GitHub-Issue: #TBD
 
 - ER ID: ER-0042
 - Title: Core Operations Metadata and Bindings
-- Status: Proposed
+- Status: Complete
 - Date: 2026-02-27
 - Owners: Mike
 - Type: Enhancement

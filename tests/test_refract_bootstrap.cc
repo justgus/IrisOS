@@ -116,6 +116,45 @@ START_TEST(test_bootstrap_crate_collections)
 }
 END_TEST
 
+START_TEST(test_bootstrap_core_ops_on_primitives)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+  auto boot = bootstrap_core_schema(registry);
+  ck_assert_msg(boot, "bootstrap failed: %s", result_message(boot));
+
+  auto listR = registry.list_types();
+  ck_assert_msg(listR, "list_types failed: %s", result_message(listR));
+  const auto& types = listR.value.value();
+
+  auto string_type = find_type(types, "Refract", "String");
+  auto u64_type = find_type(types, "Refract", "U64");
+  ck_assert_msg(string_type.has_value(), "Refract::String missing");
+  ck_assert_msg(u64_type.has_value(), "Refract::U64 missing");
+
+  auto string_def = registry.get_definition_by_type(string_type->type_id);
+  ck_assert_msg(string_def, "String definition lookup failed: %s", result_message(string_def));
+  ck_assert_msg(string_def.value->has_value(), "String definition missing");
+  ck_assert_msg(type_has_operation(string_def.value->value(), "to_string"), "String missing to_string");
+  ck_assert_msg(type_has_operation(string_def.value->value(), "print"), "String missing print");
+  ck_assert_msg(type_has_operation(string_def.value->value(), "render"), "String missing render");
+  ck_assert_msg(type_has_operation(string_def.value->value(), "compare"), "String missing compare");
+
+  auto u64_def = registry.get_definition_by_type(u64_type->type_id);
+  ck_assert_msg(u64_def, "U64 definition lookup failed: %s", result_message(u64_def));
+  ck_assert_msg(u64_def.value->has_value(), "U64 definition missing");
+  ck_assert_msg(type_has_operation(u64_def.value->value(), "to_string"), "U64 missing to_string");
+  ck_assert_msg(type_has_operation(u64_def.value->value(), "print"), "U64 missing print");
+  ck_assert_msg(type_has_operation(u64_def.value->value(), "render"), "U64 missing render");
+  ck_assert_msg(type_has_operation(u64_def.value->value(), "compare"), "U64 missing compare");
+
+  ck_assert_msg(store.close(), "close failed");
+}
+END_TEST
+
 START_TEST(test_bootstrap_astra_math_types)
 {
   SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
@@ -216,6 +255,7 @@ Suite* refract_bootstrap_suite(void) {
 
   tcase_add_test(tc, test_bootstrap_idempotent);
   tcase_add_test(tc, test_bootstrap_crate_collections);
+  tcase_add_test(tc, test_bootstrap_core_ops_on_primitives);
   tcase_add_test(tc, test_bootstrap_astra_math_types);
   tcase_add_test(tc, test_bootstrap_caliper_units);
 
