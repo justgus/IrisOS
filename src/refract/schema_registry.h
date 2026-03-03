@@ -56,6 +56,11 @@ struct PacketFieldDefinition {
   std::uint32_t bit_width{0};
 };
 
+struct CollectionElementDefinition {
+  std::string role{};
+  referee::TypeID type{};
+};
+
 struct TypeDefinition {
   referee::TypeID type_id{};
   std::string name{};
@@ -71,6 +76,8 @@ struct TypeDefinition {
   std::vector<EnumValueDefinition> enum_values{};
   std::optional<std::string> packet_byte_order{};
   std::vector<PacketFieldDefinition> packet_fields{};
+  std::optional<std::string> collection_kind{};
+  std::vector<CollectionElementDefinition> collection_elements{};
   std::vector<OperationDefinition> operations{};
   std::vector<RelationshipSpec> relationships{};
   std::optional<std::string> preferred_renderer{};

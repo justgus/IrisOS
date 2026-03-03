@@ -182,6 +182,50 @@ START_TEST(test_schema_registry_structured_metadata_roundtrip)
 }
 END_TEST
 
+START_TEST(test_schema_registry_collection_metadata_roundtrip)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+
+  TypeDefinition struct_def{};
+  struct_def.type_id = TypeID{0xE3ULL};
+  struct_def.name = "Point";
+  struct_def.namespace_name = "Demo";
+  struct_def.version = 1;
+  struct_def.kind = "struct";
+  struct_def.fields.push_back(FieldDefinition{ "x", TypeID{0x1008ULL}, true, std::nullopt });
+  struct_def.fields.push_back(FieldDefinition{ "y", TypeID{0x1008ULL}, true, std::nullopt });
+
+  auto struct_reg = registry.register_definition(struct_def);
+  ck_assert_msg(struct_reg, "register struct failed: %s", result_message(struct_reg));
+
+  TypeDefinition array_def{};
+  array_def.type_id = TypeID{0xE4ULL};
+  array_def.name = "PointArray";
+  array_def.namespace_name = "Demo";
+  array_def.version = 1;
+  array_def.kind = "array";
+  array_def.collection_kind = "array";
+  array_def.collection_elements.push_back(CollectionElementDefinition{ "element", struct_def.type_id });
+
+  auto array_reg = registry.register_definition(array_def);
+  ck_assert_msg(array_reg, "register array failed: %s", result_message(array_reg));
+
+  auto array_back = registry.get_definition_by_type(array_def.type_id);
+  ck_assert_msg(array_back, "get array failed: %s", result_message(array_back));
+  ck_assert_msg(array_back.value->has_value(), "array definition missing");
+  ck_assert_msg(array_back.value->value().definition.collection_kind.has_value(),
+                "collection kind missing");
+  ck_assert_str_eq(array_back.value->value().definition.collection_kind->c_str(), "array");
+  ck_assert_int_eq((int)array_back.value->value().definition.collection_elements.size(), 1);
+  ck_assert_uint_eq(array_back.value->value().definition.collection_elements[0].type.v,
+                    struct_def.type_id.v);
+}
+END_TEST
+
 START_TEST(test_operation_registry_scope_and_inheritance)
 {
   SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
@@ -313,6 +357,7 @@ Suite* refract_registry_suite(void) {
   tcase_add_test(tc, test_schema_registry_roundtrip);
   tcase_add_test(tc, test_schema_registry_supersedes_chain);
   tcase_add_test(tc, test_schema_registry_structured_metadata_roundtrip);
+  tcase_add_test(tc, test_schema_registry_collection_metadata_roundtrip);
   tcase_add_test(tc, test_operation_registry_scope_and_inheritance);
   tcase_add_test(tc, test_dispatch_resolution);
 

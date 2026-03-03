@@ -1004,6 +1004,41 @@ std::optional<iris::refract::TypeDefinition> parse_define_json(
       }
     }
 
+    if (j.contains("collection_kind")) {
+      def.collection_kind = j.at("collection_kind").get<std::string>();
+    }
+    if (j.contains("collection_elements")) {
+      for (const auto& item : j.at("collection_elements")) {
+        std::string role = item.value("role", "");
+        std::string element_type = item.value("type", "");
+        if (element_type.empty()) {
+          if (err_out) *err_out = "collection element missing type";
+          return std::nullopt;
+        }
+        std::string err;
+        auto type_summary = resolve_type(registry, element_type, &err);
+        if (!type_summary.has_value()) {
+          if (err_out) *err_out = "unknown collection element type: " + err;
+          return std::nullopt;
+        }
+        iris::refract::CollectionElementDefinition element;
+        element.role = role;
+        element.type = type_summary->type_id;
+        def.collection_elements.push_back(std::move(element));
+      }
+    } else if (j.contains("element_type")) {
+      std::string err;
+      auto type_summary = resolve_type(registry, j.at("element_type").get<std::string>(), &err);
+      if (!type_summary.has_value()) {
+        if (err_out) *err_out = "unknown collection element type: " + err;
+        return std::nullopt;
+      }
+      iris::refract::CollectionElementDefinition element;
+      element.role = "element";
+      element.type = type_summary->type_id;
+      def.collection_elements.push_back(std::move(element));
+    }
+
     if (j.contains("type_id")) {
       def.type_id = referee::TypeID{j.at("type_id").get<std::uint64_t>()};
     } else {
@@ -1147,6 +1182,16 @@ void cmd_show_type(SchemaRegistry& registry, const std::string& name) {
     for (const auto& field : def.packet_fields) {
       std::cout << "  " << field.name << " type=0x" << std::hex << field.type.v
                 << std::dec << " bits=" << field.bit_width << "\n";
+    }
+  }
+  if (def.collection_kind.has_value()) {
+    std::cout << "collection kind " << def.collection_kind.value() << "\n";
+  }
+  if (!def.collection_elements.empty()) {
+    std::cout << "collection elements\n";
+    for (const auto& element : def.collection_elements) {
+      std::cout << "  " << element.role << " type=0x" << std::hex << element.type.v
+                << std::dec << "\n";
     }
   }
   if (!def.fields.empty()) {
