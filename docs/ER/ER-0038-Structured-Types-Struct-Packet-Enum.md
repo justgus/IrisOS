@@ -14,7 +14,7 @@ GitHub-Issue: #TBD
 
 - ER ID: ER-0038
 - Title: Structured Types: Struct, Packet, Enum
-- Status: Complete
+- Status: Verified
 - Date: 2026-02-27
 - Owners: Mike
 - Type: Epic
