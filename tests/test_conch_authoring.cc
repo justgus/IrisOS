@@ -34,7 +34,7 @@ START_TEST(test_conch_define_and_instantiate)
   auto boot = bootstrap_core_schema(registry);
   ck_assert_msg(boot, "bootstrap failed: %s", result_message(boot));
 
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = TypeID{0xC0C1ULL};
   def.name = "Widget";
   def.namespace_name = "ConchTest";

@@ -45,17 +45,34 @@ struct RelationshipSpec {
   std::string target;
 };
 
+struct EnumValueDefinition {
+  std::string name{};
+  std::string value_json{};
+};
+
+struct PacketFieldDefinition {
+  std::string name{};
+  referee::TypeID type{};
+  std::uint32_t bit_width{0};
+};
+
 struct TypeDefinition {
   referee::TypeID type_id{};
-  std::string name;
-  std::string namespace_name;
+  std::string name{};
+  std::string namespace_name{};
   std::uint64_t version{1};
+  std::optional<std::string> kind{};
   std::optional<referee::ObjectID> supersedes_definition_id{};
   std::optional<std::string> migration_hook{};
-  std::vector<std::string> type_params;
-  std::vector<FieldDefinition> fields;
-  std::vector<OperationDefinition> operations;
-  std::vector<RelationshipSpec> relationships;
+  std::vector<std::string> type_params{};
+  std::vector<FieldDefinition> fields{};
+  bool has_enum_value_type{false};
+  referee::TypeID enum_value_type{};
+  std::vector<EnumValueDefinition> enum_values{};
+  std::optional<std::string> packet_byte_order{};
+  std::vector<PacketFieldDefinition> packet_fields{};
+  std::vector<OperationDefinition> operations{};
+  std::vector<RelationshipSpec> relationships{};
   std::optional<std::string> preferred_renderer{};
 };
 

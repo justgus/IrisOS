@@ -891,7 +891,7 @@ std::optional<iris::refract::TypeDefinition> parse_define_inline(
   }
 
   auto [ns, name] = split_type_name(type_name);
-  iris::refract::TypeDefinition def;
+  iris::refract::TypeDefinition def{};
   def.name = name;
   def.namespace_name = ns;
   def.version = 1;
@@ -915,10 +915,11 @@ std::optional<iris::refract::TypeDefinition> parse_define_json(
     SchemaRegistry& registry, const std::string& json_text, std::string* err_out) {
   try {
     auto j = nlohmann::json::parse(json_text);
-    iris::refract::TypeDefinition def;
+    iris::refract::TypeDefinition def{};
     def.name = j.value("name", "");
     def.namespace_name = j.value("namespace", "");
     def.version = j.value("version", 1ULL);
+    if (j.contains("kind")) def.kind = j.at("kind").get<std::string>();
     if (def.name.empty()) {
       if (err_out) *err_out = "json missing name";
       return std::nullopt;
@@ -947,6 +948,62 @@ std::optional<iris::refract::TypeDefinition> parse_define_json(
       }
     }
 
+    if (j.contains("enum_value_type")) {
+      std::string err;
+      auto type_summary = resolve_type(registry, j.at("enum_value_type").get<std::string>(), &err);
+      if (!type_summary.has_value()) {
+        if (err_out) *err_out = "unknown enum value type: " + err;
+        return std::nullopt;
+      }
+      def.enum_value_type = type_summary->type_id;
+      def.has_enum_value_type = true;
+    }
+    if (j.contains("enum_values")) {
+      for (const auto& item : j.at("enum_values")) {
+        std::string value_name = item.value("name", "");
+        if (value_name.empty()) {
+          if (err_out) *err_out = "enum value missing name";
+          return std::nullopt;
+        }
+        iris::refract::EnumValueDefinition value;
+        value.name = value_name;
+        if (item.contains("value_json")) {
+          value.value_json = item.at("value_json").get<std::string>();
+        } else if (item.contains("value")) {
+          value.value_json = item.at("value").dump();
+        } else {
+          if (err_out) *err_out = "enum value missing value";
+          return std::nullopt;
+        }
+        def.enum_values.push_back(std::move(value));
+      }
+    }
+    if (j.contains("packet_byte_order")) {
+      def.packet_byte_order = j.at("packet_byte_order").get<std::string>();
+    }
+    if (j.contains("packet_fields")) {
+      for (const auto& item : j.at("packet_fields")) {
+        std::string field_name = item.value("name", "");
+        std::string field_type = item.value("type", "");
+        auto bit_width = item.value("bit_width", 0U);
+        if (field_name.empty() || field_type.empty() || bit_width == 0U) {
+          if (err_out) *err_out = "packet field missing name, type, or bit_width";
+          return std::nullopt;
+        }
+        std::string err;
+        auto type_summary = resolve_type(registry, field_type, &err);
+        if (!type_summary.has_value()) {
+          if (err_out) *err_out = "unknown packet field type: " + err;
+          return std::nullopt;
+        }
+        iris::refract::PacketFieldDefinition field;
+        field.name = field_name;
+        field.type = type_summary->type_id;
+        field.bit_width = bit_width;
+        def.packet_fields.push_back(std::move(field));
+      }
+    }
+
     if (j.contains("type_id")) {
       def.type_id = referee::TypeID{j.at("type_id").get<std::uint64_t>()};
     } else {
@@ -964,7 +1021,7 @@ std::optional<iris::refract::TypeDefinition> parse_define_json(
 
 void cmd_define_type(SchemaRegistry& registry, const std::vector<std::string>& tokens) {
   std::string err;
-  iris::refract::TypeDefinition def;
+  iris::refract::TypeDefinition def{};
   bool ok = false;
 
   if (tokens.size() >= 3 && tokens[2] == "--json") {
@@ -1063,12 +1120,34 @@ void cmd_show_type(SchemaRegistry& registry, const std::string& name) {
 
   const auto& def = defR.value->value().definition;
   std::cout << "type " << type_display_name(*match) << " v" << def.version << "\n";
+  if (def.kind.has_value()) {
+    std::cout << "kind " << def.kind.value() << "\n";
+  }
   if (!def.type_params.empty()) {
     std::cout << "type params";
     for (const auto& param : def.type_params) {
       std::cout << " " << param;
     }
     std::cout << "\n";
+  }
+  if (def.has_enum_value_type) {
+    std::cout << "enum value type=0x" << std::hex << def.enum_value_type.v << std::dec << "\n";
+  }
+  if (!def.enum_values.empty()) {
+    std::cout << "enum values\n";
+    for (const auto& value : def.enum_values) {
+      std::cout << "  " << value.name << " value=" << value.value_json << "\n";
+    }
+  }
+  if (def.packet_byte_order.has_value()) {
+    std::cout << "packet byte order " << def.packet_byte_order.value() << "\n";
+  }
+  if (!def.packet_fields.empty()) {
+    std::cout << "packet fields\n";
+    for (const auto& field : def.packet_fields) {
+      std::cout << "  " << field.name << " type=0x" << std::hex << field.type.v
+                << std::dec << " bits=" << field.bit_width << "\n";
+    }
   }
   if (!def.fields.empty()) {
     std::cout << "fields\n";

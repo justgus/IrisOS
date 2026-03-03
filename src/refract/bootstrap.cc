@@ -80,7 +80,7 @@ referee::ObjectID definition_id_for(referee::TypeID type_id) {
 }
 
 TypeDefinition make_primitive(referee::TypeID type_id, const std::string& name) {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = type_id;
   def.name = name;
   def.namespace_name = "Refract";
@@ -142,7 +142,7 @@ void add_convert_operation(TypeDefinition& def, referee::TypeID value_type, refe
 }
 
 TypeDefinition make_type_definition() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeDefinitionType;
   def.name = "TypeDefinition";
   def.namespace_name = "Refract";
@@ -165,7 +165,7 @@ TypeDefinition make_bytes_definition() {
 }
 
 TypeDefinition make_crate_array() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeCrateArray;
   def.name = "Array";
   def.namespace_name = "Crate";
@@ -179,7 +179,7 @@ TypeDefinition make_crate_array() {
 }
 
 TypeDefinition make_crate_list() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeCrateList;
   def.name = "List";
   def.namespace_name = "Crate";
@@ -193,7 +193,7 @@ TypeDefinition make_crate_list() {
 }
 
 TypeDefinition make_crate_set() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeCrateSet;
   def.name = "Set";
   def.namespace_name = "Crate";
@@ -206,7 +206,7 @@ TypeDefinition make_crate_set() {
 }
 
 TypeDefinition make_crate_map() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeCrateMap;
   def.name = "Map";
   def.namespace_name = "Crate";
@@ -220,7 +220,7 @@ TypeDefinition make_crate_map() {
 }
 
 TypeDefinition make_crate_tuple() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeCrateTuple;
   def.name = "Tuple";
   def.namespace_name = "Crate";
@@ -234,7 +234,7 @@ TypeDefinition make_crate_tuple() {
 }
 
 TypeDefinition make_astra_float() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeAstraFloat;
   def.name = "Float";
   def.namespace_name = "Astra";
@@ -243,7 +243,7 @@ TypeDefinition make_astra_float() {
 }
 
 TypeDefinition make_astra_double() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeAstraDouble;
   def.name = "Double";
   def.namespace_name = "Astra";
@@ -252,7 +252,7 @@ TypeDefinition make_astra_double() {
 }
 
 TypeDefinition make_astra_vector() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeAstraVector;
   def.name = "Vector";
   def.namespace_name = "Astra";
@@ -266,7 +266,7 @@ TypeDefinition make_astra_vector() {
 }
 
 TypeDefinition make_astra_matrix() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeAstraMatrix;
   def.name = "Matrix";
   def.namespace_name = "Astra";
@@ -280,7 +280,7 @@ TypeDefinition make_astra_matrix() {
 }
 
 TypeDefinition make_astra_tensor() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeAstraTensor;
   def.name = "Tensor";
   def.namespace_name = "Astra";
@@ -294,7 +294,7 @@ TypeDefinition make_astra_tensor() {
 }
 
 TypeDefinition make_caliper_dimension() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeCaliperDimension;
   def.name = "Dimension";
   def.namespace_name = "Caliper";
@@ -307,7 +307,7 @@ TypeDefinition make_caliper_dimension() {
 }
 
 TypeDefinition make_caliper_unit() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeCaliperUnit;
   def.name = "Unit";
   def.namespace_name = "Caliper";
@@ -325,7 +325,7 @@ TypeDefinition make_caliper_unit() {
 }
 
 TypeDefinition make_caliper_angle() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeCaliperAngle;
   def.name = "Angle";
   def.namespace_name = "Caliper";
@@ -336,7 +336,7 @@ TypeDefinition make_caliper_angle() {
 }
 
 TypeDefinition make_caliper_duration() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeCaliperDuration;
   def.name = "Duration";
   def.namespace_name = "Caliper";
@@ -347,7 +347,7 @@ TypeDefinition make_caliper_duration() {
 }
 
 TypeDefinition make_caliper_span() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeCaliperSpan;
   def.name = "Span";
   def.namespace_name = "Caliper";
@@ -358,7 +358,7 @@ TypeDefinition make_caliper_span() {
 }
 
 TypeDefinition make_caliper_range() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeCaliperRange;
   def.name = "Range";
   def.namespace_name = "Caliper";
@@ -370,7 +370,7 @@ TypeDefinition make_caliper_range() {
 }
 
 TypeDefinition make_caliper_percentage() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeCaliperPercentage;
   def.name = "Percentage";
   def.namespace_name = "Caliper";
@@ -381,7 +381,7 @@ TypeDefinition make_caliper_percentage() {
 }
 
 TypeDefinition make_caliper_ratio() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeCaliperRatio;
   def.name = "Ratio";
   def.namespace_name = "Caliper";
@@ -392,7 +392,7 @@ TypeDefinition make_caliper_ratio() {
 }
 
 TypeDefinition make_field_definition() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeFieldDefinition;
   def.name = "FieldDefinition";
   def.namespace_name = "Refract";
@@ -405,7 +405,7 @@ TypeDefinition make_field_definition() {
 }
 
 TypeDefinition make_signature_definition() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeSignatureDefinition;
   def.name = "SignatureDefinition";
   def.namespace_name = "Refract";
@@ -416,7 +416,7 @@ TypeDefinition make_signature_definition() {
 }
 
 TypeDefinition make_operation_definition() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeOperationDefinition;
   def.name = "OperationDefinition";
   def.namespace_name = "Refract";
@@ -428,7 +428,7 @@ TypeDefinition make_operation_definition() {
 }
 
 TypeDefinition make_relationship_spec() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeRelationshipSpec;
   def.name = "RelationshipSpec";
   def.namespace_name = "Refract";
@@ -437,7 +437,7 @@ TypeDefinition make_relationship_spec() {
 }
 
 TypeDefinition make_referee_object() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeRefereeObject;
   def.name = "Object";
   def.namespace_name = "Referee";
@@ -453,7 +453,7 @@ TypeDefinition make_referee_object() {
 }
 
 TypeDefinition make_referee_edge() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeRefereeEdge;
   def.name = "Edge";
   def.namespace_name = "Referee";
@@ -471,7 +471,7 @@ TypeDefinition make_referee_edge() {
 }
 
 TypeDefinition make_conch_session() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeConchSession;
   def.name = "Session";
   def.namespace_name = "Conch";
@@ -482,7 +482,7 @@ TypeDefinition make_conch_session() {
 }
 
 TypeDefinition make_conch_concho() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeConchConcho;
   def.name = "Concho";
   def.namespace_name = "Conch";
@@ -493,7 +493,7 @@ TypeDefinition make_conch_concho() {
 }
 
 TypeDefinition make_conch_alias() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeConchAlias;
   def.name = "Alias";
   def.namespace_name = "Conch";
@@ -505,7 +505,7 @@ TypeDefinition make_conch_alias() {
 }
 
 TypeDefinition make_viz_panel() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeVizPanel;
   def.name = "Panel";
   def.namespace_name = "Viz";
@@ -515,7 +515,7 @@ TypeDefinition make_viz_panel() {
 }
 
 TypeDefinition make_viz_text_log() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeVizTextLog;
   def.name = "TextLog";
   def.namespace_name = "Viz";
@@ -526,7 +526,7 @@ TypeDefinition make_viz_text_log() {
 }
 
 TypeDefinition make_viz_metric() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeVizMetric;
   def.name = "Metric";
   def.namespace_name = "Viz";
@@ -538,7 +538,7 @@ TypeDefinition make_viz_metric() {
 }
 
 TypeDefinition make_viz_table() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeVizTable;
   def.name = "Table";
   def.namespace_name = "Viz";
@@ -550,7 +550,7 @@ TypeDefinition make_viz_table() {
 }
 
 TypeDefinition make_viz_tree() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeVizTree;
   def.name = "Tree";
   def.namespace_name = "Viz";
@@ -562,7 +562,7 @@ TypeDefinition make_viz_tree() {
 }
 
 TypeDefinition make_demo_propulsion_synth() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeDemoPropulsionSynth;
   def.name = "PropulsionSynth";
   def.namespace_name = "Demo";
@@ -580,7 +580,7 @@ TypeDefinition make_demo_propulsion_synth() {
 }
 
 TypeDefinition make_demo_summary() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeDemoSummary;
   def.name = "Summary";
   def.namespace_name = "Demo";
@@ -600,7 +600,7 @@ TypeDefinition make_demo_summary() {
 }
 
 TypeDefinition make_demo_detail() {
-  TypeDefinition def;
+  TypeDefinition def{};
   def.type_id = kTypeDemoDetail;
   def.name = "Detail";
   def.namespace_name = "Demo";
