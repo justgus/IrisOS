@@ -73,6 +73,13 @@ static nlohmann::json to_json(const PacketFieldDefinition& field) {
   return j;
 }
 
+static nlohmann::json to_json(const CollectionElementDefinition& element) {
+  nlohmann::json j;
+  j["role"] = element.role;
+  j["type_id"] = element.type.v;
+  return j;
+}
+
 static nlohmann::json to_json(const TypeDefinition& def) {
   nlohmann::json j;
   j["type_id"] = def.type_id.v;
@@ -98,6 +105,13 @@ static nlohmann::json to_json(const TypeDefinition& def) {
   if (!def.packet_fields.empty()) {
     j["packet_fields"] = nlohmann::json::array();
     for (const auto& field : def.packet_fields) j["packet_fields"].push_back(to_json(field));
+  }
+  if (def.collection_kind.has_value()) j["collection_kind"] = def.collection_kind.value();
+  if (!def.collection_elements.empty()) {
+    j["collection_elements"] = nlohmann::json::array();
+    for (const auto& element : def.collection_elements) {
+      j["collection_elements"].push_back(to_json(element));
+    }
   }
 
   j["operations"] = nlohmann::json::array();
@@ -174,6 +188,13 @@ static PacketFieldDefinition packet_field_from_json(const nlohmann::json& j) {
   return field;
 }
 
+static CollectionElementDefinition collection_element_from_json(const nlohmann::json& j) {
+  CollectionElementDefinition element{};
+  element.role = j.value("role", "");
+  element.type = referee::TypeID{j.value("type_id", 0ULL)};
+  return element;
+}
+
 static TypeDefinition definition_from_json(const nlohmann::json& j) {
   TypeDefinition def{};
   def.type_id = referee::TypeID{j.value("type_id", 0ULL)};
@@ -203,6 +224,14 @@ static TypeDefinition definition_from_json(const nlohmann::json& j) {
   }
   if (j.contains("packet_fields")) {
     for (const auto& item : j.at("packet_fields")) def.packet_fields.push_back(packet_field_from_json(item));
+  }
+  if (j.contains("collection_kind")) {
+    def.collection_kind = j.at("collection_kind").get<std::string>();
+  }
+  if (j.contains("collection_elements")) {
+    for (const auto& item : j.at("collection_elements")) {
+      def.collection_elements.push_back(collection_element_from_json(item));
+    }
   }
   if (j.contains("operations")) {
     for (const auto& item : j.at("operations")) def.operations.push_back(operation_from_json(item));
