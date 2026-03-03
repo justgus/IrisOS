@@ -4,6 +4,8 @@
 #include "referee_sqlite/sqlite_store.h"
 
 #include <cstdint>
+#include <functional>
+#include <map>
 #include <optional>
 #include <string>
 #include <vector>
@@ -160,6 +162,51 @@ public:
 private:
   SchemaRegistry& schema_;
   referee::SqliteStore& store_;
+};
+
+class ScopedTypeRegistry {
+public:
+  enum class Scope {
+    Operation,
+    Application,
+    Database,
+    Sandbox,
+    Global
+  };
+
+  enum class PromotionPolicy {
+    LocalOnly,
+    Parent,
+    Root
+  };
+
+  ScopedTypeRegistry(Scope scope, GenericRegistry& registry, ScopedTypeRegistry* parent = nullptr);
+
+  void set_logger(std::function<void(const std::string&)> logger);
+
+  referee::Result<GenericInstanceRecord> resolve_or_register(
+      const GenericInstance& instance,
+      PromotionPolicy policy);
+
+  referee::Result<std::optional<GenericInstanceRecord>> find(referee::TypeID type_id);
+  std::optional<GenericInstanceRecord> find_local(referee::TypeID type_id) const;
+
+  void cache_instance(const GenericInstanceRecord& record);
+
+private:
+  struct TypeIDLess {
+    bool operator()(referee::TypeID a, referee::TypeID b) const { return a.v < b.v; }
+  };
+
+  Scope scope_;
+  GenericRegistry& registry_;
+  ScopedTypeRegistry* parent_{nullptr};
+  std::map<referee::TypeID, GenericInstanceRecord, TypeIDLess> cache_;
+  std::function<void(const std::string&)> logger_;
+
+  ScopedTypeRegistry* root();
+  void promote_to(ScopedTypeRegistry* target, const GenericInstanceRecord& record);
+  void log_promotion(Scope from, Scope to, referee::TypeID type_id);
 };
 
 } // namespace iris::refract

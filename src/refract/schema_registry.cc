@@ -704,4 +704,103 @@ referee::Result<std::optional<GenericInstanceRecord>> GenericRegistry::get_insta
       std::optional<GenericInstanceRecord>{});
 }
 
+ScopedTypeRegistry::ScopedTypeRegistry(Scope scope,
+                                       GenericRegistry& registry,
+                                       ScopedTypeRegistry* parent)
+    : scope_(scope), registry_(registry), parent_(parent) {}
+
+void ScopedTypeRegistry::set_logger(std::function<void(const std::string&)> logger) {
+  logger_ = std::move(logger);
+}
+
+referee::Result<GenericInstanceRecord> ScopedTypeRegistry::resolve_or_register(
+    const GenericInstance& instance,
+    PromotionPolicy policy) {
+  auto typeR = derive_generic_type_id(instance);
+  if (!typeR) return referee::Result<GenericInstanceRecord>::err(typeR.error->message);
+
+  auto foundR = find(typeR.value.value());
+  if (!foundR) return referee::Result<GenericInstanceRecord>::err(foundR.error->message);
+  if (foundR.value->has_value()) {
+    return referee::Result<GenericInstanceRecord>::ok(foundR.value->value());
+  }
+
+  auto regR = registry_.register_instance(instance);
+  if (!regR) return regR;
+
+  cache_instance(regR.value.value());
+
+  if (policy == PromotionPolicy::Parent && parent_) {
+    promote_to(parent_, regR.value.value());
+  } else if (policy == PromotionPolicy::Root) {
+    auto root_scope = root();
+    if (root_scope && root_scope != this) {
+      promote_to(root_scope, regR.value.value());
+    }
+  }
+
+  return regR;
+}
+
+referee::Result<std::optional<GenericInstanceRecord>> ScopedTypeRegistry::find(
+    referee::TypeID type_id) {
+  auto local = find_local(type_id);
+  if (local.has_value()) {
+    return referee::Result<std::optional<GenericInstanceRecord>>::ok(local);
+  }
+  if (parent_) {
+    auto parentR = parent_->find(type_id);
+    if (!parentR) return parentR;
+    if (parentR.value->has_value()) return parentR;
+  }
+  return registry_.get_instance_by_type(type_id);
+}
+
+std::optional<GenericInstanceRecord> ScopedTypeRegistry::find_local(referee::TypeID type_id) const {
+  auto it = cache_.find(type_id);
+  if (it == cache_.end()) return std::nullopt;
+  return it->second;
+}
+
+void ScopedTypeRegistry::cache_instance(const GenericInstanceRecord& record) {
+  cache_[record.instance.instance_type] = record;
+}
+
+ScopedTypeRegistry* ScopedTypeRegistry::root() {
+  ScopedTypeRegistry* current = this;
+  while (current->parent_) {
+    current = current->parent_;
+  }
+  return current;
+}
+
+void ScopedTypeRegistry::promote_to(ScopedTypeRegistry* target, const GenericInstanceRecord& record) {
+  if (!target) return;
+  if (target->find_local(record.instance.instance_type).has_value()) return;
+  target->cache_instance(record);
+  log_promotion(scope_, target->scope_, record.instance.instance_type);
+}
+
+void ScopedTypeRegistry::log_promotion(Scope from, Scope to, referee::TypeID type_id) {
+  if (!logger_) return;
+  auto scope_label = [](Scope scope) {
+    switch (scope) {
+      case Scope::Operation:
+        return "operation";
+      case Scope::Application:
+        return "application";
+      case Scope::Database:
+        return "database";
+      case Scope::Sandbox:
+        return "sandbox";
+      case Scope::Global:
+        return "global";
+    }
+    return "unknown";
+  };
+  std::string msg = "promoted generic instance 0x" + hex_u64(type_id.v)
+      + " from " + scope_label(from) + " to " + scope_label(to);
+  logger_(msg);
+}
+
 } // namespace iris::refract
