@@ -61,6 +61,27 @@ struct CollectionElementDefinition {
   referee::TypeID type{};
 };
 
+enum class GenericArgKind {
+  Type,
+  Value,
+  Variadic
+};
+
+struct GenericArg {
+  GenericArgKind kind{GenericArgKind::Type};
+  referee::TypeID type_id{};
+  referee::TypeID value_type{};
+  std::string value_json{};
+  std::vector<GenericArg> items{};
+};
+
+struct GenericInstance {
+  referee::TypeID base_type{};
+  std::vector<GenericArg> args{};
+  std::optional<std::string> display;
+  referee::TypeID instance_type{};
+};
+
 struct TypeDefinition {
   referee::TypeID type_id{};
   std::string name{};
@@ -102,6 +123,10 @@ struct SupersedesLink {
 };
 
 constexpr referee::TypeID kTypeDefinitionType{0x5246524354450001ULL};
+constexpr referee::TypeID kTypeGenericInstanceType{0x5246524347000001ULL};
+
+referee::Result<std::string> encode_generic_instance_key(const GenericInstance& instance);
+referee::Result<referee::TypeID> derive_generic_type_id(const GenericInstance& instance);
 
 class SchemaRegistry {
 public:
@@ -117,6 +142,23 @@ public:
   referee::Result<std::vector<SupersedesLink>> list_supersedes_chain(referee::ObjectID definition_id);
 
 private:
+  referee::SqliteStore& store_;
+};
+
+struct GenericInstanceRecord {
+  referee::ObjectRef ref{};
+  GenericInstance instance{};
+};
+
+class GenericRegistry {
+public:
+  GenericRegistry(SchemaRegistry& schema, referee::SqliteStore& store);
+
+  referee::Result<GenericInstanceRecord> register_instance(const GenericInstance& instance);
+  referee::Result<std::optional<GenericInstanceRecord>> get_instance_by_type(referee::TypeID type_id);
+
+private:
+  SchemaRegistry& schema_;
   referee::SqliteStore& store_;
 };
 

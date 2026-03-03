@@ -48,6 +48,7 @@ constexpr referee::TypeID kTypeFieldDefinition{0x5246524346000001ULL};
 constexpr referee::TypeID kTypeOperationDefinition{0x5246524346000002ULL};
 constexpr referee::TypeID kTypeSignatureDefinition{0x5246524346000003ULL};
 constexpr referee::TypeID kTypeRelationshipSpec{0x5246524346000004ULL};
+constexpr referee::TypeID kTypeGenericInstance{0x5246524347000001ULL};
 
 constexpr referee::TypeID kTypeRefereeObject{0x5245464500000001ULL};
 constexpr referee::TypeID kTypeRefereeEdge{0x5245464500000002ULL};
@@ -436,6 +437,21 @@ TypeDefinition make_relationship_spec() {
   return def;
 }
 
+TypeDefinition make_generic_instance_definition() {
+  TypeDefinition def{};
+  def.type_id = kTypeGenericInstance;
+  def.name = "GenericInstance";
+  def.namespace_name = "Refract";
+  def.version = 1;
+
+  def.fields.push_back(FieldDefinition{ "base_type_id", kTypeTypeID, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "instance_type_id", kTypeTypeID, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "args_text", kTypeString, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "args", kTypeBytes, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "display", kTypeString, false, std::nullopt });
+  return def;
+}
+
 TypeDefinition make_referee_object() {
   TypeDefinition def{};
   def.type_id = kTypeRefereeObject;
@@ -648,6 +664,7 @@ std::vector<TypeDefinition> core_schema_definitions() {
   defs.push_back(make_signature_definition());
   defs.push_back(make_operation_definition());
   defs.push_back(make_relationship_spec());
+  defs.push_back(make_generic_instance_definition());
   defs.push_back(make_referee_object());
   defs.push_back(make_referee_edge());
   defs.push_back(make_conch_session());

@@ -5,6 +5,7 @@ extern "C" {
 #undef fail
 #endif
 
+#include "refract/bootstrap.h"
 #include "refract/dispatch.h"
 #include "refract/operation_registry.h"
 #include "refract/schema_registry.h"
@@ -226,6 +227,66 @@ START_TEST(test_schema_registry_collection_metadata_roundtrip)
 }
 END_TEST
 
+START_TEST(test_generic_instance_type_id_deterministic)
+{
+  GenericInstance instance{};
+  instance.base_type = TypeID{0x4352415400000001ULL};
+
+  GenericArg type_arg;
+  type_arg.kind = GenericArgKind::Type;
+  type_arg.type_id = TypeID{0x1001ULL};
+  instance.args.push_back(type_arg);
+
+  GenericArg value_arg;
+  value_arg.kind = GenericArgKind::Value;
+  value_arg.value_type = TypeID{0x1002ULL};
+  value_arg.value_json = "4";
+  instance.args.push_back(value_arg);
+
+  auto keyR = encode_generic_instance_key(instance);
+  ck_assert_msg(keyR, "encode key failed: %s", result_message(keyR));
+  auto typeR = derive_generic_type_id(instance);
+  ck_assert_msg(typeR, "derive type id failed: %s", result_message(typeR));
+
+  auto againR = derive_generic_type_id(instance);
+  ck_assert_msg(againR, "derive type id again failed: %s", result_message(againR));
+  ck_assert_uint_eq(typeR.value->v, againR.value->v);
+
+  GenericInstance reordered = instance;
+  std::swap(reordered.args[0], reordered.args[1]);
+  auto diffR = derive_generic_type_id(reordered);
+  ck_assert_msg(diffR, "derive type id reorder failed: %s", result_message(diffR));
+  ck_assert_uint_ne(typeR.value->v, diffR.value->v);
+}
+END_TEST
+
+START_TEST(test_generic_instance_registry_roundtrip)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+  auto boot = bootstrap_core_schema(registry);
+  ck_assert_msg(boot, "bootstrap failed: %s", result_message(boot));
+
+  GenericInstance instance{};
+  instance.base_type = TypeID{0x4352415400000001ULL};
+  instance.display = "Crate::Array<String>";
+  instance.args.push_back(GenericArg{ GenericArgKind::Type, TypeID{0x1001ULL}, {}, "", {} });
+
+  GenericRegistry generics(registry, store);
+  auto regR = generics.register_instance(instance);
+  ck_assert_msg(regR, "register instance failed: %s", result_message(regR));
+
+  auto lookupR = generics.get_instance_by_type(regR.value->instance.instance_type);
+  ck_assert_msg(lookupR, "lookup instance failed: %s", result_message(lookupR));
+  ck_assert_msg(lookupR.value->has_value(), "instance missing");
+  ck_assert_uint_eq(lookupR.value->value().instance.instance_type.v,
+                    regR.value->instance.instance_type.v);
+}
+END_TEST
+
 START_TEST(test_operation_registry_scope_and_inheritance)
 {
   SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
@@ -358,6 +419,8 @@ Suite* refract_registry_suite(void) {
   tcase_add_test(tc, test_schema_registry_supersedes_chain);
   tcase_add_test(tc, test_schema_registry_structured_metadata_roundtrip);
   tcase_add_test(tc, test_schema_registry_collection_metadata_roundtrip);
+  tcase_add_test(tc, test_generic_instance_type_id_deterministic);
+  tcase_add_test(tc, test_generic_instance_registry_roundtrip);
   tcase_add_test(tc, test_operation_registry_scope_and_inheritance);
   tcase_add_test(tc, test_dispatch_resolution);
 
