@@ -14,7 +14,7 @@ GitHub-Issue: #TBD
 
 - ER ID: ER-0039
 - Title: Structured Arrays and Collection Integration
-- Status: Complete
+- Status: Verified
 - Date: 2026-02-27
 - Owners: Mike
 - Type: Enhancement
