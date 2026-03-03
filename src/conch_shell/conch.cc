@@ -11,6 +11,7 @@
 #include "vizier/routing.h"
 
 #include <algorithm>
+#include <array>
 #include <cctype>
 #include <cstdlib>
 #include <deque>
@@ -703,6 +704,149 @@ bool parse_double(std::string_view v, double* out) {
   return true;
 }
 
+bool parse_u64(std::string_view v, std::uint64_t* out) {
+  if (v.empty()) return false;
+  std::string tmp(v);
+  char* end = nullptr;
+  int base = 10;
+  if (tmp.rfind("0x", 0) == 0 || tmp.rfind("0X", 0) == 0) {
+    base = 16;
+    tmp = tmp.substr(2);
+  }
+  if (tmp.empty()) return false;
+  unsigned long long val = std::strtoull(tmp.c_str(), &end, base);
+  if (!end || *end != '\0') return false;
+  *out = static_cast<std::uint64_t>(val);
+  return true;
+}
+
+std::string hex_u64(std::uint64_t v) {
+  std::array<char, 19> buf{};
+  std::snprintf(buf.data(), buf.size(), "0x%016llx",
+                static_cast<unsigned long long>(v));
+  return std::string(buf.data());
+}
+
+std::string bytes_to_hex(const std::vector<std::uint8_t>& bytes) {
+  static const char* kHex = "0123456789abcdef";
+  std::string out;
+  out.reserve(bytes.size() * 2);
+  for (auto b : bytes) {
+    out.push_back(kHex[(b >> 4) & 0xF]);
+    out.push_back(kHex[b & 0xF]);
+  }
+  return out;
+}
+
+const nlohmann::json* payload_value(const nlohmann::json& payload) {
+  if (payload.is_object()) {
+    auto it = payload.find("value");
+    if (it != payload.end()) return &(*it);
+  }
+  return &payload;
+}
+
+bool read_string_value(const nlohmann::json& payload, std::string* out, std::string* err_out) {
+  const auto* value = payload_value(payload);
+  if (value->is_string()) {
+    *out = value->get<std::string>();
+    return true;
+  }
+  if (err_out) *err_out = "expected string value";
+  return false;
+}
+
+bool read_bool_value(const nlohmann::json& payload, bool* out, std::string* err_out) {
+  const auto* value = payload_value(payload);
+  if (value->is_boolean()) {
+    *out = value->get<bool>();
+    return true;
+  }
+  if (value->is_number_integer()) {
+    *out = value->get<int>() != 0;
+    return true;
+  }
+  if (err_out) *err_out = "expected bool value";
+  return false;
+}
+
+bool read_u64_value(const nlohmann::json& payload, std::uint64_t* out, std::string* err_out) {
+  const auto* value = payload_value(payload);
+  if (value->is_number_unsigned()) {
+    *out = value->get<std::uint64_t>();
+    return true;
+  }
+  if (value->is_number_integer()) {
+    auto v = value->get<std::int64_t>();
+    if (v < 0) {
+      if (err_out) *err_out = "expected unsigned value";
+      return false;
+    }
+    *out = static_cast<std::uint64_t>(v);
+    return true;
+  }
+  if (value->is_string()) {
+    return parse_u64(value->get<std::string>(), out);
+  }
+  if (err_out) *err_out = "expected u64 value";
+  return false;
+}
+
+bool read_double_value(const nlohmann::json& payload, double* out, std::string* err_out) {
+  const auto* value = payload_value(payload);
+  if (value->is_number()) {
+    *out = value->get<double>();
+    return true;
+  }
+  if (value->is_string()) {
+    return parse_double(value->get<std::string>(), out);
+  }
+  if (err_out) *err_out = "expected f64 value";
+  return false;
+}
+
+bool read_object_id_value(const nlohmann::json& payload, referee::ObjectID* out,
+                          std::string* err_out) {
+  const auto* value = payload_value(payload);
+  if (value->is_string()) {
+    auto hex = value->get<std::string>();
+    if (hex.size() == 32) {
+      *out = referee::ObjectID::from_hex(hex);
+      return true;
+    }
+  }
+  if (err_out) *err_out = "expected object id hex value";
+  return false;
+}
+
+bool read_bytes_value(const nlohmann::json& payload, std::string* out, std::string* err_out) {
+  const auto* value = payload_value(payload);
+  if (value->is_string()) {
+    *out = value->get<std::string>();
+    return true;
+  }
+  if (value->is_array()) {
+    std::vector<std::uint8_t> bytes;
+    bytes.reserve(value->size());
+    for (const auto& item : *value) {
+      if (!item.is_number_integer() && !item.is_number_unsigned()) {
+        if (err_out) *err_out = "invalid byte array";
+        return false;
+      }
+      auto v = item.get<int>();
+      if (v < 0 || v > 255) {
+        if (err_out) *err_out = "invalid byte value";
+        return false;
+      }
+      bytes.push_back(static_cast<std::uint8_t>(v));
+    }
+    *out = bytes_to_hex(bytes);
+    return true;
+  }
+  if (err_out) *err_out = "expected bytes value";
+  return false;
+}
+
 void print_help() {
   std::cout << "Commands:\n";
   std::cout << "  ls\n";
@@ -1391,6 +1535,144 @@ bool cmd_call(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id,
     std::cout << "error: " << matchR.error->message << "\n";
     return false;
   }
+
+  constexpr referee::TypeID kTypeString{0x1001ULL};
+  constexpr referee::TypeID kTypeU64{0x1002ULL};
+  constexpr referee::TypeID kTypeBool{0x1003ULL};
+  constexpr referee::TypeID kTypeObjectID{0x1004ULL};
+  constexpr referee::TypeID kTypeTypeID{0x1005ULL};
+  constexpr referee::TypeID kTypeVersion{0x1006ULL};
+  constexpr referee::TypeID kTypeBytes{0x1007ULL};
+  constexpr referee::TypeID kTypeF64{0x1008ULL};
+
+  auto try_core_op = [&]() -> bool {
+    if (op_name != "to_string" && op_name != "print" && op_name != "render" && op_name != "compare") {
+      return false;
+    }
+
+    nlohmann::json payload;
+    try {
+      payload = nlohmann::json::from_cbor(recR.value->value().payload_cbor);
+    } catch (const std::exception& ex) {
+      std::cout << "error: payload decode failed: " << ex.what() << "\n";
+      return true;
+    }
+
+    std::string err;
+    auto type_id = recR.value->value().type;
+    std::string text;
+
+    if (type_id.v == kTypeString.v) {
+      if (!read_string_value(payload, &text, &err)) {
+        std::cout << "error: " << err << "\n";
+        return true;
+      }
+    } else if (type_id.v == kTypeU64.v || type_id.v == kTypeVersion.v) {
+      std::uint64_t v = 0;
+      if (!read_u64_value(payload, &v, &err)) {
+        std::cout << "error: " << err << "\n";
+        return true;
+      }
+      text = std::to_string(v);
+    } else if (type_id.v == kTypeBool.v) {
+      bool v = false;
+      if (!read_bool_value(payload, &v, &err)) {
+        std::cout << "error: " << err << "\n";
+        return true;
+      }
+      text = v ? "true" : "false";
+    } else if (type_id.v == kTypeObjectID.v) {
+      referee::ObjectID v{};
+      if (!read_object_id_value(payload, &v, &err)) {
+        std::cout << "error: " << err << "\n";
+        return true;
+      }
+      text = v.to_hex();
+    } else if (type_id.v == kTypeTypeID.v) {
+      std::uint64_t v = 0;
+      if (!read_u64_value(payload, &v, &err)) {
+        std::cout << "error: " << err << "\n";
+        return true;
+      }
+      text = hex_u64(v);
+    } else if (type_id.v == kTypeF64.v) {
+      double v = 0.0;
+      if (!read_double_value(payload, &v, &err)) {
+        std::cout << "error: " << err << "\n";
+        return true;
+      }
+      std::ostringstream os;
+      os << v;
+      text = os.str();
+    } else if (type_id.v == kTypeBytes.v) {
+      if (!read_bytes_value(payload, &text, &err)) {
+        std::cout << "error: " << err << "\n";
+        return true;
+      }
+    } else {
+      return false;
+    }
+
+    if (op_name == "compare") {
+      if (args.size() != 1) {
+        std::cout << "error: compare expects 1 arg\n";
+        return true;
+      }
+      double order = 0.0;
+      if (type_id.v == kTypeString.v || type_id.v == kTypeObjectID.v || type_id.v == kTypeBytes.v) {
+        const auto& other = args[0];
+        if (text == other) order = 0.0;
+        else if (text < other) order = -1.0;
+        else order = 1.0;
+      } else if (type_id.v == kTypeBool.v) {
+        bool other = false;
+        if (!parse_bool(args[0], &other)) {
+          std::cout << "error: invalid bool arg\n";
+          return true;
+        }
+        bool self = (text == "true");
+        order = (self == other) ? 0.0 : (self ? 1.0 : -1.0);
+      } else if (type_id.v == kTypeU64.v || type_id.v == kTypeVersion.v || type_id.v == kTypeTypeID.v) {
+        std::uint64_t other = 0;
+        if (!parse_u64(args[0], &other)) {
+          std::cout << "error: invalid u64 arg\n";
+          return true;
+        }
+        std::uint64_t self = 0;
+        if (!parse_u64(text, &self)) self = 0;
+        order = (self == other) ? 0.0 : (self < other ? -1.0 : 1.0);
+      } else if (type_id.v == kTypeF64.v) {
+        double other = 0.0;
+        if (!parse_double(args[0], &other)) {
+          std::cout << "error: invalid f64 arg\n";
+          return true;
+        }
+        double self = 0.0;
+        parse_double(text, &self);
+        order = (self == other) ? 0.0 : (self < other ? -1.0 : 1.0);
+      }
+      std::cout << "result " << order << "\n";
+      std::cout << "call ok\n";
+      return true;
+    }
+
+    if (op_name == "print" || op_name == "render") {
+      std::cout << text << "\n";
+      std::cout << "call ok\n";
+      return true;
+    }
+
+    if (op_name == "to_string") {
+      std::cout << "result " << text << "\n";
+      std::cout << "call ok\n";
+      return true;
+    }
+
+    return false;
+  };
+
+  if (try_core_op()) return true;
+
   if (def.namespace_name == "Demo" && def.name == "PropulsionSynth" && op_name == "start") {
     auto demoR = demo_start(registry, store, id);
     if (!demoR) {

@@ -80,12 +80,15 @@ referee::ObjectID definition_id_for(referee::TypeID type_id) {
   return id;
 }
 
+void add_core_ops(TypeDefinition& def, referee::TypeID type_id);
+
 TypeDefinition make_primitive(referee::TypeID type_id, const std::string& name) {
   TypeDefinition def{};
   def.type_id = type_id;
   def.name = name;
   def.namespace_name = "Refract";
   def.version = 1;
+  add_core_ops(def, type_id);
   return def;
 }
 
@@ -142,6 +145,44 @@ void add_convert_operation(TypeDefinition& def, referee::TypeID value_type, refe
   def.operations.push_back(std::move(op));
 }
 
+void add_to_string_operation(TypeDefinition& def) {
+  OperationDefinition op;
+  op.name = "to_string";
+  op.scope = OperationScope::Object;
+  op.signature.outputs.push_back(ParameterDefinition{ "text", kTypeString, false });
+  def.operations.push_back(std::move(op));
+}
+
+void add_print_operation(TypeDefinition& def) {
+  OperationDefinition op;
+  op.name = "print";
+  op.scope = OperationScope::Object;
+  def.operations.push_back(std::move(op));
+}
+
+void add_render_operation(TypeDefinition& def) {
+  OperationDefinition op;
+  op.name = "render";
+  op.scope = OperationScope::Object;
+  def.operations.push_back(std::move(op));
+}
+
+void add_compare_operation(TypeDefinition& def, referee::TypeID type_id) {
+  OperationDefinition op;
+  op.name = "compare";
+  op.scope = OperationScope::Object;
+  op.signature.params.push_back(ParameterDefinition{ "other", type_id, false });
+  op.signature.outputs.push_back(ParameterDefinition{ "order", kTypeF64, false });
+  def.operations.push_back(std::move(op));
+}
+
+void add_core_ops(TypeDefinition& def, referee::TypeID type_id) {
+  add_to_string_operation(def);
+  add_print_operation(def);
+  add_render_operation(def);
+  add_compare_operation(def, type_id);
+}
+
 TypeDefinition make_type_definition() {
   TypeDefinition def{};
   def.type_id = kTypeDefinitionType;
@@ -162,6 +203,7 @@ TypeDefinition make_bytes_definition() {
   add_iterate_operation(def);
   add_index_operation(def, kTypeU64, kTypeU64);
   add_contains_operation(def, kTypeU64);
+  add_core_ops(def, kTypeBytes);
   return def;
 }
 
