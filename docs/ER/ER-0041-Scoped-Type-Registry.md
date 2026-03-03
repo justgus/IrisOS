@@ -14,7 +14,7 @@ GitHub-Issue: #TBD
 
 - ER ID: ER-0041
 - Title: Scoped Type Registry
-- Status: Proposed
+- Status: Complete
 - Date: 2026-02-27
 - Owners: Mike
 - Type: Enhancement
