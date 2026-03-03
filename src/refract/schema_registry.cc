@@ -1,6 +1,9 @@
 #include "refract/schema_registry.h"
 
 #include <nlohmann/json.hpp>
+
+#include <array>
+#include <cstdio>
 #include <string_view>
 
 namespace iris::refract {
@@ -77,6 +80,39 @@ static nlohmann::json to_json(const CollectionElementDefinition& element) {
   nlohmann::json j;
   j["role"] = element.role;
   j["type_id"] = element.type.v;
+  return j;
+}
+
+static std::string generic_arg_kind_to_string(GenericArgKind kind) {
+  switch (kind) {
+    case GenericArgKind::Type:
+      return "type";
+    case GenericArgKind::Value:
+      return "value";
+    case GenericArgKind::Variadic:
+      return "variadic";
+  }
+  return "type";
+}
+
+static GenericArgKind generic_arg_kind_from_string(std::string_view kind) {
+  if (kind == "value") return GenericArgKind::Value;
+  if (kind == "variadic") return GenericArgKind::Variadic;
+  return GenericArgKind::Type;
+}
+
+static nlohmann::json to_json(const GenericArg& arg) {
+  nlohmann::json j;
+  j["kind"] = generic_arg_kind_to_string(arg.kind);
+  if (arg.kind == GenericArgKind::Type) {
+    j["type_id"] = arg.type_id.v;
+  } else if (arg.kind == GenericArgKind::Value) {
+    j["value_type_id"] = arg.value_type.v;
+    j["value_json"] = arg.value_json;
+  } else {
+    j["items"] = nlohmann::json::array();
+    for (const auto& item : arg.items) j["items"].push_back(to_json(item));
+  }
   return j;
 }
 
@@ -195,6 +231,26 @@ static CollectionElementDefinition collection_element_from_json(const nlohmann::
   return element;
 }
 
+static referee::Result<GenericArg> generic_arg_from_json(const nlohmann::json& j) {
+  GenericArg arg{};
+  arg.kind = generic_arg_kind_from_string(j.value("kind", "type"));
+  if (arg.kind == GenericArgKind::Type) {
+    arg.type_id = referee::TypeID{j.value("type_id", 0ULL)};
+  } else if (arg.kind == GenericArgKind::Value) {
+    arg.value_type = referee::TypeID{j.value("value_type_id", 0ULL)};
+    arg.value_json = j.value("value_json", "");
+  } else {
+    if (j.contains("items")) {
+      for (const auto& item : j.at("items")) {
+        auto itemR = generic_arg_from_json(item);
+        if (!itemR) return itemR;
+        arg.items.push_back(itemR.value.value());
+      }
+    }
+  }
+  return referee::Result<GenericArg>::ok(std::move(arg));
+}
+
 static TypeDefinition definition_from_json(const nlohmann::json& j) {
   TypeDefinition def{};
   def.type_id = referee::TypeID{j.value("type_id", 0ULL)};
@@ -243,6 +299,96 @@ static TypeDefinition definition_from_json(const nlohmann::json& j) {
   return def;
 }
 
+static referee::Result<std::string> canonicalize_value_json(const std::string& value_json) {
+  try {
+    auto j = nlohmann::json::parse(value_json);
+    return referee::Result<std::string>::ok(j.dump());
+  } catch (const std::exception& ex) {
+    return referee::Result<std::string>::err(ex.what());
+  }
+}
+
+static std::string hex_u64(std::uint64_t v) {
+  std::array<char, 17> buf{};
+  std::snprintf(buf.data(), buf.size(), "%016llx",
+                static_cast<unsigned long long>(v));
+  return std::string(buf.data());
+}
+
+static referee::Result<std::string> encode_generic_arg_key(const GenericArg& arg) {
+  switch (arg.kind) {
+    case GenericArgKind::Type:
+      return referee::Result<std::string>::ok("type:0x" + hex_u64(arg.type_id.v));
+    case GenericArgKind::Value: {
+      auto canonR = canonicalize_value_json(arg.value_json);
+      if (!canonR) return canonR;
+      std::string key = "value:0x" + hex_u64(arg.value_type.v) + "=" + canonR.value.value();
+      return referee::Result<std::string>::ok(std::move(key));
+    }
+    case GenericArgKind::Variadic: {
+      std::string key = "variadic[";
+      bool first = true;
+      for (const auto& item : arg.items) {
+        auto itemR = encode_generic_arg_key(item);
+        if (!itemR) return itemR;
+        if (!first) key += ",";
+        key += itemR.value.value();
+        first = false;
+      }
+      key += "]";
+      return referee::Result<std::string>::ok(std::move(key));
+    }
+  }
+  return referee::Result<std::string>::err("unknown generic arg kind");
+}
+
+static std::uint64_t fnv1a_64(std::string_view input) {
+  constexpr std::uint64_t kOffset = 14695981039346656037ULL;
+  constexpr std::uint64_t kPrime = 1099511628211ULL;
+  std::uint64_t hash = kOffset;
+  for (unsigned char c : input) {
+    hash ^= c;
+    hash *= kPrime;
+  }
+  return hash;
+}
+
+static referee::Result<GenericInstance> generic_instance_from_json(const nlohmann::json& j) {
+  GenericInstance instance{};
+  instance.base_type = referee::TypeID{j.value("base_type_id", 0ULL)};
+  instance.instance_type = referee::TypeID{j.value("instance_type_id", 0ULL)};
+  if (j.contains("display")) instance.display = j.at("display").get<std::string>();
+  if (j.contains("args")) {
+    nlohmann::json args_json;
+    if (j.at("args").is_binary()) {
+      const auto& bin = j.at("args").get_binary();
+      args_json = nlohmann::json::from_cbor(bin);
+    } else {
+      args_json = j.at("args");
+    }
+    for (const auto& item : args_json) {
+      auto argR = generic_arg_from_json(item);
+      if (!argR) return referee::Result<GenericInstance>::err(argR.error->message);
+      instance.args.push_back(argR.value.value());
+    }
+  }
+  return referee::Result<GenericInstance>::ok(std::move(instance));
+}
+
+static nlohmann::json generic_instance_to_json(const GenericInstance& instance,
+                                               std::string_view args_text) {
+  nlohmann::json j;
+  j["base_type_id"] = instance.base_type.v;
+  j["instance_type_id"] = instance.instance_type.v;
+  j["args_text"] = args_text;
+  if (instance.display.has_value()) j["display"] = instance.display.value();
+  nlohmann::json args_json = nlohmann::json::array();
+  for (const auto& arg : instance.args) args_json.push_back(to_json(arg));
+  auto args_cbor = nlohmann::json::to_cbor(args_json);
+  j["args"] = nlohmann::json::binary(args_cbor);
+  return j;
+}
+
 static referee::Result<TypeDefinition> decode_definition(const referee::Bytes& payload) {
   try {
     nlohmann::json j = nlohmann::json::from_cbor(payload);
@@ -281,6 +427,29 @@ static referee::Result<std::optional<std::string>> migration_hook_from_props(
 }
 
 } // namespace
+
+referee::Result<std::string> encode_generic_instance_key(const GenericInstance& instance) {
+  if (instance.base_type.v == 0) {
+    return referee::Result<std::string>::err("generic instance base type is zero");
+  }
+  std::string key = "base=0x" + hex_u64(instance.base_type.v) + ";args=[";
+  bool first = true;
+  for (const auto& arg : instance.args) {
+    auto argR = encode_generic_arg_key(arg);
+    if (!argR) return argR;
+    if (!first) key += ",";
+    key += argR.value.value();
+    first = false;
+  }
+  key += "]";
+  return referee::Result<std::string>::ok(std::move(key));
+}
+
+referee::Result<referee::TypeID> derive_generic_type_id(const GenericInstance& instance) {
+  auto keyR = encode_generic_instance_key(instance);
+  if (!keyR) return referee::Result<referee::TypeID>::err(keyR.error->message);
+  return referee::Result<referee::TypeID>::ok(referee::TypeID{fnv1a_64(keyR.value.value())});
+}
 
 SchemaRegistry::SchemaRegistry(referee::SqliteStore& store) : store_(store) {}
 
@@ -481,6 +650,58 @@ referee::Result<std::vector<SupersedesLink>> SchemaRegistry::list_supersedes_cha
   }
 
   return referee::Result<std::vector<SupersedesLink>>::ok(std::move(chain));
+}
+
+GenericRegistry::GenericRegistry(SchemaRegistry& schema, referee::SqliteStore& store)
+    : schema_(schema), store_(store) {}
+
+referee::Result<GenericInstanceRecord> GenericRegistry::register_instance(
+    const GenericInstance& instance) {
+  auto defR = schema_.get_definition_by_type(kTypeGenericInstanceType);
+  if (!defR) return referee::Result<GenericInstanceRecord>::err(defR.error->message);
+  if (!defR.value->has_value()) {
+    return referee::Result<GenericInstanceRecord>::err("generic instance definition missing");
+  }
+
+  auto keyR = encode_generic_instance_key(instance);
+  if (!keyR) return referee::Result<GenericInstanceRecord>::err(keyR.error->message);
+  auto typeR = derive_generic_type_id(instance);
+  if (!typeR) return referee::Result<GenericInstanceRecord>::err(typeR.error->message);
+
+  GenericInstance stored = instance;
+  stored.instance_type = typeR.value.value();
+  auto payload = nlohmann::json::to_cbor(generic_instance_to_json(stored, keyR.value.value()));
+
+  auto createR = store_.create_object(kTypeGenericInstanceType, defR.value->value().ref.id, payload);
+  if (!createR) return referee::Result<GenericInstanceRecord>::err(createR.error->message);
+
+  GenericInstanceRecord record{};
+  record.ref = createR.value->ref;
+  record.instance = std::move(stored);
+  return referee::Result<GenericInstanceRecord>::ok(std::move(record));
+}
+
+referee::Result<std::optional<GenericInstanceRecord>> GenericRegistry::get_instance_by_type(
+    referee::TypeID type_id) {
+  auto listR = store_.list_by_type(kTypeGenericInstanceType);
+  if (!listR) return referee::Result<std::optional<GenericInstanceRecord>>::err(listR.error->message);
+  for (const auto& rec : listR.value.value()) {
+    try {
+      auto j = nlohmann::json::from_cbor(rec.payload_cbor);
+      auto instR = generic_instance_from_json(j);
+      if (!instR) return referee::Result<std::optional<GenericInstanceRecord>>::err(instR.error->message);
+      if (instR.value->instance_type == type_id) {
+        GenericInstanceRecord record{};
+        record.ref = rec.ref;
+        record.instance = instR.value.value();
+        return referee::Result<std::optional<GenericInstanceRecord>>::ok(record);
+      }
+    } catch (const std::exception& ex) {
+      return referee::Result<std::optional<GenericInstanceRecord>>::err(ex.what());
+    }
+  }
+  return referee::Result<std::optional<GenericInstanceRecord>>::ok(
+      std::optional<GenericInstanceRecord>{});
 }
 
 } // namespace iris::refract
