@@ -14,7 +14,7 @@ GitHub-Issue: #182
 
 - ER ID: ER-0046
 - Title: v1 Kernel Demo Integration and Roadmap
-- Status: Proposed
+- Status: In Progress
 - Date: 2026-02-27
 - Owners: Mike
 - Type: Enhancement
@@ -70,6 +70,39 @@ GitHub-Issue: #182
 - Dependency 1: ER-0034 Referee Storage Layout Implementation (v1).
 - Dependency 2: ER-0038 Structured Types: Struct/Packet/Enum.
 - Dependency 3: ER-0042 Core Operations Metadata and Bindings.
+
+## Demo Scenario (v1)
+
+### Scenario Summary
+
+The v1 kernel demo exercises:
+
+- persistence of structured types (Demo::PropulsionSynth, Demo::Summary, Demo::Detail)
+- operation dispatch (start + expand)
+- CEO task hooks (start creates a task record in Conch)
+- Viz artifact production (TextLog/Metric/Table)
+
+### Demo Steps (Conch)
+
+1. Launch Conch.
+2. Create the demo object:
+   - `let demo = new Demo::PropulsionSynth name:=PropulsionSynth`
+3. Start the demo (creates summary + artifacts):
+   - `call demo start`
+4. Expand the summary (creates detail records + artifacts):
+   - `call <summary_id> expand 2`
+5. Inspect output:
+   - `edges demo`
+   - `show <summary_id>`
+   - `route <summary_id>`
+6. Exit Conch, relaunch, and re-run `show <summary_id>` to verify persistence.
+
+## v2 Roadmap (Draft)
+
+- Capability enforcement: replace Conch demo capability stub with real capability context.
+- Task supervision: integrate CEO task graph with persistent task objects and lifecycle telemetry.
+- IO primitives: expand comms integration to cover explicit open/close ownership and auditing.
+- Demo evolution: expand the kernel demo to include object graph packaging and import/export.
 
 ## Implementation Notes
 
