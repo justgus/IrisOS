@@ -28,11 +28,47 @@ START_TEST(test_spawn_and_parent_child)
 }
 END_TEST
 
+START_TEST(test_cancel_propagation_owned_only)
+{
+  TaskRegistry registry;
+  auto root = registry.spawn_task(referee::ObjectID::random(), std::nullopt, "root");
+  ck_assert_msg(root, "spawn root failed");
+
+  auto owned = registry.spawn_task(referee::ObjectID::random(), root.value->id, "owned");
+  ck_assert_msg(owned, "spawn owned child failed");
+
+  auto service = registry.spawn_task(referee::ObjectID::random(), root.value->id, "service",
+                                     TaskMode::Service);
+  ck_assert_msg(service, "spawn service child failed");
+
+  auto detached_owned = registry.spawn_task(referee::ObjectID::random(), root.value->id, "detached",
+                                            TaskMode::Inline, ChildOwnership::Detached);
+  ck_assert_msg(detached_owned, "spawn detached child failed");
+
+  ck_assert_msg(registry.cancel_task(root.value->id), "cancel root failed");
+
+  auto owned_lookup = registry.get_task(owned.value->id);
+  ck_assert_msg(owned_lookup, "owned lookup failed");
+  ck_assert_int_eq((int)owned_lookup.value->value().state, (int)TaskState::CancelRequested);
+
+  auto service_lookup = registry.get_task(service.value->id);
+  ck_assert_msg(service_lookup, "service lookup failed");
+  ck_assert_int_eq((int)service_lookup.value->value().state, (int)TaskState::Running);
+
+  auto detached_lookup = registry.get_task(detached_owned.value->id);
+  ck_assert_msg(detached_lookup, "detached lookup failed");
+  ck_assert_int_eq((int)detached_lookup.value->value().state, (int)TaskState::Running);
+}
+END_TEST
+
 START_TEST(test_state_transitions)
 {
   TaskRegistry registry;
   auto task = registry.spawn_task(referee::ObjectID::random());
   ck_assert_msg(task, "spawn failed");
+
+  auto resume_before_wait = registry.resume_task(task.value->id);
+  ck_assert_msg(!resume_before_wait, "expected invalid resume to fail");
 
   ck_assert_msg(registry.cancel_task(task.value->id), "cancel failed");
   auto canceled = registry.mark_canceled(task.value->id);
@@ -70,6 +106,7 @@ Suite* ceo_task_suite(void) {
   TCase* tc = tcase_create("core");
 
   tcase_add_test(tc, test_spawn_and_parent_child);
+  tcase_add_test(tc, test_cancel_propagation_owned_only);
   tcase_add_test(tc, test_state_transitions);
   tcase_add_test(tc, test_wait_and_resume);
   tcase_add_test(tc, test_invalid_parent);
