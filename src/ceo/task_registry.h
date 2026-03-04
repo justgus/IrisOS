@@ -23,12 +23,28 @@ enum class TaskState {
   Killed
 };
 
+enum class TaskMode {
+  Inline,
+  Service
+};
+
+enum class ChildOwnership {
+  Owned,
+  Detached
+};
+
+struct ChildLink {
+  TaskID id{0};
+  ChildOwnership ownership{ChildOwnership::Owned};
+};
+
 struct TaskRecord {
   TaskID id{0};
   referee::ObjectID object_id{};
   std::optional<TaskID> parent;
-  std::vector<TaskID> children;
+  std::vector<ChildLink> children;
   TaskState state{TaskState::Created};
+  TaskMode mode{TaskMode::Inline};
   std::string name;
 };
 
@@ -39,6 +55,15 @@ public:
   referee::Result<TaskRecord> spawn_task(const referee::ObjectID& object_id,
                                          std::optional<TaskID> parent = std::nullopt,
                                          std::string name = {});
+  referee::Result<TaskRecord> spawn_task(const referee::ObjectID& object_id,
+                                         std::optional<TaskID> parent,
+                                         std::string name,
+                                         TaskMode mode);
+  referee::Result<TaskRecord> spawn_task(const referee::ObjectID& object_id,
+                                         std::optional<TaskID> parent,
+                                         std::string name,
+                                         TaskMode mode,
+                                         ChildOwnership ownership);
   referee::Result<void> wait_task(TaskID id);
   referee::Result<void> resume_task(TaskID id);
   referee::Result<void> cancel_task(TaskID id);
@@ -53,6 +78,7 @@ public:
 private:
   TaskRecord* find_task(TaskID id);
   const TaskRecord* find_task(TaskID id) const;
+  void detach_from_parent(TaskRecord& rec);
 
 private:
   TaskID next_id_{1};
