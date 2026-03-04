@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: #TBD
+GitHub-Issue: #174
 ---
 
 # ER-0038 — Structured Types: Struct, Packet, Enum

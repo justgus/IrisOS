@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: #TBD
+GitHub-Issue: #177
 ---
 
 # ER-0041 — Scoped Type Registry

@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: #TBD
+GitHub-Issue: #178
 ---
 
 # ER-0042 — Core Operations Metadata and Bindings
