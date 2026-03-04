@@ -2,6 +2,8 @@
 #include "config.h"
 #endif
 
+#include "ceo/task_registry.h"
+#include "comms/primitives.h"
 #include "refract/bootstrap.h"
 #include "refract/dispatch.h"
 #include "refract/schema_registry.h"
@@ -2323,6 +2325,8 @@ void cmd_emit_viz(SchemaRegistry& registry, SqliteStore& store,
 }
 
 void cmd_demo_v1(SchemaRegistry& registry, SqliteStore& store,
+                 iris::ceo::TaskRegistry& ceo_registry,
+                 iris::ceo::TaskComms& ceo_comms,
                  std::unordered_map<std::string, ObjectID>& session_aliases) {
   nlohmann::json payload;
   payload["name"] = "PropulsionSynth";
@@ -2335,6 +2339,17 @@ void cmd_demo_v1(SchemaRegistry& registry, SqliteStore& store,
   session_aliases["demo"] = demo_id;
   std::cout << "demo " << demo_id.to_hex() << "\n";
 
+  auto demo_task = ceo_registry.create_task(demo_id, std::nullopt, "demo", iris::ceo::TaskMode::Service);
+  if (!demo_task) {
+    std::cout << "error: " << demo_task.error->message << "\n";
+    return;
+  }
+  auto start_demo = ceo_registry.start_task(demo_task.value->id);
+  if (!start_demo) {
+    std::cout << "error: " << start_demo.error->message << "\n";
+    return;
+  }
+
   auto summaryR = demo_start(registry, store, demo_id);
   if (!summaryR) {
     std::cout << "error: " << summaryR.error->message << "\n";
@@ -2344,6 +2359,45 @@ void cmd_demo_v1(SchemaRegistry& registry, SqliteStore& store,
   session_aliases["summary"] = summary_id;
   std::cout << "summary " << summary_id.to_hex() << "\n";
 
+  auto summary_task = ceo_registry.create_task(summary_id, demo_task.value->id,
+                                               "summary", iris::ceo::TaskMode::Inline);
+  if (!summary_task) {
+    std::cout << "error: " << summary_task.error->message << "\n";
+    return;
+  }
+  auto start_summary = ceo_registry.start_task(summary_task.value->id);
+  if (!start_summary) {
+    std::cout << "error: " << start_summary.error->message << "\n";
+    return;
+  }
+
+  auto channelR = ceo_comms.open_channel(demo_task.value->id, summary_task.value->id);
+  if (!channelR) {
+    std::cout << "error: " << channelR.error->message << "\n";
+    return;
+  }
+  auto& demo_to_summary = channelR.value->first;
+  auto& summary_to_demo = channelR.value->second;
+
+  iris::comms::Bytes boot = {0x56, 0x31};
+  auto sendR = demo_to_summary.send(boot);
+  if (!sendR.ready) {
+    std::cout << "error: demo comms send failed\n";
+    return;
+  }
+  auto waitR = summary_to_demo.wait_readable(summary_task.value->id);
+  if (!waitR.ready) {
+    std::cout << "error: summary comms wait failed\n";
+    return;
+  }
+  auto recv = summary_to_demo.recv(8);
+  if (recv.empty()) {
+    std::cout << "error: summary comms recv failed\n";
+    return;
+  }
+
+  ceo_comms.close_channel(demo_to_summary);
+
   auto expandR = demo_expand(registry, store, summary_id, 2);
   if (!expandR) {
     std::cout << "error: " << expandR.error->message << "\n";
@@ -2351,6 +2405,17 @@ void cmd_demo_v1(SchemaRegistry& registry, SqliteStore& store,
   }
   std::cout << "expanded summary level 2\n";
   cmd_edges(store, demo_id);
+
+  auto stop_summary = ceo_registry.stop_task(summary_task.value->id);
+  if (!stop_summary) {
+    std::cout << "error: " << stop_summary.error->message << "\n";
+    return;
+  }
+  auto stop_demo = ceo_registry.stop_task(demo_task.value->id);
+  if (!stop_demo) {
+    std::cout << "error: " << stop_demo.error->message << "\n";
+    return;
+  }
 }
 
 void cmd_edge(SqliteStore& store, SchemaRegistry& registry,
@@ -2470,6 +2535,8 @@ int main(int argc, char** argv) {
   }
 #endif
   std::vector<TaskEntry> tasks;
+  iris::ceo::TaskRegistry ceo_registry;
+  iris::ceo::TaskComms ceo_comms(ceo_registry);
   std::unordered_map<std::string, ObjectID> session_aliases;
   std::uint64_t next_task_id = 1;
 
@@ -2662,7 +2729,7 @@ int main(int argc, char** argv) {
       continue;
     }
     if (cmd == "demo" && parsed.args.size() == 1 && parsed.args[0] == "v1") {
-      cmd_demo_v1(registry, store, session_aliases);
+      cmd_demo_v1(registry, store, ceo_registry, ceo_comms, session_aliases);
       continue;
     }
     if (cmd == "route") {
