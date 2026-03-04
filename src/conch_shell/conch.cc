@@ -66,6 +66,9 @@ struct AliasEntry {
 
 referee::Result<ObjectID> create_object(SchemaRegistry& registry, SqliteStore& store,
                                         const std::string& expr);
+referee::Result<ObjectID> create_demo_object(SchemaRegistry& registry, SqliteStore& store,
+                                             const std::string& type_name,
+                                             const nlohmann::json& payload);
 referee::Result<ObjectID> demo_start(SchemaRegistry& registry, SqliteStore& store,
                                      const ObjectID& demo_id);
 referee::Result<void> demo_expand(SchemaRegistry& registry, SqliteStore& store,
@@ -910,6 +913,7 @@ void print_help() {
   std::cout << "  edge <fromObjectID> <toObjectID> <name> [role]\n";
   std::cout << "  emit viz <textlog|metric|table|tree|panel> [args...]\n";
   std::cout << "    [--produced-by <id>] [--progress-of <id>] [--diagnostic-of <id>] [--role <role>]\n";
+  std::cout << "  demo v1\n";
   std::cout << "  route <ObjectID>\n";
   std::cout << "  route type <TypeName>\n";
   std::cout << "  note: ObjectID prefixes (>=4 hex chars) resolve when unambiguous\n";
@@ -2318,6 +2322,37 @@ void cmd_emit_viz(SchemaRegistry& registry, SqliteStore& store,
   std::cout << "error: unknown viz artifact\n";
 }
 
+void cmd_demo_v1(SchemaRegistry& registry, SqliteStore& store,
+                 std::unordered_map<std::string, ObjectID>& session_aliases) {
+  nlohmann::json payload;
+  payload["name"] = "PropulsionSynth";
+  auto demoR = create_demo_object(registry, store, "Demo::PropulsionSynth", payload);
+  if (!demoR) {
+    std::cout << "error: " << demoR.error->message << "\n";
+    return;
+  }
+  auto demo_id = demoR.value.value();
+  session_aliases["demo"] = demo_id;
+  std::cout << "demo " << demo_id.to_hex() << "\n";
+
+  auto summaryR = demo_start(registry, store, demo_id);
+  if (!summaryR) {
+    std::cout << "error: " << summaryR.error->message << "\n";
+    return;
+  }
+  auto summary_id = summaryR.value.value();
+  session_aliases["summary"] = summary_id;
+  std::cout << "summary " << summary_id.to_hex() << "\n";
+
+  auto expandR = demo_expand(registry, store, summary_id, 2);
+  if (!expandR) {
+    std::cout << "error: " << expandR.error->message << "\n";
+    return;
+  }
+  std::cout << "expanded summary level 2\n";
+  cmd_edges(store, demo_id);
+}
+
 void cmd_edge(SqliteStore& store, SchemaRegistry& registry,
               const std::unordered_map<std::string, ObjectID>& session_aliases,
               const std::vector<std::string>& tokens) {
@@ -2624,6 +2659,10 @@ int main(int argc, char** argv) {
       tokens.push_back(cmd);
       tokens.insert(tokens.end(), parsed.args.begin(), parsed.args.end());
       cmd_emit_viz(registry, store, session_aliases, tokens);
+      continue;
+    }
+    if (cmd == "demo" && parsed.args.size() == 1 && parsed.args[0] == "v1") {
+      cmd_demo_v1(registry, store, session_aliases);
       continue;
     }
     if (cmd == "route") {
