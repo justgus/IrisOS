@@ -631,6 +631,7 @@ TypeDefinition make_demo_propulsion_synth() {
   OperationDefinition start_op;
   start_op.name = "start";
   start_op.scope = OperationScope::Object;
+  start_op.required_capabilities.push_back("demo.start");
   def.operations.push_back(std::move(start_op));
 
   def.relationships.push_back(RelationshipSpec{ "summary", "one", "Demo::Summary" });

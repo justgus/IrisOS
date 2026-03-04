@@ -14,7 +14,7 @@ GitHub-Issue: #180
 
 - ER ID: ER-0044
 - Title: Capability Hooks and Policy Plumbing
-- Status: Proposed
+- Status: In Progress
 - Date: 2026-02-27
 - Owners: Mike
 - Type: Enhancement
@@ -34,6 +34,7 @@ GitHub-Issue: #180
 
 - Add capability metadata hooks to operations and task execution paths.
 - Provide plumbing for future policy enforcement.
+- Surface capability requirements in operation listings.
 
 ## Non-Goals
 
@@ -43,6 +44,7 @@ GitHub-Issue: #180
 ## Scope
 
 - In scope: metadata hooks, enforcement stubs, and capability checks in call paths.
+- In scope: minimal capability wiring for Conch operation calls.
 - Out of scope: comprehensive security policy definitions.
 
 ## Requirements

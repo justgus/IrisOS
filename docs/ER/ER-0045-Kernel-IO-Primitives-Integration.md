@@ -14,7 +14,7 @@ GitHub-Issue: #181
 
 - ER ID: ER-0045
 - Title: Kernel I/O Primitives Integration
-- Status: Proposed
+- Status: In Progress
 - Date: 2026-02-27
 - Owners: Mike
 - Type: Enhancement
@@ -34,6 +34,8 @@ GitHub-Issue: #181
 
 - Define minimal I/O primitives for kernel task contexts.
 - Ensure wait/wake integration with CEO for I/O operations.
+- Provide task start/stop hooks aligned with CEO task lifecycle.
+- Provide open/close hooks for inter-task communication channels.
 
 ## Non-Goals
 
@@ -43,11 +45,13 @@ GitHub-Issue: #181
 ## Scope
 
 - In scope: minimal I/O primitives and CEO integration points.
+- In scope: task start/stop and inter-task comms open/close primitives.
 - Out of scope: real hardware drivers and interrupts.
 
 ## Requirements
 
 - Functional: I/O operations can block/wake tasks deterministically.
+- Functional: task start/stop and inter-task comms open/close are available to CEO callers.
 - Non-functional: predictable and testable I/O behavior.
 
 ## Proposed Approach
@@ -59,6 +63,7 @@ GitHub-Issue: #181
 
 - I/O primitives integrate with CEO wait/wake loops.
 - I/O operations can be invoked through Conduit.
+- Start/stop and comms open/close hooks are callable in CEO.
 
 ## Risks / Open Questions
 

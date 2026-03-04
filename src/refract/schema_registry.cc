@@ -50,6 +50,10 @@ static nlohmann::json to_json(const OperationDefinition& op) {
   j["name"] = op.name;
   j["scope"] = scope_to_string(op.scope);
   j["signature"] = to_json(op.signature);
+  if (!op.required_capabilities.empty()) {
+    j["capabilities"] = nlohmann::json::array();
+    for (const auto& cap : op.required_capabilities) j["capabilities"].push_back(cap);
+  }
   return j;
 }
 
@@ -198,6 +202,11 @@ static OperationDefinition operation_from_json(const nlohmann::json& j) {
   op.name = j.value("name", "");
   if (j.contains("scope")) op.scope = scope_from_string(j.at("scope").get<std::string>());
   if (j.contains("signature")) op.signature = signature_from_json(j.at("signature"));
+  if (j.contains("capabilities")) {
+    for (const auto& item : j.at("capabilities")) {
+      op.required_capabilities.push_back(item.get<std::string>());
+    }
+  }
   return op;
 }
 

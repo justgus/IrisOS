@@ -25,8 +25,11 @@ public:
   Bytes recv(std::size_t max_bytes);
 
   exec::WaitResult push(const Bytes& data);
+  void close();
+  bool closed() const { return closed_; }
 
 private:
+  bool closed_{false};
   exec::Event data_ready_{false};
   std::deque<std::uint8_t> buffer_{};
 };
@@ -41,10 +44,18 @@ public:
   std::size_t available() const;
   Bytes recv(std::size_t max_bytes);
   exec::WaitResult send(const Bytes& data);
+  void close();
+  bool closed() const {
+    if (closed_) return true;
+    if (incoming_ && incoming_->closed()) return true;
+    if (outgoing_ && outgoing_->closed()) return true;
+    return false;
+  }
 
   static std::pair<Channel, Channel> loopback();
 
 private:
+  bool closed_{false};
   std::shared_ptr<ByteStream> incoming_;
   std::shared_ptr<ByteStream> outgoing_;
 };
@@ -57,11 +68,14 @@ public:
   exec::WaitResult wait_readable(ceo::TaskID task);
   std::optional<Bytes> recv();
   exec::WaitResult send(const Bytes& data);
+  void close();
+  bool closed() const;
 
   static std::pair<DatagramPort, DatagramPort> loopback();
 
 private:
   struct Mailbox {
+    bool closed{false};
     exec::Event data_ready{false};
     std::deque<Bytes> queue;
   };
