@@ -1,5 +1,7 @@
 #include "ceo/task_registry.h"
 
+#include "comms/primitives.h"
+
 #include <algorithm>
 
 namespace iris::ceo {
@@ -53,31 +55,28 @@ referee::Result<TaskRecord> TaskRegistry::spawn_task(const referee::ObjectID& ob
                                                      std::string name,
                                                      TaskMode mode,
                                                      ChildOwnership ownership) {
-  if (parent.has_value() && !find_task(*parent)) {
-    return referee::Result<TaskRecord>::err("parent task not found");
-  }
+  return insert_task(object_id, parent, std::move(name), mode, ownership, TaskState::Running);
+}
 
-  TaskRecord rec;
-  rec.id = next_id_++;
-  rec.object_id = object_id;
-  rec.parent = parent;
-  rec.state = TaskState::Running;
-  rec.mode = mode;
-  rec.name = std::move(name);
+referee::Result<TaskRecord> TaskRegistry::create_task(const referee::ObjectID& object_id,
+                                                      std::optional<TaskID> parent,
+                                                      std::string name) {
+  return create_task(object_id, parent, std::move(name), TaskMode::Inline);
+}
 
-  auto insert = tasks_.emplace(rec.id, rec);
-  if (!insert.second) {
-    return referee::Result<TaskRecord>::err("failed to insert task");
-  }
+referee::Result<TaskRecord> TaskRegistry::create_task(const referee::ObjectID& object_id,
+                                                      std::optional<TaskID> parent,
+                                                      std::string name,
+                                                      TaskMode mode) {
+  return create_task(object_id, parent, std::move(name), mode, default_ownership(mode));
+}
 
-  if (parent.has_value()) {
-    auto* parent_task = find_task(*parent);
-    if (parent_task) {
-      parent_task->children.push_back(ChildLink{rec.id, ownership});
-    }
-  }
-
-  return referee::Result<TaskRecord>::ok(insert.first->second);
+referee::Result<TaskRecord> TaskRegistry::create_task(const referee::ObjectID& object_id,
+                                                      std::optional<TaskID> parent,
+                                                      std::string name,
+                                                      TaskMode mode,
+                                                      ChildOwnership ownership) {
+  return insert_task(object_id, parent, std::move(name), mode, ownership, TaskState::Created);
 }
 
 referee::Result<void> TaskRegistry::wait_task(TaskID id) {
@@ -100,6 +99,27 @@ referee::Result<void> TaskRegistry::resume_task(TaskID id) {
   }
   rec->state = TaskState::Running;
   return referee::Result<void>::ok();
+}
+
+referee::Result<void> TaskRegistry::start_task(TaskID id) {
+  auto* rec = find_task(id);
+  if (!rec) return referee::Result<void>::err("task not found");
+  if (rec->state != TaskState::Created) {
+    return referee::Result<void>::err("task not in Created state");
+  }
+  return resume_task(id);
+}
+
+referee::Result<void> TaskRegistry::stop_task(TaskID id) {
+  auto* rec = find_task(id);
+  if (!rec) return referee::Result<void>::err("task not found");
+  if (is_terminal(rec->state)) return referee::Result<void>::err("task already terminal");
+  if (rec->state == TaskState::Created) {
+    auto cancelR = cancel_task(id);
+    if (!cancelR) return cancelR;
+    return mark_canceled(id);
+  }
+  return cancel_task(id);
 }
 
 referee::Result<void> TaskRegistry::cancel_task(TaskID id) {
@@ -204,6 +224,39 @@ void TaskRegistry::detach_from_parent(TaskRecord& rec) {
                  children.end());
 }
 
+referee::Result<TaskRecord> TaskRegistry::insert_task(const referee::ObjectID& object_id,
+                                                      std::optional<TaskID> parent,
+                                                      std::string name,
+                                                      TaskMode mode,
+                                                      ChildOwnership ownership,
+                                                      TaskState initial_state) {
+  if (parent.has_value() && !find_task(*parent)) {
+    return referee::Result<TaskRecord>::err("parent task not found");
+  }
+
+  TaskRecord rec;
+  rec.id = next_id_++;
+  rec.object_id = object_id;
+  rec.parent = parent;
+  rec.state = initial_state;
+  rec.mode = mode;
+  rec.name = std::move(name);
+
+  auto insert = tasks_.emplace(rec.id, rec);
+  if (!insert.second) {
+    return referee::Result<TaskRecord>::err("failed to insert task");
+  }
+
+  if (parent.has_value()) {
+    auto* parent_task = find_task(*parent);
+    if (parent_task) {
+      parent_task->children.push_back(ChildLink{rec.id, ownership});
+    }
+  }
+
+  return referee::Result<TaskRecord>::ok(insert.first->second);
+}
+
 const char* to_string(TaskState state) {
   switch (state) {
     case TaskState::Created: return "Created";
@@ -216,6 +269,55 @@ const char* to_string(TaskState state) {
     case TaskState::Killed: return "Killed";
   }
   return "Unknown";
+}
+
+TaskComms::TaskComms(TaskRegistry& registry) : registry_(registry) {}
+
+referee::Result<std::pair<comms::Channel, comms::Channel>> TaskComms::open_channel(TaskID a, TaskID b) {
+  auto aR = registry_.get_task(a);
+  if (!aR) return referee::Result<std::pair<comms::Channel, comms::Channel>>::err(aR.error->message);
+  if (!aR.value->has_value()) {
+    return referee::Result<std::pair<comms::Channel, comms::Channel>>::err("task not found");
+  }
+  auto bR = registry_.get_task(b);
+  if (!bR) return referee::Result<std::pair<comms::Channel, comms::Channel>>::err(bR.error->message);
+  if (!bR.value->has_value()) {
+    return referee::Result<std::pair<comms::Channel, comms::Channel>>::err("task not found");
+  }
+
+  return referee::Result<std::pair<comms::Channel, comms::Channel>>::ok(comms::Channel::loopback());
+}
+
+referee::Result<std::pair<comms::DatagramPort, comms::DatagramPort>> TaskComms::open_datagram(TaskID a, TaskID b) {
+  auto aR = registry_.get_task(a);
+  if (!aR) {
+    return referee::Result<std::pair<comms::DatagramPort, comms::DatagramPort>>::err(
+        aR.error->message);
+  }
+  if (!aR.value->has_value()) {
+    return referee::Result<std::pair<comms::DatagramPort, comms::DatagramPort>>::err("task not found");
+  }
+  auto bR = registry_.get_task(b);
+  if (!bR) {
+    return referee::Result<std::pair<comms::DatagramPort, comms::DatagramPort>>::err(
+        bR.error->message);
+  }
+  if (!bR.value->has_value()) {
+    return referee::Result<std::pair<comms::DatagramPort, comms::DatagramPort>>::err("task not found");
+  }
+
+  return referee::Result<std::pair<comms::DatagramPort, comms::DatagramPort>>::ok(
+      comms::DatagramPort::loopback());
+}
+
+referee::Result<void> TaskComms::close_channel(comms::Channel& channel) {
+  channel.close();
+  return referee::Result<void>::ok();
+}
+
+referee::Result<void> TaskComms::close_datagram(comms::DatagramPort& port) {
+  port.close();
+  return referee::Result<void>::ok();
 }
 
 } // namespace iris::ceo

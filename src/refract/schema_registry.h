@@ -39,6 +39,7 @@ struct OperationDefinition {
   std::string name;
   OperationScope scope{OperationScope::Object};
   SignatureDefinition signature;
+  std::vector<std::string> required_capabilities{};
 };
 
 struct RelationshipSpec {

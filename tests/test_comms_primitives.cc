@@ -36,6 +36,24 @@ START_TEST(test_channel_loopback_roundtrip)
 }
 END_TEST
 
+START_TEST(test_channel_close_wakes)
+{
+  auto pair = Channel::loopback();
+  Channel& a = pair.first;
+  Channel& b = pair.second;
+
+  auto wait_before = b.wait_readable(1);
+  ck_assert_msg(!wait_before.ready, "expected no data before close");
+
+  a.close();
+  ck_assert_msg(a.closed(), "channel should report closed");
+  ck_assert_msg(b.closed(), "peer channel should report closed");
+
+  auto wait_after = b.wait_readable(2);
+  ck_assert_msg(wait_after.ready, "expected wait after close to be ready");
+}
+END_TEST
+
 START_TEST(test_datagram_loopback_roundtrip)
 {
   auto pair = DatagramPort::loopback();
@@ -63,12 +81,32 @@ START_TEST(test_datagram_loopback_roundtrip)
 }
 END_TEST
 
+START_TEST(test_datagram_close_wakes)
+{
+  auto pair = DatagramPort::loopback();
+  DatagramPort& a = pair.first;
+  DatagramPort& b = pair.second;
+
+  auto wait_before = b.wait_readable(1);
+  ck_assert_msg(!wait_before.ready, "expected no datagram before close");
+
+  a.close();
+  ck_assert_msg(a.closed(), "port should report closed");
+  ck_assert_msg(b.closed(), "peer port should report closed");
+
+  auto wait_after = b.wait_readable(2);
+  ck_assert_msg(wait_after.ready, "expected wait after close to be ready");
+}
+END_TEST
+
 Suite* comms_primitives_suite(void) {
   Suite* s = suite_create("CommsPrimitives");
   TCase* tc = tcase_create("core");
 
   tcase_add_test(tc, test_channel_loopback_roundtrip);
+  tcase_add_test(tc, test_channel_close_wakes);
   tcase_add_test(tc, test_datagram_loopback_roundtrip);
+  tcase_add_test(tc, test_datagram_close_wakes);
 
   suite_add_tcase(s, tc);
   return s;

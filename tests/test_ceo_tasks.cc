@@ -6,6 +6,7 @@ extern "C" {
 #endif
 
 #include "ceo/task_registry.h"
+#include "comms/primitives.h"
 
 using namespace iris::ceo;
 
@@ -101,6 +102,49 @@ START_TEST(test_invalid_parent)
 }
 END_TEST
 
+START_TEST(test_create_start_stop)
+{
+  TaskRegistry registry;
+  auto task = registry.create_task(referee::ObjectID::random());
+  ck_assert_msg(task, "create failed");
+  ck_assert_int_eq((int)task.value->state, (int)TaskState::Created);
+
+  ck_assert_msg(registry.start_task(task.value->id), "start_task failed");
+  auto running = registry.get_task(task.value->id);
+  ck_assert_msg(running, "get_task failed");
+  ck_assert_int_eq((int)running.value->value().state, (int)TaskState::Running);
+
+  ck_assert_msg(registry.stop_task(task.value->id), "stop_task failed");
+  auto stopped = registry.get_task(task.value->id);
+  ck_assert_msg(stopped, "get_task failed");
+  ck_assert_int_eq((int)stopped.value->value().state, (int)TaskState::CancelRequested);
+}
+END_TEST
+
+START_TEST(test_task_comms_open_close)
+{
+  TaskRegistry registry;
+  TaskComms comms(registry);
+
+  auto a = registry.spawn_task(referee::ObjectID::random());
+  ck_assert_msg(a, "spawn a failed");
+  auto b = registry.spawn_task(referee::ObjectID::random());
+  ck_assert_msg(b, "spawn b failed");
+
+  auto channelR = comms.open_channel(a.value->id, b.value->id);
+  ck_assert_msg(channelR, "open_channel failed");
+  comms.close_channel(channelR.value->first);
+  ck_assert_msg(channelR.value->first.closed(), "channel should be closed");
+  ck_assert_msg(channelR.value->second.closed(), "peer channel should be closed");
+
+  auto datagramR = comms.open_datagram(a.value->id, b.value->id);
+  ck_assert_msg(datagramR, "open_datagram failed");
+  comms.close_datagram(datagramR.value->first);
+  ck_assert_msg(datagramR.value->first.closed(), "datagram should be closed");
+  ck_assert_msg(datagramR.value->second.closed(), "peer datagram should be closed");
+}
+END_TEST
+
 Suite* ceo_task_suite(void) {
   Suite* s = suite_create("CeoTaskRegistry");
   TCase* tc = tcase_create("core");
@@ -110,6 +154,8 @@ Suite* ceo_task_suite(void) {
   tcase_add_test(tc, test_state_transitions);
   tcase_add_test(tc, test_wait_and_resume);
   tcase_add_test(tc, test_invalid_parent);
+  tcase_add_test(tc, test_create_start_stop);
+  tcase_add_test(tc, test_task_comms_open_close);
 
   suite_add_tcase(s, tc);
   return s;

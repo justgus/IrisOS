@@ -628,6 +628,38 @@ std::string format_signature(const iris::refract::OperationDefinition& op) {
   return os.str();
 }
 
+std::string format_capabilities(const iris::refract::OperationDefinition& op) {
+  if (op.required_capabilities.empty()) return "";
+  std::ostringstream os;
+  os << " [caps: ";
+  for (size_t i = 0; i < op.required_capabilities.size(); ++i) {
+    if (i > 0) os << ", ";
+    os << op.required_capabilities[i];
+  }
+  os << "]";
+  return os.str();
+}
+
+bool has_required_capabilities(const iris::refract::OperationDefinition& op,
+                               const std::vector<std::string>& granted,
+                               std::string* err_out) {
+  if (op.required_capabilities.empty()) return true;
+  for (const auto& required : op.required_capabilities) {
+    bool found = false;
+    for (const auto& cap : granted) {
+      if (cap == required) {
+        found = true;
+        break;
+      }
+    }
+    if (!found) {
+      if (err_out) *err_out = "missing capability: " + required;
+      return false;
+    }
+  }
+  return true;
+}
+
 const char* scope_label(OperationScope scope) {
   return scope == OperationScope::Class ? "class" : "object";
 }
@@ -659,7 +691,8 @@ void print_operations(SchemaRegistry& registry,
     for (const auto& [name, overloads] : scope_it->second) {
       if (overloads.size() == 1) {
         const auto& entry = overloads.front();
-        std::cout << "    " << name << format_signature(entry.operation);
+        std::cout << "    " << name << format_signature(entry.operation)
+                  << format_capabilities(entry.operation);
         if (entry.depth > 0) {
           std::cout << " [from " << type_display_name_for(types, entry.owner) << "]";
         }
@@ -668,7 +701,8 @@ void print_operations(SchemaRegistry& registry,
       }
       std::cout << "    " << name << "\n";
       for (const auto& entry : overloads) {
-        std::cout << "      " << format_signature(entry.operation);
+        std::cout << "      " << format_signature(entry.operation)
+                  << format_capabilities(entry.operation);
         if (entry.depth > 0) {
           std::cout << " [from " << type_display_name_for(types, entry.owner) << "]";
         }
@@ -1533,6 +1567,12 @@ bool cmd_call(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id,
   auto matchR = engine.resolve(def.type_id, op_name, OperationScope::Object, {}, args.size(), true);
   if (!matchR) {
     std::cout << "error: " << matchR.error->message << "\n";
+    return false;
+  }
+  const std::vector<std::string> granted_caps = { "demo.start" };
+  std::string cap_err;
+  if (!has_required_capabilities(matchR.value->operation, granted_caps, &cap_err)) {
+    std::cout << "error: " << cap_err << "\n";
     return false;
   }
 

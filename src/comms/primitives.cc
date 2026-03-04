@@ -9,6 +9,7 @@ exec::WaitResult ByteStream::wait(ceo::TaskID task) {
 }
 
 exec::WaitResult ByteStream::wait_readable(ceo::TaskID task) {
+  if (closed_) return exec::WaitResult{true, {}};
   if (!buffer_.empty()) return exec::WaitResult{true, {}};
   return data_ready_.wait(task);
 }
@@ -30,8 +31,15 @@ Bytes ByteStream::recv(std::size_t max_bytes) {
 
 exec::WaitResult ByteStream::push(const Bytes& data) {
   if (data.empty()) return exec::WaitResult{true, {}};
+  if (closed_) return exec::WaitResult{false, {}};
   for (auto byte : data) buffer_.push_back(byte);
   return data_ready_.signal();
+}
+
+void ByteStream::close() {
+  if (closed_) return;
+  closed_ = true;
+  data_ready_.signal();
 }
 
 Channel::Channel(std::shared_ptr<ByteStream> incoming,
@@ -44,6 +52,7 @@ exec::WaitResult Channel::wait(ceo::TaskID task) {
 }
 
 exec::WaitResult Channel::wait_readable(ceo::TaskID task) {
+  if (closed_) return exec::WaitResult{true, {}};
   return incoming_->wait_readable(task);
 }
 
@@ -56,7 +65,15 @@ Bytes Channel::recv(std::size_t max_bytes) {
 }
 
 exec::WaitResult Channel::send(const Bytes& data) {
+  if (closed_) return exec::WaitResult{false, {}};
   return outgoing_->push(data);
+}
+
+void Channel::close() {
+  if (closed_) return;
+  closed_ = true;
+  if (incoming_) incoming_->close();
+  if (outgoing_) outgoing_->close();
 }
 
 std::pair<Channel, Channel> Channel::loopback() {
@@ -79,6 +96,7 @@ exec::WaitResult DatagramPort::wait(ceo::TaskID task) {
 
 exec::WaitResult DatagramPort::wait_readable(ceo::TaskID task) {
   if (!inbox_ || !outbox_) return exec::WaitResult{false, {}};
+  if (inbox_->closed || outbox_->closed) return exec::WaitResult{true, {}};
   if (!inbox_->queue.empty()) return exec::WaitResult{true, {}};
   return inbox_->data_ready.wait(task);
 }
@@ -93,8 +111,23 @@ std::optional<Bytes> DatagramPort::recv() {
 
 exec::WaitResult DatagramPort::send(const Bytes& data) {
   if (!inbox_ || !outbox_) return exec::WaitResult{false, {}};
+  if (inbox_->closed || outbox_->closed) return exec::WaitResult{false, {}};
   outbox_->queue.push_back(data);
   return outbox_->data_ready.signal();
+}
+
+void DatagramPort::close() {
+  if (!inbox_ || !outbox_) return;
+  if (inbox_->closed && outbox_->closed) return;
+  inbox_->closed = true;
+  outbox_->closed = true;
+  inbox_->data_ready.signal();
+  outbox_->data_ready.signal();
+}
+
+bool DatagramPort::closed() const {
+  if (!inbox_ || !outbox_) return true;
+  return inbox_->closed || outbox_->closed;
 }
 
 std::pair<DatagramPort, DatagramPort> DatagramPort::loopback() {
