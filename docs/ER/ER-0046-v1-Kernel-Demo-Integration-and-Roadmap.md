@@ -79,8 +79,9 @@ The v1 kernel demo exercises:
 
 - persistence of structured types (Demo::PropulsionSynth, Demo::Summary, Demo::Detail)
 - operation dispatch (start + expand)
-- CEO task hooks (start creates a task record in Conch)
+- CEO task hooks (start creates a task record in Conch, demo uses start/stop lifecycle)
 - Viz artifact production (TextLog/Metric/Table)
+- inter-task comms open/close via CEO primitives
 
 ### Demo Steps (Conch)
 
