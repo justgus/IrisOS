@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: #TBD
+GitHub-Issue: #176
 ---
 
 # ER-0040 — Generic Type System Core

@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: #TBD
+GitHub-Issue: #175
 ---
 
 # ER-0039 — Structured Arrays and Collection Integration
