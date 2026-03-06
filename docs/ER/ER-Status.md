@@ -41,9 +41,9 @@
 - ER-0037 - Verified
 - ER-0038 — Verified
 - ER-0039 — Verified
-- ER-0040 — Complete
-- ER-0041 — Complete
-- ER-0042 — Complete
+- ER-0040 — Verified
+- ER-0041 — Verified
+- ER-0042 — Verified
 - ER-0043 — In Progress
 - ER-0044 — In Progress
 - ER-0045 — In Progress
