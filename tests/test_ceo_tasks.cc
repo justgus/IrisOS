@@ -145,6 +145,52 @@ START_TEST(test_task_comms_open_close)
 }
 END_TEST
 
+START_TEST(test_supervision_tree_detach_on_terminal)
+{
+  TaskRegistry registry;
+  auto parent = registry.spawn_task(referee::ObjectID::random(), std::nullopt, "parent");
+  ck_assert_msg(parent, "spawn parent failed");
+
+  auto child = registry.spawn_task(referee::ObjectID::random(), parent.value->id, "child");
+  ck_assert_msg(child, "spawn child failed");
+
+  auto parent_before = registry.get_task(parent.value->id);
+  ck_assert_msg(parent_before, "get_task parent failed");
+  ck_assert_msg(parent_before.value->has_value(), "expected parent record");
+  ck_assert_int_eq((int)parent_before.value->value().children.size(), 1);
+
+  ck_assert_msg(registry.complete_task(child.value->id), "complete child failed");
+
+  auto parent_after = registry.get_task(parent.value->id);
+  ck_assert_msg(parent_after, "get_task parent failed");
+  ck_assert_msg(parent_after.value->has_value(), "expected parent record");
+  ck_assert_int_eq((int)parent_after.value->value().children.size(), 0);
+}
+END_TEST
+
+START_TEST(test_long_run_task_stability)
+{
+  TaskRegistry registry;
+  const int iterations = 200;
+  for (int i = 0; i < iterations; ++i) {
+    auto task = registry.spawn_task(referee::ObjectID::random(), std::nullopt, "worker");
+    ck_assert_msg(task, "spawn task failed");
+
+    auto waitR = registry.wait_task(task.value->id);
+    ck_assert_msg(waitR, "wait_task failed");
+
+    auto resumeR = registry.resume_task(task.value->id);
+    ck_assert_msg(resumeR, "resume_task failed");
+
+    auto cancelR = registry.cancel_task(task.value->id);
+    ck_assert_msg(cancelR, "cancel_task failed");
+
+    auto markR = registry.mark_canceled(task.value->id);
+    ck_assert_msg(markR, "mark_canceled failed");
+  }
+}
+END_TEST
+
 Suite* ceo_task_suite(void) {
   Suite* s = suite_create("CeoTaskRegistry");
   TCase* tc = tcase_create("core");
@@ -156,6 +202,8 @@ Suite* ceo_task_suite(void) {
   tcase_add_test(tc, test_invalid_parent);
   tcase_add_test(tc, test_create_start_stop);
   tcase_add_test(tc, test_task_comms_open_close);
+  tcase_add_test(tc, test_supervision_tree_detach_on_terminal);
+  tcase_add_test(tc, test_long_run_task_stability);
 
   suite_add_tcase(s, tc);
   return s;
