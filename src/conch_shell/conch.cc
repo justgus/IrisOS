@@ -646,22 +646,57 @@ std::string format_capabilities(const iris::refract::OperationDefinition& op) {
 }
 
 bool has_required_capabilities(const iris::refract::OperationDefinition& op,
-                               const std::vector<std::string>& granted,
+                               const std::set<std::string>& granted,
                                std::string* err_out) {
   if (op.required_capabilities.empty()) return true;
   for (const auto& required : op.required_capabilities) {
-    bool found = false;
-    for (const auto& cap : granted) {
-      if (cap == required) {
-        found = true;
-        break;
-      }
-    }
-    if (!found) {
+    if (granted.find(required) == granted.end()) {
       if (err_out) *err_out = "missing capability: " + required;
       return false;
     }
   }
+  return true;
+}
+
+void cmd_caps_list(const std::set<std::string>& caps) {
+  if (caps.empty()) {
+    std::cout << "caps: (none)\n";
+    return;
+  }
+  std::cout << "caps\n";
+  for (const auto& cap : caps) {
+    std::cout << "  " << cap << "\n";
+  }
+}
+
+bool cmd_caps_grant(std::set<std::string>& caps, const std::vector<std::string>& args) {
+  if (args.size() < 2) {
+    std::cout << "error: usage: caps grant <cap> [cap...]\n";
+    return false;
+  }
+  for (size_t i = 1; i < args.size(); ++i) {
+    caps.insert(args[i]);
+  }
+  return true;
+}
+
+bool cmd_caps_revoke(std::set<std::string>& caps, const std::vector<std::string>& args) {
+  if (args.size() < 2) {
+    std::cout << "error: usage: caps revoke <cap> [cap...]\n";
+    return false;
+  }
+  for (size_t i = 1; i < args.size(); ++i) {
+    caps.erase(args[i]);
+  }
+  return true;
+}
+
+bool cmd_caps_clear(std::set<std::string>& caps, const std::vector<std::string>& args) {
+  if (args.size() != 1) {
+    std::cout << "error: usage: caps clear\n";
+    return false;
+  }
+  caps.clear();
   return true;
 }
 
@@ -909,6 +944,10 @@ void print_help() {
   std::cout << "  new <TypeName> field:=value ...\n";
   std::cout << "  new --json <spec>\n";
   std::cout << "  call <ObjectID> <opName> [args...]\n";
+  std::cout << "  caps\n";
+  std::cout << "  caps grant <cap> [cap...]\n";
+  std::cout << "  caps revoke <cap> [cap...]\n";
+  std::cout << "  caps clear\n";
   std::cout << "  start <ObjectID>\n";
   std::cout << "  ps\n";
   std::cout << "  kill <TaskID>\n";
@@ -1549,7 +1588,8 @@ void cmd_edges(SqliteStore& store, const ObjectID& id) {
 }
 
 bool cmd_call(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id,
-              const std::string& op_name, const std::vector<std::string>& args) {
+              const std::string& op_name, const std::vector<std::string>& args,
+              const std::set<std::string>& granted_caps) {
   auto recR = store.get_latest(id);
   if (!recR) {
     std::cout << "error: " << recR.error->message << "\n";
@@ -1575,7 +1615,6 @@ bool cmd_call(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id,
     std::cout << "error: " << matchR.error->message << "\n";
     return false;
   }
-  const std::vector<std::string> granted_caps = { "demo.start" };
   std::string cap_err;
   if (!has_required_capabilities(matchR.value->operation, granted_caps, &cap_err)) {
     std::cout << "error: " << cap_err << "\n";
@@ -2538,6 +2577,7 @@ int main(int argc, char** argv) {
   iris::ceo::TaskRegistry ceo_registry;
   iris::ceo::TaskComms ceo_comms(ceo_registry);
   std::unordered_map<std::string, ObjectID> session_aliases;
+  std::set<std::string> session_caps;
   std::uint64_t next_task_id = 1;
 
   for (;;) {
@@ -2637,6 +2677,27 @@ int main(int argc, char** argv) {
       cmd_ops(registry, parsed.args);
       continue;
     }
+    if (cmd == "caps") {
+      if (parsed.args.empty()) {
+        cmd_caps_list(session_caps);
+        continue;
+      }
+      const auto& action = parsed.args[0];
+      if (action == "grant") {
+        cmd_caps_grant(session_caps, parsed.args);
+        continue;
+      }
+      if (action == "revoke") {
+        cmd_caps_revoke(session_caps, parsed.args);
+        continue;
+      }
+      if (action == "clear") {
+        cmd_caps_clear(session_caps, parsed.args);
+        continue;
+      }
+      std::cout << "error: usage: caps [grant|revoke|clear]\n";
+      continue;
+    }
     if (cmd == "show" && parsed.args.size() == 1) {
       std::string err;
       auto id = parse_object_id_or_alias(parsed.args[0], session_aliases, store, registry, &err);
@@ -2668,7 +2729,7 @@ int main(int argc, char** argv) {
       if (parsed.args.size() > 2) {
         args.assign(parsed.args.begin() + 2, parsed.args.end());
       }
-      cmd_call(registry, store, id.value(), parsed.args[1], args);
+      cmd_call(registry, store, id.value(), parsed.args[1], args, session_caps);
       continue;
     }
     if (cmd == "start" && parsed.args.size() == 1) {
@@ -2678,7 +2739,7 @@ int main(int argc, char** argv) {
         std::cout << "error: " << err << "\n";
         continue;
       }
-      bool ok = cmd_call(registry, store, id.value(), "start", {});
+      bool ok = cmd_call(registry, store, id.value(), "start", {}, session_caps);
       if (ok) {
         std::ostringstream os;
         os << "task-" << std::setw(4) << std::setfill('0') << next_task_id++;

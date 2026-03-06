@@ -14,7 +14,7 @@ GitHub-Issue: #180
 
 - ER ID: ER-0044
 - Title: Capability Hooks and Policy Plumbing
-- Status: In Progress
+- Status: Complete
 - Date: 2026-02-27
 - Owners: Mike
 - Type: Enhancement

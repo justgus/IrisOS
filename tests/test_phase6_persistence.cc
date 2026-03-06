@@ -26,6 +26,19 @@ const char* result_message(const Result<T>& r) {
   return r.error.has_value() ? r.error->message.c_str() : "ok";
 }
 
+std::optional<TypeSummary> find_type_summary(SchemaRegistry& registry,
+                                             const std::string& ns,
+                                             const std::string& name) {
+  auto listR = registry.list_types();
+  if (!listR) return std::nullopt;
+  for (const auto& summary : listR.value.value()) {
+    if (summary.namespace_name == ns && summary.name == name) {
+      return summary;
+    }
+  }
+  return std::nullopt;
+}
+
 std::string make_temp_db_path() {
   char tmpl[] = "/tmp/iris_referee_XXXXXX";
   int fd = mkstemp(tmpl);
@@ -102,6 +115,101 @@ START_TEST(test_phase6_persistence_roundtrip)
 }
 END_TEST
 
+START_TEST(test_phase6_demo_persistence)
+{
+  std::string db_path = make_temp_db_path();
+  ObjectID demo_id{};
+  ObjectID summary_id{};
+  ObjectID detail_id{};
+
+  {
+    SqliteStore store(SqliteConfig{ .filename=db_path, .enable_wal=true });
+    ck_assert_msg(store.open(), "open failed");
+    ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+    SchemaRegistry registry(store);
+    auto boot = iris::refract::bootstrap_core_schema(registry);
+    ck_assert_msg(boot, "bootstrap failed: %s", result_message(boot));
+
+    auto demo = find_type_summary(registry, "Demo", "PropulsionSynth");
+    ck_assert_msg(demo.has_value(), "expected Demo::PropulsionSynth type");
+    auto summary = find_type_summary(registry, "Demo", "Summary");
+    ck_assert_msg(summary.has_value(), "expected Demo::Summary type");
+    auto detail = find_type_summary(registry, "Demo", "Detail");
+    ck_assert_msg(detail.has_value(), "expected Demo::Detail type");
+
+    auto demo_payload = cbor_from_json_string("{\"name\":\"PropulsionSynth\"}");
+    auto demoR = store.create_object(demo->type_id, demo->definition_id, demo_payload);
+    ck_assert_msg(demoR, "create demo failed: %s", result_message(demoR));
+    demo_id = demoR.value->ref.id;
+
+    auto summary_payload = cbor_from_json_string("{\"title\":\"Summary\",\"level\":0}");
+    auto summaryR = store.create_object(summary->type_id, summary->definition_id, summary_payload);
+    ck_assert_msg(summaryR, "create summary failed: %s", result_message(summaryR));
+    summary_id = summaryR.value->ref.id;
+
+    auto detail_payload = cbor_from_json_string("{\"title\":\"Detail\",\"level\":1,\"index\":1}");
+    auto detailR = store.create_object(detail->type_id, detail->definition_id, detail_payload);
+    ck_assert_msg(detailR, "create detail failed: %s", result_message(detailR));
+    detail_id = detailR.value->ref.id;
+
+    Bytes props;
+    auto edge1 = store.add_edge(demoR.value->ref, summaryR.value->ref, "summary", "root", props);
+    ck_assert_msg(edge1, "add demo->summary failed: %s", result_message(edge1));
+    auto edge2 = store.add_edge(summaryR.value->ref, detailR.value->ref, "summarizes", "detail", props);
+    ck_assert_msg(edge2, "add summary->detail failed: %s", result_message(edge2));
+
+    ck_assert_msg(store.close(), "close failed");
+  }
+
+  {
+    SqliteStore store(SqliteConfig{ .filename=db_path, .enable_wal=true });
+    ck_assert_msg(store.open(), "open failed");
+    ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+    auto demoRec = store.get_latest(demo_id);
+    ck_assert_msg(demoRec, "get_latest demo failed: %s", result_message(demoRec));
+    ck_assert_msg(demoRec.value->has_value(), "expected demo record");
+
+    auto summaryRec = store.get_latest(summary_id);
+    ck_assert_msg(summaryRec, "get_latest summary failed: %s", result_message(summaryRec));
+    ck_assert_msg(summaryRec.value->has_value(), "expected summary record");
+
+    auto detailRec = store.get_latest(detail_id);
+    ck_assert_msg(detailRec, "get_latest detail failed: %s", result_message(detailRec));
+    ck_assert_msg(detailRec.value->has_value(), "expected detail record");
+
+    auto demoEdges = store.edges_from(demoRec.value->value().ref);
+    ck_assert_msg(demoEdges, "edges_from demo failed: %s", result_message(demoEdges));
+    bool found_summary = false;
+    for (const auto& edge : demoEdges.value.value()) {
+      if (edge.name == "summary" && edge.role == "root"
+          && edge.to.id.to_hex() == summary_id.to_hex()) {
+        found_summary = true;
+        break;
+      }
+    }
+    ck_assert_msg(found_summary, "expected demo->summary edge");
+
+    auto summaryEdges = store.edges_from(summaryRec.value->value().ref);
+    ck_assert_msg(summaryEdges, "edges_from summary failed: %s", result_message(summaryEdges));
+    bool found_detail = false;
+    for (const auto& edge : summaryEdges.value.value()) {
+      if (edge.name == "summarizes" && edge.role == "detail"
+          && edge.to.id.to_hex() == detail_id.to_hex()) {
+        found_detail = true;
+        break;
+      }
+    }
+    ck_assert_msg(found_detail, "expected summary->detail edge");
+
+    ck_assert_msg(store.close(), "close failed");
+  }
+
+  cleanup_db_files(db_path);
+}
+END_TEST
+
 START_TEST(test_phase6_definition_migration)
 {
   std::string db_path = make_temp_db_path();
@@ -142,6 +250,7 @@ Suite* phase6_persistence_suite(void) {
 
   tcase_add_test(tc, test_phase6_persistence_roundtrip);
   tcase_add_test(tc, test_phase6_definition_migration);
+  tcase_add_test(tc, test_phase6_demo_persistence);
 
   suite_add_tcase(s, tc);
   return s;
