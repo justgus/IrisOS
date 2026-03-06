@@ -146,10 +146,20 @@ START_TEST(test_phase4_demo_schema)
   auto demoDefR = registry.get_definition_by_type(demo->type_id);
   ck_assert_msg(demoDefR, "get_definition_by_type demo failed: %s", result_message(demoDefR));
   bool start_found = false;
+  bool start_cap_found = false;
   for (const auto& op : demoDefR.value->value().definition.operations) {
-    if (op.name == "start") start_found = true;
+    if (op.name == "start") {
+      start_found = true;
+      for (const auto& cap : op.required_capabilities) {
+        if (cap == "demo.start") {
+          start_cap_found = true;
+          break;
+        }
+      }
+    }
   }
   ck_assert_msg(start_found, "expected start operation on Demo::PropulsionSynth");
+  ck_assert_msg(start_cap_found, "expected demo.start capability on Demo::PropulsionSynth start");
 
   auto summaryDefR = registry.get_definition_by_type(summary->type_id);
   ck_assert_msg(summaryDefR, "get_definition_by_type summary failed: %s", result_message(summaryDefR));
