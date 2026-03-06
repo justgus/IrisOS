@@ -44,7 +44,7 @@
 - ER-0040 — Verified
 - ER-0041 — Verified
 - ER-0042 — Verified
-- ER-0043 — In Progress
+- ER-0043 — Complete
 - ER-0044 — In Progress
 - ER-0045 — In Progress
 - ER-0046 — In Progress
