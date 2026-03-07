@@ -56,6 +56,7 @@ constexpr referee::TypeID kTypeRefereeEdge{0x5245464500000002ULL};
 constexpr referee::TypeID kTypeConchSession{0x434F4E4300000001ULL};
 constexpr referee::TypeID kTypeConchConcho{0x434F4E4300000002ULL};
 constexpr referee::TypeID kTypeConchAlias{0x434F4E4300000003ULL};
+constexpr referee::TypeID kTypeConchIoHandleAlias{0x434F4E4300000004ULL};
 
 constexpr referee::TypeID kTypeKernelIo{0x4B494F5000000001ULL};
 constexpr referee::TypeID kTypeKernelIoChannel{0x4B494F5000000002ULL};
@@ -566,6 +567,19 @@ TypeDefinition make_conch_alias() {
   return def;
 }
 
+TypeDefinition make_conch_io_handle_alias() {
+  TypeDefinition def{};
+  def.type_id = kTypeConchIoHandleAlias;
+  def.name = "IoHandleAlias";
+  def.namespace_name = "Conch";
+  def.version = 1;
+
+  def.fields.push_back(FieldDefinition{ "name", kTypeString, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "kind", kTypeString, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "handle_id", kTypeU64, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "active", kTypeBool, true, std::nullopt });
+  return def;
+}
 TypeDefinition make_kernel_io() {
   TypeDefinition def{};
   def.type_id = kTypeKernelIo;
@@ -788,7 +802,7 @@ TypeDefinition make_demo_detail() {
 
 std::vector<TypeDefinition> core_schema_definitions() {
   std::vector<TypeDefinition> defs;
-  defs.reserve(47);
+  defs.reserve(48);
   defs.push_back(make_primitive(kTypeString, "String"));
   defs.push_back(make_primitive(kTypeU64, "U64"));
   defs.push_back(make_primitive(kTypeBool, "Bool"));
@@ -826,6 +840,7 @@ std::vector<TypeDefinition> core_schema_definitions() {
   defs.push_back(make_conch_session());
   defs.push_back(make_conch_concho());
   defs.push_back(make_conch_alias());
+  defs.push_back(make_conch_io_handle_alias());
   defs.push_back(make_kernel_io());
   defs.push_back(make_kernel_io_channel());
   defs.push_back(make_kernel_io_datagram());

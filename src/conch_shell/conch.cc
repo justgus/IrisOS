@@ -72,6 +72,14 @@ struct IoHandleEntry {
   iris::conduit::IoHandle handle{};
 };
 
+struct IoAliasRecord {
+  std::string name;
+  iris::conduit::IoHandleKind kind{iris::conduit::IoHandleKind::Channel};
+  std::uint64_t handle_id{0};
+  bool active{false};
+  std::uint64_t created_at{0};
+};
+
 referee::Result<ObjectID> create_object(SchemaRegistry& registry, SqliteStore& store,
                                         const std::string& expr);
 referee::Result<ObjectID> create_demo_object(SchemaRegistry& registry, SqliteStore& store,
@@ -679,6 +687,13 @@ const char* io_kind_name(iris::conduit::IoHandleKind kind) {
   return "unknown";
 }
 
+std::optional<iris::conduit::IoHandleKind> io_kind_from_string(const std::string& text) {
+  if (text == "channel") return iris::conduit::IoHandleKind::Channel;
+  if (text == "datagram") return iris::conduit::IoHandleKind::Datagram;
+  if (text == "stream") return iris::conduit::IoHandleKind::ByteStream;
+  return std::nullopt;
+}
+
 bool parse_task_mode(const std::string& token, iris::ceo::TaskMode* out) {
   if (token == "inline") {
     *out = iris::ceo::TaskMode::Inline;
@@ -817,15 +832,21 @@ bool cmd_task_list(iris::ceo::TaskRegistry& registry) {
 }
 
 bool resolve_io_handle(const std::unordered_map<std::string, iris::conduit::IoHandle>& handles,
+                       const std::unordered_map<std::string, iris::conduit::IoHandle>& aliases,
                        const std::string& token,
                        iris::conduit::IoHandle* out,
                        std::string* err_out) {
   auto it = handles.find(token);
-  if (it == handles.end()) {
+  if (it != handles.end()) {
+    if (out) *out = it->second;
+    return true;
+  }
+  auto alias = aliases.find(token);
+  if (alias == aliases.end()) {
     if (err_out) *err_out = "unknown handle";
     return false;
   }
-  if (out) *out = it->second;
+  if (out) *out = alias->second;
   return true;
 }
 
@@ -842,14 +863,150 @@ void print_io_outcome(const iris::exec::AwaitOutcome& outcome) {
   }
 }
 
+std::optional<IoAliasRecord> parse_io_alias_record(const referee::ObjectRecord& rec) {
+  try {
+    auto json = nlohmann::json::from_cbor(rec.payload_cbor);
+    auto name = json.value("name", "");
+    auto kind_text = json.value("kind", "");
+    auto handle_id = json.value("handle_id", 0ULL);
+    auto active = json.value("active", false);
+    auto kind = io_kind_from_string(kind_text);
+    if (name.empty() || !kind.has_value()) return std::nullopt;
+    IoAliasRecord out;
+    out.name = name;
+    out.kind = kind.value();
+    out.handle_id = handle_id;
+    out.active = active;
+    out.created_at = rec.created_at_unix_ms;
+    return out;
+  } catch (const std::exception&) {
+    return std::nullopt;
+  }
+}
+
+referee::Result<void> persist_io_alias(SqliteStore& store,
+                                       SchemaRegistry& registry,
+                                       const std::string& name,
+                                       const iris::conduit::IoHandle& handle,
+                                       bool active) {
+  auto typesR = registry.list_types();
+  if (!typesR) return referee::Result<void>::err(typesR.error->message);
+  std::optional<TypeSummary> alias_type;
+  for (const auto& summary : typesR.value.value()) {
+    if (summary.namespace_name == "Conch" && summary.name == "IoHandleAlias") {
+      alias_type = summary;
+      break;
+    }
+  }
+  if (!alias_type.has_value()) {
+    return referee::Result<void>::err("io handle alias type not registered");
+  }
+
+  nlohmann::json payload;
+  payload["name"] = name;
+  payload["kind"] = io_kind_name(handle.kind);
+  payload["handle_id"] = handle.id;
+  payload["active"] = active;
+  auto cbor = nlohmann::json::to_cbor(payload);
+  auto createR = store.create_object(alias_type->type_id, alias_type->definition_id, cbor);
+  if (!createR) return referee::Result<void>::err(createR.error->message);
+  return referee::Result<void>::ok();
+}
+
+void load_io_aliases(SqliteStore& store,
+                     SchemaRegistry& registry,
+                     std::unordered_map<std::string, iris::conduit::IoHandle>& aliases) {
+  auto typesR = registry.list_types();
+  if (!typesR) return;
+  std::optional<TypeSummary> alias_type;
+  for (const auto& summary : typesR.value.value()) {
+    if (summary.namespace_name == "Conch" && summary.name == "IoHandleAlias") {
+      alias_type = summary;
+      break;
+    }
+  }
+  if (!alias_type.has_value()) return;
+
+  auto listR = store.list_by_type(alias_type->type_id);
+  if (!listR || listR.value->empty()) return;
+
+  std::unordered_map<std::string, IoAliasRecord> latest;
+  for (const auto& rec : listR.value.value()) {
+    auto parsed = parse_io_alias_record(rec);
+    if (!parsed.has_value()) continue;
+    auto it = latest.find(parsed->name);
+    if (it == latest.end() || parsed->created_at >= it->second.created_at) {
+      latest[parsed->name] = parsed.value();
+    }
+  }
+
+  for (const auto& kv : latest) {
+    const auto& record = kv.second;
+    if (!record.active) continue;
+    aliases.emplace(record.name,
+                    iris::conduit::IoHandle{record.kind, record.handle_id});
+  }
+}
+
+void list_io_aliases(SqliteStore& store,
+                     SchemaRegistry& registry,
+                     const std::unordered_map<std::string, iris::conduit::IoHandle>& aliases,
+                     iris::conduit::IoHandleStore& handle_store) {
+  auto typesR = registry.list_types();
+  if (!typesR) {
+    std::cout << "error: " << typesR.error->message << "\n";
+    return;
+  }
+  std::optional<TypeSummary> alias_type;
+  for (const auto& summary : typesR.value.value()) {
+    if (summary.namespace_name == "Conch" && summary.name == "IoHandleAlias") {
+      alias_type = summary;
+      break;
+    }
+  }
+  if (!alias_type.has_value()) {
+    std::cout << "error: io handle alias type not registered\n";
+    return;
+  }
+
+  auto listR = store.list_by_type(alias_type->type_id);
+  if (!listR) {
+    std::cout << "error: " << listR.error->message << "\n";
+    return;
+  }
+  if (listR.value->empty() || aliases.empty()) {
+    std::cout << "no io aliases\n";
+    return;
+  }
+
+  for (const auto& kv : aliases) {
+    const auto& handle = kv.second;
+    bool alive = false;
+    if (handle.kind == iris::conduit::IoHandleKind::Channel) {
+      alive = handle_store.find_channel(handle) != nullptr;
+    } else if (handle.kind == iris::conduit::IoHandleKind::Datagram) {
+      alive = handle_store.find_datagram(handle) != nullptr;
+    } else if (handle.kind == iris::conduit::IoHandleKind::ByteStream) {
+      alive = handle_store.find_stream(handle) != nullptr;
+    }
+    std::cout << kv.first << " " << io_kind_name(handle.kind)
+              << " id=" << handle.id;
+    if (!alive) std::cout << " stale";
+    std::cout << "\n";
+  }
+}
+
 bool cmd_io(iris::conduit::IoExecutor& executor,
+            iris::conduit::IoHandleStore& handle_store,
             std::unordered_map<std::string, iris::conduit::IoHandle>& handles,
+            std::unordered_map<std::string, iris::conduit::IoHandle>& aliases,
             std::uint64_t& next_handle_id,
             SchemaRegistry& registry,
+            SqliteStore& store,
             const std::set<std::string>& session_caps,
             const std::vector<std::string>& args) {
   if (args.empty()) {
-    std::cout << "error: usage: io <open|send|recv|await|close|handles>\n";
+    std::cout << "error: usage: io <open|send|recv|await|close|handles|aliases|alias|unalias>\n";
     return false;
   }
   DispatchEngine engine(registry);
@@ -863,6 +1020,11 @@ bool cmd_io(iris::conduit::IoExecutor& executor,
       std::cout << kv.first << " " << io_kind_name(kv.second.kind)
                 << " id=" << kv.second.id << "\n";
     }
+    return true;
+  }
+
+  if (args[0] == "aliases") {
+    list_io_aliases(store, registry, aliases, handle_store);
     return true;
   }
 
@@ -936,7 +1098,7 @@ bool cmd_io(iris::conduit::IoExecutor& executor,
     }
     iris::conduit::IoHandle handle{};
     std::string err;
-    if (!resolve_io_handle(handles, args[1], &handle, &err)) {
+    if (!resolve_io_handle(handles, aliases, args[1], &handle, &err)) {
       std::cout << "error: " << err << "\n";
       return false;
     }
@@ -998,7 +1160,7 @@ bool cmd_io(iris::conduit::IoExecutor& executor,
     }
     iris::conduit::IoHandle handle{};
     std::string err;
-    if (!resolve_io_handle(handles, args[1], &handle, &err)) {
+    if (!resolve_io_handle(handles, aliases, args[1], &handle, &err)) {
       std::cout << "error: " << err << "\n";
       return false;
     }
@@ -1060,7 +1222,7 @@ bool cmd_io(iris::conduit::IoExecutor& executor,
     }
     iris::conduit::IoHandle handle{};
     std::string err;
-    if (!resolve_io_handle(handles, args[1], &handle, &err)) {
+    if (!resolve_io_handle(handles, aliases, args[1], &handle, &err)) {
       std::cout << "error: " << err << "\n";
       return false;
     }
@@ -1131,7 +1293,7 @@ bool cmd_io(iris::conduit::IoExecutor& executor,
     }
     iris::conduit::IoHandle handle{};
     std::string err;
-    if (!resolve_io_handle(handles, args[1], &handle, &err)) {
+    if (!resolve_io_handle(handles, aliases, args[1], &handle, &err)) {
       std::cout << "error: " << err << "\n";
       return false;
     }
@@ -1176,7 +1338,53 @@ bool cmd_io(iris::conduit::IoExecutor& executor,
     return true;
   }
 
-  std::cout << "error: usage: io <open|send|recv|await|close|handles>\n";
+  if (args[0] == "alias") {
+    if (args.size() != 3) {
+      std::cout << "error: usage: io alias <handle> <name>\n";
+      return false;
+    }
+    iris::conduit::IoHandle handle{};
+    std::string err;
+    if (!resolve_io_handle(handles, aliases, args[1], &handle, &err)) {
+      std::cout << "error: " << err << "\n";
+      return false;
+    }
+    if (aliases.find(args[2]) != aliases.end()) {
+      std::cout << "error: alias already exists\n";
+      return false;
+    }
+    auto persistR = persist_io_alias(store, registry, args[2], handle, true);
+    if (!persistR) {
+      std::cout << "error: " << persistR.error->message << "\n";
+      return false;
+    }
+    aliases.emplace(args[2], handle);
+    std::cout << "io alias " << args[2] << " " << io_kind_name(handle.kind)
+              << " id=" << handle.id << "\n";
+    return true;
+  }
+
+  if (args[0] == "unalias") {
+    if (args.size() != 2) {
+      std::cout << "error: usage: io unalias <name>\n";
+      return false;
+    }
+    auto it = aliases.find(args[1]);
+    if (it == aliases.end()) {
+      std::cout << "error: alias not found\n";
+      return false;
+    }
+    auto persistR = persist_io_alias(store, registry, args[1], it->second, false);
+    if (!persistR) {
+      std::cout << "error: " << persistR.error->message << "\n";
+      return false;
+    }
+    aliases.erase(it);
+    std::cout << "io unalias " << args[1] << "\n";
+    return true;
+  }
+
+  std::cout << "error: usage: io <open|send|recv|await|close|handles|aliases|alias|unalias>\n";
   return false;
 }
 
@@ -1476,6 +1684,9 @@ void print_help() {
   std::cout << "  io recv <handle> [max_bytes]\n";
   std::cout << "  io close <handle>\n";
   std::cout << "  io handles\n";
+  std::cout << "  io aliases\n";
+  std::cout << "  io alias <handle> <name>\n";
+  std::cout << "  io unalias <name>\n";
   std::cout << "  edge <fromObjectID> <toObjectID> <name> [role]\n";
   std::cout << "  emit viz <textlog|metric|table|tree|panel> [args...]\n";
   std::cout << "    [--produced-by <id>] [--progress-of <id>] [--diagnostic-of <id>] [--role <role>]\n";
@@ -3105,10 +3316,13 @@ int main(int argc, char** argv) {
   iris::conduit::IoHandleStore io_handle_store;
   iris::conduit::IoExecutor io_executor(ceo_registry, ceo_comms, ceo_reactor, io_handle_store);
   std::unordered_map<std::string, iris::conduit::IoHandle> io_handles;
+  std::unordered_map<std::string, iris::conduit::IoHandle> io_handle_aliases;
   std::uint64_t next_io_handle_id = 1;
   std::unordered_map<std::string, ObjectID> session_aliases;
   std::set<std::string> session_caps;
   std::uint64_t next_task_id = 1;
+
+  load_io_aliases(store, registry, io_handle_aliases);
 
   for (;;) {
     auto line_opt = read_line("conch> ");
@@ -3320,7 +3534,8 @@ int main(int argc, char** argv) {
       continue;
     }
     if (cmd == "io") {
-      cmd_io(io_executor, io_handles, next_io_handle_id, registry, session_caps, parsed.args);
+      cmd_io(io_executor, io_handle_store, io_handles, io_handle_aliases,
+             next_io_handle_id, registry, store, session_caps, parsed.args);
       continue;
     }
     if (cmd == "edge") {
