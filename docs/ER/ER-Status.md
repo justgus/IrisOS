@@ -44,10 +44,10 @@
 - ER-0040 — Verified
 - ER-0041 — Verified
 - ER-0042 — Verified
-- ER-0043 — Complete
-- ER-0044 — Complete
+- ER-0043 — Verified
+- ER-0044 — Verified
 - ER-0045 — In Progress
-- ER-0046 — Complete
+- ER-0046 — Verified
 - ER-0047 — Proposed
 - ER-0048 — Proposed
 - ER-0049 — Proposed
