@@ -50,6 +50,7 @@
 - ER-0045.1 — Verified
 - ER-0045.2 — Verified
 - ER-0045.3 — Verified
+- ER-0045.4 — Verified
 - ER-0046 — Verified
 - ER-0047 — Proposed
 - ER-0048 — Proposed
