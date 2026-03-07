@@ -10,7 +10,13 @@ extern "C" {
 #include "referee/referee.h"
 #include "referee_sqlite/sqlite_store.h"
 
+#include <cstdio>
+#include <cstdlib>
+#include <fstream>
 #include <nlohmann/json.hpp>
+#include <sstream>
+#include <string>
+#include <unistd.h>
 
 using namespace referee;
 using namespace iris::refract;
@@ -20,6 +26,42 @@ namespace {
 template <typename T>
 const char* result_message(const Result<T>& r) {
   return r.error.has_value() ? r.error->message.c_str() : "ok";
+}
+
+std::string run_conch_script(const std::string& script) {
+  char db_template[] = "/tmp/iris-conch-db-XXXXXX";
+  int db_fd = ::mkstemp(db_template);
+  if (db_fd >= 0) {
+    ::close(db_fd);
+  }
+
+  char script_template[] = "/tmp/iris-conch-script-XXXXXX";
+  int script_fd = ::mkstemp(script_template);
+  if (script_fd >= 0) {
+    ::close(script_fd);
+  }
+
+  {
+    std::ofstream out(script_template);
+    out << script;
+  }
+
+  std::ostringstream cmd;
+  cmd << "../bin/conch --db " << db_template << " < " << script_template;
+
+  std::string output;
+  FILE* pipe = ::popen(cmd.str().c_str(), "r");
+  if (pipe) {
+    char buffer[256];
+    while (std::fgets(buffer, sizeof(buffer), pipe)) {
+      output.append(buffer);
+    }
+    ::pclose(pipe);
+  }
+
+  ::unlink(script_template);
+  ::unlink(db_template);
+  return output;
 }
 
 } // namespace
@@ -74,11 +116,56 @@ START_TEST(test_conch_define_and_instantiate)
 }
 END_TEST
 
+START_TEST(test_conch_io_commands)
+{
+  std::ostringstream script;
+  script << "let a=new Demo::PropulsionSynth name:=alpha\n";
+  script << "let b=new Demo::PropulsionSynth name:=beta\n";
+  script << "task spawn a\n";
+  script << "task spawn b\n";
+  script << "caps grant kernel.io\n";
+  script << "io open channel 1 2\n";
+  script << "io send io-0001 010203\n";
+  script << "io await io-0002 2\n";
+  script << "io recv io-0002 8\n";
+  script << "io close io-0002\n";
+  script << "exit\n";
+
+  auto output = run_conch_script(script.str());
+  ck_assert_msg(output.find("io channel io-0001 io-0002") != std::string::npos,
+                "expected io channel output");
+  ck_assert_msg(output.find("io send ready=true") != std::string::npos,
+                "expected io send output");
+  ck_assert_msg(output.find("io recv 010203") != std::string::npos,
+                "expected io recv output");
+  ck_assert_msg(output.find("io closed io-0002") != std::string::npos,
+                "expected io close output");
+}
+END_TEST
+
+START_TEST(test_conch_io_requires_caps)
+{
+  std::ostringstream script;
+  script << "let a=new Demo::PropulsionSynth name:=alpha\n";
+  script << "let b=new Demo::PropulsionSynth name:=beta\n";
+  script << "task spawn a\n";
+  script << "task spawn b\n";
+  script << "io open channel 1 2\n";
+  script << "exit\n";
+
+  auto output = run_conch_script(script.str());
+  ck_assert_msg(output.find("error: missing capability: kernel.io") != std::string::npos,
+                "expected missing capability error");
+}
+END_TEST
+
 Suite* conch_authoring_suite(void) {
   Suite* s = suite_create("ConchAuthoring");
   TCase* tc = tcase_create("core");
 
   tcase_add_test(tc, test_conch_define_and_instantiate);
+  tcase_add_test(tc, test_conch_io_commands);
+  tcase_add_test(tc, test_conch_io_requires_caps);
 
   suite_add_tcase(s, tc);
   return s;

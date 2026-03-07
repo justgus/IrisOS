@@ -2,6 +2,7 @@
 #include "config.h"
 #endif
 
+#include "ceo/io_reactor.h"
 #include "ceo/task_registry.h"
 #include "comms/primitives.h"
 #include "refract/bootstrap.h"
@@ -66,6 +67,11 @@ struct AliasEntry {
   ObjectID object_id{};
 };
 
+struct IoHandleEntry {
+  std::string name;
+  iris::conduit::IoHandle handle{};
+};
+
 referee::Result<ObjectID> create_object(SchemaRegistry& registry, SqliteStore& store,
                                         const std::string& expr);
 referee::Result<ObjectID> create_demo_object(SchemaRegistry& registry, SqliteStore& store,
@@ -78,6 +84,9 @@ referee::Result<void> demo_expand(SchemaRegistry& registry, SqliteStore& store,
 bool parse_bool(std::string_view v, bool* out);
 bool parse_int(std::string_view v, std::int64_t* out);
 bool parse_double(std::string_view v, double* out);
+bool parse_u64(std::string_view v, std::uint64_t* out);
+std::string bytes_to_hex(const std::vector<std::uint8_t>& bytes);
+bool parse_hex_bytes(std::string_view v, std::vector<std::uint8_t>* out, std::string* err_out);
 bool value_to_json(const iris::parser::ValueNode& node, nlohmann::json* out,
                    std::string* err_out);
 
@@ -645,6 +654,43 @@ std::string format_capabilities(const iris::refract::OperationDefinition& op) {
   return os.str();
 }
 
+constexpr TypeID kTypeU64{0x1002ULL};
+constexpr TypeID kTypeBytes{0x1007ULL};
+constexpr TypeID kTypeKernelIo{0x4B494F5000000001ULL};
+constexpr TypeID kTypeKernelIoChannel{0x4B494F5000000002ULL};
+constexpr TypeID kTypeKernelIoDatagram{0x4B494F5000000003ULL};
+
+std::string format_task_state(iris::ceo::TaskState state) {
+  return iris::ceo::to_string(state);
+}
+
+std::string io_handle_name(std::uint64_t id) {
+  std::ostringstream os;
+  os << "io-" << std::setw(4) << std::setfill('0') << id;
+  return os.str();
+}
+
+const char* io_kind_name(iris::conduit::IoHandleKind kind) {
+  switch (kind) {
+    case iris::conduit::IoHandleKind::Channel: return "channel";
+    case iris::conduit::IoHandleKind::Datagram: return "datagram";
+    case iris::conduit::IoHandleKind::ByteStream: return "stream";
+  }
+  return "unknown";
+}
+
+bool parse_task_mode(const std::string& token, iris::ceo::TaskMode* out) {
+  if (token == "inline") {
+    *out = iris::ceo::TaskMode::Inline;
+    return true;
+  }
+  if (token == "service") {
+    *out = iris::ceo::TaskMode::Service;
+    return true;
+  }
+  return false;
+}
+
 bool has_required_capabilities(const iris::refract::OperationDefinition& op,
                                const std::set<std::string>& granted,
                                std::string* err_out) {
@@ -698,6 +744,440 @@ bool cmd_caps_clear(std::set<std::string>& caps, const std::vector<std::string>&
   }
   caps.clear();
   return true;
+}
+
+std::string format_task_list(const std::vector<iris::ceo::TaskRecord>& tasks) {
+  std::ostringstream os;
+  for (const auto& task : tasks) {
+    os << "task " << task.id << " " << format_task_state(task.state)
+       << " object=" << task.object_id.to_hex();
+    if (!task.name.empty()) os << " name=" << task.name;
+    os << "\n";
+  }
+  return os.str();
+}
+
+bool cmd_task_spawn(iris::ceo::TaskRegistry& registry,
+                    SchemaRegistry& schema,
+                    SqliteStore& store,
+                    const std::unordered_map<std::string, ObjectID>& session_aliases,
+                    const std::vector<std::string>& args) {
+  if (args.size() < 2) {
+    std::cout << "error: usage: task spawn <ObjectID> [name] [inline|service]\n";
+    return false;
+  }
+  std::string err;
+  auto id = parse_object_id_or_alias(args[1], session_aliases, store, schema, &err);
+  if (!id.has_value()) {
+    std::cout << "error: " << err << "\n";
+    return false;
+  }
+
+  std::string name;
+  iris::ceo::TaskMode mode = iris::ceo::TaskMode::Inline;
+  if (args.size() >= 3) {
+    if (parse_task_mode(args[2], &mode)) {
+      name = "";
+    } else {
+      name = args[2];
+    }
+  }
+  if (args.size() >= 4) {
+    if (!parse_task_mode(args[3], &mode)) {
+      std::cout << "error: invalid task mode\n";
+      return false;
+    }
+  }
+  if (args.size() > 4) {
+    std::cout << "error: usage: task spawn <ObjectID> [name] [inline|service]\n";
+    return false;
+  }
+
+  auto taskR = registry.spawn_task(id.value(), std::nullopt, name, mode);
+  if (!taskR) {
+    std::cout << "error: " << taskR.error->message << "\n";
+    return false;
+  }
+  std::cout << "task " << taskR.value->id << " " << format_task_state(taskR.value->state) << "\n";
+  return true;
+}
+
+bool cmd_task_list(iris::ceo::TaskRegistry& registry) {
+  auto listR = registry.list_tasks();
+  if (!listR) {
+    std::cout << "error: " << listR.error->message << "\n";
+    return false;
+  }
+  if (listR.value->empty()) {
+    std::cout << "no tasks\n";
+    return true;
+  }
+  std::cout << format_task_list(listR.value.value());
+  return true;
+}
+
+bool resolve_io_handle(const std::unordered_map<std::string, iris::conduit::IoHandle>& handles,
+                       const std::string& token,
+                       iris::conduit::IoHandle* out,
+                       std::string* err_out) {
+  auto it = handles.find(token);
+  if (it == handles.end()) {
+    if (err_out) *err_out = "unknown handle";
+    return false;
+  }
+  if (out) *out = it->second;
+  return true;
+}
+
+void print_io_outcome(const iris::exec::AwaitOutcome& outcome) {
+  if (!outcome.resumed.empty()) {
+    std::cout << "resumed";
+    for (auto id : outcome.resumed) std::cout << " " << id;
+    std::cout << "\n";
+  }
+  if (!outcome.canceled.empty()) {
+    std::cout << "canceled";
+    for (auto id : outcome.canceled) std::cout << " " << id;
+    std::cout << "\n";
+  }
+}
+
+bool cmd_io(iris::conduit::IoExecutor& executor,
+            std::unordered_map<std::string, iris::conduit::IoHandle>& handles,
+            std::uint64_t& next_handle_id,
+            SchemaRegistry& registry,
+            const std::set<std::string>& session_caps,
+            const std::vector<std::string>& args) {
+  if (args.empty()) {
+    std::cout << "error: usage: io <open|send|recv|await|close|handles>\n";
+    return false;
+  }
+  DispatchEngine engine(registry);
+
+  if (args[0] == "handles") {
+    if (handles.empty()) {
+      std::cout << "no io handles\n";
+      return true;
+    }
+    for (const auto& kv : handles) {
+      std::cout << kv.first << " " << io_kind_name(kv.second.kind)
+                << " id=" << kv.second.id << "\n";
+    }
+    return true;
+  }
+
+  if (args[0] == "open") {
+    if (args.size() != 4) {
+      std::cout << "error: usage: io open <channel|datagram> <taskA> <taskB>\n";
+      return false;
+    }
+    std::uint64_t a = 0;
+    std::uint64_t b = 0;
+    if (!parse_u64(args[2], &a) || !parse_u64(args[3], &b)) {
+      std::cout << "error: invalid task id\n";
+      return false;
+    }
+    if (args[1] == "channel") {
+      auto matchR = engine.resolve(kTypeKernelIo, "open_channel", OperationScope::Class,
+                                   {kTypeU64, kTypeU64}, 2, true);
+      if (!matchR) {
+        std::cout << "error: " << matchR.error->message << "\n";
+        return false;
+      }
+      std::string cap_err;
+      if (!has_required_capabilities(matchR.value->operation, session_caps, &cap_err)) {
+        std::cout << "error: " << cap_err << "\n";
+        return false;
+      }
+      auto openR = executor.open_channel(matchR.value.value(), a, b);
+      if (!openR) {
+        std::cout << "error: " << openR.error->message << "\n";
+        return false;
+      }
+      auto name_a = io_handle_name(next_handle_id++);
+      auto name_b = io_handle_name(next_handle_id++);
+      handles.emplace(name_a, openR.value->first);
+      handles.emplace(name_b, openR.value->second);
+      std::cout << "io channel " << name_a << " " << name_b << "\n";
+      return true;
+    }
+    if (args[1] == "datagram") {
+      auto matchR = engine.resolve(kTypeKernelIo, "open_datagram", OperationScope::Class,
+                                   {kTypeU64, kTypeU64}, 2, true);
+      if (!matchR) {
+        std::cout << "error: " << matchR.error->message << "\n";
+        return false;
+      }
+      std::string cap_err;
+      if (!has_required_capabilities(matchR.value->operation, session_caps, &cap_err)) {
+        std::cout << "error: " << cap_err << "\n";
+        return false;
+      }
+      auto openR = executor.open_datagram(matchR.value.value(), a, b);
+      if (!openR) {
+        std::cout << "error: " << openR.error->message << "\n";
+        return false;
+      }
+      auto name_a = io_handle_name(next_handle_id++);
+      auto name_b = io_handle_name(next_handle_id++);
+      handles.emplace(name_a, openR.value->first);
+      handles.emplace(name_b, openR.value->second);
+      std::cout << "io datagram " << name_a << " " << name_b << "\n";
+      return true;
+    }
+    std::cout << "error: usage: io open <channel|datagram> <taskA> <taskB>\n";
+    return false;
+  }
+
+  if (args[0] == "send") {
+    if (args.size() != 3) {
+      std::cout << "error: usage: io send <handle> <hexbytes>\n";
+      return false;
+    }
+    iris::conduit::IoHandle handle{};
+    std::string err;
+    if (!resolve_io_handle(handles, args[1], &handle, &err)) {
+      std::cout << "error: " << err << "\n";
+      return false;
+    }
+    std::vector<std::uint8_t> bytes;
+    if (!parse_hex_bytes(args[2], &bytes, &err)) {
+      std::cout << "error: " << err << "\n";
+      return false;
+    }
+    if (handle.kind == iris::conduit::IoHandleKind::Channel) {
+      auto matchR = engine.resolve(kTypeKernelIoChannel, "send", OperationScope::Object,
+                                   {kTypeBytes}, 1, true);
+      if (!matchR) {
+        std::cout << "error: " << matchR.error->message << "\n";
+        return false;
+      }
+      std::string cap_err;
+      if (!has_required_capabilities(matchR.value->operation, session_caps, &cap_err)) {
+        std::cout << "error: " << cap_err << "\n";
+        return false;
+      }
+      auto sendR = executor.send_channel(matchR.value.value(), handle, bytes);
+      if (!sendR) {
+        std::cout << "error: " << sendR.error->message << "\n";
+        return false;
+      }
+      std::cout << "io send ready=" << (sendR.value->ready ? "true" : "false") << "\n";
+      print_io_outcome(sendR.value->outcome);
+      return true;
+    }
+    if (handle.kind == iris::conduit::IoHandleKind::Datagram) {
+      auto matchR = engine.resolve(kTypeKernelIoDatagram, "send", OperationScope::Object,
+                                   {kTypeBytes}, 1, true);
+      if (!matchR) {
+        std::cout << "error: " << matchR.error->message << "\n";
+        return false;
+      }
+      std::string cap_err;
+      if (!has_required_capabilities(matchR.value->operation, session_caps, &cap_err)) {
+        std::cout << "error: " << cap_err << "\n";
+        return false;
+      }
+      auto sendR = executor.send_datagram(matchR.value.value(), handle, bytes);
+      if (!sendR) {
+        std::cout << "error: " << sendR.error->message << "\n";
+        return false;
+      }
+      std::cout << "io send ready=" << (sendR.value->ready ? "true" : "false") << "\n";
+      print_io_outcome(sendR.value->outcome);
+      return true;
+    }
+    std::cout << "error: unsupported handle kind\n";
+    return false;
+  }
+
+  if (args[0] == "await") {
+    if (args.size() != 3) {
+      std::cout << "error: usage: io await <handle> <taskId>\n";
+      return false;
+    }
+    iris::conduit::IoHandle handle{};
+    std::string err;
+    if (!resolve_io_handle(handles, args[1], &handle, &err)) {
+      std::cout << "error: " << err << "\n";
+      return false;
+    }
+    std::uint64_t task_id = 0;
+    if (!parse_u64(args[2], &task_id)) {
+      std::cout << "error: invalid task id\n";
+      return false;
+    }
+    if (handle.kind == iris::conduit::IoHandleKind::Channel) {
+      auto matchR = engine.resolve(kTypeKernelIoChannel, "await_readable", OperationScope::Object,
+                                   {kTypeU64}, 1, true);
+      if (!matchR) {
+        std::cout << "error: " << matchR.error->message << "\n";
+        return false;
+      }
+      std::string cap_err;
+      if (!has_required_capabilities(matchR.value->operation, session_caps, &cap_err)) {
+        std::cout << "error: " << cap_err << "\n";
+        return false;
+      }
+      auto waitR = executor.await_channel(matchR.value.value(), handle, task_id);
+      if (!waitR) {
+        std::cout << "error: " << waitR.error->message << "\n";
+        return false;
+      }
+      std::cout << "io await ready=" << (waitR.value->ready ? "true" : "false") << "\n";
+      print_io_outcome(waitR.value->outcome);
+      return true;
+    }
+    if (handle.kind == iris::conduit::IoHandleKind::Datagram) {
+      auto matchR = engine.resolve(kTypeKernelIoDatagram, "await_readable", OperationScope::Object,
+                                   {kTypeU64}, 1, true);
+      if (!matchR) {
+        std::cout << "error: " << matchR.error->message << "\n";
+        return false;
+      }
+      std::string cap_err;
+      if (!has_required_capabilities(matchR.value->operation, session_caps, &cap_err)) {
+        std::cout << "error: " << cap_err << "\n";
+        return false;
+      }
+      auto waitR = executor.await_datagram(matchR.value.value(), handle, task_id);
+      if (!waitR) {
+        std::cout << "error: " << waitR.error->message << "\n";
+        return false;
+      }
+      std::cout << "io await ready=" << (waitR.value->ready ? "true" : "false") << "\n";
+      print_io_outcome(waitR.value->outcome);
+      return true;
+    }
+    std::cout << "error: unsupported handle kind\n";
+    return false;
+  }
+
+  if (args[0] == "recv") {
+    if (args.size() < 2 || args.size() > 3) {
+      std::cout << "error: usage: io recv <handle> [max_bytes]\n";
+      return false;
+    }
+    iris::conduit::IoHandle handle{};
+    std::string err;
+    if (!resolve_io_handle(handles, args[1], &handle, &err)) {
+      std::cout << "error: " << err << "\n";
+      return false;
+    }
+    if (handle.kind == iris::conduit::IoHandleKind::Channel) {
+      if (args.size() != 3) {
+        std::cout << "error: usage: io recv <handle> <max_bytes>\n";
+        return false;
+      }
+      std::uint64_t max_bytes = 0;
+      if (!parse_u64(args[2], &max_bytes)) {
+        std::cout << "error: invalid max_bytes\n";
+        return false;
+      }
+      auto matchR = engine.resolve(kTypeKernelIoChannel, "recv", OperationScope::Object,
+                                   {kTypeU64}, 1, true);
+      if (!matchR) {
+        std::cout << "error: " << matchR.error->message << "\n";
+        return false;
+      }
+      std::string cap_err;
+      if (!has_required_capabilities(matchR.value->operation, session_caps, &cap_err)) {
+        std::cout << "error: " << cap_err << "\n";
+        return false;
+      }
+      auto recvR = executor.recv_channel(matchR.value.value(), handle, max_bytes);
+      if (!recvR) {
+        std::cout << "error: " << recvR.error->message << "\n";
+        return false;
+      }
+      std::cout << "io recv " << bytes_to_hex(recvR.value.value()) << "\n";
+      return true;
+    }
+    if (handle.kind == iris::conduit::IoHandleKind::Datagram) {
+      if (args.size() != 2) {
+        std::cout << "error: usage: io recv <handle>\n";
+        return false;
+      }
+      auto matchR = engine.resolve(kTypeKernelIoDatagram, "recv", OperationScope::Object, {}, 0, true);
+      if (!matchR) {
+        std::cout << "error: " << matchR.error->message << "\n";
+        return false;
+      }
+      std::string cap_err;
+      if (!has_required_capabilities(matchR.value->operation, session_caps, &cap_err)) {
+        std::cout << "error: " << cap_err << "\n";
+        return false;
+      }
+      auto recvR = executor.recv_datagram(matchR.value.value(), handle);
+      if (!recvR) {
+        std::cout << "error: " << recvR.error->message << "\n";
+        return false;
+      }
+      if (!recvR.value->has_value()) {
+        std::cout << "io recv (none)\n";
+        return true;
+      }
+      std::cout << "io recv " << bytes_to_hex(recvR.value->value()) << "\n";
+      return true;
+    }
+    std::cout << "error: unsupported handle kind\n";
+    return false;
+  }
+
+  if (args[0] == "close") {
+    if (args.size() != 2) {
+      std::cout << "error: usage: io close <handle>\n";
+      return false;
+    }
+    iris::conduit::IoHandle handle{};
+    std::string err;
+    if (!resolve_io_handle(handles, args[1], &handle, &err)) {
+      std::cout << "error: " << err << "\n";
+      return false;
+    }
+    if (handle.kind == iris::conduit::IoHandleKind::Channel) {
+      auto matchR = engine.resolve(kTypeKernelIoChannel, "close", OperationScope::Object, {}, 0, true);
+      if (!matchR) {
+        std::cout << "error: " << matchR.error->message << "\n";
+        return false;
+      }
+      std::string cap_err;
+      if (!has_required_capabilities(matchR.value->operation, session_caps, &cap_err)) {
+        std::cout << "error: " << cap_err << "\n";
+        return false;
+      }
+      auto closeR = executor.close_channel(matchR.value.value(), handle);
+      if (!closeR) {
+        std::cout << "error: " << closeR.error->message << "\n";
+        return false;
+      }
+    } else if (handle.kind == iris::conduit::IoHandleKind::Datagram) {
+      auto matchR = engine.resolve(kTypeKernelIoDatagram, "close", OperationScope::Object, {}, 0, true);
+      if (!matchR) {
+        std::cout << "error: " << matchR.error->message << "\n";
+        return false;
+      }
+      std::string cap_err;
+      if (!has_required_capabilities(matchR.value->operation, session_caps, &cap_err)) {
+        std::cout << "error: " << cap_err << "\n";
+        return false;
+      }
+      auto closeR = executor.close_datagram(matchR.value.value(), handle);
+      if (!closeR) {
+        std::cout << "error: " << closeR.error->message << "\n";
+        return false;
+      }
+    } else {
+      std::cout << "error: unsupported handle kind\n";
+      return false;
+    }
+    handles.erase(args[1]);
+    std::cout << "io closed " << args[1] << "\n";
+    return true;
+  }
+
+  std::cout << "error: usage: io <open|send|recv|await|close|handles>\n";
+  return false;
 }
 
 const char* scope_label(OperationScope scope) {
@@ -810,6 +1290,43 @@ std::string bytes_to_hex(const std::vector<std::uint8_t>& bytes) {
     out.push_back(kHex[b & 0xF]);
   }
   return out;
+}
+
+bool parse_hex_bytes(std::string_view v, std::vector<std::uint8_t>* out, std::string* err_out) {
+  if (!out) return false;
+  out->clear();
+  if (v.empty()) {
+    if (err_out) *err_out = "expected hex bytes";
+    return false;
+  }
+  std::string tmp(v);
+  if (tmp.rfind("0x", 0) == 0 || tmp.rfind("0X", 0) == 0) {
+    tmp = tmp.substr(2);
+  } else if (tmp.rfind("hex:", 0) == 0 || tmp.rfind("HEX:", 0) == 0) {
+    tmp = tmp.substr(4);
+  }
+  if (tmp.empty()) {
+    if (err_out) *err_out = "expected hex bytes";
+    return false;
+  }
+  if (tmp.size() % 2 != 0) {
+    if (err_out) *err_out = "hex bytes must be an even-length string";
+    return false;
+  }
+
+  out->reserve(tmp.size() / 2);
+  for (size_t i = 0; i < tmp.size(); i += 2) {
+    char hi = tmp[i];
+    char lo = tmp[i + 1];
+    if (!std::isxdigit(static_cast<unsigned char>(hi)) ||
+        !std::isxdigit(static_cast<unsigned char>(lo))) {
+      if (err_out) *err_out = "invalid hex byte sequence";
+      return false;
+    }
+    auto byte = static_cast<std::uint8_t>(std::strtoul(tmp.substr(i, 2).c_str(), nullptr, 16));
+    out->push_back(byte);
+  }
+  return true;
 }
 
 const nlohmann::json* payload_value(const nlohmann::json& payload) {
@@ -951,6 +1468,14 @@ void print_help() {
   std::cout << "  start <ObjectID>\n";
   std::cout << "  ps\n";
   std::cout << "  kill <TaskID>\n";
+  std::cout << "  task spawn <ObjectID> [name] [inline|service]\n";
+  std::cout << "  task list\n";
+  std::cout << "  io open <channel|datagram> <taskA> <taskB>\n";
+  std::cout << "  io send <handle> <hexbytes>\n";
+  std::cout << "  io await <handle> <taskId>\n";
+  std::cout << "  io recv <handle> [max_bytes]\n";
+  std::cout << "  io close <handle>\n";
+  std::cout << "  io handles\n";
   std::cout << "  edge <fromObjectID> <toObjectID> <name> [role]\n";
   std::cout << "  emit viz <textlog|metric|table|tree|panel> [args...]\n";
   std::cout << "    [--produced-by <id>] [--progress-of <id>] [--diagnostic-of <id>] [--role <role>]\n";
@@ -2576,6 +3101,11 @@ int main(int argc, char** argv) {
   std::vector<TaskEntry> tasks;
   iris::ceo::TaskRegistry ceo_registry;
   iris::ceo::TaskComms ceo_comms(ceo_registry);
+  iris::ceo::IoReactor ceo_reactor(ceo_registry);
+  iris::conduit::IoHandleStore io_handle_store;
+  iris::conduit::IoExecutor io_executor(ceo_registry, ceo_comms, ceo_reactor, io_handle_store);
+  std::unordered_map<std::string, iris::conduit::IoHandle> io_handles;
+  std::uint64_t next_io_handle_id = 1;
   std::unordered_map<std::string, ObjectID> session_aliases;
   std::set<std::string> session_caps;
   std::uint64_t next_task_id = 1;
@@ -2771,6 +3301,26 @@ int main(int argc, char** argv) {
       }
       std::cout << "killed " << it->id << "\n";
       tasks.erase(it);
+      continue;
+    }
+    if (cmd == "task") {
+      if (parsed.args.empty()) {
+        std::cout << "error: usage: task <spawn|list>\n";
+        continue;
+      }
+      if (parsed.args[0] == "spawn") {
+        cmd_task_spawn(ceo_registry, registry, store, session_aliases, parsed.args);
+        continue;
+      }
+      if (parsed.args[0] == "list") {
+        cmd_task_list(ceo_registry);
+        continue;
+      }
+      std::cout << "error: usage: task <spawn|list>\n";
+      continue;
+    }
+    if (cmd == "io") {
+      cmd_io(io_executor, io_handles, next_io_handle_id, registry, session_caps, parsed.args);
       continue;
     }
     if (cmd == "edge") {

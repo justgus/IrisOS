@@ -576,6 +576,7 @@ TypeDefinition make_kernel_io() {
   OperationDefinition open_channel;
   open_channel.name = "open_channel";
   open_channel.scope = OperationScope::Class;
+  open_channel.required_capabilities.push_back("kernel.io");
   open_channel.signature.params.push_back(ParameterDefinition{ "a", kTypeU64, false });
   open_channel.signature.params.push_back(ParameterDefinition{ "b", kTypeU64, false });
   open_channel.signature.outputs.push_back(ParameterDefinition{ "a", kTypeKernelIoChannel, false });
@@ -585,6 +586,7 @@ TypeDefinition make_kernel_io() {
   OperationDefinition open_datagram;
   open_datagram.name = "open_datagram";
   open_datagram.scope = OperationScope::Class;
+  open_datagram.required_capabilities.push_back("kernel.io");
   open_datagram.signature.params.push_back(ParameterDefinition{ "a", kTypeU64, false });
   open_datagram.signature.params.push_back(ParameterDefinition{ "b", kTypeU64, false });
   open_datagram.signature.outputs.push_back(ParameterDefinition{ "a", kTypeKernelIoDatagram, false });
@@ -604,6 +606,7 @@ TypeDefinition make_kernel_io_channel() {
   OperationDefinition send_op;
   send_op.name = "send";
   send_op.scope = OperationScope::Object;
+  send_op.required_capabilities.push_back("kernel.io");
   send_op.signature.params.push_back(ParameterDefinition{ "data", kTypeBytes, false });
   send_op.signature.outputs.push_back(ParameterDefinition{ "ready", kTypeBool, false });
   def.operations.push_back(std::move(send_op));
@@ -611,6 +614,7 @@ TypeDefinition make_kernel_io_channel() {
   OperationDefinition recv_op;
   recv_op.name = "recv";
   recv_op.scope = OperationScope::Object;
+  recv_op.required_capabilities.push_back("kernel.io");
   recv_op.signature.params.push_back(ParameterDefinition{ "max_bytes", kTypeU64, false });
   recv_op.signature.outputs.push_back(ParameterDefinition{ "data", kTypeBytes, false });
   def.operations.push_back(std::move(recv_op));
@@ -618,6 +622,7 @@ TypeDefinition make_kernel_io_channel() {
   OperationDefinition await_op;
   await_op.name = "await_readable";
   await_op.scope = OperationScope::Object;
+  await_op.required_capabilities.push_back("kernel.io");
   await_op.signature.params.push_back(ParameterDefinition{ "task_id", kTypeU64, false });
   await_op.signature.outputs.push_back(ParameterDefinition{ "ready", kTypeBool, false });
   def.operations.push_back(std::move(await_op));
@@ -625,6 +630,7 @@ TypeDefinition make_kernel_io_channel() {
   OperationDefinition close_op;
   close_op.name = "close";
   close_op.scope = OperationScope::Object;
+  close_op.required_capabilities.push_back("kernel.io");
   def.operations.push_back(std::move(close_op));
 
   return def;
@@ -640,6 +646,7 @@ TypeDefinition make_kernel_io_datagram() {
   OperationDefinition send_op;
   send_op.name = "send";
   send_op.scope = OperationScope::Object;
+  send_op.required_capabilities.push_back("kernel.io");
   send_op.signature.params.push_back(ParameterDefinition{ "data", kTypeBytes, false });
   send_op.signature.outputs.push_back(ParameterDefinition{ "ready", kTypeBool, false });
   def.operations.push_back(std::move(send_op));
@@ -647,12 +654,14 @@ TypeDefinition make_kernel_io_datagram() {
   OperationDefinition recv_op;
   recv_op.name = "recv";
   recv_op.scope = OperationScope::Object;
+  recv_op.required_capabilities.push_back("kernel.io");
   recv_op.signature.outputs.push_back(ParameterDefinition{ "data", kTypeBytes, true });
   def.operations.push_back(std::move(recv_op));
 
   OperationDefinition await_op;
   await_op.name = "await_readable";
   await_op.scope = OperationScope::Object;
+  await_op.required_capabilities.push_back("kernel.io");
   await_op.signature.params.push_back(ParameterDefinition{ "task_id", kTypeU64, false });
   await_op.signature.outputs.push_back(ParameterDefinition{ "ready", kTypeBool, false });
   def.operations.push_back(std::move(await_op));
@@ -660,6 +669,7 @@ TypeDefinition make_kernel_io_datagram() {
   OperationDefinition close_op;
   close_op.name = "close";
   close_op.scope = OperationScope::Object;
+  close_op.required_capabilities.push_back("kernel.io");
   def.operations.push_back(std::move(close_op));
 
   return def;
