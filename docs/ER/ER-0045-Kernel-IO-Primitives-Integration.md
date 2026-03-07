@@ -75,9 +75,44 @@ GitHub-Issue: #181
 - Dependency 1: ER-0015 Phase5 Comms Primitives.
 - Dependency 2: ER-0016 Phase5 CEO I/O Reactor.
 
+## Sub-ERs
+
+- ER-0045.1 — Conduit I/O Operations and Schema Definitions.
+- ER-0045.2 — Conch Commands and Invocation Verification.
+- ER-0045.3 — End-to-End I/O Integration Tests.
+
 ## Implementation Notes
 
 - Notes for implementer: keep abstractions minimal and avoid premature driver APIs.
+
+## Implementation Plan
+
+- ER-0045.1: Define minimal I/O operation schemas and Conduit execution plumbing.
+- ER-0045.2: Expose Conch commands that invoke I/O operations end-to-end with capability checks.
+- ER-0045.3: Build a full test matrix (unit, integration, and conch CLI) covering I/O wait/wake behavior.
+
+### ER-0045.1 — Conduit I/O Operations and Schema Definitions
+
+- Add schema definitions for kernel I/O primitives (channel, datagram, byte stream) and minimal task I/O operations.
+- Define operation signatures for `open_channel`, `open_datagram`, `send`, `recv`, `await_readable`, `close`.
+- Implement Conduit execution plumbing to map dispatch results to CEO I/O primitives (IoReactor and TaskComms).
+- Provide explicit error mapping for closed channels, missing tasks, or invalid arguments.
+- Add unit tests for schema registration, operation signature resolution, and Conduit execution dispatch.
+
+### ER-0045.2 — Conch Commands and Invocation Verification
+
+- Add Conch commands to create/open/close channels and datagram ports between tasks.
+- Add Conch commands to send/recv bytes and await readability with proper task state transitions.
+- Integrate capability checks on I/O operations (reuse ER-0044 hooks).
+- Implement invocation verification in Conch: argument validation, operation resolution, and response shape checks.
+- Add Conch-level tests that execute the new commands and verify successful invocation.
+
+### ER-0045.3 — End-to-End I/O Integration Tests
+
+- Add integration tests covering: open → send → await_readable → recv → close flows.
+- Add tests for error cases (closed handles, missing task IDs, canceled tasks).
+- Add stress tests for wait/wake behavior under repeated operations.
+- Ensure the test suite runs via `make check` and is CI-friendly.
 
 ## Verification Plan
 
