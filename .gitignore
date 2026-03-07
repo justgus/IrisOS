@@ -32,6 +32,7 @@ bin/.dirstamp
 *.db
 *.db-shm
 *.db-wal
+*.db.segments
 tests/test_*
 !tests/test_*.cc
 config.status
