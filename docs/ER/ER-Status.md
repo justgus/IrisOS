@@ -47,6 +47,9 @@
 - ER-0043 — Complete
 - ER-0044 — Complete
 - ER-0045 — In Progress
+- ER-0045.1 — Proposed
+- ER-0045.2 — Proposed
+- ER-0045.3 — Proposed
 - ER-0046 — Complete
 - ER-0047 — Proposed
 - ER-0048 — Proposed
