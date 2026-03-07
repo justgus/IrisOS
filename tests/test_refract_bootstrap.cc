@@ -162,6 +162,30 @@ START_TEST(test_bootstrap_core_ops_on_primitives)
 }
 END_TEST
 
+START_TEST(test_bootstrap_conch_types)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+  auto boot = bootstrap_core_schema(registry);
+  ck_assert_msg(boot, "bootstrap failed: %s", result_message(boot));
+
+  auto listR = registry.list_types();
+  ck_assert_msg(listR, "list_types failed: %s", result_message(listR));
+  const auto& types = listR.value.value();
+
+  ck_assert_msg(find_type(types, "Conch", "Session").has_value(), "Conch::Session missing");
+  ck_assert_msg(find_type(types, "Conch", "Concho").has_value(), "Conch::Concho missing");
+  ck_assert_msg(find_type(types, "Conch", "Alias").has_value(), "Conch::Alias missing");
+  ck_assert_msg(find_type(types, "Conch", "IoHandleAlias").has_value(),
+                "Conch::IoHandleAlias missing");
+
+  ck_assert_msg(store.close(), "close failed");
+}
+END_TEST
+
 START_TEST(test_bootstrap_astra_math_types)
 {
   SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
@@ -319,6 +343,7 @@ Suite* refract_bootstrap_suite(void) {
   tcase_add_test(tc, test_bootstrap_idempotent);
   tcase_add_test(tc, test_bootstrap_crate_collections);
   tcase_add_test(tc, test_bootstrap_core_ops_on_primitives);
+  tcase_add_test(tc, test_bootstrap_conch_types);
   tcase_add_test(tc, test_bootstrap_astra_math_types);
   tcase_add_test(tc, test_bootstrap_caliper_units);
   tcase_add_test(tc, test_bootstrap_kernel_io_ops);

@@ -182,6 +182,37 @@ START_TEST(test_conch_io_datagram)
 }
 END_TEST
 
+START_TEST(test_conch_io_alias)
+{
+  std::ostringstream script;
+  script << "let a=new Demo::PropulsionSynth name:=alpha\n";
+  script << "let b=new Demo::PropulsionSynth name:=beta\n";
+  script << "task spawn a\n";
+  script << "task spawn b\n";
+  script << "caps grant kernel.io\n";
+  script << "io open channel 1 2\n";
+  script << "io alias io-0001 tx\n";
+  script << "io aliases\n";
+  script << "io send tx 0a0b\n";
+  script << "io recv io-0002 2\n";
+  script << "io unalias tx\n";
+  script << "io aliases\n";
+  script << "exit\n";
+
+  auto output = run_conch_script(script.str());
+  ck_assert_msg(output.find("io alias tx channel id=1") != std::string::npos,
+                "expected io alias output");
+  ck_assert_msg(output.find("io send ready=true") != std::string::npos,
+                "expected io send output");
+  ck_assert_msg(output.find("io recv 0a0b") != std::string::npos,
+                "expected io recv output");
+  ck_assert_msg(output.find("io unalias tx") != std::string::npos,
+                "expected io unalias output");
+  ck_assert_msg(output.find("no io aliases") != std::string::npos,
+                "expected aliases to be empty after unalias");
+}
+END_TEST
+
 Suite* conch_authoring_suite(void) {
   Suite* s = suite_create("ConchAuthoring");
   TCase* tc = tcase_create("core");
@@ -190,6 +221,7 @@ Suite* conch_authoring_suite(void) {
   tcase_add_test(tc, test_conch_io_commands);
   tcase_add_test(tc, test_conch_io_requires_caps);
   tcase_add_test(tc, test_conch_io_datagram);
+  tcase_add_test(tc, test_conch_io_alias);
 
   suite_add_tcase(s, tc);
   return s;
