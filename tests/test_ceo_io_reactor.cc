@@ -252,6 +252,92 @@ START_TEST(test_conduit_invalid_handle)
 }
 END_TEST
 
+START_TEST(test_conduit_await_cancel)
+{
+  referee::SqliteStore store(referee::SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry schema(store);
+  auto boot = bootstrap_core_schema(schema);
+  ck_assert_msg(boot, "bootstrap failed: %s", result_message(boot));
+
+  TaskRegistry registry;
+  TaskComms comms(registry);
+  IoReactor reactor(registry);
+  iris::conduit::IoHandleStore handles;
+  iris::conduit::IoExecutor executor(registry, comms, reactor, handles);
+
+  auto task_a = registry.spawn_task(referee::ObjectID::random());
+  ck_assert_msg(task_a, "spawn task_a failed");
+  auto task_b = registry.spawn_task(referee::ObjectID::random());
+  ck_assert_msg(task_b, "spawn task_b failed");
+
+  DispatchEngine engine(schema);
+  auto open_match = engine.resolve(kTypeKernelIo, "open_channel", OperationScope::Class,
+                                   {kTypeU64, kTypeU64}, 2, true);
+  ck_assert_msg(open_match, "open_channel resolve failed: %s", result_message(open_match));
+  auto openR = executor.open_channel(open_match.value.value(), task_a.value->id, task_b.value->id);
+  ck_assert_msg(openR, "open_channel failed: %s", result_message(openR));
+
+  ck_assert_msg(registry.cancel_task(task_b.value->id), "cancel failed");
+
+  auto await_match = engine.resolve(kTypeKernelIoChannel, "await_readable", OperationScope::Object,
+                                    {kTypeU64}, 1, true);
+  ck_assert_msg(await_match, "await_readable resolve failed: %s", result_message(await_match));
+  auto waitR = executor.await_channel(await_match.value.value(), openR.value->second, task_b.value->id);
+  ck_assert_msg(waitR, "await_readable failed: %s", result_message(waitR));
+  ck_assert_msg(waitR.value->ready, "expected await to be ready due to cancel");
+  auto canceled = registry.get_task(task_b.value->id);
+  ck_assert_msg(canceled, "get_task failed");
+  ck_assert_msg(canceled.value->has_value(), "expected task record");
+  ck_assert_int_eq((int)canceled.value->value().state, (int)TaskState::Canceled);
+
+  ck_assert_msg(store.close(), "close failed");
+}
+END_TEST
+
+START_TEST(test_conduit_channel_close_errors)
+{
+  referee::SqliteStore store(referee::SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry schema(store);
+  auto boot = bootstrap_core_schema(schema);
+  ck_assert_msg(boot, "bootstrap failed: %s", result_message(boot));
+
+  TaskRegistry registry;
+  TaskComms comms(registry);
+  IoReactor reactor(registry);
+  iris::conduit::IoHandleStore handles;
+  iris::conduit::IoExecutor executor(registry, comms, reactor, handles);
+
+  auto task_a = registry.spawn_task(referee::ObjectID::random());
+  ck_assert_msg(task_a, "spawn task_a failed");
+  auto task_b = registry.spawn_task(referee::ObjectID::random());
+  ck_assert_msg(task_b, "spawn task_b failed");
+
+  DispatchEngine engine(schema);
+  auto open_match = engine.resolve(kTypeKernelIo, "open_channel", OperationScope::Class,
+                                   {kTypeU64, kTypeU64}, 2, true);
+  ck_assert_msg(open_match, "open_channel resolve failed: %s", result_message(open_match));
+  auto openR = executor.open_channel(open_match.value.value(), task_a.value->id, task_b.value->id);
+  ck_assert_msg(openR, "open_channel failed: %s", result_message(openR));
+
+  auto close_match = engine.resolve(kTypeKernelIoChannel, "close", OperationScope::Object, {}, 0, true);
+  ck_assert_msg(close_match, "close resolve failed: %s", result_message(close_match));
+
+  ck_assert_msg(executor.close_channel(close_match.value.value(), openR.value->first),
+                "close failed");
+
+  auto close_again = executor.close_channel(close_match.value.value(), openR.value->first);
+  ck_assert_msg(!close_again, "expected close of missing handle to fail");
+
+  ck_assert_msg(store.close(), "close failed");
+}
+END_TEST
+
 Suite* ceo_io_reactor_suite(void) {
   Suite* s = suite_create("CeoIoReactor");
   TCase* tc = tcase_create("core");
@@ -261,6 +347,8 @@ Suite* ceo_io_reactor_suite(void) {
   tcase_add_test(tc, test_conduit_channel_flow);
   tcase_add_test(tc, test_conduit_datagram_flow);
   tcase_add_test(tc, test_conduit_invalid_handle);
+  tcase_add_test(tc, test_conduit_await_cancel);
+  tcase_add_test(tc, test_conduit_channel_close_errors);
 
   suite_add_tcase(s, tc);
   return s;
