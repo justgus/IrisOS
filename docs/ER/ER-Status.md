@@ -46,7 +46,7 @@
 - ER-0042 — Verified
 - ER-0043 — Verified
 - ER-0044 — Verified
-- ER-0045 — In Progress
+- ER-0045 — Verified
 - ER-0045.1 — Verified
 - ER-0045.2 — Verified
 - ER-0045.3 — Verified
