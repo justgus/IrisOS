@@ -41,6 +41,13 @@ bool type_has_operation(const DefinitionRecord& record, const std::string& name)
   return false;
 }
 
+const OperationDefinition* find_operation(const DefinitionRecord& record, const std::string& name) {
+  for (const auto& op : record.definition.operations) {
+    if (op.name == name) return &op;
+  }
+  return nullptr;
+}
+
 bool type_params_match(const DefinitionRecord& record, const std::vector<std::string>& params) {
   return record.definition.type_params == params;
 }
@@ -249,6 +256,62 @@ START_TEST(test_bootstrap_caliper_units)
 }
 END_TEST
 
+START_TEST(test_bootstrap_kernel_io_ops)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+  auto boot = bootstrap_core_schema(registry);
+  ck_assert_msg(boot, "bootstrap failed: %s", result_message(boot));
+
+  auto listR = registry.list_types();
+  ck_assert_msg(listR, "list_types failed: %s", result_message(listR));
+  const auto& types = listR.value.value();
+
+  auto io_type = find_type(types, "Kernel", "Io");
+  auto channel_type = find_type(types, "Kernel", "IoChannel");
+  auto datagram_type = find_type(types, "Kernel", "IoDatagram");
+
+  ck_assert_msg(io_type.has_value(), "Kernel::Io missing");
+  ck_assert_msg(channel_type.has_value(), "Kernel::IoChannel missing");
+  ck_assert_msg(datagram_type.has_value(), "Kernel::IoDatagram missing");
+
+  auto io_def = registry.get_definition_by_type(io_type->type_id);
+  ck_assert_msg(io_def, "Kernel::Io definition lookup failed: %s", result_message(io_def));
+  ck_assert_msg(io_def.value->has_value(), "Kernel::Io definition missing");
+  ck_assert_msg(type_has_operation(io_def.value->value(), "open_channel"), "Kernel::Io missing open_channel");
+  ck_assert_msg(type_has_operation(io_def.value->value(), "open_datagram"), "Kernel::Io missing open_datagram");
+
+  auto channel_def = registry.get_definition_by_type(channel_type->type_id);
+  ck_assert_msg(channel_def, "Kernel::IoChannel definition lookup failed: %s", result_message(channel_def));
+  ck_assert_msg(channel_def.value->has_value(), "Kernel::IoChannel definition missing");
+  ck_assert_msg(type_has_operation(channel_def.value->value(), "send"), "Kernel::IoChannel missing send");
+  ck_assert_msg(type_has_operation(channel_def.value->value(), "recv"), "Kernel::IoChannel missing recv");
+  ck_assert_msg(type_has_operation(channel_def.value->value(), "await_readable"),
+                "Kernel::IoChannel missing await_readable");
+  ck_assert_msg(type_has_operation(channel_def.value->value(), "close"), "Kernel::IoChannel missing close");
+
+  auto datagram_def = registry.get_definition_by_type(datagram_type->type_id);
+  ck_assert_msg(datagram_def, "Kernel::IoDatagram definition lookup failed: %s", result_message(datagram_def));
+  ck_assert_msg(datagram_def.value->has_value(), "Kernel::IoDatagram definition missing");
+  ck_assert_msg(type_has_operation(datagram_def.value->value(), "send"), "Kernel::IoDatagram missing send");
+  ck_assert_msg(type_has_operation(datagram_def.value->value(), "recv"), "Kernel::IoDatagram missing recv");
+  ck_assert_msg(type_has_operation(datagram_def.value->value(), "await_readable"),
+                "Kernel::IoDatagram missing await_readable");
+  ck_assert_msg(type_has_operation(datagram_def.value->value(), "close"), "Kernel::IoDatagram missing close");
+
+  const auto* open_channel_op = find_operation(io_def.value->value(), "open_channel");
+  ck_assert_msg(open_channel_op != nullptr, "Kernel::Io open_channel not found");
+  ck_assert_int_eq((int)open_channel_op->scope, (int)OperationScope::Class);
+  ck_assert_int_eq((int)open_channel_op->signature.params.size(), 2);
+  ck_assert_int_eq((int)open_channel_op->signature.outputs.size(), 2);
+
+  ck_assert_msg(store.close(), "close failed");
+}
+END_TEST
+
 Suite* refract_bootstrap_suite(void) {
   Suite* s = suite_create("RefractBootstrap");
   TCase* tc = tcase_create("core");
@@ -258,6 +321,7 @@ Suite* refract_bootstrap_suite(void) {
   tcase_add_test(tc, test_bootstrap_core_ops_on_primitives);
   tcase_add_test(tc, test_bootstrap_astra_math_types);
   tcase_add_test(tc, test_bootstrap_caliper_units);
+  tcase_add_test(tc, test_bootstrap_kernel_io_ops);
 
   suite_add_tcase(s, tc);
   return s;

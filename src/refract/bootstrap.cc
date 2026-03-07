@@ -57,6 +57,10 @@ constexpr referee::TypeID kTypeConchSession{0x434F4E4300000001ULL};
 constexpr referee::TypeID kTypeConchConcho{0x434F4E4300000002ULL};
 constexpr referee::TypeID kTypeConchAlias{0x434F4E4300000003ULL};
 
+constexpr referee::TypeID kTypeKernelIo{0x4B494F5000000001ULL};
+constexpr referee::TypeID kTypeKernelIoChannel{0x4B494F5000000002ULL};
+constexpr referee::TypeID kTypeKernelIoDatagram{0x4B494F5000000003ULL};
+
 constexpr referee::TypeID kTypeVizPanel{0x56495A0000000001ULL};
 constexpr referee::TypeID kTypeVizTextLog{0x56495A0000000002ULL};
 constexpr referee::TypeID kTypeVizMetric{0x56495A0000000003ULL};
@@ -562,6 +566,105 @@ TypeDefinition make_conch_alias() {
   return def;
 }
 
+TypeDefinition make_kernel_io() {
+  TypeDefinition def{};
+  def.type_id = kTypeKernelIo;
+  def.name = "Io";
+  def.namespace_name = "Kernel";
+  def.version = 1;
+
+  OperationDefinition open_channel;
+  open_channel.name = "open_channel";
+  open_channel.scope = OperationScope::Class;
+  open_channel.signature.params.push_back(ParameterDefinition{ "a", kTypeU64, false });
+  open_channel.signature.params.push_back(ParameterDefinition{ "b", kTypeU64, false });
+  open_channel.signature.outputs.push_back(ParameterDefinition{ "a", kTypeKernelIoChannel, false });
+  open_channel.signature.outputs.push_back(ParameterDefinition{ "b", kTypeKernelIoChannel, false });
+  def.operations.push_back(std::move(open_channel));
+
+  OperationDefinition open_datagram;
+  open_datagram.name = "open_datagram";
+  open_datagram.scope = OperationScope::Class;
+  open_datagram.signature.params.push_back(ParameterDefinition{ "a", kTypeU64, false });
+  open_datagram.signature.params.push_back(ParameterDefinition{ "b", kTypeU64, false });
+  open_datagram.signature.outputs.push_back(ParameterDefinition{ "a", kTypeKernelIoDatagram, false });
+  open_datagram.signature.outputs.push_back(ParameterDefinition{ "b", kTypeKernelIoDatagram, false });
+  def.operations.push_back(std::move(open_datagram));
+
+  return def;
+}
+
+TypeDefinition make_kernel_io_channel() {
+  TypeDefinition def{};
+  def.type_id = kTypeKernelIoChannel;
+  def.name = "IoChannel";
+  def.namespace_name = "Kernel";
+  def.version = 1;
+
+  OperationDefinition send_op;
+  send_op.name = "send";
+  send_op.scope = OperationScope::Object;
+  send_op.signature.params.push_back(ParameterDefinition{ "data", kTypeBytes, false });
+  send_op.signature.outputs.push_back(ParameterDefinition{ "ready", kTypeBool, false });
+  def.operations.push_back(std::move(send_op));
+
+  OperationDefinition recv_op;
+  recv_op.name = "recv";
+  recv_op.scope = OperationScope::Object;
+  recv_op.signature.params.push_back(ParameterDefinition{ "max_bytes", kTypeU64, false });
+  recv_op.signature.outputs.push_back(ParameterDefinition{ "data", kTypeBytes, false });
+  def.operations.push_back(std::move(recv_op));
+
+  OperationDefinition await_op;
+  await_op.name = "await_readable";
+  await_op.scope = OperationScope::Object;
+  await_op.signature.params.push_back(ParameterDefinition{ "task_id", kTypeU64, false });
+  await_op.signature.outputs.push_back(ParameterDefinition{ "ready", kTypeBool, false });
+  def.operations.push_back(std::move(await_op));
+
+  OperationDefinition close_op;
+  close_op.name = "close";
+  close_op.scope = OperationScope::Object;
+  def.operations.push_back(std::move(close_op));
+
+  return def;
+}
+
+TypeDefinition make_kernel_io_datagram() {
+  TypeDefinition def{};
+  def.type_id = kTypeKernelIoDatagram;
+  def.name = "IoDatagram";
+  def.namespace_name = "Kernel";
+  def.version = 1;
+
+  OperationDefinition send_op;
+  send_op.name = "send";
+  send_op.scope = OperationScope::Object;
+  send_op.signature.params.push_back(ParameterDefinition{ "data", kTypeBytes, false });
+  send_op.signature.outputs.push_back(ParameterDefinition{ "ready", kTypeBool, false });
+  def.operations.push_back(std::move(send_op));
+
+  OperationDefinition recv_op;
+  recv_op.name = "recv";
+  recv_op.scope = OperationScope::Object;
+  recv_op.signature.outputs.push_back(ParameterDefinition{ "data", kTypeBytes, true });
+  def.operations.push_back(std::move(recv_op));
+
+  OperationDefinition await_op;
+  await_op.name = "await_readable";
+  await_op.scope = OperationScope::Object;
+  await_op.signature.params.push_back(ParameterDefinition{ "task_id", kTypeU64, false });
+  await_op.signature.outputs.push_back(ParameterDefinition{ "ready", kTypeBool, false });
+  def.operations.push_back(std::move(await_op));
+
+  OperationDefinition close_op;
+  close_op.name = "close";
+  close_op.scope = OperationScope::Object;
+  def.operations.push_back(std::move(close_op));
+
+  return def;
+}
+
 TypeDefinition make_viz_panel() {
   TypeDefinition def{};
   def.type_id = kTypeVizPanel;
@@ -675,7 +778,7 @@ TypeDefinition make_demo_detail() {
 
 std::vector<TypeDefinition> core_schema_definitions() {
   std::vector<TypeDefinition> defs;
-  defs.reserve(44);
+  defs.reserve(47);
   defs.push_back(make_primitive(kTypeString, "String"));
   defs.push_back(make_primitive(kTypeU64, "U64"));
   defs.push_back(make_primitive(kTypeBool, "Bool"));
@@ -713,6 +816,9 @@ std::vector<TypeDefinition> core_schema_definitions() {
   defs.push_back(make_conch_session());
   defs.push_back(make_conch_concho());
   defs.push_back(make_conch_alias());
+  defs.push_back(make_kernel_io());
+  defs.push_back(make_kernel_io_channel());
+  defs.push_back(make_kernel_io_datagram());
   defs.push_back(make_viz_panel());
   defs.push_back(make_viz_text_log());
   defs.push_back(make_viz_metric());
