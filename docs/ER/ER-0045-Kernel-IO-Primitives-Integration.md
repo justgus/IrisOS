@@ -75,6 +75,20 @@ GitHub-Issue: #181
 - Dependency 1: ER-0015 Phase5 Comms Primitives.
 - Dependency 2: ER-0016 Phase5 CEO I/O Reactor.
 
+## Sub-ERs
+
+- ER-0045.1 — Conduit I/O Operations and Schema Definitions.
+- ER-0045.2 — Conch Commands and Invocation Verification.
+- ER-0045.3 — End-to-End I/O Integration Tests.
+- ER-0045.4 — Persisted I/O Handles and Conch Aliases.
+
+## Implementation Plan
+
+- ER-0045.1: Define minimal I/O operation schemas and Conduit execution plumbing.
+- ER-0045.2: Expose Conch commands that invoke I/O operations end-to-end with capability checks.
+- ER-0045.3: Build a full test matrix (unit, integration, and conch CLI) covering I/O wait/wake behavior.
+- ER-0045.4: Add persisted I/O handle metadata and Conch alias integration for handle reuse.
+
 ## Implementation Notes
 
 - Notes for implementer: keep abstractions minimal and avoid premature driver APIs.
