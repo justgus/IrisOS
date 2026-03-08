@@ -14,7 +14,7 @@ GitHub-Issue: #116
 
 - DR ID: DR-0001
 - Title: Conch Compare Alias Resolution
-- Status: Complete
+- Status: Verified
 - Date: 2026-03-08
 - Owners: Mike
 - Severity: Medium
