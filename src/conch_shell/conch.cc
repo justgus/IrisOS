@@ -99,6 +99,7 @@ const std::vector<SessionAlias>& session_command_aliases() {
     { { "demo", "v1" }, "demo_v1" },
     { { "edge" }, "edge_add" },
     { { "edges" }, "edges_list" },
+    { { "emit" }, "emit_viz" },
     { { "emit", "viz" }, "emit_viz" },
     { { "exit" }, "exit" },
     { { "quit" }, "exit" },
@@ -208,6 +209,19 @@ void cmd_route_object(SchemaRegistry& registry,
                       SqliteStore& store,
                       const std::unordered_map<std::string, ObjectID>& session_aliases,
                       const std::string& token);
+void cmd_edge(SqliteStore& store,
+              SchemaRegistry& registry,
+              const std::unordered_map<std::string, ObjectID>& session_aliases,
+              const std::vector<std::string>& tokens);
+void cmd_emit_viz(SchemaRegistry& registry,
+                  SqliteStore& store,
+                  const std::unordered_map<std::string, ObjectID>& session_aliases,
+                  const std::vector<std::string>& tokens);
+void cmd_demo_v1(SchemaRegistry& registry,
+                 SqliteStore& store,
+                 iris::ceo::TaskRegistry& ceo_registry,
+                 iris::ceo::TaskComms& ceo_comms,
+                 std::unordered_map<std::string, ObjectID>& session_aliases);
 
 bool handle_types_list(SchemaRegistry& registry,
                        SqliteStore& store,
@@ -354,7 +368,8 @@ bool handle_session_operation(const std::string& line,
                               iris::conduit::IoHandleStore& io_handle_store,
                               std::unordered_map<std::string, iris::conduit::IoHandle>& io_handles,
                               std::unordered_map<std::string, iris::conduit::IoHandle>& io_handle_aliases,
-                              std::uint64_t& next_io_handle_id) {
+                              std::uint64_t& next_io_handle_id,
+                              iris::ceo::TaskComms& ceo_comms) {
   if (op == "types_list") {
     return handle_types_list(registry, store, parsed.args);
   }
@@ -463,14 +478,36 @@ bool handle_session_operation(const std::string& line,
       cmd_route_type(registry, parsed.args[1]);
       return true;
     }
-    return false;
+    std::cout << "error: usage: route <ObjectID> | route type <TypeName>\n";
+    return true;
   }
   if (op == "route_object") {
     if (parsed.args.size() == 1) {
       cmd_route_object(registry, store, session_aliases, parsed.args[0]);
       return true;
     }
-    return false;
+    std::cout << "error: usage: route <ObjectID> | route type <TypeName>\n";
+    return true;
+  }
+  if (op == "edge_add") {
+    std::vector<std::string> tokens;
+    tokens.reserve(parsed.args.size() + 1);
+    tokens.push_back(parsed.name);
+    tokens.insert(tokens.end(), parsed.args.begin(), parsed.args.end());
+    cmd_edge(store, registry, session_aliases, tokens);
+    return true;
+  }
+  if (op == "emit_viz") {
+    std::vector<std::string> tokens;
+    tokens.reserve(parsed.args.size() + 1);
+    tokens.push_back(parsed.name);
+    tokens.insert(tokens.end(), parsed.args.begin(), parsed.args.end());
+    cmd_emit_viz(registry, store, session_aliases, tokens);
+    return true;
+  }
+  if (op == "demo_v1") {
+    cmd_demo_v1(registry, store, ceo_registry, ceo_comms, session_aliases);
+    return true;
   }
   return false;
 }
@@ -3763,7 +3800,7 @@ int main(int argc, char** argv) {
       if (handle_session_operation(line, parsed, session_op.value(), registry, store,
                                    session_aliases, session_caps, tasks, next_task_id,
                                    ceo_registry, io_executor, io_handle_store,
-                                   io_handles, io_handle_aliases, next_io_handle_id)) {
+                                   io_handles, io_handle_aliases, next_io_handle_id, ceo_comms)) {
         continue;
       }
     }
@@ -3859,39 +3896,6 @@ int main(int argc, char** argv) {
              next_io_handle_id, registry, store, session_caps, parsed.args);
       continue;
     }
-    if (cmd == "edge") {
-      std::vector<std::string> tokens;
-      tokens.reserve(parsed.args.size() + 1);
-      tokens.push_back(cmd);
-      tokens.insert(tokens.end(), parsed.args.begin(), parsed.args.end());
-      cmd_edge(store, registry, session_aliases, tokens);
-      continue;
-    }
-    if (cmd == "emit") {
-      std::vector<std::string> tokens;
-      tokens.reserve(parsed.args.size() + 1);
-      tokens.push_back(cmd);
-      tokens.insert(tokens.end(), parsed.args.begin(), parsed.args.end());
-      cmd_emit_viz(registry, store, session_aliases, tokens);
-      continue;
-    }
-    if (cmd == "demo" && parsed.args.size() == 1 && parsed.args[0] == "v1") {
-      cmd_demo_v1(registry, store, ceo_registry, ceo_comms, session_aliases);
-      continue;
-    }
-    if (cmd == "route") {
-      if (parsed.args.size() == 2 && parsed.args[0] == "type") {
-        cmd_route_type(registry, parsed.args[1]);
-        continue;
-      }
-      if (parsed.args.size() == 1) {
-        cmd_route_object(registry, store, session_aliases, parsed.args[0]);
-        continue;
-      }
-      std::cout << "error: usage: route <ObjectID> | route type <TypeName>\n";
-      continue;
-    }
-
     std::cout << "error: unknown command\n";
   }
 
