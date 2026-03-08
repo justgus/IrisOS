@@ -177,9 +177,9 @@ void cmd_find_type(SchemaRegistry& registry, const std::string& type_name);
 void cmd_show_type(SchemaRegistry& registry, const std::string& type_name);
 void cmd_ops(SchemaRegistry& registry, const std::vector<std::string>& args);
 void cmd_caps_list(const std::set<std::string>& session_caps);
-void cmd_caps_grant(std::set<std::string>& session_caps, const std::vector<std::string>& args);
-void cmd_caps_revoke(std::set<std::string>& session_caps, const std::vector<std::string>& args);
-void cmd_caps_clear(std::set<std::string>& session_caps, const std::vector<std::string>& args);
+bool cmd_caps_grant(std::set<std::string>& session_caps, const std::vector<std::string>& args);
+bool cmd_caps_revoke(std::set<std::string>& session_caps, const std::vector<std::string>& args);
+bool cmd_caps_clear(std::set<std::string>& session_caps, const std::vector<std::string>& args);
 void cmd_show(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id);
 void cmd_edges(SqliteStore& store, const ObjectID& id);
 bool cmd_call(SchemaRegistry& registry,
@@ -188,7 +188,7 @@ bool cmd_call(SchemaRegistry& registry,
               const std::string& op_name,
               const std::vector<std::string>& args,
               const std::set<std::string>& granted_caps);
-void cmd_task_spawn(iris::ceo::TaskRegistry& registry,
+bool cmd_task_spawn(iris::ceo::TaskRegistry& registry,
                     SchemaRegistry& schema,
                     SqliteStore& store,
                     const std::unordered_map<std::string, ObjectID>& session_aliases,
