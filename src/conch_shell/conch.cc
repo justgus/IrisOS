@@ -80,6 +80,84 @@ struct IoAliasRecord {
   std::uint64_t created_at{0};
 };
 
+struct SessionAlias {
+  std::vector<std::string> tokens;
+  std::string operation;
+};
+
+const std::vector<SessionAlias>& session_command_aliases() {
+  static const std::vector<SessionAlias> aliases = {
+    { { "alias" }, "alias_set" },
+    { { "let" }, "alias_set" },
+    { { "var" }, "alias_set_persistent" },
+    { { "call" }, "call" },
+    { { "caps", "clear" }, "caps_clear" },
+    { { "caps", "grant" }, "caps_grant" },
+    { { "caps", "revoke" }, "caps_revoke" },
+    { { "caps" }, "caps_list" },
+    { { "define", "type" }, "define_type" },
+    { { "demo", "v1" }, "demo_v1" },
+    { { "edge" }, "edge_add" },
+    { { "edges" }, "edges_list" },
+    { { "emit", "viz" }, "emit_viz" },
+    { { "exit" }, "exit" },
+    { { "quit" }, "exit" },
+    { { "find", "type" }, "find_type" },
+    { { "help" }, "help" },
+    { { "io", "alias" }, "io_alias" },
+    { { "io", "aliases" }, "io_aliases" },
+    { { "io", "await" }, "io_await" },
+    { { "io", "close" }, "io_close" },
+    { { "io", "handles" }, "io_handles" },
+    { { "io", "open" }, "io_open" },
+    { { "io", "recv" }, "io_recv" },
+    { { "io", "send" }, "io_send" },
+    { { "io", "unalias" }, "io_unalias" },
+    { { "kill" }, "task_kill" },
+    { { "ls" }, "types_list" },
+    { { "new" }, "new_object" },
+    { { "objects" }, "objects_list" },
+    { { "ops" }, "ops" },
+    { { "ps" }, "ps" },
+    { { "route", "type" }, "route_type" },
+    { { "route" }, "route_object" },
+    { { "show", "type" }, "show_type" },
+    { { "show" }, "show_object" },
+    { { "start" }, "start" },
+    { { "task", "list" }, "task_list" },
+    { { "task", "spawn" }, "task_spawn" }
+  };
+  return aliases;
+}
+
+bool matches_prefix(const std::vector<std::string>& tokens,
+                    const std::vector<std::string>& prefix) {
+  if (tokens.size() < prefix.size()) return false;
+  for (size_t i = 0; i < prefix.size(); ++i) {
+    if (tokens[i] != prefix[i]) return false;
+  }
+  return true;
+}
+
+std::optional<std::string> resolve_session_operation(const iris::parser::CommandAst& cmd) {
+  if (cmd.name.empty()) return std::nullopt;
+  std::vector<std::string> tokens;
+  tokens.reserve(cmd.args.size() + 1);
+  tokens.push_back(cmd.name);
+  for (const auto& arg : cmd.args) tokens.push_back(arg);
+
+  std::optional<std::string> resolved;
+  size_t best_match = 0;
+  for (const auto& alias : session_command_aliases()) {
+    if (!matches_prefix(tokens, alias.tokens)) continue;
+    if (alias.tokens.size() > best_match) {
+      best_match = alias.tokens.size();
+      resolved = alias.operation;
+    }
+  }
+  return resolved;
+}
+
 referee::Result<ObjectID> create_object(SchemaRegistry& registry, SqliteStore& store,
                                         const std::string& expr);
 referee::Result<ObjectID> create_demo_object(SchemaRegistry& registry, SqliteStore& store,
@@ -3343,6 +3421,8 @@ int main(int argc, char** argv) {
       continue;
     }
     if (parsed.name.empty()) continue;
+
+    [[maybe_unused]] auto session_op = resolve_session_operation(parsed);
 
     const auto& cmd = parsed.name;
     if (cmd == "let") {

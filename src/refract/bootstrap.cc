@@ -188,6 +188,13 @@ void add_core_ops(TypeDefinition& def, referee::TypeID type_id) {
   add_compare_operation(def, type_id);
 }
 
+void add_session_operation(TypeDefinition& def, std::string_view name) {
+  OperationDefinition op;
+  op.name = std::string(name);
+  op.scope = OperationScope::Object;
+  def.operations.push_back(std::move(op));
+}
+
 TypeDefinition make_type_definition() {
   TypeDefinition def{};
   def.type_id = kTypeDefinitionType;
@@ -541,6 +548,43 @@ TypeDefinition make_conch_session() {
   def.version = 1;
 
   def.fields.push_back(FieldDefinition{ "name", kTypeString, false, std::nullopt });
+  add_session_operation(def, "alias_set");
+  add_session_operation(def, "alias_set_persistent");
+  add_session_operation(def, "call");
+  add_session_operation(def, "caps_clear");
+  add_session_operation(def, "caps_grant");
+  add_session_operation(def, "caps_list");
+  add_session_operation(def, "caps_revoke");
+  add_session_operation(def, "define_type");
+  add_session_operation(def, "demo_v1");
+  add_session_operation(def, "edge_add");
+  add_session_operation(def, "edges_list");
+  add_session_operation(def, "emit_viz");
+  add_session_operation(def, "exit");
+  add_session_operation(def, "find_type");
+  add_session_operation(def, "help");
+  add_session_operation(def, "io_alias");
+  add_session_operation(def, "io_aliases");
+  add_session_operation(def, "io_await");
+  add_session_operation(def, "io_close");
+  add_session_operation(def, "io_handles");
+  add_session_operation(def, "io_open");
+  add_session_operation(def, "io_recv");
+  add_session_operation(def, "io_send");
+  add_session_operation(def, "io_unalias");
+  add_session_operation(def, "new_object");
+  add_session_operation(def, "objects_list");
+  add_session_operation(def, "ops");
+  add_session_operation(def, "ps");
+  add_session_operation(def, "route_object");
+  add_session_operation(def, "route_type");
+  add_session_operation(def, "show_object");
+  add_session_operation(def, "show_type");
+  add_session_operation(def, "start");
+  add_session_operation(def, "task_kill");
+  add_session_operation(def, "task_list");
+  add_session_operation(def, "task_spawn");
+  add_session_operation(def, "types_list");
   return def;
 }
 
