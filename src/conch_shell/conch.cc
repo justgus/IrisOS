@@ -88,6 +88,7 @@ struct SessionAlias {
 const std::vector<SessionAlias>& session_command_aliases() {
   static const std::vector<SessionAlias> aliases = {
     { { "alias" }, "alias_set" },
+    { { "aliases" }, "aliases_list" },
     { { "let" }, "alias_set" },
     { { "var" }, "alias_set_persistent" },
     { { "call" }, "call" },
@@ -222,6 +223,7 @@ void cmd_demo_v1(SchemaRegistry& registry,
                  iris::ceo::TaskRegistry& ceo_registry,
                  iris::ceo::TaskComms& ceo_comms,
                  std::unordered_map<std::string, ObjectID>& session_aliases);
+void cmd_aliases_list();
 
 bool handle_types_list(SchemaRegistry& registry,
                        SqliteStore& store,
@@ -278,6 +280,27 @@ bool handle_caps_command(std::set<std::string>& session_caps,
   }
   std::cout << "error: usage: caps [grant|revoke|clear]\n";
   return true;
+}
+
+void cmd_aliases_list() {
+  std::vector<std::pair<std::string, std::string>> rows;
+  rows.reserve(session_command_aliases().size());
+  for (const auto& alias : session_command_aliases()) {
+    rows.emplace_back(join_tokens(alias.tokens, 0), alias.operation);
+  }
+  if (rows.empty()) {
+    std::cout << "no aliases\n";
+    return;
+  }
+  std::sort(rows.begin(), rows.end(),
+            [](const auto& a, const auto& b) {
+              if (a.first != b.first) return a.first < b.first;
+              return a.second < b.second;
+            });
+  std::cout << "aliases\n";
+  for (const auto& row : rows) {
+    std::cout << "  " << row.first << " -> " << row.second << "\n";
+  }
 }
 
 bool handle_start_command(SchemaRegistry& registry,
@@ -372,6 +395,14 @@ bool handle_session_operation(const std::string& line,
                               iris::ceo::TaskComms& ceo_comms) {
   if (op == "types_list") {
     return handle_types_list(registry, store, parsed.args);
+  }
+  if (op == "aliases_list") {
+    if (!parsed.args.empty()) {
+      std::cout << "error: usage: aliases\n";
+      return true;
+    }
+    cmd_aliases_list();
+    return true;
   }
   if (op == "objects_list") {
     cmd_objects(registry, store);
