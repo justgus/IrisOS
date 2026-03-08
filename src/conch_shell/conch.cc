@@ -224,6 +224,7 @@ void cmd_demo_v1(SchemaRegistry& registry,
                  iris::ceo::TaskComms& ceo_comms,
                  std::unordered_map<std::string, ObjectID>& session_aliases);
 void cmd_aliases_list();
+std::string join_tokens(const std::vector<std::string>& tokens, size_t start);
 
 bool handle_types_list(SchemaRegistry& registry,
                        SqliteStore& store,
