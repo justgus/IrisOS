@@ -550,6 +550,7 @@ TypeDefinition make_conch_session() {
   def.fields.push_back(FieldDefinition{ "name", kTypeString, false, std::nullopt });
   add_session_operation(def, "alias_set");
   add_session_operation(def, "alias_set_persistent");
+  add_session_operation(def, "aliases_list");
   add_session_operation(def, "call");
   add_session_operation(def, "caps_clear");
   add_session_operation(def, "caps_grant");
