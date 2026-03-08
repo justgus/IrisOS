@@ -189,6 +189,7 @@ bool cmd_call(SchemaRegistry& registry,
               const ObjectID& id,
               const std::string& op_name,
               const std::vector<std::string>& args,
+              const std::unordered_map<std::string, ObjectID>& session_aliases,
               const std::set<std::string>& granted_caps);
 bool cmd_task_spawn(iris::ceo::TaskRegistry& registry,
                     SchemaRegistry& schema,
@@ -318,7 +319,7 @@ bool handle_start_command(SchemaRegistry& registry,
     std::cout << "error: " << err << "\n";
     return true;
   }
-  bool ok = cmd_call(registry, store, id.value(), "start", {}, session_caps);
+  bool ok = cmd_call(registry, store, id.value(), "start", {}, session_aliases, session_caps);
   if (ok) {
     std::ostringstream os;
     os << "task-" << std::setw(4) << std::setfill('0') << next_task_id++;
@@ -482,7 +483,7 @@ bool handle_session_operation(const std::string& line,
     if (parsed.args.size() > 2) {
       args.assign(parsed.args.begin() + 2, parsed.args.end());
     }
-    cmd_call(registry, store, id.value(), parsed.args[1], args, session_caps);
+    cmd_call(registry, store, id.value(), parsed.args[1], args, session_aliases, session_caps);
     return true;
   }
   if (op == "start") {
@@ -2789,6 +2790,7 @@ void cmd_edges(SqliteStore& store, const ObjectID& id) {
 
 bool cmd_call(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id,
               const std::string& op_name, const std::vector<std::string>& args,
+              const std::unordered_map<std::string, ObjectID>& session_aliases,
               const std::set<std::string>& granted_caps) {
   auto recR = store.get_latest(id);
   if (!recR) {
@@ -2830,6 +2832,92 @@ bool cmd_call(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id,
   constexpr referee::TypeID kTypeBytes{0x1007ULL};
   constexpr referee::TypeID kTypeF64{0x1008ULL};
 
+  struct CoreValue {
+    std::string text;
+    std::uint64_t u64{0};
+    bool b{false};
+    double f64{0.0};
+  };
+
+  auto read_core_value = [&](referee::TypeID type_id,
+                             const nlohmann::json& payload,
+                             CoreValue* out,
+                             std::string* err_out) -> bool {
+    if (!out) return false;
+    if (type_id.v == kTypeString.v) {
+      return read_string_value(payload, &out->text, err_out);
+    }
+    if (type_id.v == kTypeU64.v || type_id.v == kTypeVersion.v || type_id.v == kTypeTypeID.v) {
+      return read_u64_value(payload, &out->u64, err_out);
+    }
+    if (type_id.v == kTypeBool.v) {
+      return read_bool_value(payload, &out->b, err_out);
+    }
+    if (type_id.v == kTypeObjectID.v) {
+      referee::ObjectID v{};
+      if (!read_object_id_value(payload, &v, err_out)) return false;
+      out->text = v.to_hex();
+      return true;
+    }
+    if (type_id.v == kTypeF64.v) {
+      return read_double_value(payload, &out->f64, err_out);
+    }
+    if (type_id.v == kTypeBytes.v) {
+      return read_bytes_value(payload, &out->text, err_out);
+    }
+    if (err_out) *err_out = "unsupported core type";
+    return false;
+  };
+
+  auto resolve_alias_only = [&](const std::string& token,
+                                std::string* err_out) -> std::optional<ObjectID> {
+    std::string name = token;
+    if (!name.empty() && name.front() == '@') name = name.substr(1);
+    if (name.empty()) {
+      if (err_out) *err_out = "empty alias";
+      return std::nullopt;
+    }
+    auto it = session_aliases.find(name);
+    if (it != session_aliases.end()) return it->second;
+
+    auto typesR = registry.list_types();
+    if (!typesR) {
+      if (err_out) *err_out = typesR.error->message;
+      return std::nullopt;
+    }
+    std::optional<TypeSummary> alias_type;
+    for (const auto& summary : typesR.value.value()) {
+      if (summary.namespace_name == "Conch" && summary.name == "Alias") {
+        alias_type = summary;
+        break;
+      }
+    }
+    if (!alias_type.has_value()) {
+      if (err_out) *err_out = "alias type not registered";
+      return std::nullopt;
+    }
+
+    auto listR = store.list_by_type(alias_type->type_id);
+    if (!listR) {
+      if (err_out) *err_out = listR.error->message;
+      return std::nullopt;
+    }
+    for (const auto& rec : listR.value.value()) {
+      try {
+        auto json = nlohmann::json::from_cbor(rec.payload_cbor);
+        if (json.value("name", "") == name) {
+          auto oid_text = json.value("object_id", "");
+          if (oid_text.empty()) continue;
+          return parse_object_id(oid_text, err_out);
+        }
+      } catch (const std::exception&) {
+        continue;
+      }
+    }
+    if (err_out) *err_out = "alias not found";
+    return std::nullopt;
+  };
+
   auto try_core_op = [&]() -> bool {
     if (op_name != "to_string" && op_name != "print" && op_name != "render" && op_name != "compare") {
       return false;
@@ -2843,59 +2931,13 @@ bool cmd_call(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id,
       return true;
     }
 
-    std::string err;
     auto type_id = recR.value->value().type;
-    std::string text;
-
-    if (type_id.v == kTypeString.v) {
-      if (!read_string_value(payload, &text, &err)) {
-        std::cout << "error: " << err << "\n";
-        return true;
-      }
-    } else if (type_id.v == kTypeU64.v || type_id.v == kTypeVersion.v) {
-      std::uint64_t v = 0;
-      if (!read_u64_value(payload, &v, &err)) {
-        std::cout << "error: " << err << "\n";
-        return true;
-      }
-      text = std::to_string(v);
-    } else if (type_id.v == kTypeBool.v) {
-      bool v = false;
-      if (!read_bool_value(payload, &v, &err)) {
-        std::cout << "error: " << err << "\n";
-        return true;
-      }
-      text = v ? "true" : "false";
-    } else if (type_id.v == kTypeObjectID.v) {
-      referee::ObjectID v{};
-      if (!read_object_id_value(payload, &v, &err)) {
-        std::cout << "error: " << err << "\n";
-        return true;
-      }
-      text = v.to_hex();
-    } else if (type_id.v == kTypeTypeID.v) {
-      std::uint64_t v = 0;
-      if (!read_u64_value(payload, &v, &err)) {
-        std::cout << "error: " << err << "\n";
-        return true;
-      }
-      text = hex_u64(v);
-    } else if (type_id.v == kTypeF64.v) {
-      double v = 0.0;
-      if (!read_double_value(payload, &v, &err)) {
-        std::cout << "error: " << err << "\n";
-        return true;
-      }
-      std::ostringstream os;
-      os << v;
-      text = os.str();
-    } else if (type_id.v == kTypeBytes.v) {
-      if (!read_bytes_value(payload, &text, &err)) {
-        std::cout << "error: " << err << "\n";
-        return true;
-      }
-    } else {
-      return false;
+    std::string err;
+    CoreValue self_value;
+    if (!read_core_value(type_id, payload, &self_value, &err)) {
+      if (err == "unsupported core type") return false;
+      std::cout << "error: " << err << "\n";
+      return true;
     }
 
     if (op_name == "compare") {
@@ -2903,38 +2945,82 @@ bool cmd_call(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id,
         std::cout << "error: compare expects 1 arg\n";
         return true;
       }
+      CoreValue other_value;
+      bool resolved_object = false;
+      std::string resolve_err;
+      auto parsed_id = parse_object_id(args[0], nullptr);
+      if (parsed_id.has_value()) {
+        resolved_object = true;
+      } else if (!args[0].empty() && (args[0].front() == '@'
+                                      || session_aliases.find(args[0]) != session_aliases.end())) {
+        parsed_id = resolve_alias_only(args[0], &resolve_err);
+        if (parsed_id.has_value()) resolved_object = true;
+      } else {
+        auto alias_id = resolve_alias_only(args[0], nullptr);
+        if (alias_id.has_value()) {
+          parsed_id = alias_id;
+          resolved_object = true;
+        }
+      }
+
+      if (resolved_object) {
+        auto otherR = store.get_latest(parsed_id.value());
+        if (!otherR) {
+          std::cout << "error: " << otherR.error->message << "\n";
+          return true;
+        }
+        if (!otherR.value->has_value()) {
+          std::cout << "error: object not found\n";
+          return true;
+        }
+        const auto& other_rec = otherR.value->value();
+        if (other_rec.type.v != type_id.v) {
+          std::cout << "error: compare expects matching type\n";
+          return true;
+        }
+        nlohmann::json other_payload;
+        try {
+          other_payload = nlohmann::json::from_cbor(other_rec.payload_cbor);
+        } catch (const std::exception& ex) {
+          std::cout << "error: payload decode failed: " << ex.what() << "\n";
+          return true;
+        }
+        if (!read_core_value(type_id, other_payload, &other_value, &err)) {
+          std::cout << "error: " << err << "\n";
+          return true;
+        }
+      } else {
+        if (type_id.v == kTypeString.v || type_id.v == kTypeObjectID.v || type_id.v == kTypeBytes.v) {
+          other_value.text = strip_quotes(args[0]);
+        } else if (type_id.v == kTypeBool.v) {
+          if (!parse_bool(args[0], &other_value.b)) {
+            std::cout << "error: invalid bool arg\n";
+            return true;
+          }
+        } else if (type_id.v == kTypeU64.v || type_id.v == kTypeVersion.v || type_id.v == kTypeTypeID.v) {
+          if (!parse_u64(args[0], &other_value.u64)) {
+            std::cout << "error: invalid u64 arg\n";
+            return true;
+          }
+        } else if (type_id.v == kTypeF64.v) {
+          if (!parse_double(args[0], &other_value.f64)) {
+            std::cout << "error: invalid f64 arg\n";
+            return true;
+          }
+        }
+      }
+
       double order = 0.0;
       if (type_id.v == kTypeString.v || type_id.v == kTypeObjectID.v || type_id.v == kTypeBytes.v) {
-        const auto& other = args[0];
-        if (text == other) order = 0.0;
-        else if (text < other) order = -1.0;
+        if (self_value.text == other_value.text) order = 0.0;
+        else if (self_value.text < other_value.text) order = -1.0;
         else order = 1.0;
       } else if (type_id.v == kTypeBool.v) {
-        bool other = false;
-        if (!parse_bool(args[0], &other)) {
-          std::cout << "error: invalid bool arg\n";
-          return true;
-        }
-        bool self = (text == "true");
-        order = (self == other) ? 0.0 : (self ? 1.0 : -1.0);
+        order = (self_value.b == other_value.b) ? 0.0 : (self_value.b ? 1.0 : -1.0);
       } else if (type_id.v == kTypeU64.v || type_id.v == kTypeVersion.v || type_id.v == kTypeTypeID.v) {
-        std::uint64_t other = 0;
-        if (!parse_u64(args[0], &other)) {
-          std::cout << "error: invalid u64 arg\n";
-          return true;
-        }
-        std::uint64_t self = 0;
-        if (!parse_u64(text, &self)) self = 0;
-        order = (self == other) ? 0.0 : (self < other ? -1.0 : 1.0);
+        order = (self_value.u64 == other_value.u64) ? 0.0 : (self_value.u64 < other_value.u64 ? -1.0 : 1.0);
       } else if (type_id.v == kTypeF64.v) {
-        double other = 0.0;
-        if (!parse_double(args[0], &other)) {
-          std::cout << "error: invalid f64 arg\n";
-          return true;
-        }
-        double self = 0.0;
-        parse_double(text, &self);
-        order = (self == other) ? 0.0 : (self < other ? -1.0 : 1.0);
+        order = (self_value.f64 == other_value.f64) ? 0.0 : (self_value.f64 < other_value.f64 ? -1.0 : 1.0);
       }
       std::cout << "result " << order << "\n";
       std::cout << "call ok\n";
@@ -2942,13 +3028,23 @@ bool cmd_call(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id,
     }
 
     if (op_name == "print" || op_name == "render") {
-      std::cout << text << "\n";
+      std::cout << self_value.text << "\n";
       std::cout << "call ok\n";
       return true;
     }
 
     if (op_name == "to_string") {
-      std::cout << "result " << text << "\n";
+      if (type_id.v == kTypeU64.v || type_id.v == kTypeVersion.v) {
+        std::cout << "result " << self_value.u64 << "\n";
+      } else if (type_id.v == kTypeBool.v) {
+        std::cout << "result " << (self_value.b ? "true" : "false") << "\n";
+      } else if (type_id.v == kTypeTypeID.v) {
+        std::cout << "result " << hex_u64(self_value.u64) << "\n";
+      } else if (type_id.v == kTypeF64.v) {
+        std::cout << "result " << self_value.f64 << "\n";
+      } else {
+        std::cout << "result " << self_value.text << "\n";
+      }
       std::cout << "call ok\n";
       return true;
     }
@@ -3903,7 +3999,7 @@ int main(int argc, char** argv) {
       if (parsed.args.size() > 2) {
         args.assign(parsed.args.begin() + 2, parsed.args.end());
       }
-      cmd_call(registry, store, id.value(), parsed.args[1], args, session_caps);
+      cmd_call(registry, store, id.value(), parsed.args[1], args, session_aliases, session_caps);
       continue;
     }
     if (cmd == "start" && parsed.args.size() == 1) {
