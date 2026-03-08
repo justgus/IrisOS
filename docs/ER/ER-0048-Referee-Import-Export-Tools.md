@@ -14,7 +14,7 @@ GitHub-Issue: #184
 
 - ER ID: ER-0048
 - Title: Referee Import/Export Tools
-- Status: Proposed
+- Status: Complete
 - Date: 2026-02-27
 - Owners: Mike
 - Type: Enhancement
@@ -72,6 +72,7 @@ GitHub-Issue: #184
 ## Implementation Notes
 
 - Notes for implementer: keep formats versioned and documented.
+- Conch `bundle export` / `bundle import` provide the primary CLI surface.
 
 ## Verification Plan
 

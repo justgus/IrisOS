@@ -551,6 +551,8 @@ TypeDefinition make_conch_session() {
   add_session_operation(def, "alias_set");
   add_session_operation(def, "alias_set_persistent");
   add_session_operation(def, "aliases_list");
+  add_session_operation(def, "bundle_export");
+  add_session_operation(def, "bundle_import");
   add_session_operation(def, "call");
   add_session_operation(def, "caps_clear");
   add_session_operation(def, "caps_grant");

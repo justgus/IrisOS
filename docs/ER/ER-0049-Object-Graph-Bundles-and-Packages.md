@@ -14,7 +14,7 @@ GitHub-Issue: #185
 
 - ER ID: ER-0049
 - Title: Object Graph Bundles and Packages
-- Status: Proposed
+- Status: Complete
 - Date: 2026-02-27
 - Owners: Mike
 - Type: Epic
@@ -72,6 +72,7 @@ GitHub-Issue: #185
 ## Implementation Notes
 
 - Notes for implementer: keep the manifest minimal and versioned.
+- Bundle format v1 uses a JSON manifest with hex-encoded CBOR payloads for definitions, objects, and edges.
 
 ## Verification Plan
 

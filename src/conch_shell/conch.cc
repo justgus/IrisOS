@@ -18,6 +18,7 @@
 #include <cctype>
 #include <cstdlib>
 #include <deque>
+#include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <map>
@@ -89,6 +90,8 @@ const std::vector<SessionAlias>& session_command_aliases() {
   static const std::vector<SessionAlias> aliases = {
     { { "alias" }, "alias_set" },
     { { "aliases" }, "aliases_list" },
+    { { "bundle", "export" }, "bundle_export" },
+    { { "bundle", "import" }, "bundle_import" },
     { { "let" }, "alias_set" },
     { { "var" }, "alias_set_persistent" },
     { { "call" }, "call" },
@@ -379,6 +382,13 @@ bool handle_task_command(iris::ceo::TaskRegistry& ceo_registry,
   return true;
 }
 
+referee::Result<void> export_bundle(SchemaRegistry& registry,
+                                    SqliteStore& store,
+                                    const std::string& path);
+referee::Result<void> import_bundle(SchemaRegistry& registry,
+                                    SqliteStore& store,
+                                    const std::string& path);
+
 bool handle_session_operation(const std::string& line,
                               const iris::parser::CommandAst& parsed,
                               const std::string& op,
@@ -397,6 +407,32 @@ bool handle_session_operation(const std::string& line,
                               iris::ceo::TaskComms& ceo_comms) {
   if (op == "types_list") {
     return handle_types_list(registry, store, parsed.args);
+  }
+  if (op == "bundle_export") {
+    if (parsed.args.size() != 2 || parsed.args[0] != "export") {
+      std::cout << "error: usage: bundle export <path>\n";
+      return true;
+    }
+    auto exportR = export_bundle(registry, store, parsed.args[1]);
+    if (!exportR) {
+      std::cout << "error: " << exportR.error->message << "\n";
+      return true;
+    }
+    std::cout << "bundle export ok\n";
+    return true;
+  }
+  if (op == "bundle_import") {
+    if (parsed.args.size() != 2 || parsed.args[0] != "import") {
+      std::cout << "error: usage: bundle import <path>\n";
+      return true;
+    }
+    auto importR = import_bundle(registry, store, parsed.args[1]);
+    if (!importR) {
+      std::cout << "error: " << importR.error->message << "\n";
+      return true;
+    }
+    std::cout << "bundle import ok\n";
+    return true;
   }
   if (op == "aliases_list") {
     if (!parsed.args.empty()) {
@@ -2000,6 +2036,302 @@ bool parse_hex_bytes(std::string_view v, std::vector<std::uint8_t>* out, std::st
     out->push_back(byte);
   }
   return true;
+}
+
+struct BundleObjectRecord {
+  ObjectID id{};
+  referee::Version version{};
+  TypeID type{};
+  ObjectID definition_id{};
+  referee::Bytes payload_cbor{};
+  std::uint64_t created_at_ms{0};
+};
+
+struct BundleEdgeRecord {
+  ObjectRef from{};
+  ObjectRef to{};
+  std::string name;
+  std::string role;
+  referee::Bytes props_cbor{};
+  std::uint64_t created_at_ms{0};
+};
+
+std::string object_id_hex(const ObjectID& id) {
+  return id.to_hex();
+}
+
+bool parse_object_id_hex(const std::string& text, ObjectID* out, std::string* err_out) {
+  try {
+    if (out) *out = ObjectID::from_hex(text);
+    return true;
+  } catch (const std::exception& ex) {
+    if (err_out) *err_out = ex.what();
+    return false;
+  }
+}
+
+bool record_less(const BundleObjectRecord& a, const BundleObjectRecord& b) {
+  auto a_hex = object_id_hex(a.id);
+  auto b_hex = object_id_hex(b.id);
+  if (a_hex != b_hex) return a_hex < b_hex;
+  if (a.version.v != b.version.v) return a.version.v < b.version.v;
+  if (a.type.v != b.type.v) return a.type.v < b.type.v;
+  if (a.definition_id != b.definition_id) return object_id_hex(a.definition_id) < object_id_hex(b.definition_id);
+  return a.created_at_ms < b.created_at_ms;
+}
+
+bool edge_less(const BundleEdgeRecord& a, const BundleEdgeRecord& b) {
+  auto a_from = object_id_hex(a.from.id);
+  auto b_from = object_id_hex(b.from.id);
+  if (a_from != b_from) return a_from < b_from;
+  if (a.from.ver.v != b.from.ver.v) return a.from.ver.v < b.from.ver.v;
+  auto a_to = object_id_hex(a.to.id);
+  auto b_to = object_id_hex(b.to.id);
+  if (a_to != b_to) return a_to < b_to;
+  if (a.to.ver.v != b.to.ver.v) return a.to.ver.v < b.to.ver.v;
+  if (a.name != b.name) return a.name < b.name;
+  if (a.role != b.role) return a.role < b.role;
+  return a.created_at_ms < b.created_at_ms;
+}
+
+referee::Result<void> export_bundle(SchemaRegistry& registry,
+                                    SqliteStore& store,
+                                    const std::string& path) {
+  constexpr TypeID kTypeDefinition{iris::refract::kTypeDefinitionType};
+
+  auto typesR = registry.list_types();
+  if (!typesR) return referee::Result<void>::err(typesR.error->message);
+
+  std::vector<BundleObjectRecord> definitions;
+  std::vector<BundleObjectRecord> objects;
+
+  auto defR = store.list_by_type(kTypeDefinition);
+  if (!defR) return referee::Result<void>::err(defR.error->message);
+  for (const auto& rec : defR.value.value()) {
+    BundleObjectRecord out;
+    out.id = rec.ref.id;
+    out.version = rec.ref.ver;
+    out.type = rec.type;
+    out.definition_id = rec.definition_id;
+    out.payload_cbor = rec.payload_cbor;
+    out.created_at_ms = rec.created_at_unix_ms;
+    definitions.push_back(std::move(out));
+  }
+
+  std::map<std::string, BundleObjectRecord> latest_objects;
+  for (const auto& summary : typesR.value.value()) {
+    if (summary.type_id.v == kTypeDefinition.v) continue;
+    auto listR = store.list_by_type(summary.type_id);
+    if (!listR) return referee::Result<void>::err(listR.error->message);
+    for (const auto& rec : listR.value.value()) {
+      auto key = rec.ref.id.to_hex();
+      auto it = latest_objects.find(key);
+      if (it == latest_objects.end() || rec.ref.ver.v > it->second.version.v) {
+        BundleObjectRecord out;
+        out.id = rec.ref.id;
+        out.version = rec.ref.ver;
+        out.type = rec.type;
+        out.definition_id = rec.definition_id;
+        out.payload_cbor = rec.payload_cbor;
+        out.created_at_ms = rec.created_at_unix_ms;
+        latest_objects[key] = std::move(out);
+      }
+    }
+  }
+  for (auto& [_, rec] : latest_objects) objects.push_back(std::move(rec));
+
+  std::vector<BundleEdgeRecord> edges;
+  auto collect_edges = [&](const BundleObjectRecord& rec) -> referee::Result<void> {
+    auto edgesR = store.edges_from(ObjectRef{rec.id, rec.version});
+    if (!edgesR) return referee::Result<void>::err(edgesR.error->message);
+    for (const auto& edge : edgesR.value.value()) {
+      BundleEdgeRecord out;
+      out.from = edge.from;
+      out.to = edge.to;
+      out.name = edge.name;
+      out.role = edge.role;
+      out.props_cbor = edge.props_cbor;
+      out.created_at_ms = edge.created_at_unix_ms;
+      edges.push_back(std::move(out));
+    }
+    return referee::Result<void>::ok();
+  };
+
+  for (const auto& rec : definitions) {
+    auto r = collect_edges(rec);
+    if (!r) return r;
+  }
+  for (const auto& rec : objects) {
+    auto r = collect_edges(rec);
+    if (!r) return r;
+  }
+
+  std::sort(definitions.begin(), definitions.end(), record_less);
+  std::sort(objects.begin(), objects.end(), record_less);
+  std::sort(edges.begin(), edges.end(), edge_less);
+
+  nlohmann::json root;
+  root["format"] = "iris.referee.bundle";
+  root["version"] = 1;
+
+  root["definitions"] = nlohmann::json::array();
+  for (const auto& rec : definitions) {
+    nlohmann::json entry;
+    entry["id"] = object_id_hex(rec.id);
+    entry["version"] = rec.version.v;
+    entry["type_id"] = rec.type.v;
+    entry["definition_id"] = object_id_hex(rec.definition_id);
+    entry["payload_cbor_hex"] = bytes_to_hex(rec.payload_cbor);
+    entry["created_at_ms"] = rec.created_at_ms;
+    root["definitions"].push_back(std::move(entry));
+  }
+
+  root["objects"] = nlohmann::json::array();
+  for (const auto& rec : objects) {
+    nlohmann::json entry;
+    entry["id"] = object_id_hex(rec.id);
+    entry["version"] = rec.version.v;
+    entry["type_id"] = rec.type.v;
+    entry["definition_id"] = object_id_hex(rec.definition_id);
+    entry["payload_cbor_hex"] = bytes_to_hex(rec.payload_cbor);
+    entry["created_at_ms"] = rec.created_at_ms;
+    root["objects"].push_back(std::move(entry));
+  }
+
+  root["edges"] = nlohmann::json::array();
+  for (const auto& edge : edges) {
+    nlohmann::json entry;
+    entry["from_id"] = object_id_hex(edge.from.id);
+    entry["from_version"] = edge.from.ver.v;
+    entry["to_id"] = object_id_hex(edge.to.id);
+    entry["to_version"] = edge.to.ver.v;
+    entry["name"] = edge.name;
+    entry["role"] = edge.role;
+    entry["props_cbor_hex"] = bytes_to_hex(edge.props_cbor);
+    entry["created_at_ms"] = edge.created_at_ms;
+    root["edges"].push_back(std::move(entry));
+  }
+
+  std::ofstream out(path);
+  if (!out) return referee::Result<void>::err("failed to open bundle file");
+  out << root.dump(2) << "\n";
+  if (!out) return referee::Result<void>::err("failed to write bundle file");
+  return referee::Result<void>::ok();
+}
+
+referee::Result<void> import_bundle(SchemaRegistry& registry,
+                                    SqliteStore& store,
+                                    const std::string& path) {
+  std::ifstream in(path);
+  if (!in) return referee::Result<void>::err("failed to open bundle file");
+  nlohmann::json root;
+  try {
+    in >> root;
+  } catch (const std::exception& ex) {
+    return referee::Result<void>::err(ex.what());
+  }
+
+  if (root.value("format", "") != "iris.referee.bundle") {
+    return referee::Result<void>::err("invalid bundle format");
+  }
+  if (root.value("version", 0) != 1) {
+    return referee::Result<void>::err("unsupported bundle version");
+  }
+
+  auto txnR = store.begin();
+  if (!txnR) return referee::Result<void>::err(txnR.error->message);
+
+  auto fail = [&](const std::string& msg) {
+    store.rollback();
+    return referee::Result<void>::err(msg);
+  };
+
+  if (root.contains("definitions")) {
+    for (const auto& item : root.at("definitions")) {
+      std::string id_text = item.value("id", "");
+      std::string def_text = item.value("definition_id", "");
+      std::string payload_hex = item.value("payload_cbor_hex", "");
+      if (id_text.empty() || def_text.empty()) return fail("definition missing id");
+      ObjectID id{};
+      ObjectID def_id{};
+      std::string err;
+      if (!parse_object_id_hex(id_text, &id, &err)) return fail("definition id invalid");
+      if (!parse_object_id_hex(def_text, &def_id, &err)) return fail("definition definition_id invalid");
+      if (id != def_id) return fail("definition id mismatch");
+      auto existingR = store.get_latest(id);
+      if (!existingR) return fail(existingR.error->message);
+      if (existingR.value->has_value()) return fail("definition already exists");
+      referee::Bytes payload;
+      if (!parse_hex_bytes(payload_hex, &payload, &err)) return fail(err);
+      auto createR = store.create_object_with_id(id, iris::refract::kTypeDefinitionType,
+                                                 def_id, payload);
+      if (!createR) return fail(createR.error->message);
+    }
+  }
+
+  if (root.contains("objects")) {
+    for (const auto& item : root.at("objects")) {
+      std::string id_text = item.value("id", "");
+      std::string def_text = item.value("definition_id", "");
+      std::string payload_hex = item.value("payload_cbor_hex", "");
+      if (id_text.empty() || def_text.empty()) return fail("object missing id");
+      ObjectID id{};
+      ObjectID def_id{};
+      std::string err;
+      if (!parse_object_id_hex(id_text, &id, &err)) return fail("object id invalid");
+      if (!parse_object_id_hex(def_text, &def_id, &err)) return fail("object definition_id invalid");
+      auto existingR = store.get_latest(id);
+      if (!existingR) return fail(existingR.error->message);
+      if (existingR.value->has_value()) return fail("object already exists");
+      auto defR = store.get_latest(def_id);
+      if (!defR) return fail(defR.error->message);
+      if (!defR.value->has_value()) return fail("definition not found for object");
+      auto type_id = TypeID{item.value("type_id", 0ULL)};
+      referee::Bytes payload;
+      if (!parse_hex_bytes(payload_hex, &payload, &err)) return fail(err);
+      auto createR = store.create_object_with_id(id, type_id, def_id, payload);
+      if (!createR) return fail(createR.error->message);
+    }
+  }
+
+  if (root.contains("edges")) {
+    for (const auto& item : root.at("edges")) {
+      ObjectID from_id{};
+      ObjectID to_id{};
+      std::string err;
+      if (!parse_object_id_hex(item.value("from_id", ""), &from_id, &err)) {
+        return fail("edge from_id invalid");
+      }
+      if (!parse_object_id_hex(item.value("to_id", ""), &to_id, &err)) {
+        return fail("edge to_id invalid");
+      }
+      referee::Version from_ver{item.value("from_version", 0ULL)};
+      referee::Version to_ver{item.value("to_version", 0ULL)};
+      auto fromR = store.get_object(ObjectRef{from_id, from_ver});
+      if (!fromR) return fail(fromR.error->message);
+      if (!fromR.value->has_value()) return fail("edge from object not found");
+      auto toR = store.get_object(ObjectRef{to_id, to_ver});
+      if (!toR) return fail(toR.error->message);
+      if (!toR.value->has_value()) return fail("edge to object not found");
+
+      std::string name = item.value("name", "");
+      std::string role = item.value("role", "");
+      referee::Bytes props;
+      std::string props_hex = item.value("props_cbor_hex", "");
+      if (!props_hex.empty()) {
+        if (!parse_hex_bytes(props_hex, &props, &err)) return fail(err);
+      }
+      auto edgeR = store.add_edge(ObjectRef{from_id, from_ver},
+                                  ObjectRef{to_id, to_ver},
+                                  name, role, props);
+      if (!edgeR) return fail(edgeR.error->message);
+    }
+  }
+
+  auto commitR = store.commit();
+  if (!commitR) return referee::Result<void>::err(commitR.error->message);
+  (void)registry;
+  return referee::Result<void>::ok();
 }
 
 const nlohmann::json* payload_value(const nlohmann::json& payload) {
