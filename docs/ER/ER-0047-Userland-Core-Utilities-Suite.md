@@ -70,6 +70,20 @@ GitHub-Issue: #183
 - Dependency 1: ER-0021 Conch Schema and Object Authoring.
 - Dependency 2: ER-0028 Conduit Operation Model.
 
+## Sub-ERs
+
+- ER-0047.1 — Conch Session Operation Model.
+- ER-0047.2 — Core Command Migration.
+- ER-0047.3 — Utility Command Migration.
+- ER-0047.4 — Command Alias Catalog.
+
+## Implementation Plan
+
+- ER-0047.1: Define session operation model and alias dispatcher.
+- ER-0047.2: Migrate core commands to session operations.
+- ER-0047.3: Migrate remaining utility commands to session operations.
+- ER-0047.4: Define and test alias catalog for all commands.
+
 ## Implementation Notes
 
 - Notes for implementer: keep command surfaces minimal and consistent.
