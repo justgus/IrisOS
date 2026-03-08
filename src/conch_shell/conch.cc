@@ -382,6 +382,13 @@ bool handle_task_command(iris::ceo::TaskRegistry& ceo_registry,
   return true;
 }
 
+referee::Result<void> export_bundle(SchemaRegistry& registry,
+                                    SqliteStore& store,
+                                    const std::string& path);
+referee::Result<void> import_bundle(SchemaRegistry& registry,
+                                    SqliteStore& store,
+                                    const std::string& path);
+
 bool handle_session_operation(const std::string& line,
                               const iris::parser::CommandAst& parsed,
                               const std::string& op,
@@ -591,12 +598,6 @@ std::string bytes_to_hex(const std::vector<std::uint8_t>& bytes);
 bool parse_hex_bytes(std::string_view v, std::vector<std::uint8_t>* out, std::string* err_out);
 bool value_to_json(const iris::parser::ValueNode& node, nlohmann::json* out,
                    std::string* err_out);
-referee::Result<void> export_bundle(SchemaRegistry& registry,
-                                    SqliteStore& store,
-                                    const std::string& path);
-referee::Result<void> import_bundle(SchemaRegistry& registry,
-                                    SqliteStore& store,
-                                    const std::string& path);
 
 std::optional<std::string> read_line(const char* prompt) {
 #if defined(HAVE_READLINE)
@@ -2039,7 +2040,7 @@ bool parse_hex_bytes(std::string_view v, std::vector<std::uint8_t>* out, std::st
 
 struct BundleObjectRecord {
   ObjectID id{};
-  Version version{};
+  referee::Version version{};
   TypeID type{};
   ObjectID definition_id{};
   referee::Bytes payload_cbor{};
@@ -2304,8 +2305,8 @@ referee::Result<void> import_bundle(SchemaRegistry& registry,
       if (!parse_object_id_hex(item.value("to_id", ""), &to_id, &err)) {
         return fail("edge to_id invalid");
       }
-      Version from_ver{item.value("from_version", 0ULL)};
-      Version to_ver{item.value("to_version", 0ULL)};
+      referee::Version from_ver{item.value("from_version", 0ULL)};
+      referee::Version to_ver{item.value("to_version", 0ULL)};
       auto fromR = store.get_object(ObjectRef{from_id, from_ver});
       if (!fromR) return fail(fromR.error->message);
       if (!fromR.value->has_value()) return fail("edge from object not found");
