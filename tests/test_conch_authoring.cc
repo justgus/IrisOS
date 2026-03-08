@@ -12,11 +12,14 @@ extern "C" {
 
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
 #include <sstream>
 #include <string>
 #include <unistd.h>
+#include <vector>
 
 using namespace referee;
 using namespace iris::refract;
@@ -62,6 +65,76 @@ std::string run_conch_script(const std::string& script) {
   ::unlink(script_template);
   ::unlink(db_template);
   return output;
+}
+
+std::string make_temp_path(const char* pattern) {
+  std::vector<char> tmpl(pattern, pattern + std::strlen(pattern) + 1);
+  int fd = ::mkstemp(tmpl.data());
+  if (fd >= 0) {
+    ::close(fd);
+    ::unlink(tmpl.data());
+  }
+  return std::string(tmpl.data());
+}
+
+std::string run_conch_script_with_db(const std::string& script, const std::string& db_path) {
+  auto script_path = make_temp_path("/tmp/iris-conch-script-XXXXXX");
+  {
+    std::ofstream out(script_path);
+    out << script;
+  }
+
+  std::ostringstream cmd;
+  cmd << "../bin/conch --db " << db_path << " < " << script_path;
+
+  std::string output;
+  FILE* pipe = ::popen(cmd.str().c_str(), "r");
+  if (pipe) {
+    char buffer[256];
+    while (std::fgets(buffer, sizeof(buffer), pipe)) {
+      output.append(buffer);
+    }
+    ::pclose(pipe);
+  }
+
+  ::unlink(script_path.c_str());
+  return output;
+}
+
+void prepare_migration_db(const std::string& db_path) {
+  SqliteStore store(SqliteConfig{ .filename=db_path, .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+  auto boot = bootstrap_core_schema(registry);
+  ck_assert_msg(boot, "bootstrap failed: %s", result_message(boot));
+
+  TypeDefinition def_v1{};
+  def_v1.type_id = TypeID{0xC0DEULL};
+  def_v1.name = "Widget";
+  def_v1.namespace_name = "MigrationTest";
+  def_v1.version = 1;
+  def_v1.fields.push_back(FieldDefinition{ "label", TypeID{0x1001ULL}, true, std::nullopt });
+
+  auto reg_v1 = registry.register_definition(def_v1);
+  ck_assert_msg(reg_v1, "register_definition v1 failed: %s", result_message(reg_v1));
+
+  TypeDefinition def_v2 = def_v1;
+  def_v2.version = 2;
+  def_v2.supersedes_definition_id = reg_v1.value->ref.id;
+  def_v2.migration_hook = "migrate_widget_v1_to_v2";
+
+  auto reg_v2 = registry.register_definition(def_v2);
+  ck_assert_msg(reg_v2, "register_definition v2 failed: %s", result_message(reg_v2));
+
+  nlohmann::json payload;
+  payload["label"] = "alpha";
+  auto cbor = nlohmann::json::to_cbor(payload);
+  auto createR = store.create_object(def_v1.type_id, reg_v1.value->ref.id, cbor);
+  ck_assert_msg(createR, "create_object failed: %s", result_message(createR));
+
+  ck_assert_msg(store.close(), "close failed");
 }
 
 } // namespace
@@ -213,6 +286,28 @@ START_TEST(test_conch_io_alias)
 }
 END_TEST
 
+START_TEST(test_conch_migration_tools)
+{
+  auto db_path = make_temp_path("/tmp/iris-conch-migrate-XXXXXX");
+  prepare_migration_db(db_path);
+
+  std::ostringstream script;
+  script << "migrate list MigrationTest::Widget\n";
+  script << "migrate apply MigrationTest::Widget\n";
+  script << "migrate verify MigrationTest::Widget\n";
+  script << "exit\n";
+
+  auto output = run_conch_script_with_db(script.str(), db_path);
+  ck_assert_msg(output.find("migrate apply ok") != std::string::npos,
+                "expected migrate apply ok");
+  ck_assert_msg(output.find("migrate verify ok") != std::string::npos,
+                "expected migrate verify ok");
+
+  std::filesystem::remove_all(db_path + ".segments");
+  ::unlink(db_path.c_str());
+}
+END_TEST
+
 Suite* conch_authoring_suite(void) {
   Suite* s = suite_create("ConchAuthoring");
   TCase* tc = tcase_create("core");
@@ -222,6 +317,7 @@ Suite* conch_authoring_suite(void) {
   tcase_add_test(tc, test_conch_io_requires_caps);
   tcase_add_test(tc, test_conch_io_datagram);
   tcase_add_test(tc, test_conch_io_alias);
+  tcase_add_test(tc, test_conch_migration_tools);
 
   suite_add_tcase(s, tc);
   return s;

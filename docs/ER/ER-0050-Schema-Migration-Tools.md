@@ -14,7 +14,7 @@ GitHub-Issue: #186
 
 - ER ID: ER-0050
 - Title: Schema Migration Tools
-- Status: Proposed
+- Status: Complete
 - Date: 2026-02-27
 - Owners: Mike
 - Type: Enhancement
@@ -72,6 +72,10 @@ GitHub-Issue: #186
 ## Implementation Notes
 
 - Notes for implementer: record migration history in Referee.
+- Implementation details:
+  - Added `migrate list`, `migrate apply`, and `migrate verify` Conch commands.
+  - Migration records are stored as `Refract::MigrationRecord` objects with before/after metadata.
+  - Migrations apply supersedes chains and reuse the existing payloads, recording hook names where provided.
 
 ## Verification Plan
 

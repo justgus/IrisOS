@@ -49,6 +49,7 @@ constexpr referee::TypeID kTypeOperationDefinition{0x5246524346000002ULL};
 constexpr referee::TypeID kTypeSignatureDefinition{0x5246524346000003ULL};
 constexpr referee::TypeID kTypeRelationshipSpec{0x5246524346000004ULL};
 constexpr referee::TypeID kTypeGenericInstance{0x5246524347000001ULL};
+constexpr referee::TypeID kTypeMigrationRecord{0x524652434D000001ULL};
 
 constexpr referee::TypeID kTypeRefereeObject{0x5245464500000001ULL};
 constexpr referee::TypeID kTypeRefereeEdge{0x5245464500000002ULL};
@@ -540,6 +541,26 @@ TypeDefinition make_referee_edge() {
   return def;
 }
 
+TypeDefinition make_migration_record() {
+  TypeDefinition def{};
+  def.type_id = kTypeMigrationRecord;
+  def.name = "MigrationRecord";
+  def.namespace_name = "Refract";
+  def.version = 1;
+
+  def.fields.push_back(FieldDefinition{ "type_id", kTypeTypeID, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "from_definition_id", kTypeObjectID, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "to_definition_id", kTypeObjectID, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "from_object_id", kTypeObjectID, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "from_object_version", kTypeVersion, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "to_object_id", kTypeObjectID, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "to_object_version", kTypeVersion, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "hook", kTypeString, false, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "status", kTypeString, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "note", kTypeString, false, std::nullopt });
+  return def;
+}
+
 TypeDefinition make_conch_session() {
   TypeDefinition def{};
   def.type_id = kTypeConchSession;
@@ -575,6 +596,9 @@ TypeDefinition make_conch_session() {
   add_session_operation(def, "io_recv");
   add_session_operation(def, "io_send");
   add_session_operation(def, "io_unalias");
+  add_session_operation(def, "migrate_list");
+  add_session_operation(def, "migrate_apply");
+  add_session_operation(def, "migrate_verify");
   add_session_operation(def, "new_object");
   add_session_operation(def, "objects_list");
   add_session_operation(def, "ops");
@@ -849,7 +873,7 @@ TypeDefinition make_demo_detail() {
 
 std::vector<TypeDefinition> core_schema_definitions() {
   std::vector<TypeDefinition> defs;
-  defs.reserve(48);
+  defs.reserve(49);
   defs.push_back(make_primitive(kTypeString, "String"));
   defs.push_back(make_primitive(kTypeU64, "U64"));
   defs.push_back(make_primitive(kTypeBool, "Bool"));
@@ -882,6 +906,7 @@ std::vector<TypeDefinition> core_schema_definitions() {
   defs.push_back(make_operation_definition());
   defs.push_back(make_relationship_spec());
   defs.push_back(make_generic_instance_definition());
+  defs.push_back(make_migration_record());
   defs.push_back(make_referee_object());
   defs.push_back(make_referee_edge());
   defs.push_back(make_conch_session());

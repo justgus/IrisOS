@@ -120,6 +120,9 @@ const std::vector<SessionAlias>& session_command_aliases() {
     { { "io", "unalias" }, "io_unalias" },
     { { "kill" }, "task_kill" },
     { { "ls" }, "types_list" },
+    { { "migrate", "apply" }, "migrate_apply" },
+    { { "migrate", "list" }, "migrate_list" },
+    { { "migrate", "verify" }, "migrate_verify" },
     { { "new" }, "new_object" },
     { { "objects" }, "objects_list" },
     { { "ops" }, "ops" },
@@ -382,6 +385,15 @@ bool handle_task_command(iris::ceo::TaskRegistry& ceo_registry,
   return true;
 }
 
+referee::Result<void> migrate_list(SchemaRegistry& registry,
+                                   SqliteStore& store,
+                                   const std::string& target);
+referee::Result<void> migrate_apply(SchemaRegistry& registry,
+                                    SqliteStore& store,
+                                    const std::string& target);
+referee::Result<void> migrate_verify(SchemaRegistry& registry,
+                                     SqliteStore& store,
+                                     const std::string& target);
 referee::Result<void> export_bundle(SchemaRegistry& registry,
                                     SqliteStore& store,
                                     const std::string& path);
@@ -432,6 +444,43 @@ bool handle_session_operation(const std::string& line,
       return true;
     }
     std::cout << "bundle import ok\n";
+    return true;
+  }
+  if (op == "migrate_list") {
+    if (parsed.args.size() != 2 || parsed.args[0] != "list") {
+      std::cout << "error: usage: migrate list <TypeName|DefinitionID>\n";
+      return true;
+    }
+    auto listR = migrate_list(registry, store, parsed.args[1]);
+    if (!listR) {
+      std::cout << "error: " << listR.error->message << "\n";
+    }
+    return true;
+  }
+  if (op == "migrate_apply") {
+    if (parsed.args.size() != 2 || parsed.args[0] != "apply") {
+      std::cout << "error: usage: migrate apply <TypeName|DefinitionID>\n";
+      return true;
+    }
+    auto applyR = migrate_apply(registry, store, parsed.args[1]);
+    if (!applyR) {
+      std::cout << "error: " << applyR.error->message << "\n";
+      return true;
+    }
+    std::cout << "migrate apply ok\n";
+    return true;
+  }
+  if (op == "migrate_verify") {
+    if (parsed.args.size() != 2 || parsed.args[0] != "verify") {
+      std::cout << "error: usage: migrate verify <TypeName|DefinitionID>\n";
+      return true;
+    }
+    auto verifyR = migrate_verify(registry, store, parsed.args[1]);
+    if (!verifyR) {
+      std::cout << "error: " << verifyR.error->message << "\n";
+      return true;
+    }
+    std::cout << "migrate verify ok\n";
     return true;
   }
   if (op == "aliases_list") {
@@ -2334,6 +2383,443 @@ referee::Result<void> import_bundle(SchemaRegistry& registry,
   return referee::Result<void>::ok();
 }
 
+struct MigrationStep {
+  iris::refract::DefinitionRecord from;
+  iris::refract::DefinitionRecord to;
+  std::optional<std::string> hook;
+};
+
+struct MigrationTarget {
+  TypeSummary summary{};
+  iris::refract::DefinitionRecord latest;
+  std::string display;
+};
+
+struct MigrationRecordPayload {
+  TypeID type_id{};
+  ObjectID from_definition_id{};
+  ObjectID to_definition_id{};
+  ObjectID from_object_id{};
+  referee::Version from_object_version{};
+  ObjectID to_object_id{};
+  referee::Version to_object_version{};
+  std::optional<std::string> hook;
+  std::string status;
+  std::optional<std::string> note;
+};
+
+std::optional<TypeSummary> find_type_summary_by_id(const std::vector<TypeSummary>& types,
+                                                   TypeID type_id) {
+  for (const auto& summary : types) {
+    if (summary.type_id.v == type_id.v) return summary;
+  }
+  return std::nullopt;
+}
+
+referee::Result<MigrationTarget> resolve_migration_target(SchemaRegistry& registry,
+                                                          const std::string& token) {
+  auto typesR = registry.list_types();
+  if (!typesR) return referee::Result<MigrationTarget>::err(typesR.error->message);
+
+  std::string err;
+  auto def_id = parse_object_id(token, &err);
+  if (def_id.has_value()) {
+    auto defR = registry.get_definition_by_id(def_id.value());
+    if (!defR) return referee::Result<MigrationTarget>::err(defR.error->message);
+    if (!defR.value->has_value()) {
+      return referee::Result<MigrationTarget>::err("definition not found");
+    }
+    const auto& def = defR.value->value();
+    auto summary = find_type_summary_by_id(typesR.value.value(), def.definition.type_id);
+    if (!summary.has_value()) {
+      return referee::Result<MigrationTarget>::err("type summary not found");
+    }
+    MigrationTarget target;
+    target.summary = summary.value();
+    target.latest = def;
+    target.display = type_display_name(target.summary);
+    return referee::Result<MigrationTarget>::ok(std::move(target));
+  }
+  if (token.size() == 32 && !err.empty()) {
+    return referee::Result<MigrationTarget>::err(err);
+  }
+
+  std::vector<TypeSummary> matches;
+  for (const auto& summary : typesR.value.value()) {
+    auto full = type_display_name(summary);
+    if (summary.name == token || full == token) {
+      matches.push_back(summary);
+    }
+  }
+  if (matches.empty()) {
+    return referee::Result<MigrationTarget>::err("type not found");
+  }
+  TypeID type_id = matches.front().type_id;
+  for (const auto& match : matches) {
+    if (match.type_id.v != type_id.v) {
+      return referee::Result<MigrationTarget>::err("ambiguous type name");
+    }
+  }
+
+  auto defR = registry.get_latest_definition_by_type(type_id);
+  if (!defR) return referee::Result<MigrationTarget>::err(defR.error->message);
+  if (!defR.value->has_value()) return referee::Result<MigrationTarget>::err("definition not found");
+
+  MigrationTarget target;
+  target.summary = matches.front();
+  target.summary.definition_id = defR.value->value().ref.id;
+  target.summary.name = defR.value->value().definition.name;
+  target.summary.namespace_name = defR.value->value().definition.namespace_name;
+  target.summary.preferred_renderer = defR.value->value().definition.preferred_renderer;
+  target.latest = defR.value->value();
+  target.display = type_display_name(target.summary);
+  return referee::Result<MigrationTarget>::ok(std::move(target));
+}
+
+referee::Result<std::vector<MigrationStep>> build_migration_steps(
+    SchemaRegistry& registry,
+    const iris::refract::DefinitionRecord& latest) {
+  auto chainR = registry.list_supersedes_chain(latest.ref.id);
+  if (!chainR) return referee::Result<std::vector<MigrationStep>>::err(chainR.error->message);
+
+  std::vector<MigrationStep> steps;
+  auto current = latest;
+  for (const auto& link : chainR.value.value()) {
+    MigrationStep step;
+    step.from = link.prior;
+    step.to = current;
+    step.hook = link.migration_hook;
+    steps.push_back(std::move(step));
+    current = link.prior;
+  }
+  return referee::Result<std::vector<MigrationStep>>::ok(std::move(steps));
+}
+
+std::string migration_record_key(const ObjectID& from_object_id,
+                                 const ObjectID& to_definition_id) {
+  return from_object_id.to_hex() + ":" + to_definition_id.to_hex();
+}
+
+bool parse_migration_record_payload(const referee::Bytes& payload_cbor,
+                                    MigrationRecordPayload* out,
+                                    std::string* err_out) {
+  if (!out) return false;
+  try {
+    auto j = nlohmann::json::from_cbor(payload_cbor);
+    auto type_id = TypeID{j.value("type_id", 0ULL)};
+    std::string from_def_text = j.value("from_definition_id", "");
+    std::string to_def_text = j.value("to_definition_id", "");
+    std::string from_obj_text = j.value("from_object_id", "");
+    std::string to_obj_text = j.value("to_object_id", "");
+    if (type_id.v == 0 || from_def_text.empty() || to_def_text.empty()
+        || from_obj_text.empty() || to_obj_text.empty()) {
+      if (err_out) *err_out = "migration record missing required fields";
+      return false;
+    }
+    std::string err;
+    auto from_def = parse_object_id(from_def_text, &err);
+    if (!from_def.has_value()) {
+      if (err_out) *err_out = "invalid from_definition_id: " + err;
+      return false;
+    }
+    auto to_def = parse_object_id(to_def_text, &err);
+    if (!to_def.has_value()) {
+      if (err_out) *err_out = "invalid to_definition_id: " + err;
+      return false;
+    }
+    auto from_obj = parse_object_id(from_obj_text, &err);
+    if (!from_obj.has_value()) {
+      if (err_out) *err_out = "invalid from_object_id: " + err;
+      return false;
+    }
+    auto to_obj = parse_object_id(to_obj_text, &err);
+    if (!to_obj.has_value()) {
+      if (err_out) *err_out = "invalid to_object_id: " + err;
+      return false;
+    }
+
+    out->type_id = type_id;
+    out->from_definition_id = from_def.value();
+    out->to_definition_id = to_def.value();
+    out->from_object_id = from_obj.value();
+    out->to_object_id = to_obj.value();
+    out->from_object_version = referee::Version{j.value("from_object_version", 0ULL)};
+    out->to_object_version = referee::Version{j.value("to_object_version", 0ULL)};
+    if (j.contains("hook")) out->hook = j.at("hook").get<std::string>();
+    out->status = j.value("status", "");
+    if (j.contains("note")) out->note = j.at("note").get<std::string>();
+    return true;
+  } catch (const std::exception& ex) {
+    if (err_out) *err_out = ex.what();
+    return false;
+  }
+}
+
+referee::Result<TypeSummary> resolve_migration_record_type(SchemaRegistry& registry) {
+  auto typesR = registry.list_types();
+  if (!typesR) return referee::Result<TypeSummary>::err(typesR.error->message);
+  std::string err;
+  auto summary = find_type_summary(typesR.value.value(), "Refract::MigrationRecord", &err);
+  if (!summary.has_value()) {
+    return referee::Result<TypeSummary>::err(err);
+  }
+  return referee::Result<TypeSummary>::ok(summary.value());
+}
+
+referee::Result<std::unordered_map<std::string, MigrationRecordPayload>> load_migration_records(
+    SchemaRegistry& registry,
+    SqliteStore& store,
+    TypeID type_id) {
+  auto typeR = resolve_migration_record_type(registry);
+  if (!typeR) return referee::Result<std::unordered_map<std::string, MigrationRecordPayload>>::err(typeR.error->message);
+
+  auto listR = store.list_by_type(typeR.value->type_id);
+  if (!listR) {
+    return referee::Result<std::unordered_map<std::string, MigrationRecordPayload>>::err(listR.error->message);
+  }
+
+  std::unordered_map<std::string, MigrationRecordPayload> out;
+  for (const auto& rec : listR.value.value()) {
+    MigrationRecordPayload payload;
+    std::string err;
+    if (!parse_migration_record_payload(rec.payload_cbor, &payload, &err)) {
+      return referee::Result<std::unordered_map<std::string, MigrationRecordPayload>>::err(err);
+    }
+    if (payload.type_id.v != type_id.v) continue;
+    out.emplace(migration_record_key(payload.from_object_id, payload.to_definition_id), payload);
+  }
+  return referee::Result<std::unordered_map<std::string, MigrationRecordPayload>>::ok(std::move(out));
+}
+
+referee::Result<void> migrate_list(SchemaRegistry& registry,
+                                   SqliteStore& store,
+                                   const std::string& target) {
+  auto targetR = resolve_migration_target(registry, target);
+  if (!targetR) return referee::Result<void>::err(targetR.error->message);
+
+  auto stepsR = build_migration_steps(registry, targetR.value->latest);
+  if (!stepsR) return referee::Result<void>::err(stepsR.error->message);
+
+  std::cout << "migrations " << targetR.value->display << "\n";
+  std::cout << "latest " << targetR.value->latest.ref.id.to_hex()
+            << " v" << targetR.value->latest.definition.version << "\n";
+
+  if (stepsR.value->empty()) {
+    std::cout << "  (none)\n";
+    return referee::Result<void>::ok();
+  }
+
+  auto listR = store.list_by_type(targetR.value->summary.type_id);
+  if (!listR) return referee::Result<void>::err(listR.error->message);
+
+  std::unordered_map<std::string, std::size_t> counts;
+  for (const auto& rec : listR.value.value()) {
+    counts[rec.definition_id.to_hex()]++;
+  }
+
+  for (const auto& step : stepsR.value.value()) {
+    auto from_hex = step.from.ref.id.to_hex();
+    std::cout << "  " << from_hex << " v" << step.from.definition.version
+              << " -> " << step.to.ref.id.to_hex() << " v" << step.to.definition.version;
+    if (step.hook.has_value()) {
+      std::cout << " hook=" << step.hook.value();
+    } else {
+      std::cout << " hook=<none>";
+    }
+    auto count_it = counts.find(from_hex);
+    std::size_t count = (count_it != counts.end()) ? count_it->second : 0;
+    std::cout << " objects=" << count << "\n";
+  }
+  return referee::Result<void>::ok();
+}
+
+referee::Result<void> migrate_apply(SchemaRegistry& registry,
+                                    SqliteStore& store,
+                                    const std::string& target) {
+  auto targetR = resolve_migration_target(registry, target);
+  if (!targetR) return referee::Result<void>::err(targetR.error->message);
+
+  auto stepsR = build_migration_steps(registry, targetR.value->latest);
+  if (!stepsR) return referee::Result<void>::err(stepsR.error->message);
+  if (stepsR.value->empty()) {
+    std::cout << "no migrations\n";
+    return referee::Result<void>::ok();
+  }
+
+  std::unordered_map<std::string, MigrationStep> step_by_from;
+  for (const auto& step : stepsR.value.value()) {
+    step_by_from.emplace(step.from.ref.id.to_hex(), step);
+  }
+
+  auto recordsR = load_migration_records(registry, store, targetR.value->summary.type_id);
+  if (!recordsR) return referee::Result<void>::err(recordsR.error->message);
+  auto record_map = std::move(recordsR.value.value());
+
+  auto listR = store.list_by_type(targetR.value->summary.type_id);
+  if (!listR) return referee::Result<void>::err(listR.error->message);
+
+  auto recordTypeR = resolve_migration_record_type(registry);
+  if (!recordTypeR) return referee::Result<void>::err(recordTypeR.error->message);
+
+  auto beginR = store.begin();
+  if (!beginR) return referee::Result<void>::err(beginR.error->message);
+
+  std::size_t migrated = 0;
+  for (const auto& rec : listR.value.value()) {
+    if (rec.definition_id == targetR.value->latest.ref.id) continue;
+    auto current = rec;
+    while (current.definition_id != targetR.value->latest.ref.id) {
+      auto step_it = step_by_from.find(current.definition_id.to_hex());
+      if (step_it == step_by_from.end()) {
+        (void)store.rollback();
+        return referee::Result<void>::err("missing migration step for definition");
+      }
+      const auto& step = step_it->second;
+      auto key = migration_record_key(current.ref.id, step.to.ref.id);
+      auto record_it = record_map.find(key);
+      if (record_it != record_map.end()) {
+        auto nextR = store.get_latest(record_it->second.to_object_id);
+        if (!nextR) {
+          (void)store.rollback();
+          return referee::Result<void>::err(nextR.error->message);
+        }
+        if (!nextR.value->has_value()) {
+          (void)store.rollback();
+          return referee::Result<void>::err("migration record target missing");
+        }
+        current = nextR.value->value();
+        continue;
+      }
+
+      auto createR = store.create_object(targetR.value->summary.type_id,
+                                         step.to.ref.id,
+                                         current.payload_cbor);
+      if (!createR) {
+        (void)store.rollback();
+        return referee::Result<void>::err(createR.error->message);
+      }
+
+      nlohmann::json payload;
+      payload["type_id"] = targetR.value->summary.type_id.v;
+      payload["from_definition_id"] = current.definition_id.to_hex();
+      payload["to_definition_id"] = step.to.ref.id.to_hex();
+      payload["from_object_id"] = current.ref.id.to_hex();
+      payload["from_object_version"] = current.ref.ver.v;
+      payload["to_object_id"] = createR.value->ref.id.to_hex();
+      payload["to_object_version"] = createR.value->ref.ver.v;
+      if (step.hook.has_value()) payload["hook"] = step.hook.value();
+      payload["status"] = "applied";
+
+      auto record_cbor = nlohmann::json::to_cbor(payload);
+      auto recordCreateR = store.create_object(recordTypeR.value->type_id,
+                                               recordTypeR.value->definition_id,
+                                               record_cbor);
+      if (!recordCreateR) {
+        (void)store.rollback();
+        return referee::Result<void>::err(recordCreateR.error->message);
+      }
+
+      MigrationRecordPayload record_payload;
+      record_payload.type_id = targetR.value->summary.type_id;
+      record_payload.from_definition_id = current.definition_id;
+      record_payload.to_definition_id = step.to.ref.id;
+      record_payload.from_object_id = current.ref.id;
+      record_payload.from_object_version = current.ref.ver;
+      record_payload.to_object_id = createR.value->ref.id;
+      record_payload.to_object_version = createR.value->ref.ver;
+      record_payload.hook = step.hook;
+      record_payload.status = "applied";
+      record_map.emplace(key, std::move(record_payload));
+
+      current = createR.value.value();
+      migrated++;
+    }
+  }
+
+  auto commitR = store.commit();
+  if (!commitR) return referee::Result<void>::err(commitR.error->message);
+
+  std::cout << "migrated " << migrated << " objects\n";
+  return referee::Result<void>::ok();
+}
+
+referee::Result<void> migrate_verify(SchemaRegistry& registry,
+                                     SqliteStore& store,
+                                     const std::string& target) {
+  auto targetR = resolve_migration_target(registry, target);
+  if (!targetR) return referee::Result<void>::err(targetR.error->message);
+
+  auto stepsR = build_migration_steps(registry, targetR.value->latest);
+  if (!stepsR) return referee::Result<void>::err(stepsR.error->message);
+  if (stepsR.value->empty()) {
+    std::cout << "no migrations\n";
+    return referee::Result<void>::ok();
+  }
+
+  std::unordered_map<std::string, MigrationStep> step_by_from;
+  for (const auto& step : stepsR.value.value()) {
+    step_by_from.emplace(step.from.ref.id.to_hex(), step);
+  }
+
+  auto recordsR = load_migration_records(registry, store, targetR.value->summary.type_id);
+  if (!recordsR) return referee::Result<void>::err(recordsR.error->message);
+  auto record_map = std::move(recordsR.value.value());
+
+  auto listR = store.list_by_type(targetR.value->summary.type_id);
+  if (!listR) return referee::Result<void>::err(listR.error->message);
+
+  std::unordered_map<std::string, std::size_t> totals;
+  std::unordered_map<std::string, std::size_t> missing;
+
+  for (const auto& rec : listR.value.value()) {
+    if (rec.definition_id == targetR.value->latest.ref.id) continue;
+    auto current = rec;
+    while (current.definition_id != targetR.value->latest.ref.id) {
+      auto from_hex = current.definition_id.to_hex();
+      totals[from_hex]++;
+      auto step_it = step_by_from.find(from_hex);
+      if (step_it == step_by_from.end()) {
+        missing[from_hex]++;
+        break;
+      }
+      const auto& step = step_it->second;
+      auto key = migration_record_key(current.ref.id, step.to.ref.id);
+      auto record_it = record_map.find(key);
+      if (record_it == record_map.end()) {
+        missing[from_hex]++;
+        break;
+      }
+      auto nextR = store.get_latest(record_it->second.to_object_id);
+      if (!nextR || !nextR.value->has_value()) {
+        missing[from_hex]++;
+        break;
+      }
+      current = nextR.value->value();
+    }
+  }
+
+  std::cout << "migration verification " << targetR.value->display << "\n";
+  std::size_t total_missing = 0;
+  for (const auto& step : stepsR.value.value()) {
+    auto from_hex = step.from.ref.id.to_hex();
+    std::size_t total = 0;
+    std::size_t miss = 0;
+    auto total_it = totals.find(from_hex);
+    if (total_it != totals.end()) total = total_it->second;
+    auto miss_it = missing.find(from_hex);
+    if (miss_it != missing.end()) miss = miss_it->second;
+    total_missing += miss;
+    std::cout << "  " << from_hex << " v" << step.from.definition.version
+              << " -> " << step.to.ref.id.to_hex() << " v" << step.to.definition.version
+              << " missing=" << miss << " of " << total << "\n";
+  }
+
+  if (total_missing > 0) {
+    return referee::Result<void>::err("migration verification failed");
+  }
+  return referee::Result<void>::ok();
+}
+
 const nlohmann::json* payload_value(const nlohmann::json& payload) {
   if (payload.is_object()) {
     auto it = payload.find("value");
@@ -2485,6 +2971,9 @@ void print_help() {
   std::cout << "  io alias <handle> <name>\n";
   std::cout << "  io unalias <name>\n";
   std::cout << "  edge <fromObjectID> <toObjectID> <name> [role]\n";
+  std::cout << "  migrate list <TypeName|DefinitionID>\n";
+  std::cout << "  migrate apply <TypeName|DefinitionID>\n";
+  std::cout << "  migrate verify <TypeName|DefinitionID>\n";
   std::cout << "  emit viz <textlog|metric|table|tree|panel> [args...]\n";
   std::cout << "    [--produced-by <id>] [--progress-of <id>] [--diagnostic-of <id>] [--role <role>]\n";
   std::cout << "  demo v1\n";
@@ -2675,6 +3164,18 @@ std::optional<iris::refract::TypeDefinition> parse_define_json(
     def.name = j.value("name", "");
     def.namespace_name = j.value("namespace", "");
     def.version = j.value("version", 1ULL);
+    if (j.contains("supersedes_definition_id")) {
+      std::string err;
+      auto supersedes = parse_object_id(j.at("supersedes_definition_id").get<std::string>(), &err);
+      if (!supersedes.has_value()) {
+        if (err_out) *err_out = "invalid supersedes_definition_id: " + err;
+        return std::nullopt;
+      }
+      def.supersedes_definition_id = supersedes.value();
+    }
+    if (j.contains("migration_hook")) {
+      def.migration_hook = j.at("migration_hook").get<std::string>();
+    }
     if (j.contains("kind")) def.kind = j.at("kind").get<std::string>();
     if (def.name.empty()) {
       if (err_out) *err_out = "json missing name";
