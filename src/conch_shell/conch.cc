@@ -158,6 +158,323 @@ std::optional<std::string> resolve_session_operation(const iris::parser::Command
   return resolved;
 }
 
+std::optional<ObjectRef> latest_ref(SqliteStore& store, const ObjectID& id, std::string* err_out);
+std::optional<ObjectID> parse_object_id_or_alias(
+    const std::string& token,
+    const std::unordered_map<std::string, ObjectID>& session_aliases,
+    SqliteStore& store,
+    SchemaRegistry& schema,
+    std::string* err_out);
+void cmd_ls(SchemaRegistry& registry,
+            SqliteStore& store,
+            const std::optional<std::string>& filter,
+            bool regex_mode,
+            bool namespaces_only);
+void cmd_objects(SchemaRegistry& registry, SqliteStore& store);
+void cmd_define_type(SchemaRegistry& registry, const std::vector<std::string>& tokens);
+void cmd_new_object(SchemaRegistry& registry, SqliteStore& store, const std::string& line);
+void cmd_find_type(SchemaRegistry& registry, const std::string& type_name);
+void cmd_show_type(SchemaRegistry& registry, const std::string& type_name);
+void cmd_ops(SchemaRegistry& registry, const std::vector<std::string>& args);
+void cmd_caps_list(const std::set<std::string>& session_caps);
+bool cmd_caps_grant(std::set<std::string>& session_caps, const std::vector<std::string>& args);
+bool cmd_caps_revoke(std::set<std::string>& session_caps, const std::vector<std::string>& args);
+bool cmd_caps_clear(std::set<std::string>& session_caps, const std::vector<std::string>& args);
+void cmd_show(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id);
+void cmd_edges(SqliteStore& store, const ObjectID& id);
+bool cmd_call(SchemaRegistry& registry,
+              SqliteStore& store,
+              const ObjectID& id,
+              const std::string& op_name,
+              const std::vector<std::string>& args,
+              const std::set<std::string>& granted_caps);
+bool cmd_task_spawn(iris::ceo::TaskRegistry& registry,
+                    SchemaRegistry& schema,
+                    SqliteStore& store,
+                    const std::unordered_map<std::string, ObjectID>& session_aliases,
+                    const std::vector<std::string>& args);
+bool cmd_task_list(iris::ceo::TaskRegistry& registry);
+bool cmd_io(iris::conduit::IoExecutor& executor,
+            iris::conduit::IoHandleStore& handle_store,
+            std::unordered_map<std::string, iris::conduit::IoHandle>& handles,
+            std::unordered_map<std::string, iris::conduit::IoHandle>& aliases,
+            std::uint64_t& next_handle_id,
+            SchemaRegistry& registry,
+            SqliteStore& store,
+            const std::set<std::string>& granted_caps,
+            const std::vector<std::string>& args);
+void cmd_route_type(SchemaRegistry& registry, const std::string& type_name);
+void cmd_route_object(SchemaRegistry& registry,
+                      SqliteStore& store,
+                      const std::unordered_map<std::string, ObjectID>& session_aliases,
+                      const std::string& token);
+
+bool handle_types_list(SchemaRegistry& registry,
+                       SqliteStore& store,
+                       const std::vector<std::string>& args) {
+  bool regex_mode = false;
+  bool namespaces_only = false;
+  std::optional<std::string> filter;
+
+  bool bad_args = false;
+  for (size_t i = 0; i < args.size(); ++i) {
+    if (args[i] == "--regex") {
+      regex_mode = true;
+      continue;
+    }
+    if (args[i] == "--namespaces") {
+      namespaces_only = true;
+      continue;
+    }
+    if (!filter.has_value()) {
+      filter = args[i];
+    } else {
+      std::cout << "error: unexpected argument\n";
+      bad_args = true;
+      break;
+    }
+  }
+  if (bad_args) return true;
+  if (!args.empty() && !filter.has_value() && regex_mode) {
+    std::cout << "error: --regex requires a pattern\n";
+    return true;
+  }
+  cmd_ls(registry, store, filter, regex_mode, namespaces_only);
+  return true;
+}
+
+bool handle_caps_command(std::set<std::string>& session_caps,
+                         const std::vector<std::string>& args) {
+  if (args.empty()) {
+    cmd_caps_list(session_caps);
+    return true;
+  }
+  const auto& action = args[0];
+  if (action == "grant") {
+    cmd_caps_grant(session_caps, args);
+    return true;
+  }
+  if (action == "revoke") {
+    cmd_caps_revoke(session_caps, args);
+    return true;
+  }
+  if (action == "clear") {
+    cmd_caps_clear(session_caps, args);
+    return true;
+  }
+  std::cout << "error: usage: caps [grant|revoke|clear]\n";
+  return true;
+}
+
+bool handle_start_command(SchemaRegistry& registry,
+                          SqliteStore& store,
+                          const std::unordered_map<std::string, ObjectID>& session_aliases,
+                          const std::set<std::string>& session_caps,
+                          std::vector<TaskEntry>& tasks,
+                          std::uint64_t& next_task_id,
+                          const std::vector<std::string>& args) {
+  if (args.size() != 1) return false;
+  std::string err;
+  auto id = parse_object_id_or_alias(args[0], session_aliases, store, registry, &err);
+  if (!id.has_value()) {
+    std::cout << "error: " << err << "\n";
+    return true;
+  }
+  bool ok = cmd_call(registry, store, id.value(), "start", {}, session_caps);
+  if (ok) {
+    std::ostringstream os;
+    os << "task-" << std::setw(4) << std::setfill('0') << next_task_id++;
+    TaskEntry entry;
+    entry.id = os.str();
+    entry.target = *latest_ref(store, id.value(), nullptr);
+    entry.state = "running";
+    tasks.push_back(std::move(entry));
+    std::cout << "started " << tasks.back().id << "\n";
+  }
+  return true;
+}
+
+bool handle_ps_command(const std::vector<TaskEntry>& tasks) {
+  if (tasks.empty()) {
+    std::cout << "no tasks\n";
+    return true;
+  }
+  for (const auto& task : tasks) {
+    std::cout << task.id << " " << task.target.id.to_hex() << " " << task.state << "\n";
+  }
+  return true;
+}
+
+bool handle_kill_command(std::vector<TaskEntry>& tasks,
+                         const std::vector<std::string>& args) {
+  if (args.size() != 1) return false;
+  auto it = std::find_if(tasks.begin(), tasks.end(),
+                         [&](const TaskEntry& t) { return t.id == args[0]; });
+  if (it == tasks.end()) {
+    std::cout << "error: task not found\n";
+    return true;
+  }
+  std::cout << "killed " << it->id << "\n";
+  tasks.erase(it);
+  return true;
+}
+
+bool handle_task_command(iris::ceo::TaskRegistry& ceo_registry,
+                         SchemaRegistry& registry,
+                         SqliteStore& store,
+                         const std::unordered_map<std::string, ObjectID>& session_aliases,
+                         const std::vector<std::string>& args) {
+  if (args.empty()) {
+    std::cout << "error: usage: task <spawn|list>\n";
+    return true;
+  }
+  if (args[0] == "spawn") {
+    cmd_task_spawn(ceo_registry, registry, store, session_aliases, args);
+    return true;
+  }
+  if (args[0] == "list") {
+    cmd_task_list(ceo_registry);
+    return true;
+  }
+  std::cout << "error: usage: task <spawn|list>\n";
+  return true;
+}
+
+bool handle_session_operation(const std::string& line,
+                              const iris::parser::CommandAst& parsed,
+                              const std::string& op,
+                              SchemaRegistry& registry,
+                              SqliteStore& store,
+                              std::unordered_map<std::string, ObjectID>& session_aliases,
+                              std::set<std::string>& session_caps,
+                              std::vector<TaskEntry>& tasks,
+                              std::uint64_t& next_task_id,
+                              iris::ceo::TaskRegistry& ceo_registry,
+                              iris::conduit::IoExecutor& io_executor,
+                              iris::conduit::IoHandleStore& io_handle_store,
+                              std::unordered_map<std::string, iris::conduit::IoHandle>& io_handles,
+                              std::unordered_map<std::string, iris::conduit::IoHandle>& io_handle_aliases,
+                              std::uint64_t& next_io_handle_id) {
+  if (op == "types_list") {
+    return handle_types_list(registry, store, parsed.args);
+  }
+  if (op == "objects_list") {
+    cmd_objects(registry, store);
+    return true;
+  }
+  if (op == "define_type") {
+    if (parsed.args.size() >= 2 && parsed.args[0] == "type") {
+      std::vector<std::string> tokens;
+      tokens.reserve(parsed.args.size() + 1);
+      tokens.push_back(parsed.name);
+      tokens.insert(tokens.end(), parsed.args.begin(), parsed.args.end());
+      cmd_define_type(registry, tokens);
+      return true;
+    }
+    return false;
+  }
+  if (op == "new_object") {
+    cmd_new_object(registry, store, line);
+    return true;
+  }
+  if (op == "find_type") {
+    if (parsed.args.size() >= 2 && parsed.args[0] == "type") {
+      cmd_find_type(registry, parsed.args[1]);
+      return true;
+    }
+    return false;
+  }
+  if (op == "show_type") {
+    if (parsed.args.size() == 2 && parsed.args[0] == "type") {
+      cmd_show_type(registry, parsed.args[1]);
+      return true;
+    }
+    return false;
+  }
+  if (op == "show_object") {
+    if (parsed.args.size() == 1) {
+      std::string err;
+      auto id = parse_object_id_or_alias(parsed.args[0], session_aliases, store, registry, &err);
+      if (!id.has_value()) {
+        std::cout << "error: " << err << "\n";
+        return true;
+      }
+      cmd_show(registry, store, id.value());
+      return true;
+    }
+    return false;
+  }
+  if (op == "ops") {
+    if (parsed.args.empty()) return false;
+    cmd_ops(registry, parsed.args);
+    return true;
+  }
+  if (op == "caps_list" || op == "caps_grant" || op == "caps_revoke" || op == "caps_clear") {
+    return handle_caps_command(session_caps, parsed.args);
+  }
+  if (op == "edges_list") {
+    if (parsed.args.size() != 1) return false;
+    std::string err;
+    auto id = parse_object_id_or_alias(parsed.args[0], session_aliases, store, registry, &err);
+    if (!id.has_value()) {
+      std::cout << "error: " << err << "\n";
+      return true;
+    }
+    cmd_edges(store, id.value());
+    return true;
+  }
+  if (op == "call") {
+    if (parsed.args.size() < 2) return false;
+    std::string err;
+    auto id = parse_object_id_or_alias(parsed.args[0], session_aliases, store, registry, &err);
+    if (!id.has_value()) {
+      std::cout << "error: " << err << "\n";
+      return true;
+    }
+    std::vector<std::string> args;
+    if (parsed.args.size() > 2) {
+      args.assign(parsed.args.begin() + 2, parsed.args.end());
+    }
+    cmd_call(registry, store, id.value(), parsed.args[1], args, session_caps);
+    return true;
+  }
+  if (op == "start") {
+    return handle_start_command(registry, store, session_aliases, session_caps,
+                                tasks, next_task_id, parsed.args);
+  }
+  if (op == "ps") {
+    return handle_ps_command(tasks);
+  }
+  if (op == "task_kill") {
+    return handle_kill_command(tasks, parsed.args);
+  }
+  if (op == "task_list" || op == "task_spawn") {
+    return handle_task_command(ceo_registry, registry, store, session_aliases, parsed.args);
+  }
+  if (op == "io_alias" || op == "io_aliases" || op == "io_await" || op == "io_close"
+      || op == "io_handles" || op == "io_open" || op == "io_recv" || op == "io_send"
+      || op == "io_unalias") {
+    cmd_io(io_executor, io_handle_store, io_handles, io_handle_aliases,
+           next_io_handle_id, registry, store, session_caps, parsed.args);
+    return true;
+  }
+  if (op == "route_type") {
+    if (parsed.args.size() == 2 && parsed.args[0] == "type") {
+      cmd_route_type(registry, parsed.args[1]);
+      return true;
+    }
+    return false;
+  }
+  if (op == "route_object") {
+    if (parsed.args.size() == 1) {
+      cmd_route_object(registry, store, session_aliases, parsed.args[0]);
+      return true;
+    }
+    return false;
+  }
+  return false;
+}
+
 referee::Result<ObjectID> create_object(SchemaRegistry& registry, SqliteStore& store,
                                         const std::string& expr);
 referee::Result<ObjectID> create_demo_object(SchemaRegistry& registry, SqliteStore& store,
@@ -3422,7 +3739,7 @@ int main(int argc, char** argv) {
     }
     if (parsed.name.empty()) continue;
 
-    [[maybe_unused]] auto session_op = resolve_session_operation(parsed);
+    auto session_op = resolve_session_operation(parsed);
 
     const auto& cmd = parsed.name;
     if (cmd == "let") {
@@ -3442,35 +3759,16 @@ int main(int argc, char** argv) {
       print_help();
       continue;
     }
-    if (cmd == "ls") {
-      bool regex_mode = false;
-      bool namespaces_only = false;
-      std::optional<std::string> filter;
-
-      bool bad_args = false;
-      for (size_t i = 0; i < parsed.args.size(); ++i) {
-        if (parsed.args[i] == "--regex") {
-          regex_mode = true;
-          continue;
-        }
-        if (parsed.args[i] == "--namespaces") {
-          namespaces_only = true;
-          continue;
-        }
-        if (!filter.has_value()) {
-          filter = parsed.args[i];
-        } else {
-          std::cout << "error: unexpected argument\n";
-          bad_args = true;
-          break;
-        }
-      }
-      if (bad_args) continue;
-      if (!parsed.args.empty() && !filter.has_value() && regex_mode) {
-        std::cout << "error: --regex requires a pattern\n";
+    if (session_op.has_value()) {
+      if (handle_session_operation(line, parsed, session_op.value(), registry, store,
+                                   session_aliases, session_caps, tasks, next_task_id,
+                                   ceo_registry, io_executor, io_handle_store,
+                                   io_handles, io_handle_aliases, next_io_handle_id)) {
         continue;
       }
-      cmd_ls(registry, store, filter, regex_mode, namespaces_only);
+    }
+    if (cmd == "ls") {
+      handle_types_list(registry, store, parsed.args);
       continue;
     }
     if (cmd == "objects") {
@@ -3502,24 +3800,7 @@ int main(int argc, char** argv) {
       continue;
     }
     if (cmd == "caps") {
-      if (parsed.args.empty()) {
-        cmd_caps_list(session_caps);
-        continue;
-      }
-      const auto& action = parsed.args[0];
-      if (action == "grant") {
-        cmd_caps_grant(session_caps, parsed.args);
-        continue;
-      }
-      if (action == "revoke") {
-        cmd_caps_revoke(session_caps, parsed.args);
-        continue;
-      }
-      if (action == "clear") {
-        cmd_caps_clear(session_caps, parsed.args);
-        continue;
-      }
-      std::cout << "error: usage: caps [grant|revoke|clear]\n";
+      handle_caps_command(session_caps, parsed.args);
       continue;
     }
     if (cmd == "show" && parsed.args.size() == 1) {
@@ -3557,60 +3838,20 @@ int main(int argc, char** argv) {
       continue;
     }
     if (cmd == "start" && parsed.args.size() == 1) {
-      std::string err;
-      auto id = parse_object_id_or_alias(parsed.args[0], session_aliases, store, registry, &err);
-      if (!id.has_value()) {
-        std::cout << "error: " << err << "\n";
-        continue;
-      }
-      bool ok = cmd_call(registry, store, id.value(), "start", {}, session_caps);
-      if (ok) {
-        std::ostringstream os;
-        os << "task-" << std::setw(4) << std::setfill('0') << next_task_id++;
-        TaskEntry entry;
-        entry.id = os.str();
-        entry.target = *latest_ref(store, id.value(), nullptr);
-        entry.state = "running";
-        tasks.push_back(std::move(entry));
-        std::cout << "started " << tasks.back().id << "\n";
-      }
+      handle_start_command(registry, store, session_aliases, session_caps,
+                           tasks, next_task_id, parsed.args);
       continue;
     }
     if (cmd == "ps") {
-      if (tasks.empty()) {
-        std::cout << "no tasks\n";
-        continue;
-      }
-      for (const auto& task : tasks) {
-        std::cout << task.id << " " << task.target.id.to_hex() << " " << task.state << "\n";
-      }
+      handle_ps_command(tasks);
       continue;
     }
     if (cmd == "kill" && parsed.args.size() == 1) {
-      auto it = std::find_if(tasks.begin(), tasks.end(),
-                             [&](const TaskEntry& t) { return t.id == parsed.args[0]; });
-      if (it == tasks.end()) {
-        std::cout << "error: task not found\n";
-        continue;
-      }
-      std::cout << "killed " << it->id << "\n";
-      tasks.erase(it);
+      handle_kill_command(tasks, parsed.args);
       continue;
     }
     if (cmd == "task") {
-      if (parsed.args.empty()) {
-        std::cout << "error: usage: task <spawn|list>\n";
-        continue;
-      }
-      if (parsed.args[0] == "spawn") {
-        cmd_task_spawn(ceo_registry, registry, store, session_aliases, parsed.args);
-        continue;
-      }
-      if (parsed.args[0] == "list") {
-        cmd_task_list(ceo_registry);
-        continue;
-      }
-      std::cout << "error: usage: task <spawn|list>\n";
+      handle_task_command(ceo_registry, registry, store, session_aliases, parsed.args);
       continue;
     }
     if (cmd == "io") {
