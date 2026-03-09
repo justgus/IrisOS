@@ -14,7 +14,7 @@ GitHub-Issue: #188
 
 - ER ID: ER-0052
 - Title: Conch Debug and Inspection Tools
-- Status: Proposed
+- Status: Complete
 - Date: 2026-02-27
 - Owners: Mike
 - Type: Enhancement

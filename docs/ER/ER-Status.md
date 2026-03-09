@@ -61,6 +61,6 @@
 - ER-0049 — Complete
 - ER-0050 — Complete
 - ER-0051 — Complete
-- ER-0052 — Proposed
+- ER-0052 — Complete
 - ER-0053 — Proposed
 - ER-0054 — Proposed

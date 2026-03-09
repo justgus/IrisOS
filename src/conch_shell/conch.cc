@@ -111,6 +111,8 @@ const std::vector<SessionAlias>& session_command_aliases() {
     { { "caps", "grant" }, "caps_grant" },
     { { "caps", "revoke" }, "caps_revoke" },
     { { "caps" }, "caps_list" },
+    { { "debug", "dispatch" }, "debug_dispatch" },
+    { { "debug", "graph" }, "debug_graph" },
     { { "define", "type" }, "define_type" },
     { { "demo", "v1" }, "demo_v1" },
     { { "edge" }, "edge_add" },
@@ -215,6 +217,14 @@ bool cmd_task_spawn(iris::ceo::TaskRegistry& registry,
                     const std::unordered_map<std::string, ObjectID>& session_aliases,
                     const std::vector<std::string>& args);
 bool cmd_task_list(iris::ceo::TaskRegistry& registry);
+bool cmd_debug_dispatch(SchemaRegistry& registry,
+                        SqliteStore& store,
+                        const std::unordered_map<std::string, ObjectID>& session_aliases,
+                        const std::vector<std::string>& args);
+bool cmd_debug_graph(SchemaRegistry& registry,
+                     SqliteStore& store,
+                     const std::unordered_map<std::string, ObjectID>& session_aliases,
+                     const std::vector<std::string>& args);
 bool cmd_io(iris::conduit::IoExecutor& executor,
             iris::conduit::IoHandleStore& handle_store,
             std::unordered_map<std::string, iris::conduit::IoHandle>& handles,
@@ -513,6 +523,14 @@ bool handle_session_operation(const std::string& line,
   }
   if (op == "objects_list") {
     cmd_objects(registry, store);
+    return true;
+  }
+  if (op == "debug_dispatch") {
+    cmd_debug_dispatch(registry, store, session_aliases, parsed.args);
+    return true;
+  }
+  if (op == "debug_graph") {
+    cmd_debug_graph(registry, store, session_aliases, parsed.args);
     return true;
   }
   if (op == "define_type") {
@@ -1218,6 +1236,54 @@ std::string format_signature(const iris::refract::OperationDefinition& op) {
     if (op.signature.outputs.size() > 1) os << ")";
   }
   return os.str();
+}
+
+struct DispatchCandidate {
+  OperationListing listing;
+  std::size_t type_penalty{0};
+  std::size_t optional_penalty{0};
+};
+
+bool matches_arity(const iris::refract::OperationDefinition& op, std::size_t arg_count) {
+  std::size_t required = 0;
+  for (const auto& param : op.signature.params) {
+    if (!param.optional) ++required;
+  }
+  if (arg_count < required) return false;
+  if (arg_count > op.signature.params.size()) return false;
+  return true;
+}
+
+bool has_base_type(TypeID type_id,
+                   TypeID base_id,
+                   SchemaRegistry& registry,
+                   const std::vector<TypeSummary>& types,
+                   std::string* err_out) {
+  if (type_id.v == base_id.v) return true;
+  std::deque<TypeID> queue;
+  std::unordered_set<std::uint64_t> visited;
+  queue.push_back(type_id);
+  visited.insert(type_id.v);
+
+  while (!queue.empty()) {
+    auto current = queue.front();
+    queue.pop_front();
+
+    auto defR = registry.get_latest_definition_by_type(current);
+    if (!defR) {
+      if (err_out) *err_out = defR.error->message;
+      return false;
+    }
+    if (!defR.value->has_value()) {
+      if (err_out) *err_out = "definition not found";
+      return false;
+    }
+    for (const auto& base : resolve_base_types(defR.value->value().definition, types)) {
+      if (base.v == base_id.v) return true;
+      if (visited.insert(base.v).second) queue.push_back(base);
+    }
+  }
+  return false;
 }
 
 std::string format_capabilities(const iris::refract::OperationDefinition& op) {
@@ -3068,6 +3134,11 @@ void print_help() {
   std::cout << "  kill <TaskID>\n";
   std::cout << "  task spawn <ObjectID> [name] [inline|service]\n";
   std::cout << "  task list\n";
+  std::cout << "  task profile\n";
+  std::cout << "  task trace [clear]\n";
+  std::cout << "  debug dispatch <TypeName|ObjectID> <opName> "
+               "[--class|--object] [--declared] [argType...]\n";
+  std::cout << "  debug graph <ObjectID>\n";
   std::cout << "  io open <channel|datagram> <taskA> <taskB>\n";
   std::cout << "  io send <handle> <hexbytes>\n";
   std::cout << "  io await <handle> <taskId>\n";
@@ -3726,6 +3797,330 @@ void cmd_edges(SqliteStore& store, const ObjectID& id) {
                 << " name=" << edge.name << " role=" << edge.role << "\n";
     }
   }
+}
+
+bool cmd_debug_dispatch(SchemaRegistry& registry,
+                        SqliteStore& store,
+                        const std::unordered_map<std::string, ObjectID>& session_aliases,
+                        const std::vector<std::string>& args) {
+  if (args.size() < 2) {
+    std::cout << "error: usage: debug dispatch <TypeName|ObjectID> <opName> "
+                 "[--class|--object] [--declared] [argType...]\n";
+    return false;
+  }
+
+  std::string target_token = args[0];
+  std::string op_name = args[1];
+  iris::refract::OperationScope scope = iris::refract::OperationScope::Object;
+  bool include_inherited = true;
+  std::vector<TypeID> arg_types;
+
+  for (size_t i = 2; i < args.size(); ++i) {
+    const auto& token = args[i];
+    if (token == "--class") {
+      scope = iris::refract::OperationScope::Class;
+      continue;
+    }
+    if (token == "--object") {
+      scope = iris::refract::OperationScope::Object;
+      continue;
+    }
+    if (token == "--declared") {
+      include_inherited = false;
+      continue;
+    }
+    std::string err;
+    auto summary = resolve_type(registry, token, &err);
+    if (!summary.has_value()) {
+      std::cout << "error: " << err << "\n";
+      return false;
+    }
+    arg_types.push_back(summary->type_id);
+  }
+
+  std::optional<ObjectID> object_id;
+  auto alias_it = session_aliases.find(target_token);
+  if (alias_it != session_aliases.end()) {
+    object_id = alias_it->second;
+  } else {
+    std::string err;
+    auto parsed = parse_object_id(target_token, &err);
+    if (parsed.has_value()) object_id = parsed.value();
+  }
+
+  auto typesR = registry.list_types();
+  if (!typesR) {
+    std::cout << "error: " << typesR.error->message << "\n";
+    return false;
+  }
+  const auto& types = typesR.value.value();
+
+  TypeID target_type{};
+  std::string target_display;
+  if (object_id.has_value()) {
+    auto recR = store.get_latest(object_id.value());
+    if (!recR) {
+      std::cout << "error: " << recR.error->message << "\n";
+      return false;
+    }
+    if (!recR.value->has_value()) {
+      std::cout << "error: object not found\n";
+      return false;
+    }
+    target_type = recR.value->value().type;
+    target_display = type_display_name_for(types, target_type);
+  } else {
+    std::string err;
+    auto summary = find_type_summary(types, target_token, &err);
+    if (!summary.has_value()) {
+      std::cout << "error: " << err << "\n";
+      return false;
+    }
+    target_type = summary->type_id;
+    target_display = type_display_name(*summary);
+  }
+
+  auto listR = list_operations_with_inheritance(registry, types, target_type, include_inherited);
+  if (!listR) {
+    std::cout << "error: " << listR.error->message << "\n";
+    return false;
+  }
+
+  std::cout << "dispatch trace " << target_display << " op=" << op_name
+            << " scope=" << (scope == iris::refract::OperationScope::Class ? "class" : "object")
+            << " args=" << arg_types.size();
+  if (!include_inherited) std::cout << " declared";
+  std::cout << "\n";
+
+  if (!arg_types.empty()) {
+    std::cout << "arg types";
+    for (const auto& type_id : arg_types) {
+      std::cout << " " << type_display_name_for(types, type_id);
+    }
+    std::cout << "\n";
+  }
+
+  std::vector<DispatchCandidate> matches;
+  for (const auto& entry : listR.value.value()) {
+    if (entry.operation.scope != scope) continue;
+    if (entry.operation.name != op_name) continue;
+
+    const auto& op = entry.operation;
+    if (!matches_arity(op, arg_types.size())) {
+      std::cout << "  skip " << type_display_name_for(types, entry.owner)
+                << " depth=" << entry.depth << " " << op.name << format_signature(op)
+                << " reason=arity\n";
+      continue;
+    }
+
+    std::size_t type_penalty = 0;
+    bool type_ok = true;
+    if (!arg_types.empty()) {
+      for (std::size_t i = 0; i < arg_types.size(); ++i) {
+        const auto& arg_type = arg_types[i];
+        const auto& param_type = op.signature.params[i].type;
+        if (arg_type.v == param_type.v) continue;
+        std::string err;
+        if (has_base_type(arg_type, param_type, registry, types, &err)) {
+          type_penalty += 1;
+          continue;
+        }
+        if (!err.empty()) {
+          std::cout << "error: " << err << "\n";
+          return false;
+        }
+        type_ok = false;
+        break;
+      }
+    }
+    if (!type_ok) {
+      std::cout << "  skip " << type_display_name_for(types, entry.owner)
+                << " depth=" << entry.depth << " " << op.name << format_signature(op)
+                << " reason=type-mismatch\n";
+      continue;
+    }
+
+    DispatchCandidate cand;
+    cand.listing = entry;
+    cand.type_penalty = type_penalty;
+    cand.optional_penalty = op.signature.params.size() - arg_types.size();
+    matches.push_back(cand);
+
+    std::cout << "  match " << type_display_name_for(types, entry.owner)
+              << " depth=" << entry.depth << " " << op.name << format_signature(op)
+              << " type_penalty=" << type_penalty
+              << " optional_penalty=" << cand.optional_penalty << "\n";
+  }
+
+  if (matches.empty()) {
+    std::cout << "no matching operation\n";
+    return true;
+  }
+
+  auto better = [](const DispatchCandidate& a, const DispatchCandidate& b) {
+    if (a.type_penalty != b.type_penalty) return a.type_penalty < b.type_penalty;
+    if (a.optional_penalty != b.optional_penalty) return a.optional_penalty < b.optional_penalty;
+    return a.listing.depth < b.listing.depth;
+  };
+
+  DispatchCandidate best = matches.front();
+  for (std::size_t i = 1; i < matches.size(); ++i) {
+    if (better(matches[i], best)) best = matches[i];
+  }
+
+  std::vector<DispatchCandidate> ties;
+  for (const auto& cand : matches) {
+    if (!better(best, cand) && !better(cand, best)) ties.push_back(cand);
+  }
+
+  if (ties.size() > 1) {
+    std::cout << "ambiguous operation:";
+    for (const auto& cand : ties) {
+      const auto& op = cand.listing.operation;
+      std::cout << " " << type_display_name_for(types, cand.listing.owner)
+                << " " << op.name << format_signature(op) << ";";
+    }
+    std::cout << "\n";
+    return true;
+  }
+
+  const auto& op = best.listing.operation;
+  std::cout << "selected " << type_display_name_for(types, best.listing.owner)
+            << " depth=" << best.listing.depth << " " << op.name << format_signature(op)
+            << " type_penalty=" << best.type_penalty
+            << " optional_penalty=" << best.optional_penalty << "\n";
+  return true;
+}
+
+bool cmd_debug_graph(SchemaRegistry& registry,
+                     SqliteStore& store,
+                     const std::unordered_map<std::string, ObjectID>& session_aliases,
+                     const std::vector<std::string>& args) {
+  if (args.size() != 1) {
+    std::cout << "error: usage: debug graph <ObjectID>\n";
+    return false;
+  }
+
+  std::string err;
+  auto id = parse_object_id_or_alias(args[0], session_aliases, store, registry, &err);
+  if (!id.has_value()) {
+    std::cout << "error: " << err << "\n";
+    return false;
+  }
+
+  auto recR = store.get_latest(id.value());
+  if (!recR) {
+    std::cout << "error: " << recR.error->message << "\n";
+    return false;
+  }
+  if (!recR.value->has_value()) {
+    std::cout << "error: object not found\n";
+    return false;
+  }
+
+  auto typesR = registry.list_types();
+  if (!typesR) {
+    std::cout << "error: " << typesR.error->message << "\n";
+    return false;
+  }
+  const auto& types = typesR.value.value();
+
+  auto defR = registry.get_definition_by_type(recR.value->value().type);
+  if (!defR) {
+    std::cout << "error: " << defR.error->message << "\n";
+    return false;
+  }
+  if (!defR.value->has_value()) {
+    std::cout << "error: definition not found\n";
+    return false;
+  }
+
+  const auto& def = defR.value->value().definition;
+  std::cout << "graph " << recR.value->value().ref.id.to_hex()
+            << " type " << type_display_name_for(types, def.type_id)
+            << " v" << def.version << "\n";
+
+  std::unordered_map<std::string, std::vector<iris::refract::RelationshipSpec>> relationships;
+  if (!def.relationships.empty()) {
+    std::cout << "relationships\n";
+    for (const auto& rel : def.relationships) {
+      relationships[rel.role].push_back(rel);
+      std::cout << "  role=" << rel.role;
+      if (!rel.cardinality.empty()) std::cout << " card=" << rel.cardinality;
+      if (!rel.target.empty()) std::cout << " target=" << rel.target;
+      std::cout << "\n";
+    }
+  } else {
+    std::cout << "relationships (none)\n";
+  }
+
+  auto outR = store.edges_from(recR.value->value().ref);
+  if (!outR) {
+    std::cout << "error: " << outR.error->message << "\n";
+    return false;
+  }
+  auto inR = store.edges_to(recR.value->value().ref);
+  if (!inR) {
+    std::cout << "error: " << inR.error->message << "\n";
+    return false;
+  }
+
+  std::cout << "edges from " << recR.value->value().ref.id.to_hex() << "\n";
+  if (outR.value->empty()) {
+    std::cout << "  (none)\n";
+  } else {
+    for (const auto& edge : outR.value.value()) {
+      std::string target_display = "<unknown>";
+      auto targetR = store.get_latest(edge.to.id);
+      if (targetR && targetR.value->has_value()) {
+        target_display = type_display_name_for(types, targetR.value->value().type);
+      }
+      std::string note;
+      auto rel_it = relationships.find(edge.role);
+      if (rel_it == relationships.end()) {
+        note = "unexpected-role";
+      } else if (!rel_it->second.empty()) {
+        bool target_ok = false;
+        for (const auto& rel : rel_it->second) {
+          std::string target_err;
+          if (rel.target.empty()) {
+            target_ok = true;
+            break;
+          }
+          auto summary = find_type_summary(types, rel.target, &target_err);
+          if (!summary.has_value()) continue;
+          if (targetR && targetR.value->has_value()
+              && summary->type_id.v == targetR.value->value().type.v) {
+            target_ok = true;
+            break;
+          }
+        }
+        if (!target_ok) note = "target-mismatch";
+      }
+      std::cout << "  -> " << edge.to.id.to_hex() << " v" << edge.to.ver.v
+                << " type=" << target_display << " name=" << edge.name
+                << " role=" << edge.role;
+      if (!note.empty()) std::cout << " (" << note << ")";
+      std::cout << "\n";
+    }
+  }
+
+  std::cout << "edges to " << recR.value->value().ref.id.to_hex() << "\n";
+  if (inR.value->empty()) {
+    std::cout << "  (none)\n";
+  } else {
+    for (const auto& edge : inR.value.value()) {
+      std::string source_display = "<unknown>";
+      auto sourceR = store.get_latest(edge.from.id);
+      if (sourceR && sourceR.value->has_value()) {
+        source_display = type_display_name_for(types, sourceR.value->value().type);
+      }
+      std::cout << "  <- " << edge.from.id.to_hex() << " v" << edge.from.ver.v
+                << " type=" << source_display << " name=" << edge.name
+                << " role=" << edge.role << "\n";
+    }
+  }
+  return true;
 }
 
 bool cmd_call(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id,
