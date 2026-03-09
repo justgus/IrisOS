@@ -86,6 +86,18 @@ struct SessionAlias {
   std::string operation;
 };
 
+void print_route_for(iris::refract::SchemaRegistry& registry, referee::TypeID type_id);
+void maybe_spawn_concho(iris::refract::SchemaRegistry& registry,
+                        referee::SqliteStore& store,
+                        const referee::ObjectID& artifact_id);
+bool cmd_task_profile(iris::ceo::TaskRegistry& registry,
+                      SchemaRegistry& schema,
+                      SqliteStore& store);
+bool cmd_task_trace(iris::ceo::TaskRegistry& registry,
+                    SchemaRegistry& schema,
+                    SqliteStore& store,
+                    const std::vector<std::string>& args);
+
 const std::vector<SessionAlias>& session_command_aliases() {
   static const std::vector<SessionAlias> aliases = {
     { { "alias" }, "alias_set" },
