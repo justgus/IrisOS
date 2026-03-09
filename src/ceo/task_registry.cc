@@ -86,6 +86,7 @@ referee::Result<void> TaskRegistry::wait_task(TaskID id) {
   if (!can_transition(rec->state, TaskState::Waiting)) {
     return referee::Result<void>::err("invalid state transition");
   }
+  record_state_transition(rec->id, rec->state, TaskState::Waiting);
   rec->state = TaskState::Waiting;
   return referee::Result<void>::ok();
 }
@@ -97,6 +98,7 @@ referee::Result<void> TaskRegistry::resume_task(TaskID id) {
   if (!can_transition(rec->state, TaskState::Running)) {
     return referee::Result<void>::err("invalid state transition");
   }
+  record_state_transition(rec->id, rec->state, TaskState::Running);
   rec->state = TaskState::Running;
   return referee::Result<void>::ok();
 }
@@ -130,6 +132,7 @@ referee::Result<void> TaskRegistry::cancel_task(TaskID id) {
   if (!can_transition(rec->state, TaskState::CancelRequested)) {
     return referee::Result<void>::err("invalid state transition");
   }
+  record_state_transition(rec->id, rec->state, TaskState::CancelRequested);
   rec->state = TaskState::CancelRequested;
   for (const auto& child : rec->children) {
     if (child.ownership == ChildOwnership::Owned) {
@@ -146,6 +149,7 @@ referee::Result<void> TaskRegistry::mark_canceled(TaskID id) {
   if (!can_transition(rec->state, TaskState::Canceled)) {
     return referee::Result<void>::err("invalid state transition");
   }
+  record_state_transition(rec->id, rec->state, TaskState::Canceled);
   rec->state = TaskState::Canceled;
   detach_from_parent(*rec);
   return referee::Result<void>::ok();
@@ -158,6 +162,7 @@ referee::Result<void> TaskRegistry::kill_task(TaskID id) {
   if (!can_transition(rec->state, TaskState::Killed)) {
     return referee::Result<void>::err("invalid state transition");
   }
+  record_state_transition(rec->id, rec->state, TaskState::Killed);
   rec->state = TaskState::Killed;
   detach_from_parent(*rec);
   return referee::Result<void>::ok();
@@ -170,6 +175,7 @@ referee::Result<void> TaskRegistry::complete_task(TaskID id) {
   if (!can_transition(rec->state, TaskState::Completed)) {
     return referee::Result<void>::err("invalid state transition");
   }
+  record_state_transition(rec->id, rec->state, TaskState::Completed);
   rec->state = TaskState::Completed;
   detach_from_parent(*rec);
   return referee::Result<void>::ok();
@@ -182,6 +188,7 @@ referee::Result<void> TaskRegistry::fail_task(TaskID id, std::string reason) {
   if (!can_transition(rec->state, TaskState::Failed)) {
     return referee::Result<void>::err("invalid state transition");
   }
+  record_state_transition(rec->id, rec->state, TaskState::Failed);
   rec->state = TaskState::Failed;
   if (!reason.empty()) rec->name = std::move(reason);
   detach_from_parent(*rec);
@@ -202,6 +209,58 @@ referee::Result<std::vector<TaskRecord>> TaskRegistry::list_tasks() const {
     return a.id < b.id;
   });
   return referee::Result<std::vector<TaskRecord>>::ok(std::move(out));
+}
+
+TaskProfileSnapshot TaskRegistry::profile_snapshot() const {
+  TaskProfileSnapshot snapshot;
+  snapshot.captured_at_ns = now_ns();
+  std::vector<TaskRecord> records;
+  records.reserve(tasks_.size());
+  for (const auto& kv : tasks_) records.push_back(kv.second);
+  std::sort(records.begin(), records.end(), [](const TaskRecord& a, const TaskRecord& b) {
+    return a.id < b.id;
+  });
+  snapshot.tasks.reserve(records.size());
+  for (const auto& rec : records) {
+    TaskProfile profile;
+    profile.id = rec.id;
+    profile.object_id = rec.object_id;
+    profile.name = rec.name;
+    profile.mode = rec.mode;
+    profile.state = rec.state;
+    auto it = profiles_.find(rec.id);
+    if (it != profiles_.end()) {
+      const auto& state = it->second;
+      profile.created_at_ns = state.created_at_ns;
+      profile.run_count = state.run_count;
+      profile.wait_count = state.wait_count;
+      profile.cancel_count = state.cancel_count;
+      profile.running_ns = state.running_ns;
+      profile.waiting_ns = state.waiting_ns;
+      if (rec.state == TaskState::Running && snapshot.captured_at_ns >= state.last_change_ns) {
+        profile.running_ns += snapshot.captured_at_ns - state.last_change_ns;
+      }
+      if (rec.state == TaskState::Waiting && snapshot.captured_at_ns >= state.last_change_ns) {
+        profile.waiting_ns += snapshot.captured_at_ns - state.last_change_ns;
+      }
+    }
+    snapshot.tasks.push_back(std::move(profile));
+  }
+  return snapshot;
+}
+
+TaskTraceSnapshot TaskRegistry::trace_snapshot() const {
+  TaskTraceSnapshot snapshot;
+  snapshot.captured_at_ns = now_ns();
+  snapshot.dropped_events = trace_dropped_;
+  snapshot.events = trace_events_;
+  return snapshot;
+}
+
+void TaskRegistry::clear_trace() {
+  trace_events_.clear();
+  trace_dropped_ = 0;
+  trace_seq_ = 1;
 }
 
 TaskRecord* TaskRegistry::find_task(TaskID id) {
@@ -247,6 +306,16 @@ referee::Result<TaskRecord> TaskRegistry::insert_task(const referee::ObjectID& o
     return referee::Result<TaskRecord>::err("failed to insert task");
   }
 
+  const auto now = now_ns();
+  TaskProfileState profile_state;
+  profile_state.created_at_ns = now;
+  profile_state.last_change_ns = now;
+  profile_state.state = initial_state;
+  if (initial_state == TaskState::Running) profile_state.run_count = 1;
+  if (initial_state == TaskState::Waiting) profile_state.wait_count = 1;
+  profiles_.emplace(rec.id, profile_state);
+  record_trace_event(rec.id, TaskState::Created, initial_state, now);
+
   if (parent.has_value()) {
     auto* parent_task = find_task(*parent);
     if (parent_task) {
@@ -255,6 +324,44 @@ referee::Result<TaskRecord> TaskRegistry::insert_task(const referee::ObjectID& o
   }
 
   return referee::Result<TaskRecord>::ok(insert.first->second);
+}
+
+std::uint64_t TaskRegistry::now_ns() const {
+  const auto delta = std::chrono::steady_clock::now() - profiler_start_;
+  return static_cast<std::uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(delta).count());
+}
+
+void TaskRegistry::record_state_transition(TaskID id, TaskState from, TaskState to) {
+  auto it = profiles_.find(id);
+  if (it == profiles_.end()) return;
+  auto now = now_ns();
+  auto& state = it->second;
+  if (from == TaskState::Running && now >= state.last_change_ns) {
+    state.running_ns += now - state.last_change_ns;
+  }
+  if (from == TaskState::Waiting && now >= state.last_change_ns) {
+    state.waiting_ns += now - state.last_change_ns;
+  }
+  if (to == TaskState::Running) state.run_count += 1;
+  if (to == TaskState::Waiting) state.wait_count += 1;
+  if (to == TaskState::CancelRequested) state.cancel_count += 1;
+  state.state = to;
+  state.last_change_ns = now;
+  record_trace_event(id, from, to, now);
+}
+
+void TaskRegistry::record_trace_event(TaskID id, TaskState from, TaskState to, std::uint64_t timestamp_ns) {
+  if (trace_events_.size() >= trace_capacity_) {
+    trace_dropped_ += 1;
+    return;
+  }
+  TaskTraceEvent event;
+  event.seq = trace_seq_++;
+  event.id = id;
+  event.from = from;
+  event.to = to;
+  event.timestamp_ns = timestamp_ns;
+  trace_events_.push_back(event);
 }
 
 const char* to_string(TaskState state) {

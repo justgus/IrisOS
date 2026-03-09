@@ -1,6 +1,7 @@
 #pragma once
 
 #include "referee/referee.h"
+#include <chrono>
 #include <cstdint>
 #include <optional>
 #include <string>
@@ -52,6 +53,39 @@ struct TaskRecord {
   std::string name;
 };
 
+struct TaskProfile {
+  TaskID id{0};
+  referee::ObjectID object_id{};
+  std::string name;
+  TaskMode mode{TaskMode::Inline};
+  TaskState state{TaskState::Created};
+  std::uint64_t created_at_ns{0};
+  std::uint64_t running_ns{0};
+  std::uint64_t waiting_ns{0};
+  std::uint64_t run_count{0};
+  std::uint64_t wait_count{0};
+  std::uint64_t cancel_count{0};
+};
+
+struct TaskProfileSnapshot {
+  std::uint64_t captured_at_ns{0};
+  std::vector<TaskProfile> tasks;
+};
+
+struct TaskTraceEvent {
+  std::uint64_t seq{0};
+  TaskID id{0};
+  TaskState from{TaskState::Created};
+  TaskState to{TaskState::Created};
+  std::uint64_t timestamp_ns{0};
+};
+
+struct TaskTraceSnapshot {
+  std::uint64_t captured_at_ns{0};
+  std::uint64_t dropped_events{0};
+  std::vector<TaskTraceEvent> events;
+};
+
 class TaskRegistry {
 public:
   TaskRegistry() = default;
@@ -93,8 +127,25 @@ public:
 
   referee::Result<std::optional<TaskRecord>> get_task(TaskID id) const;
   referee::Result<std::vector<TaskRecord>> list_tasks() const;
+  TaskProfileSnapshot profile_snapshot() const;
+  TaskTraceSnapshot trace_snapshot() const;
+  void clear_trace();
 
 private:
+  struct TaskProfileState {
+    std::uint64_t created_at_ns{0};
+    std::uint64_t last_change_ns{0};
+    std::uint64_t running_ns{0};
+    std::uint64_t waiting_ns{0};
+    std::uint64_t run_count{0};
+    std::uint64_t wait_count{0};
+    std::uint64_t cancel_count{0};
+    TaskState state{TaskState::Created};
+  };
+
+  std::uint64_t now_ns() const;
+  void record_state_transition(TaskID id, TaskState from, TaskState to);
+  void record_trace_event(TaskID id, TaskState from, TaskState to, std::uint64_t timestamp_ns);
   TaskRecord* find_task(TaskID id);
   const TaskRecord* find_task(TaskID id) const;
   void detach_from_parent(TaskRecord& rec);
@@ -108,6 +159,12 @@ private:
 private:
   TaskID next_id_{1};
   std::unordered_map<TaskID, TaskRecord> tasks_;
+  std::unordered_map<TaskID, TaskProfileState> profiles_;
+  std::vector<TaskTraceEvent> trace_events_;
+  std::uint64_t trace_seq_{1};
+  std::uint64_t trace_dropped_{0};
+  std::size_t trace_capacity_{2048};
+  std::chrono::steady_clock::time_point profiler_start_{std::chrono::steady_clock::now()};
 };
 
 const char* to_string(TaskState state);

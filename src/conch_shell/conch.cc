@@ -370,7 +370,7 @@ bool handle_task_command(iris::ceo::TaskRegistry& ceo_registry,
                          const std::unordered_map<std::string, ObjectID>& session_aliases,
                          const std::vector<std::string>& args) {
   if (args.empty()) {
-    std::cout << "error: usage: task <spawn|list>\n";
+    std::cout << "error: usage: task <spawn|list|profile|trace>\n";
     return true;
   }
   if (args[0] == "spawn") {
@@ -381,7 +381,15 @@ bool handle_task_command(iris::ceo::TaskRegistry& ceo_registry,
     cmd_task_list(ceo_registry);
     return true;
   }
-  std::cout << "error: usage: task <spawn|list>\n";
+  if (args[0] == "profile") {
+    cmd_task_profile(ceo_registry, registry, store);
+    return true;
+  }
+  if (args[0] == "trace") {
+    cmd_task_trace(ceo_registry, registry, store, args);
+    return true;
+  }
+  std::cout << "error: usage: task <spawn|list|profile|trace>\n";
   return true;
 }
 
@@ -1222,6 +1230,18 @@ std::string format_task_state(iris::ceo::TaskState state) {
   return iris::ceo::to_string(state);
 }
 
+const char* format_task_mode(iris::ceo::TaskMode mode) {
+  switch (mode) {
+    case iris::ceo::TaskMode::Inline: return "inline";
+    case iris::ceo::TaskMode::Service: return "service";
+  }
+  return "unknown";
+}
+
+std::string format_duration_ms(std::uint64_t ns) {
+  return std::to_string(ns / 1000000ULL);
+}
+
 std::string io_handle_name(std::uint64_t id) {
   std::ostringstream os;
   os << "io-" << std::setw(4) << std::setfill('0') << id;
@@ -1378,6 +1398,81 @@ bool cmd_task_list(iris::ceo::TaskRegistry& registry) {
     return true;
   }
   std::cout << format_task_list(listR.value.value());
+  return true;
+}
+
+bool cmd_task_profile(iris::ceo::TaskRegistry& registry,
+                      SchemaRegistry& schema,
+                      SqliteStore& store) {
+  auto snapshot = registry.profile_snapshot();
+  iris::viz::Table table;
+  table.columns = {"task_id", "state", "mode", "name", "run_ms",
+                   "wait_ms", "runs", "waits", "cancels"};
+  for (const auto& profile : snapshot.tasks) {
+    std::vector<std::string> row;
+    row.push_back(std::to_string(profile.id));
+    row.push_back(format_task_state(profile.state));
+    row.push_back(format_task_mode(profile.mode));
+    row.push_back(profile.name);
+    row.push_back(format_duration_ms(profile.running_ns));
+    row.push_back(format_duration_ms(profile.waiting_ns));
+    row.push_back(std::to_string(profile.run_count));
+    row.push_back(std::to_string(profile.wait_count));
+    row.push_back(std::to_string(profile.cancel_count));
+    table.rows.push_back(std::move(row));
+  }
+
+  auto idR = iris::viz::create_table(schema, store, table);
+  if (!idR) {
+    std::cout << "error: " << idR.error->message << "\n";
+    return false;
+  }
+  auto id = idR.value.value();
+  std::cout << "created Viz::Table " << id.to_hex() << "\n";
+  print_route_for(schema, iris::viz::kTypeVizTable);
+  maybe_spawn_concho(schema, store, id);
+  return true;
+}
+
+bool cmd_task_trace(iris::ceo::TaskRegistry& registry,
+                    SchemaRegistry& schema,
+                    SqliteStore& store,
+                    const std::vector<std::string>& args) {
+  if (args.size() == 2 && args[1] == "clear") {
+    registry.clear_trace();
+    std::cout << "task trace cleared\n";
+    return true;
+  }
+  if (args.size() != 1) {
+    std::cout << "error: usage: task trace [clear]\n";
+    return false;
+  }
+
+  auto snapshot = registry.trace_snapshot();
+  iris::viz::Table table;
+  table.columns = {"seq", "task_id", "from", "to", "at_ms"};
+  for (const auto& event : snapshot.events) {
+    std::vector<std::string> row;
+    row.push_back(std::to_string(event.seq));
+    row.push_back(std::to_string(event.id));
+    row.push_back(format_task_state(event.from));
+    row.push_back(format_task_state(event.to));
+    row.push_back(format_duration_ms(event.timestamp_ns));
+    table.rows.push_back(std::move(row));
+  }
+
+  auto idR = iris::viz::create_table(schema, store, table);
+  if (!idR) {
+    std::cout << "error: " << idR.error->message << "\n";
+    return false;
+  }
+  auto id = idR.value.value();
+  std::cout << "created Viz::Table " << id.to_hex() << "\n";
+  print_route_for(schema, iris::viz::kTypeVizTable);
+  maybe_spawn_concho(schema, store, id);
+  if (snapshot.dropped_events > 0) {
+    std::cout << "warning: dropped " << snapshot.dropped_events << " trace events\n";
+  }
   return true;
 }
 
