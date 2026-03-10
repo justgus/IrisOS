@@ -36,4 +36,6 @@ purpose-built for IrisOS.
 
 - Every issue should have one **type** label.
 - Use **status** labels for AR/ER/DR issues.
+- Treat `status:done` as the closed-state label for document statuses such as `Complete`,
+  `Verified`, `Deferred`, or `Rejected`.
 - Add **area** labels only when they help triage.

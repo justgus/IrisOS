@@ -22,6 +22,10 @@ Status is tracked by labels:
 - `status:in-progress`
 - `status:done`
 
+Issue labels are intentionally coarse-grained. The document keeps the precise status, while the
+issue label groups end states such as `Complete`, `Verified`, `Deferred`, or `Rejected` under
+`status:done`.
+
 ## Workflow
 
 1. Create the Issue using the AR/ER/DR template.
