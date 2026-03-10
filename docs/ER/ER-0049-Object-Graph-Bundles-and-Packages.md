@@ -14,7 +14,7 @@ GitHub-Issue: #185
 
 - ER ID: ER-0049
 - Title: Object Graph Bundles and Packages
-- Status: Complete
+- Status: Verified
 - Date: 2026-02-27
 - Owners: Mike
 - Type: Epic

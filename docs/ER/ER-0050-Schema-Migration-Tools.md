@@ -14,7 +14,7 @@ GitHub-Issue: #186
 
 - ER ID: ER-0050
 - Title: Schema Migration Tools
-- Status: Complete
+- Status: Verified
 - Date: 2026-02-27
 - Owners: Mike
 - Type: Enhancement

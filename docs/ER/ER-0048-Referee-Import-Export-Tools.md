@@ -14,7 +14,7 @@ GitHub-Issue: #184
 
 - ER ID: ER-0048
 - Title: Referee Import/Export Tools
-- Status: Complete
+- Status: Verified
 - Date: 2026-02-27
 - Owners: Mike
 - Type: Enhancement
