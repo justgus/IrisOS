@@ -1,4 +1,5 @@
 SUBDIRS = src bin tests
+EXTRA_DIST = scripts/demo_v2.sh
 
 .PHONY: asan-check
 asan-check:

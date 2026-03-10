@@ -338,7 +338,8 @@ START_TEST(test_conch_v2_demo_script)
   ck_assert_msg(!workdir.empty(), "expected temporary demo workdir");
 
   std::ostringstream cmd;
-  cmd << "bash ../scripts/demo_v2.sh " << workdir;
+  cmd << "CONCH=" << IRIS_TOP_BUILDDIR << "/bin/conch "
+      << "bash " << IRIS_TOP_SRCDIR << "/scripts/demo_v2.sh " << workdir;
   auto output = run_command_capture(cmd.str());
 
   ck_assert_msg(output.find("== producer ==") != std::string::npos,

@@ -3,7 +3,7 @@ set -euo pipefail
 
 script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 repo_root="$(cd "${script_dir}/.." && pwd)"
-conch="${repo_root}/bin/conch"
+conch="${CONCH:-${repo_root}/bin/conch}"
 
 if [[ ! -x "${conch}" ]]; then
   echo "error: ${conch} not found; build bin/conch first" >&2
