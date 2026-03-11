@@ -14,7 +14,7 @@ GitHub-Issue: #184
 
 - ER ID: ER-0054
 - Title: Conch Namespace Navigation
-- Status: Proposed
+- Status: Complete
 - Date: 2026-03-08
 - Owners: Mike
 - Type: Enhancement
@@ -77,9 +77,16 @@ GitHub-Issue: #184
 
 - ER-0047.x Conch session operation model and command migration (for dispatch consistency).
 
+## Implementation Notes
+
+- Added namespace session state to Conch and reflected it in the interactive prompt.
+- Added `namespace` / `ns` commands with support for relative navigation, root reset, and parent traversal.
+- Updated `ls` to default to namespace-scoped listings and added `--objects` and `--recursive` modes for detail control.
+- Added Conch regression coverage for namespace navigation, scoped listings, recursive listings, and object visibility.
+
 ## Verification Plan
 
-- Tests: Conch listing regression tests for namespace scoping and flags.
+- Tests: `make check V=1`
 - Manual checks:
   - `ls` at root shows namespaces only.
   - `namespace <ns>` updates prompt and `ls` output.
