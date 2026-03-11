@@ -6,8 +6,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-test:
-    name: build-test
+  ci-linux:
+    name: ci-linux
     runs-on: ubuntu-latest
 
     steps:
