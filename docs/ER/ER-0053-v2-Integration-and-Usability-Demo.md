@@ -14,7 +14,7 @@ GitHub-Issue: #189
 
 - ER ID: ER-0053
 - Title: v2 Integration and Usability Demo
-- Status: Proposed
+- Status: Complete
 - Date: 2026-02-27
 - Owners: Mike
 - Type: Enhancement
@@ -74,6 +74,48 @@ GitHub-Issue: #189
 ## Implementation Notes
 
 - Notes for implementer: keep the demo minimal and scripted.
+- Implementation:
+  - Added `scripts/demo_v2.sh` to run a repeatable two-stage v2 workflow over fresh Referee stores.
+  - Producer stage exercises `define type --json`, `new --json`, `demo v1`, task profiling/tracing, and `bundle export`.
+  - Consumer stage exercises `bundle import`, `show`, `debug graph`, `debug dispatch`, and imported type inspection.
+  - Added an automated smoke test in `tests/test_conch_authoring.cc` that runs the demo script and checks for stable output markers.
+
+## Demo Scenario (v2)
+
+### Scenario Summary
+
+The v2 demo exercises:
+
+- JSON-driven type definition and object creation through Conch parsers
+- userland workflow composition across shell commands and object utilities
+- task profiling and trace export into Viz artifacts
+- bundle export/import across isolated Referee stores
+- imported object inspection and debug tracing in a fresh store
+
+### Demo Steps
+
+1. Build `bin/conch`.
+2. Run `bash scripts/demo_v2.sh`.
+3. Observe the producer stage:
+   - define `DemoV2::Widget`
+   - create a widget via `new --json`
+   - run `demo v1`
+   - capture task profile/trace artifacts
+   - export a bundle
+4. Observe the consumer stage:
+   - import the bundle into a fresh store
+   - inspect imported objects
+   - run `debug graph`
+   - run `debug dispatch`
+5. Confirm the final `DEMO_V2_OK` marker.
+
+## v3 Roadmap (Draft)
+
+- Add first-class script execution support to Conch so demos do not rely on stdin redirection.
+- Expose versioned schema authoring flows in Conch for migration demos without test-only setup helpers.
+- Expand parser-backed ingestion beyond JSON so XML/C++/Python artifacts can participate in the same workflow.
+- Add richer bundle selection/filtering so demos can export/import targeted object subgraphs instead of whole-store snapshots.
+- Promote debug and profile outputs into a higher-level scripted report command for usability testing.
 
 ## Verification Plan
 

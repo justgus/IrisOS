@@ -101,6 +101,30 @@ std::string run_conch_script_with_db(const std::string& script, const std::strin
   return output;
 }
 
+std::string run_command_capture(const std::string& command) {
+  std::string output;
+  FILE* pipe = ::popen(command.c_str(), "r");
+  if (!pipe) {
+    return output;
+  }
+
+  char buffer[256];
+  while (std::fgets(buffer, sizeof(buffer), pipe)) {
+    output.append(buffer);
+  }
+  ::pclose(pipe);
+  return output;
+}
+
+std::string make_temp_dir(const char* pattern) {
+  std::vector<char> tmpl(pattern, pattern + std::strlen(pattern) + 1);
+  char* dir = ::mkdtemp(tmpl.data());
+  if (!dir) {
+    return {};
+  }
+  return std::string(dir);
+}
+
 void prepare_migration_db(const std::string& db_path) {
   SqliteStore store(SqliteConfig{ .filename=db_path, .enable_wal=false });
   ck_assert_msg(store.open(), "open failed");
@@ -308,6 +332,38 @@ START_TEST(test_conch_migration_tools)
 }
 END_TEST
 
+START_TEST(test_conch_v2_demo_script)
+{
+  auto workdir = make_temp_dir("/tmp/iris-conch-demo-v2-XXXXXX");
+  ck_assert_msg(!workdir.empty(), "expected temporary demo workdir");
+
+  std::ostringstream cmd;
+  cmd << "CONCH=" << IRIS_TOP_BUILDDIR << "/bin/conch "
+      << "bash " << IRIS_TOP_SRCDIR << "/scripts/demo_v2.sh " << workdir;
+  auto output = run_command_capture(cmd.str());
+
+  ck_assert_msg(output.find("== producer ==") != std::string::npos,
+                "expected producer section");
+  ck_assert_msg(output.find("bundle export ok") != std::string::npos,
+                "expected bundle export output");
+  ck_assert_msg(output.find("created Viz::Table ") != std::string::npos,
+                "expected viz table output");
+  ck_assert_msg(output.find("== consumer ==") != std::string::npos,
+                "expected consumer section");
+  ck_assert_msg(output.find("bundle import ok") != std::string::npos,
+                "expected bundle import output");
+  ck_assert_msg(output.find("graph ") != std::string::npos,
+                "expected debug graph output");
+  ck_assert_msg(output.find("dispatch trace Demo::Summary op=expand scope=object args=1")
+                  != std::string::npos,
+                "expected debug dispatch output");
+  ck_assert_msg(output.find("DEMO_V2_OK ") != std::string::npos,
+                "expected successful demo marker");
+
+  std::filesystem::remove_all(workdir);
+}
+END_TEST
+
 Suite* conch_authoring_suite(void) {
   Suite* s = suite_create("ConchAuthoring");
   TCase* tc = tcase_create("core");
@@ -318,6 +374,7 @@ Suite* conch_authoring_suite(void) {
   tcase_add_test(tc, test_conch_io_datagram);
   tcase_add_test(tc, test_conch_io_alias);
   tcase_add_test(tc, test_conch_migration_tools);
+  tcase_add_test(tc, test_conch_v2_demo_script);
 
   suite_add_tcase(s, tc);
   return s;

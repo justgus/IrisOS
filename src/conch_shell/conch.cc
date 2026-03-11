@@ -526,11 +526,19 @@ bool handle_session_operation(const std::string& line,
     return true;
   }
   if (op == "debug_dispatch") {
-    cmd_debug_dispatch(registry, store, session_aliases, parsed.args);
+    std::vector<std::string> args = parsed.args;
+    if (!args.empty() && args[0] == "dispatch") {
+      args.erase(args.begin());
+    }
+    cmd_debug_dispatch(registry, store, session_aliases, args);
     return true;
   }
   if (op == "debug_graph") {
-    cmd_debug_graph(registry, store, session_aliases, parsed.args);
+    std::vector<std::string> args = parsed.args;
+    if (!args.empty() && args[0] == "graph") {
+      args.erase(args.begin());
+    }
+    cmd_debug_graph(registry, store, session_aliases, args);
     return true;
   }
   if (op == "define_type") {
@@ -2468,6 +2476,25 @@ referee::Result<void> import_bundle(SchemaRegistry& registry,
     return referee::Result<void>::err(msg);
   };
 
+  auto edge_exists = [&](const ObjectRef& from,
+                         const ObjectRef& to,
+                         const std::string& name,
+                         const std::string& role,
+                         const referee::Bytes& props) -> referee::Result<bool> {
+    auto outR = store.edges_from(from);
+    if (!outR) return referee::Result<bool>::err(outR.error->message);
+    for (const auto& edge : outR.value.value()) {
+      if (edge.to.id == to.id
+          && edge.to.ver.v == to.ver.v
+          && edge.name == name
+          && edge.role == role
+          && edge.props_cbor == props) {
+        return referee::Result<bool>::ok(true);
+      }
+    }
+    return referee::Result<bool>::ok(false);
+  };
+
   if (root.contains("definitions")) {
     for (const auto& item : root.at("definitions")) {
       std::string id_text = item.value("id", "");
@@ -2482,7 +2509,7 @@ referee::Result<void> import_bundle(SchemaRegistry& registry,
       if (id != def_id) return fail("definition id mismatch");
       auto existingR = store.get_latest(id);
       if (!existingR) return fail(existingR.error->message);
-      if (existingR.value->has_value()) return fail("definition already exists");
+      if (existingR.value->has_value()) continue;
       referee::Bytes payload;
       if (!parse_hex_bytes(payload_hex, &payload, &err)) return fail(err);
       auto createR = store.create_object_with_id(id, iris::refract::kTypeDefinitionType,
@@ -2504,7 +2531,7 @@ referee::Result<void> import_bundle(SchemaRegistry& registry,
       if (!parse_object_id_hex(def_text, &def_id, &err)) return fail("object definition_id invalid");
       auto existingR = store.get_latest(id);
       if (!existingR) return fail(existingR.error->message);
-      if (existingR.value->has_value()) return fail("object already exists");
+      if (existingR.value->has_value()) continue;
       auto defR = store.get_latest(def_id);
       if (!defR) return fail(defR.error->message);
       if (!defR.value->has_value()) return fail("definition not found for object");
@@ -2543,6 +2570,11 @@ referee::Result<void> import_bundle(SchemaRegistry& registry,
       if (!props_hex.empty()) {
         if (!parse_hex_bytes(props_hex, &props, &err)) return fail(err);
       }
+      auto existsR = edge_exists(ObjectRef{from_id, from_ver},
+                                 ObjectRef{to_id, to_ver},
+                                 name, role, props);
+      if (!existsR) return fail(existsR.error->message);
+      if (existsR.value.value()) continue;
       auto edgeR = store.add_edge(ObjectRef{from_id, from_ver},
                                   ObjectRef{to_id, to_ver},
                                   name, role, props);
