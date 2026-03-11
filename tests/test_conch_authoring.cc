@@ -125,6 +125,12 @@ std::string make_temp_dir(const char* pattern) {
   return std::string(dir);
 }
 
+struct NamespaceNavFixture {
+  std::string root_object_id;
+  std::string widget_object_id;
+  std::string gadget_object_id;
+};
+
 void prepare_migration_db(const std::string& db_path) {
   SqliteStore store(SqliteConfig{ .filename=db_path, .enable_wal=false });
   ck_assert_msg(store.open(), "open failed");
@@ -159,6 +165,51 @@ void prepare_migration_db(const std::string& db_path) {
   ck_assert_msg(createR, "create_object failed: %s", result_message(createR));
 
   ck_assert_msg(store.close(), "close failed");
+}
+
+NamespaceNavFixture prepare_namespace_nav_db(const std::string& db_path) {
+  SqliteStore store(SqliteConfig{ .filename=db_path, .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+  auto boot = bootstrap_core_schema(registry);
+  ck_assert_msg(boot, "bootstrap failed: %s", result_message(boot));
+
+  auto define_type = [&](std::uint64_t type_id,
+                         const std::string& name,
+                         const std::string& name_space) {
+    TypeDefinition def{};
+    def.type_id = TypeID{type_id};
+    def.name = name;
+    def.namespace_name = name_space;
+    def.version = 1;
+    def.fields.push_back(FieldDefinition{ "label", TypeID{0x1001ULL}, true, std::nullopt });
+    auto regR = registry.register_definition(def);
+    ck_assert_msg(regR, "register_definition failed: %s", result_message(regR));
+    return regR.value->ref.id;
+  };
+
+  auto root_def = define_type(0xE540001ULL, "RootType", "");
+  auto widget_def = define_type(0xE540002ULL, "Widget", "NavTest");
+  auto gadget_def = define_type(0xE540003ULL, "Gadget", "NavTest::Inner");
+  define_type(0xE540004ULL, "Thing", "NavTest::Inner::Leaf");
+
+  auto create_object = [&](TypeID type_id, const ObjectID& def_id, const std::string& label) {
+    nlohmann::json payload;
+    payload["label"] = label;
+    auto createR = store.create_object(type_id, def_id, nlohmann::json::to_cbor(payload));
+    ck_assert_msg(createR, "create_object failed: %s", result_message(createR));
+    return createR.value->ref.id.to_hex();
+  };
+
+  NamespaceNavFixture fixture;
+  fixture.root_object_id = create_object(TypeID{0xE540001ULL}, root_def, "root");
+  fixture.widget_object_id = create_object(TypeID{0xE540002ULL}, widget_def, "widget");
+  fixture.gadget_object_id = create_object(TypeID{0xE540003ULL}, gadget_def, "gadget");
+
+  ck_assert_msg(store.close(), "close failed");
+  return fixture;
 }
 
 } // namespace
@@ -364,6 +415,72 @@ START_TEST(test_conch_v2_demo_script)
 }
 END_TEST
 
+START_TEST(test_conch_namespace_navigation)
+{
+  auto db_path = make_temp_path("/tmp/iris-conch-namespace-XXXXXX");
+  auto fixture = prepare_namespace_nav_db(db_path);
+
+  auto root_output = run_conch_script_with_db("ls\nexit\n", db_path);
+  ck_assert_msg(root_output.find("namespace NavTest") != std::string::npos,
+                "expected root namespace listing");
+  ck_assert_msg(root_output.find("type RootType") == std::string::npos,
+                "expected root ls to omit root-level types by default");
+  ck_assert_msg(root_output.find(fixture.root_object_id) == std::string::npos,
+                "expected root ls to omit object refs by default");
+
+  auto nav_output = run_conch_script_with_db("namespace NavTest\nls\nexit\n", db_path);
+  ck_assert_msg(nav_output.find("namespace NavTest") != std::string::npos,
+                "expected namespace command output");
+  ck_assert_msg(nav_output.find("namespace Inner") != std::string::npos,
+                "expected child namespace listing");
+  ck_assert_msg(nav_output.find("type Widget (0x") != std::string::npos,
+                "expected current-level type listing");
+  ck_assert_msg(nav_output.find(fixture.widget_object_id) == std::string::npos,
+                "expected namespace ls to omit object refs by default");
+
+  auto nav_objects_output = run_conch_script_with_db("namespace NavTest\nls --objects\nexit\n",
+                                                     db_path);
+  ck_assert_msg(nav_objects_output.find(fixture.widget_object_id) != std::string::npos,
+                "expected current-level object refs");
+  ck_assert_msg(nav_objects_output.find(fixture.gadget_object_id) == std::string::npos,
+                "expected non-recursive objects listing to stay in scope");
+
+  auto inner_output = run_conch_script_with_db("ns NavTest\nns Inner\nls\nexit\n", db_path);
+  ck_assert_msg(inner_output.find("namespace Leaf") != std::string::npos,
+                "expected nested namespace listing");
+  ck_assert_msg(inner_output.find("type Gadget (0x") != std::string::npos,
+                "expected nested type listing");
+
+  auto recursive_output = run_conch_script_with_db("namespace NavTest\nls --recursive\nexit\n",
+                                                   db_path);
+  ck_assert_msg(recursive_output.find("namespace NavTest::Inner") != std::string::npos,
+                "expected recursive namespace output");
+  ck_assert_msg(recursive_output.find("type NavTest::Widget (0x") != std::string::npos,
+                "expected recursive type output");
+  ck_assert_msg(recursive_output.find("type NavTest::Inner::Gadget (0x") != std::string::npos,
+                "expected recursive nested type output");
+  ck_assert_msg(recursive_output.find(fixture.widget_object_id) == std::string::npos,
+                "expected recursive listing without objects to omit object refs");
+
+  auto recursive_objects_output =
+      run_conch_script_with_db("namespace NavTest\nls --recursive --objects\nexit\n", db_path);
+  ck_assert_msg(recursive_objects_output.find(fixture.widget_object_id) != std::string::npos,
+                "expected recursive objects to include current-level objects");
+  ck_assert_msg(recursive_objects_output.find(fixture.gadget_object_id) != std::string::npos,
+                "expected recursive objects to include nested objects");
+
+  auto reset_output = run_conch_script_with_db("namespace NavTest\nnamespace /\nls\nexit\n",
+                                               db_path);
+  ck_assert_msg(reset_output.find("namespace /") != std::string::npos,
+                "expected namespace reset output");
+  ck_assert_msg(reset_output.find("namespace NavTest") != std::string::npos,
+                "expected root namespace listing after reset");
+
+  std::filesystem::remove_all(db_path + ".segments");
+  ::unlink(db_path.c_str());
+}
+END_TEST
+
 Suite* conch_authoring_suite(void) {
   Suite* s = suite_create("ConchAuthoring");
   TCase* tc = tcase_create("core");
@@ -375,6 +492,7 @@ Suite* conch_authoring_suite(void) {
   tcase_add_test(tc, test_conch_io_alias);
   tcase_add_test(tc, test_conch_migration_tools);
   tcase_add_test(tc, test_conch_v2_demo_script);
+  tcase_add_test(tc, test_conch_namespace_navigation);
 
   suite_add_tcase(s, tc);
   return s;

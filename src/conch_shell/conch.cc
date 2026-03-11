@@ -138,6 +138,8 @@ const std::vector<SessionAlias>& session_command_aliases() {
     { { "migrate", "list" }, "migrate_list" },
     { { "migrate", "verify" }, "migrate_verify" },
     { { "new" }, "new_object" },
+    { { "namespace" }, "namespace" },
+    { { "ns" }, "namespace" },
     { { "objects" }, "objects_list" },
     { { "ops" }, "ops" },
     { { "ps" }, "ps" },
@@ -187,11 +189,10 @@ std::optional<ObjectID> parse_object_id_or_alias(
     SqliteStore& store,
     SchemaRegistry& schema,
     std::string* err_out);
+struct TypeListOptions;
 void cmd_ls(SchemaRegistry& registry,
             SqliteStore& store,
-            const std::optional<std::string>& filter,
-            bool regex_mode,
-            bool namespaces_only);
+            const TypeListOptions& options);
 void cmd_objects(SchemaRegistry& registry, SqliteStore& store);
 void cmd_define_type(SchemaRegistry& registry, const std::vector<std::string>& tokens);
 void cmd_new_object(SchemaRegistry& registry, SqliteStore& store, const std::string& line);
@@ -254,26 +255,44 @@ void cmd_demo_v1(SchemaRegistry& registry,
                  std::unordered_map<std::string, ObjectID>& session_aliases);
 void cmd_aliases_list();
 std::string join_tokens(const std::vector<std::string>& tokens, size_t start);
+std::string make_prompt(const std::string& current_namespace);
+
+struct TypeListOptions {
+  std::optional<std::string> filter;
+  bool regex_mode = false;
+  bool namespaces_only = false;
+  bool recursive = false;
+  bool include_objects = false;
+  std::string current_namespace;
+};
 
 bool handle_types_list(SchemaRegistry& registry,
                        SqliteStore& store,
-                       const std::vector<std::string>& args) {
-  bool regex_mode = false;
-  bool namespaces_only = false;
-  std::optional<std::string> filter;
+                       const std::vector<std::string>& args,
+                       const std::string& current_namespace) {
+  TypeListOptions options;
+  options.current_namespace = current_namespace;
 
   bool bad_args = false;
   for (size_t i = 0; i < args.size(); ++i) {
     if (args[i] == "--regex") {
-      regex_mode = true;
+      options.regex_mode = true;
       continue;
     }
     if (args[i] == "--namespaces") {
-      namespaces_only = true;
+      options.namespaces_only = true;
       continue;
     }
-    if (!filter.has_value()) {
-      filter = args[i];
+    if (args[i] == "--recursive") {
+      options.recursive = true;
+      continue;
+    }
+    if (args[i] == "--objects") {
+      options.include_objects = true;
+      continue;
+    }
+    if (!options.filter.has_value()) {
+      options.filter = args[i];
     } else {
       std::cout << "error: unexpected argument\n";
       bad_args = true;
@@ -281,11 +300,91 @@ bool handle_types_list(SchemaRegistry& registry,
     }
   }
   if (bad_args) return true;
-  if (!args.empty() && !filter.has_value() && regex_mode) {
+  if (!args.empty() && !options.filter.has_value() && options.regex_mode) {
     std::cout << "error: --regex requires a pattern\n";
     return true;
   }
-  cmd_ls(registry, store, filter, regex_mode, namespaces_only);
+  cmd_ls(registry, store, options);
+  return true;
+}
+
+bool handle_namespace_command(SchemaRegistry& registry,
+                              std::string& current_namespace,
+                              const std::vector<std::string>& args) {
+  if (args.size() > 1) {
+    std::cout << "error: usage: namespace [<name>|/|.|..]\n";
+    return true;
+  }
+
+  auto typesR = registry.list_types();
+  if (!typesR) {
+    std::cout << "error: " << typesR.error->message << "\n";
+    return true;
+  }
+
+  std::set<std::string> namespaces;
+  for (const auto& summary : typesR.value.value()) {
+    if (summary.namespace_name.empty()) continue;
+    size_t start = 0;
+    for (;;) {
+      auto pos = summary.namespace_name.find("::", start);
+      if (pos == std::string::npos) {
+        namespaces.insert(summary.namespace_name);
+        break;
+      }
+      namespaces.insert(summary.namespace_name.substr(0, pos));
+      start = pos + 2;
+    }
+  }
+
+  if (args.empty() || args[0] == ".") {
+    std::cout << "namespace "
+              << (current_namespace.empty() ? "/" : current_namespace) << "\n";
+    return true;
+  }
+
+  const auto& target = args[0];
+  if (target == "/" || target == "root") {
+    current_namespace.clear();
+    std::cout << "namespace /\n";
+    return true;
+  }
+
+  if (target == "..") {
+    if (current_namespace.empty()) {
+      std::cout << "namespace /\n";
+      return true;
+    }
+    auto pos = current_namespace.rfind("::");
+    if (pos == std::string::npos) {
+      current_namespace.clear();
+    } else {
+      current_namespace.erase(pos);
+    }
+    std::cout << "namespace "
+              << (current_namespace.empty() ? "/" : current_namespace) << "\n";
+    return true;
+  }
+
+  std::vector<std::string> candidates;
+  if (target.rfind("::", 0) == 0) {
+    candidates.push_back(target.substr(2));
+  } else {
+    if (!current_namespace.empty()) {
+      candidates.push_back(current_namespace + "::" + target);
+    }
+    candidates.push_back(target);
+  }
+
+  for (const auto& candidate : candidates) {
+    if (!candidate.empty() && namespaces.find(candidate) != namespaces.end()) {
+      current_namespace = candidate;
+      std::cout << "namespace " << current_namespace << "\n";
+      return true;
+    }
+  }
+
+  std::cout << "error: namespace not found\n";
   return true;
 }
 
@@ -436,6 +535,7 @@ bool handle_session_operation(const std::string& line,
                               const std::string& op,
                               SchemaRegistry& registry,
                               SqliteStore& store,
+                              std::string& current_namespace,
                               std::unordered_map<std::string, ObjectID>& session_aliases,
                               std::set<std::string>& session_caps,
                               std::vector<TaskEntry>& tasks,
@@ -448,7 +548,10 @@ bool handle_session_operation(const std::string& line,
                               std::uint64_t& next_io_handle_id,
                               iris::ceo::TaskComms& ceo_comms) {
   if (op == "types_list") {
-    return handle_types_list(registry, store, parsed.args);
+    return handle_types_list(registry, store, parsed.args, current_namespace);
+  }
+  if (op == "namespace") {
+    return handle_namespace_command(registry, current_namespace, parsed.args);
   }
   if (op == "bundle_export") {
     if (parsed.args.size() != 2 || parsed.args[0] != "export") {
@@ -930,6 +1033,56 @@ referee::Result<void> parse_new_expr(const std::string& expr,
 std::string type_display_name(const TypeSummary& summary) {
   if (summary.namespace_name.empty()) return summary.name;
   return summary.namespace_name + "::" + summary.name;
+}
+
+bool namespace_in_scope(std::string_view current_namespace, std::string_view candidate_namespace) {
+  if (current_namespace.empty()) return true;
+  if (candidate_namespace == current_namespace) return true;
+  if (candidate_namespace.size() <= current_namespace.size()) return false;
+  if (candidate_namespace.compare(0, current_namespace.size(), current_namespace) != 0) return false;
+  return candidate_namespace.substr(current_namespace.size(), 2) == "::";
+}
+
+std::optional<std::string> direct_child_namespace(std::string_view current_namespace,
+                                                  std::string_view candidate_namespace) {
+  if (candidate_namespace.empty()) return std::nullopt;
+
+  std::string_view remainder = candidate_namespace;
+  if (!current_namespace.empty()) {
+    if (candidate_namespace.size() <= current_namespace.size()) return std::nullopt;
+    if (candidate_namespace.compare(0, current_namespace.size(), current_namespace) != 0) {
+      return std::nullopt;
+    }
+    if (candidate_namespace.substr(current_namespace.size(), 2) != "::") return std::nullopt;
+    remainder = candidate_namespace.substr(current_namespace.size() + 2);
+  }
+
+  auto pos = remainder.find("::");
+  return std::string(remainder.substr(0, pos));
+}
+
+std::string relative_type_name(std::string_view current_namespace, const TypeSummary& summary) {
+  if (current_namespace.empty() || summary.namespace_name != current_namespace) {
+    return type_display_name(summary);
+  }
+  return summary.name;
+}
+
+bool match_pattern(std::string_view value, std::string_view pattern, bool regex_mode,
+                   std::string* err_out);
+
+bool listing_matches(const std::string& value,
+                     const std::optional<std::string>& filter,
+                     bool regex_mode,
+                     bool* matched,
+                     std::string* err_out) {
+  if (!filter.has_value()) {
+    *matched = true;
+    return true;
+  }
+  *matched = match_pattern(value, *filter, regex_mode, err_out);
+  if (!*matched && err_out && !err_out->empty()) return false;
+  return true;
 }
 
 std::string glob_to_regex(std::string_view pattern) {
@@ -3137,10 +3290,15 @@ bool read_bytes_value(const nlohmann::json& payload, std::string* out, std::stri
 void print_help() {
   std::cout << "Commands:\n";
   std::cout << "  ls\n";
+  std::cout << "  ls --objects [pattern]\n";
+  std::cout << "  ls --recursive [pattern]\n";
+  std::cout << "  ls --recursive --objects [pattern]\n";
   std::cout << "  ls --namespaces [pattern]\n";
   std::cout << "  ls [pattern]\n";
   std::cout << "  ls --regex <pattern>\n";
   std::cout << "  ls --regex --namespaces <pattern>\n";
+  std::cout << "  namespace [<name>|/|.|..]\n";
+  std::cout << "  ns [<name>|/|.|..]\n";
   std::cout << "  objects\n";
   std::cout << "  let <name>=<expr>\n";
   std::cout << "  let .\n";
@@ -3194,10 +3352,7 @@ void print_help() {
   std::cout << "  exit\n";
 }
 
-void cmd_ls(SchemaRegistry& registry, SqliteStore& store,
-            const std::optional<std::string>& filter,
-            bool regex_mode,
-            bool namespaces_only) {
+void cmd_ls(SchemaRegistry& registry, SqliteStore& store, const TypeListOptions& options) {
   auto typesR = registry.list_types();
   if (!typesR) {
     std::cout << "error: " << typesR.error->message << "\n";
@@ -3208,57 +3363,146 @@ void cmd_ls(SchemaRegistry& registry, SqliteStore& store,
     return;
   }
 
-  if (namespaces_only) {
+  std::vector<TypeSummary> types = typesR.value.value();
+  std::sort(types.begin(), types.end(),
+            [](const TypeSummary& a, const TypeSummary& b) {
+              auto a_name = type_display_name(a);
+              auto b_name = type_display_name(b);
+              if (a_name != b_name) return a_name < b_name;
+              return a.type_id.v < b.type_id.v;
+            });
+
+  if (options.recursive) {
     std::set<std::string> namespaces;
-    for (const auto& summary : typesR.value.value()) {
-      if (!summary.namespace_name.empty()) namespaces.insert(summary.namespace_name);
-    }
-    if (namespaces.empty()) {
-      std::cout << "no namespaces\n";
-      return;
-    }
-    for (const auto& ns : namespaces) {
-      if (filter.has_value()) {
-        std::string err;
-        if (!match_pattern(ns, *filter, regex_mode, &err)) {
-          if (!err.empty()) {
-            std::cout << "error: " << err << "\n";
-            return;
+    for (const auto& summary : types) {
+      if (summary.namespace_name.empty()) continue;
+      if (!namespace_in_scope(options.current_namespace, summary.namespace_name)) continue;
+      if (summary.namespace_name == options.current_namespace) continue;
+
+      size_t offset = options.current_namespace.empty() ? 0 : options.current_namespace.size() + 2;
+      std::string_view remaining(summary.namespace_name.c_str() + offset,
+                                 summary.namespace_name.size() - offset);
+      size_t start = 0;
+      while (start < remaining.size()) {
+        auto pos = remaining.find("::", start);
+        size_t len = pos == std::string_view::npos ? remaining.size() : pos;
+        auto prefix = std::string(remaining.substr(0, len));
+        if (!prefix.empty()) {
+          if (options.current_namespace.empty()) {
+            namespaces.insert(prefix);
+          } else {
+            namespaces.insert(options.current_namespace + "::" + prefix);
           }
+        }
+        if (pos == std::string_view::npos) break;
+        start = pos + 2;
+      }
+    }
+
+    bool any = false;
+    for (const auto& ns : namespaces) {
+      bool matched = false;
+      std::string err;
+      if (!listing_matches(ns, options.filter, options.regex_mode, &matched, &err)) {
+        std::cout << "error: " << err << "\n";
+        return;
+      }
+      if (!matched) continue;
+      any = true;
+      std::cout << "namespace " << ns << "\n";
+    }
+
+    if (!options.namespaces_only) {
+      for (const auto& summary : types) {
+        if (!namespace_in_scope(options.current_namespace, summary.namespace_name)) continue;
+        auto display = type_display_name(summary);
+        bool matched = false;
+        std::string err;
+        if (!listing_matches(display, options.filter, options.regex_mode, &matched, &err)) {
+          std::cout << "error: " << err << "\n";
+          return;
+        }
+        if (!matched) continue;
+        any = true;
+        std::cout << "type " << display << " (0x" << std::hex << summary.type_id.v
+                  << std::dec << ")\n";
+        if (!options.include_objects) continue;
+
+        auto listR = store.list_by_type(summary.type_id);
+        if (!listR) {
+          std::cout << "  error: " << listR.error->message << "\n";
           continue;
         }
+        if (listR.value->empty()) {
+          std::cout << "  (no objects)\n";
+          continue;
+        }
+        for (const auto& rec : listR.value.value()) {
+          std::cout << "  " << rec.ref.id.to_hex() << " v" << rec.ref.ver.v << "\n";
+        }
       }
-      std::cout << ns << "\n";
+    }
+
+    if (!any) {
+      std::cout << (options.namespaces_only ? "no namespaces\n" : "no entries\n");
     }
     return;
   }
 
-  for (const auto& summary : typesR.value.value()) {
-    auto display = type_display_name(summary);
-    if (filter.has_value()) {
+  std::set<std::string> namespaces;
+  for (const auto& summary : types) {
+    auto child = direct_child_namespace(options.current_namespace, summary.namespace_name);
+    if (child.has_value()) namespaces.insert(child.value());
+  }
+
+  bool any = false;
+  for (const auto& ns : namespaces) {
+    bool matched = false;
+    std::string err;
+    if (!listing_matches(ns, options.filter, options.regex_mode, &matched, &err)) {
+      std::cout << "error: " << err << "\n";
+      return;
+    }
+    if (!matched) continue;
+    any = true;
+    std::cout << "namespace " << ns << "\n";
+  }
+
+  if (!options.namespaces_only) {
+    for (const auto& summary : types) {
+      if (summary.namespace_name != options.current_namespace) continue;
+      if (options.current_namespace.empty() && !options.include_objects) continue;
+
+      auto display = relative_type_name(options.current_namespace, summary);
+      bool matched = false;
       std::string err;
-      if (!match_pattern(display, *filter, regex_mode, &err)) {
-        if (!err.empty()) {
-          std::cout << "error: " << err << "\n";
-          return;
-        }
+      if (!listing_matches(display, options.filter, options.regex_mode, &matched, &err)) {
+        std::cout << "error: " << err << "\n";
+        return;
+      }
+      if (!matched) continue;
+      any = true;
+      std::cout << "type " << display << " (0x" << std::hex << summary.type_id.v
+                << std::dec << ")\n";
+      if (!options.include_objects) continue;
+
+      auto listR = store.list_by_type(summary.type_id);
+      if (!listR) {
+        std::cout << "  error: " << listR.error->message << "\n";
         continue;
       }
+      if (listR.value->empty()) {
+        std::cout << "  (no objects)\n";
+        continue;
+      }
+      for (const auto& rec : listR.value.value()) {
+        std::cout << "  " << rec.ref.id.to_hex() << " v" << rec.ref.ver.v << "\n";
+      }
     }
-    std::cout << "type " << type_display_name(summary) << " (0x" << std::hex << summary.type_id.v
-              << std::dec << ")\n";
-    auto listR = store.list_by_type(summary.type_id);
-    if (!listR) {
-      std::cout << "  error: " << listR.error->message << "\n";
-      continue;
-    }
-    if (listR.value->empty()) {
-      std::cout << "  (no objects)\n";
-      continue;
-    }
-    for (const auto& rec : listR.value.value()) {
-      std::cout << "  " << rec.ref.id.to_hex() << " v" << rec.ref.ver.v << "\n";
-    }
+  }
+
+  if (!any) {
+    std::cout << (options.namespaces_only ? "no namespaces\n" : "no entries\n");
   }
 }
 
@@ -3282,6 +3526,11 @@ void cmd_objects(SchemaRegistry& registry, SqliteStore& store) {
     }
   }
   if (!any) std::cout << "no objects\n";
+}
+
+std::string make_prompt(const std::string& current_namespace) {
+  if (current_namespace.empty()) return "conch> ";
+  return "conch:" + current_namespace + "> ";
 }
 
 std::optional<iris::refract::FieldDefinition> parse_field_spec(
@@ -5247,12 +5496,14 @@ int main(int argc, char** argv) {
   std::uint64_t next_io_handle_id = 1;
   std::unordered_map<std::string, ObjectID> session_aliases;
   std::set<std::string> session_caps;
+  std::string current_namespace;
   std::uint64_t next_task_id = 1;
 
   load_io_aliases(store, registry, io_handle_aliases);
 
   for (;;) {
-    auto line_opt = read_line("conch> ");
+    auto prompt = make_prompt(current_namespace);
+    auto line_opt = read_line(prompt.c_str());
     if (!line_opt.has_value()) break;
     const auto& line = line_opt.value();
     if (line.empty()) {
@@ -5293,14 +5544,15 @@ int main(int argc, char** argv) {
     }
     if (session_op.has_value()) {
       if (handle_session_operation(line, parsed, session_op.value(), registry, store,
-                                   session_aliases, session_caps, tasks, next_task_id,
+                                   current_namespace, session_aliases, session_caps, tasks,
+                                   next_task_id,
                                    ceo_registry, io_executor, io_handle_store,
                                    io_handles, io_handle_aliases, next_io_handle_id, ceo_comms)) {
         continue;
       }
     }
     if (cmd == "ls") {
-      handle_types_list(registry, store, parsed.args);
+      handle_types_list(registry, store, parsed.args, current_namespace);
       continue;
     }
     if (cmd == "objects") {
