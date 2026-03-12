@@ -14,7 +14,7 @@ GitHub-Issue: #177
 
 - ER ID: ER-0041
 - Title: Scoped Type Registry
-- Status: Complete
+- Status: Verified
 - Date: 2026-02-27
 - Owners: Mike
 - Type: Enhancement

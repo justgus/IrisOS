@@ -14,7 +14,7 @@ GitHub-Issue: #173
 
 - ER ID: ER-0037
 - Title: Refract-Native Schema Registry Migration
-- Status: Complete
+- Status: Verified
 - Date: 2026-02-27
 - Owners: Mike
 - Type: Epic
