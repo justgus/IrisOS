@@ -17,6 +17,7 @@ tracking.
 - `docs/governance/DR-Guidelines.md`
 - `docs/governance/AR-ER-DR-GitHub-Issues.md`
 - `docs/governance/GitHub-Issue-Labels.md`
+- `docs/governance/Defect-and-Regression-Closure-Policy.md`
 
 ## AR Docs
 
@@ -48,6 +49,12 @@ Proposed ARs in `docs/AR/proposed/` are active recommendation drafts under revie
 
 - Issue sync script: `scripts/issue_sync.sh`
 - Issue template config: `.github/ISSUE_TEMPLATE/config.yml`
+
+## Reports
+
+- Reports: `docs/reports/`
+- Gap report: `docs/reports/Gap-Analysis-2026-03-14.md`
+- Implementation plan: `docs/reports/Implementation-Plan-2026-03-14.md`
 
 ## Quick Start
 
