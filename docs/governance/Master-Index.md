@@ -25,6 +25,9 @@ tracking.
 - Authoring guidance: `docs/governance/AR-Guidelines.md`
 - GitHub issue template: `.github/ISSUE_TEMPLATE/ar.md`
 
+Proposed ARs in `docs/AR/proposed/` are active recommendation drafts under review. Accepted ARs in
+`docs/AR/accepted/` are approved direction.
+
 ## ER Docs
 
 - ER documents: `docs/ER/`
@@ -49,14 +52,16 @@ tracking.
 ## Quick Start
 
 1. Decide whether the work is architectural (`AR`), implementation planning/tracking (`ER`), or a defect (`DR`).
-2. Create a GitHub Issue from the matching template.
-3. Draft or update the matching document in `docs/`.
-4. Add the Issue number to the document front matter.
+2. Draft or update the matching document in `docs/`, using `GitHub-Issue: N/A` until an Issue exists.
+3. Create a GitHub Issue from the matching template, or use `scripts/issue_sync.sh <doc_path>` to
+   create one from the document.
+4. Add the Issue number to the document front matter if it was created manually.
 5. Keep status, labels, and linked paths aligned through implementation and review.
 
 ## Notes
 
 - ARs are the architectural system of record for design direction.
+- Proposed ARs are tracked in `docs/AR/proposed/` until accepted.
 - ERs are the implementation system of record for planned work.
 - DRs are the defect system of record for bugs and regressions.
 - GitHub Issues are the tracker/index layer, not the canonical document body.

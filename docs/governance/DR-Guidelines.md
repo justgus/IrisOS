@@ -25,12 +25,13 @@ Only the System Engineer may mark a DR as `Verified`.
 ## Source Template
 
 Use `docs/DR/DR-Template.md` as the source format for new DRs.
+The checked-in template is a source document and should remain `GitHub-Issue: N/A`.
 
 ## Required Metadata
 
 Each DR should include:
 
-- `GitHub-Issue: #<number>` in front matter
+- `GitHub-Issue: N/A` or `GitHub-Issue: #<number>` in front matter
 - `DR ID`
 - `Title`
 - `Status`
@@ -47,7 +48,6 @@ Use the template status values:
 - `Triaged`
 - `Proposed`
 - `In Progress`
-- `Fixed`
 - `Complete`
 - `Verified`
 - `Deferred`
@@ -59,7 +59,7 @@ In general:
 - `Triaged` means severity, scope, and likely area are understood.
 - `Proposed` means a fix approach has been selected.
 - `In Progress` means implementation is underway.
-- `Fixed` or `Complete` means the change landed but has not yet been verified.
+- `Complete` means the change landed but has not yet been verified.
 - `Verified` is reserved for the System Engineer.
 - `Deferred` or `Rejected` should explain why the work is not proceeding.
 
@@ -76,9 +76,14 @@ Keep `docs/DR/DR-Status.md` aligned with the current document status.
 
 ## Workflow
 
-1. Create a GitHub Issue using the DR issue template.
-2. Draft the DR in `docs/DR/` from `docs/DR/DR-Template.md`.
-3. Add the Issue number to the front matter and the doc path to the Issue body.
+1. Draft the DR in `docs/DR/` from `docs/DR/DR-Template.md`. New drafts may start with
+   `GitHub-Issue: N/A` until an Issue exists.
+2. Create or synchronize the Issue by either:
+   - creating it from the DR issue template and then updating `GitHub-Issue:` to `#<number>`, or
+   - running `scripts/issue_sync.sh <doc_path>` to create the Issue from the document and update the
+     front matter automatically.
+3. Add the doc path to the Issue body. When multiple docs intentionally share one Issue, list all
+   related doc paths together.
 4. Triage the defect before broad implementation changes.
 5. Implement the fix on a branch and reference the Issue in the PR.
 6. Update the DR status in the same commit as the implementation progress it describes.
@@ -90,10 +95,12 @@ Keep `docs/DR/DR-Status.md` aligned with the current document status.
 - Use the `dr` label plus one status label.
 - Add area labels only when they improve triage.
 - `scripts/issue_sync.sh <doc_path>` can synchronize title, body, and labels from the DR document.
+  When an Issue is shared across multiple docs, the most recently synced document controls the Issue
+  title/body, so grouped Issues require manual review after sync.
 
 The sync script maps `New` and `Proposed` to `status:proposed`, `In Progress` to
-`status:in-progress`, and `Fixed`, `Complete`, or `Verified` to `status:done`. `Triaged` and
-`Deferred` currently fall through to `status:in-progress`, so update labels manually if a different
+`status:in-progress`, and `Complete` or `Verified` to `status:done`. `Triaged` and `Deferred`
+currently fall through to `status:in-progress`, so update labels manually if a different
 presentation is needed.
 
 ## Relationship To ARs And ERs

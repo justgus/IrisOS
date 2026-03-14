@@ -25,12 +25,13 @@ Only the System Engineer may mark an ER as `Verified`.
 ## Source Template
 
 Use `docs/ER/ER-Template.md` as the source format for new ERs.
+The checked-in template is a source document and should remain `GitHub-Issue: N/A`.
 
 ## Required Metadata
 
 Each ER should include:
 
-- `GitHub-Issue: #<number>` in front matter
+- `GitHub-Issue: N/A` or `GitHub-Issue: #<number>` in front matter
 - `ER ID`
 - `Title`
 - `Status`
@@ -75,9 +76,14 @@ Keep `docs/ER/ER-Status.md` aligned with the current document status.
 
 ## Workflow
 
-1. Create a GitHub Issue using the ER issue template.
-2. Draft the ER in `docs/ER/` from `docs/ER/ER-Template.md`.
-3. Add the Issue number to the front matter and the doc path to the Issue body.
+1. Draft the ER in `docs/ER/` from `docs/ER/ER-Template.md`. New drafts may start with
+   `GitHub-Issue: N/A` until an Issue exists.
+2. Create or synchronize the Issue by either:
+   - creating it from the ER issue template and then updating `GitHub-Issue:` to `#<number>`, or
+   - running `scripts/issue_sync.sh <doc_path>` to create the Issue from the document and update the
+     front matter automatically.
+3. Add the doc path to the Issue body. When multiple ER docs intentionally share one Issue, list all
+   related doc paths together.
 4. Implement the work on a branch and reference the Issue in the PR.
 5. Update the ER status in the same commit as the implementation progress it describes.
 6. Update `docs/ER/ER-Status.md` when the ER status changes.
@@ -88,6 +94,8 @@ Keep `docs/ER/ER-Status.md` aligned with the current document status.
 - Use the `er` label plus one status label.
 - Add area labels only when they improve triage.
 - `scripts/issue_sync.sh <doc_path>` can synchronize title, body, and labels from the ER document.
+  When an Issue is shared across multiple ER docs, the most recently synced document controls the
+  Issue title/body, so grouped Issues require manual review after sync.
 
 The sync script maps `Draft` and `Proposed` to `status:proposed`, `Approved` to
 `status:accepted`, `In Progress` to `status:in-progress`, and `Implemented`, `Complete`, or
