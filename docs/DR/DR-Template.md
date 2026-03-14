@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: #116
+GitHub-Issue: N/A
 ---
 
 # DR Template — Discrepancy Report / Bug / Issue / Task
@@ -14,7 +14,7 @@ GitHub-Issue: #116
 
 - DR ID:
 - Title:
-- Status: New | Triaged | Proposed | In Progress | Fixed | Complete | Verified | Deferred | Rejected
+- Status: New | Triaged | Proposed | In Progress | Complete | Verified | Deferred | Rejected
 - Date:
 - Owners:
 - Severity: Critical | High | Medium | Low

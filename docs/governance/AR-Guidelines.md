@@ -28,7 +28,7 @@ Each AR should start with front matter and a concise title:
 
 ```md
 ---
-GitHub-Issue: #TBD
+GitHub-Issue: N/A | #123
 ---
 
 # AR-XXXX — Short Title
@@ -44,7 +44,11 @@ If the AR drives implementation work, include:
 ER-Dependencies: ER-XXXX, ER-YYYY
 ```
 
-Use `GitHub-Issue: N/A` only for governance/supporting docs that are not tracked as AR/ER/DR work.
+Use `GitHub-Issue: N/A` while drafting a new AR before an Issue exists. `scripts/issue_sync.sh <doc_path>`
+can create the Issue and replace `N/A` with the assigned number.
+
+Use `GitHub-Issue: N/A` permanently only for governance/supporting docs that are not tracked as
+AR/ER/DR work.
 
 ## Recommended Sections
 
@@ -71,19 +75,26 @@ without expanding into implementation task detail.
 
 ## Lifecycle
 
-1. Create a GitHub Issue using the AR issue template.
-2. Draft the AR under `docs/AR/proposed/`.
-3. Add the Issue number to `GitHub-Issue:`.
-4. Refine the recommendation until the System Engineer accepts or rejects it.
-5. On acceptance, update `- Status:` and move the file to `docs/AR/accepted/`.
-6. When implementation is needed, create or link the dependent ERs.
+1. Draft the AR under `docs/AR/proposed/`. New drafts should start with `GitHub-Issue: N/A` until an
+   Issue exists.
+2. Create or synchronize the Issue by either:
+   - creating it from the AR issue template and then updating `GitHub-Issue:` to `#<number>`, or
+   - running `scripts/issue_sync.sh <doc_path>` to create the Issue from the document and update the
+     front matter automatically.
+3. Refine the recommendation while it remains in `docs/AR/proposed/` until the System Engineer
+   accepts or rejects it.
+4. On acceptance, update `- Status:` and move the file to `docs/AR/accepted/`.
+5. When implementation is needed, create or link the dependent ERs.
 
 ## GitHub Workflow
 
 - Use the `ar` label plus one status label.
-- Link the document path in the Issue body.
+- Link the document path in the Issue body. When multiple docs intentionally share one Issue, list all
+  related doc paths there.
 - Reference the Issue in implementation or follow-up PRs with `Fixes #<issue>`.
 - `scripts/issue_sync.sh <doc_path>` may be used to keep the Issue title, body, and labels aligned.
+  For shared Issues, the most recently synced document becomes the Issue title/body source of truth,
+  so review grouped Issues manually after syncing.
 
 If `ER-Dependencies` is present, the sync script can close the AR Issue automatically when all
 listed ERs are marked `Verified`.
