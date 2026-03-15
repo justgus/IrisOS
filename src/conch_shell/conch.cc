@@ -189,22 +189,42 @@ std::optional<ObjectID> parse_object_id_or_alias(
     SqliteStore& store,
     SchemaRegistry& schema,
     std::string* err_out);
+bool handle_alias_assignment_command(const iris::parser::AliasAssignmentCommand& command,
+                                     SchemaRegistry& registry,
+                                     SqliteStore& store,
+                                     std::unordered_map<std::string, ObjectID>& session_aliases);
 struct TypeListOptions;
 void cmd_ls(SchemaRegistry& registry,
             SqliteStore& store,
             const TypeListOptions& options);
+bool handle_types_list_command(SchemaRegistry& registry,
+                               SqliteStore& store,
+                               const iris::parser::TypesListCommand& command,
+                               const std::string& current_namespace);
+bool handle_namespace_family_command(SchemaRegistry& registry,
+                                     std::string& current_namespace,
+                                     const iris::parser::NamespaceCommand& command);
 void cmd_objects(SchemaRegistry& registry, SqliteStore& store);
 void cmd_define_type(SchemaRegistry& registry, const std::vector<std::string>& tokens);
 void cmd_new_object(SchemaRegistry& registry, SqliteStore& store, const std::string& line);
 void cmd_find_type(SchemaRegistry& registry, const std::string& type_name);
 void cmd_show_type(SchemaRegistry& registry, const std::string& type_name);
 void cmd_ops(SchemaRegistry& registry, const std::vector<std::string>& args);
+bool handle_schema_command(SchemaRegistry& registry,
+                           SqliteStore& store,
+                           const iris::parser::SchemaCommand& command);
 void cmd_caps_list(const std::set<std::string>& session_caps);
 bool cmd_caps_grant(std::set<std::string>& session_caps, const std::vector<std::string>& args);
 bool cmd_caps_revoke(std::set<std::string>& session_caps, const std::vector<std::string>& args);
 bool cmd_caps_clear(std::set<std::string>& session_caps, const std::vector<std::string>& args);
+bool handle_caps_family_command(std::set<std::string>& session_caps,
+                                const iris::parser::CapsCommand& command);
 void cmd_show(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id);
 void cmd_edges(SqliteStore& store, const ObjectID& id);
+bool handle_object_command(SchemaRegistry& registry,
+                           SqliteStore& store,
+                           const std::unordered_map<std::string, ObjectID>& session_aliases,
+                           const iris::parser::ObjectCommand& command);
 bool cmd_call(SchemaRegistry& registry,
               SqliteStore& store,
               const ObjectID& id,
@@ -212,6 +232,11 @@ bool cmd_call(SchemaRegistry& registry,
               const std::vector<std::string>& args,
               const std::unordered_map<std::string, ObjectID>& session_aliases,
               const std::set<std::string>& granted_caps);
+bool handle_call_command(SchemaRegistry& registry,
+                         SqliteStore& store,
+                         const std::unordered_map<std::string, ObjectID>& session_aliases,
+                         const std::set<std::string>& granted_caps,
+                         const iris::parser::CallCommand& command);
 bool cmd_task_spawn(iris::ceo::TaskRegistry& registry,
                     SchemaRegistry& schema,
                     SqliteStore& store,
@@ -226,6 +251,14 @@ bool cmd_debug_graph(SchemaRegistry& registry,
                      SqliteStore& store,
                      const std::unordered_map<std::string, ObjectID>& session_aliases,
                      const std::vector<std::string>& args);
+bool handle_task_family_command(iris::ceo::TaskRegistry& ceo_registry,
+                                SchemaRegistry& registry,
+                                SqliteStore& store,
+                                const std::unordered_map<std::string, ObjectID>& session_aliases,
+                                std::vector<TaskEntry>& tasks,
+                                std::uint64_t& next_task_id,
+                                const iris::parser::TaskCommand& command,
+                                const std::set<std::string>& session_caps);
 bool cmd_io(iris::conduit::IoExecutor& executor,
             iris::conduit::IoHandleStore& handle_store,
             std::unordered_map<std::string, iris::conduit::IoHandle>& handles,
@@ -235,6 +268,15 @@ bool cmd_io(iris::conduit::IoExecutor& executor,
             SqliteStore& store,
             const std::set<std::string>& granted_caps,
             const std::vector<std::string>& args);
+bool handle_io_family_command(iris::conduit::IoExecutor& executor,
+                              iris::conduit::IoHandleStore& handle_store,
+                              std::unordered_map<std::string, iris::conduit::IoHandle>& handles,
+                              std::unordered_map<std::string, iris::conduit::IoHandle>& aliases,
+                              std::uint64_t& next_handle_id,
+                              SchemaRegistry& registry,
+                              SqliteStore& store,
+                              const std::set<std::string>& granted_caps,
+                              const iris::parser::IoCommand& command);
 void cmd_route_type(SchemaRegistry& registry, const std::string& type_name);
 void cmd_route_object(SchemaRegistry& registry,
                       SqliteStore& store,
@@ -306,6 +348,13 @@ bool handle_types_list(SchemaRegistry& registry,
   }
   cmd_ls(registry, store, options);
   return true;
+}
+
+bool handle_types_list_command(SchemaRegistry& registry,
+                               SqliteStore& store,
+                               const iris::parser::TypesListCommand& command,
+                               const std::string& current_namespace) {
+  return handle_types_list(registry, store, command.args, current_namespace);
 }
 
 bool handle_namespace_command(SchemaRegistry& registry,
@@ -388,6 +437,12 @@ bool handle_namespace_command(SchemaRegistry& registry,
   return true;
 }
 
+bool handle_namespace_family_command(SchemaRegistry& registry,
+                                     std::string& current_namespace,
+                                     const iris::parser::NamespaceCommand& command) {
+  return handle_namespace_command(registry, current_namespace, command.args);
+}
+
 bool handle_caps_command(std::set<std::string>& session_caps,
                          const std::vector<std::string>& args) {
   if (args.empty()) {
@@ -409,6 +464,11 @@ bool handle_caps_command(std::set<std::string>& session_caps,
   }
   std::cout << "error: usage: caps [grant|revoke|clear]\n";
   return true;
+}
+
+bool handle_caps_family_command(std::set<std::string>& session_caps,
+                                const iris::parser::CapsCommand& command) {
+  return handle_caps_command(session_caps, command.args);
 }
 
 void cmd_aliases_list() {
@@ -512,6 +572,28 @@ bool handle_task_command(iris::ceo::TaskRegistry& ceo_registry,
   }
   std::cout << "error: usage: task <spawn|list|profile|trace>\n";
   return true;
+}
+
+bool handle_task_family_command(iris::ceo::TaskRegistry& ceo_registry,
+                                SchemaRegistry& registry,
+                                SqliteStore& store,
+                                const std::unordered_map<std::string, ObjectID>& session_aliases,
+                                std::vector<TaskEntry>& tasks,
+                                std::uint64_t& next_task_id,
+                                const iris::parser::TaskCommand& command,
+                                const std::set<std::string>& session_caps) {
+  switch (command.kind) {
+    case iris::parser::TaskCommandKind::Start:
+      return handle_start_command(registry, store, session_aliases, session_caps,
+                                  tasks, next_task_id, command.args);
+    case iris::parser::TaskCommandKind::Ps:
+      return handle_ps_command(tasks);
+    case iris::parser::TaskCommandKind::Kill:
+      return handle_kill_command(tasks, command.args);
+    case iris::parser::TaskCommandKind::Task:
+      return handle_task_command(ceo_registry, registry, store, session_aliases, command.args);
+  }
+  return false;
 }
 
 referee::Result<void> migrate_list(SchemaRegistry& registry,
@@ -2296,6 +2378,20 @@ bool cmd_io(iris::conduit::IoExecutor& executor,
   return false;
 }
 
+bool handle_io_family_command(iris::conduit::IoExecutor& executor,
+                              iris::conduit::IoHandleStore& handle_store,
+                              std::unordered_map<std::string, iris::conduit::IoHandle>& handles,
+                              std::unordered_map<std::string, iris::conduit::IoHandle>& aliases,
+                              std::uint64_t& next_handle_id,
+                              SchemaRegistry& registry,
+                              SqliteStore& store,
+                              const std::set<std::string>& granted_caps,
+                              const iris::parser::IoCommand& command) {
+  cmd_io(executor, handle_store, handles, aliases, next_handle_id, registry, store,
+         granted_caps, command.args);
+  return true;
+}
+
 const char* scope_label(OperationScope scope) {
   return scope == OperationScope::Class ? "class" : "object";
 }
@@ -3855,6 +3951,33 @@ void cmd_new_object(SchemaRegistry& registry, SqliteStore& store, const std::str
   }
 }
 
+bool handle_object_command(SchemaRegistry& registry,
+                           SqliteStore& store,
+                           const std::unordered_map<std::string, ObjectID>& session_aliases,
+                           const iris::parser::ObjectCommand& command) {
+  if (command.kind == iris::parser::ObjectCommandKind::New) {
+    cmd_new_object(registry, store, command.expression);
+    return true;
+  }
+
+  std::string err;
+  auto id = parse_object_id_or_alias(command.target, session_aliases, store, registry, &err);
+  if (!id.has_value()) {
+    std::cout << "error: " << err << "\n";
+    return true;
+  }
+
+  if (command.kind == iris::parser::ObjectCommandKind::Show) {
+    cmd_show(registry, store, id.value());
+    return true;
+  }
+  if (command.kind == iris::parser::ObjectCommandKind::Edges) {
+    cmd_edges(store, id.value());
+    return true;
+  }
+  return false;
+}
+
 void cmd_find_type(SchemaRegistry& registry, const std::string& name) {
   auto typesR = registry.list_types();
   if (!typesR) {
@@ -4000,6 +4123,27 @@ void cmd_ops(SchemaRegistry& registry, const std::vector<std::string>& args) {
   }
 
   print_operations(registry, typesR.value.value(), match->type_id, scope_filter, include_inherited);
+}
+
+bool handle_schema_command(SchemaRegistry& registry,
+                           SqliteStore& store,
+                           const iris::parser::SchemaCommand& command) {
+  (void)store;
+  switch (command.kind) {
+    case iris::parser::SchemaCommandKind::DefineType:
+      cmd_define_type(registry, command.tokens);
+      return true;
+    case iris::parser::SchemaCommandKind::FindType:
+      cmd_find_type(registry, command.type_name);
+      return true;
+    case iris::parser::SchemaCommandKind::ShowType:
+      cmd_show_type(registry, command.type_name);
+      return true;
+    case iris::parser::SchemaCommandKind::Ops:
+      cmd_ops(registry, command.args);
+      return true;
+  }
+  return false;
 }
 
 void cmd_show(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id) {
@@ -4735,6 +4879,22 @@ bool cmd_call(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id,
   return true;
 }
 
+bool handle_call_command(SchemaRegistry& registry,
+                         SqliteStore& store,
+                         const std::unordered_map<std::string, ObjectID>& session_aliases,
+                         const std::set<std::string>& granted_caps,
+                         const iris::parser::CallCommand& command) {
+  std::string err;
+  auto id = parse_object_id_or_alias(command.target, session_aliases, store, registry, &err);
+  if (!id.has_value()) {
+    std::cout << "error: " << err << "\n";
+    return true;
+  }
+  cmd_call(registry, store, id.value(), command.operation, command.args, session_aliases,
+           granted_caps);
+  return true;
+}
+
 referee::Result<ObjectID> create_object(SchemaRegistry& registry, SqliteStore& store,
                                         const std::string& expr) {
   std::string type_name;
@@ -4887,6 +5047,52 @@ void cmd_alias_assignment(const std::string& line,
     session_aliases[name] = id;
   }
   std::cout << name << " = " << id.to_hex() << "\n";
+}
+
+bool handle_alias_assignment_command(const iris::parser::AliasAssignmentCommand& command,
+                                     SchemaRegistry& registry,
+                                     SqliteStore& store,
+                                     std::unordered_map<std::string, ObjectID>& session_aliases) {
+  if (command.list_aliases) {
+    cmd_list_aliases(store, registry, session_aliases, command.persistent);
+    return true;
+  }
+
+  ObjectID id{};
+  if (command.expression.rfind("new ", 0) == 0) {
+    try {
+      auto createR = create_object(registry, store, command.expression);
+      if (!createR) {
+        std::cout << "error: " << createR.error->message << "\n";
+        return true;
+      }
+      id = createR.value.value();
+    } catch (const std::exception& ex) {
+      std::cout << "error: " << ex.what() << "\n";
+      return true;
+    }
+  } else {
+    std::string err;
+    auto resolved = parse_object_id_or_alias(command.expression, session_aliases, store,
+                                             registry, &err);
+    if (!resolved.has_value()) {
+      std::cout << "error: " << err << "\n";
+      return true;
+    }
+    id = resolved.value();
+  }
+
+  if (command.persistent) {
+    auto persistR = persist_alias(store, registry, command.name, id);
+    if (!persistR) {
+      std::cout << "error: " << persistR.error->message << "\n";
+      return true;
+    }
+  } else {
+    session_aliases[command.name] = id;
+  }
+  std::cout << command.name << " = " << id.to_hex() << "\n";
+  return true;
 }
 
 struct EmitFlags {
@@ -5562,6 +5768,10 @@ int main(int argc, char** argv) {
     auto session_op = resolve_session_operation(parsed);
 
     const auto& cmd = parsed.name;
+    if (auto alias_command = parsed.get_if<iris::parser::AliasAssignmentCommand>()) {
+      handle_alias_assignment_command(*alias_command, registry, store, session_aliases);
+      continue;
+    }
     if (cmd == "let") {
       cmd_alias_assignment(line, "let", false, registry, store, session_aliases);
       continue;
@@ -5579,6 +5789,40 @@ int main(int argc, char** argv) {
       print_help();
       continue;
     }
+    if (auto list_command = parsed.get_if<iris::parser::TypesListCommand>()) {
+      handle_types_list_command(registry, store, *list_command, current_namespace);
+      continue;
+    }
+    if (auto namespace_command = parsed.get_if<iris::parser::NamespaceCommand>()) {
+      handle_namespace_family_command(registry, current_namespace, *namespace_command);
+      continue;
+    }
+    if (auto schema_command = parsed.get_if<iris::parser::SchemaCommand>()) {
+      handle_schema_command(registry, store, *schema_command);
+      continue;
+    }
+    if (auto object_command = parsed.get_if<iris::parser::ObjectCommand>()) {
+      handle_object_command(registry, store, session_aliases, *object_command);
+      continue;
+    }
+    if (auto call_command = parsed.get_if<iris::parser::CallCommand>()) {
+      handle_call_command(registry, store, session_aliases, session_caps, *call_command);
+      continue;
+    }
+    if (auto task_command = parsed.get_if<iris::parser::TaskCommand>()) {
+      handle_task_family_command(ceo_registry, registry, store, session_aliases,
+                                 tasks, next_task_id, *task_command, session_caps);
+      continue;
+    }
+    if (auto io_command = parsed.get_if<iris::parser::IoCommand>()) {
+      handle_io_family_command(io_executor, io_handle_store, io_handles, io_handle_aliases,
+                               next_io_handle_id, registry, store, session_caps, *io_command);
+      continue;
+    }
+    if (auto caps_command = parsed.get_if<iris::parser::CapsCommand>()) {
+      handle_caps_family_command(session_caps, *caps_command);
+      continue;
+    }
     if (session_op.has_value()) {
       if (handle_session_operation(line, parsed, session_op.value(), registry, store,
                                    current_namespace, session_aliases, session_caps, tasks,
@@ -5594,90 +5838,6 @@ int main(int argc, char** argv) {
     }
     if (cmd == "objects") {
       cmd_objects(registry, store);
-      continue;
-    }
-    if (cmd == "define" && parsed.args.size() >= 2 && parsed.args[0] == "type") {
-      std::vector<std::string> tokens;
-      tokens.reserve(parsed.args.size() + 1);
-      tokens.push_back(cmd);
-      tokens.insert(tokens.end(), parsed.args.begin(), parsed.args.end());
-      cmd_define_type(registry, tokens);
-      continue;
-    }
-    if (cmd == "new") {
-      cmd_new_object(registry, store, line);
-      continue;
-    }
-    if (cmd == "find" && parsed.args.size() >= 2 && parsed.args[0] == "type") {
-      cmd_find_type(registry, parsed.args[1]);
-      continue;
-    }
-    if (cmd == "show" && parsed.args.size() == 2 && parsed.args[0] == "type") {
-      cmd_show_type(registry, parsed.args[1]);
-      continue;
-    }
-    if (cmd == "ops" && !parsed.args.empty()) {
-      cmd_ops(registry, parsed.args);
-      continue;
-    }
-    if (cmd == "caps") {
-      handle_caps_command(session_caps, parsed.args);
-      continue;
-    }
-    if (cmd == "show" && parsed.args.size() == 1) {
-      std::string err;
-      auto id = parse_object_id_or_alias(parsed.args[0], session_aliases, store, registry, &err);
-      if (!id.has_value()) {
-        std::cout << "error: " << err << "\n";
-        continue;
-      }
-      cmd_show(registry, store, id.value());
-      continue;
-    }
-    if (cmd == "edges" && parsed.args.size() == 1) {
-      std::string err;
-      auto id = parse_object_id_or_alias(parsed.args[0], session_aliases, store, registry, &err);
-      if (!id.has_value()) {
-        std::cout << "error: " << err << "\n";
-        continue;
-      }
-      cmd_edges(store, id.value());
-      continue;
-    }
-    if (cmd == "call" && parsed.args.size() >= 2) {
-      std::string err;
-      auto id = parse_object_id_or_alias(parsed.args[0], session_aliases, store, registry, &err);
-      if (!id.has_value()) {
-        std::cout << "error: " << err << "\n";
-        continue;
-      }
-      std::vector<std::string> args;
-      if (parsed.args.size() > 2) {
-        args.assign(parsed.args.begin() + 2, parsed.args.end());
-      }
-      cmd_call(registry, store, id.value(), parsed.args[1], args, session_aliases, session_caps);
-      continue;
-    }
-    if (cmd == "start" && parsed.args.size() == 1) {
-      handle_start_command(registry, store, session_aliases, session_caps,
-                           tasks, next_task_id, parsed.args);
-      continue;
-    }
-    if (cmd == "ps") {
-      handle_ps_command(tasks);
-      continue;
-    }
-    if (cmd == "kill" && parsed.args.size() == 1) {
-      handle_kill_command(tasks, parsed.args);
-      continue;
-    }
-    if (cmd == "task") {
-      handle_task_command(ceo_registry, registry, store, session_aliases, parsed.args);
-      continue;
-    }
-    if (cmd == "io") {
-      cmd_io(io_executor, io_handle_store, io_handles, io_handle_aliases,
-             next_io_handle_id, registry, store, session_caps, parsed.args);
       continue;
     }
     std::cout << "error: unknown command\n";
