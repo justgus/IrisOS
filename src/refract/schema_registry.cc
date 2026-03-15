@@ -5,6 +5,7 @@
 #include <array>
 #include <cstdio>
 #include <string_view>
+#include <unordered_set>
 
 namespace iris::refract {
 
@@ -128,6 +129,14 @@ static nlohmann::json to_json(const TypeDefinition& def) {
   j["version"] = def.version;
   if (def.kind.has_value()) j["kind"] = def.kind.value();
   if (def.preferred_renderer.has_value()) j["preferred_renderer"] = def.preferred_renderer.value();
+  if (!def.base_types.empty()) {
+    j["base_types"] = nlohmann::json::array();
+    for (const auto& type : def.base_types) j["base_types"].push_back(type.v);
+  }
+  if (!def.interface_types.empty()) {
+    j["interface_types"] = nlohmann::json::array();
+    for (const auto& type : def.interface_types) j["interface_types"].push_back(type.v);
+  }
   if (!def.type_params.empty()) {
     j["type_params"] = nlohmann::json::array();
     for (const auto& param : def.type_params) j["type_params"].push_back(param);
@@ -269,6 +278,16 @@ static TypeDefinition definition_from_json(const nlohmann::json& j) {
   if (j.contains("kind")) def.kind = j.at("kind").get<std::string>();
   if (j.contains("preferred_renderer")) {
     def.preferred_renderer = j.at("preferred_renderer").get<std::string>();
+  }
+  if (j.contains("base_types")) {
+    for (const auto& item : j.at("base_types")) {
+      def.base_types.push_back(referee::TypeID{item.get<std::uint64_t>()});
+    }
+  }
+  if (j.contains("interface_types")) {
+    for (const auto& item : j.at("interface_types")) {
+      def.interface_types.push_back(referee::TypeID{item.get<std::uint64_t>()});
+    }
   }
   if (j.contains("type_params")) {
     for (const auto& item : j.at("type_params")) def.type_params.push_back(item.get<std::string>());
@@ -433,6 +452,111 @@ static referee::Result<std::optional<std::string>> migration_hook_from_props(
   } catch (const std::exception& ex) {
     return referee::Result<std::optional<std::string>>::err(ex.what());
   }
+}
+
+bool is_base_role(std::string_view role) {
+  return role == "base" || role == "extends";
+}
+
+bool is_interface_role(std::string_view role) {
+  return role == "implements" || role == "interface";
+}
+
+std::string type_display_name(const TypeSummary& summary) {
+  if (summary.namespace_name.empty()) return summary.name;
+  return summary.namespace_name + "::" + summary.name;
+}
+
+referee::Result<std::vector<TypeSummary>> latest_type_summaries(SchemaRegistry& registry) {
+  auto typesR = registry.list_types();
+  if (!typesR) return referee::Result<std::vector<TypeSummary>>::err(typesR.error->message);
+
+  std::map<std::uint64_t, TypeSummary> latest;
+  for (const auto& summary : typesR.value.value()) {
+    if (latest.find(summary.type_id.v) != latest.end()) continue;
+    auto defR = registry.get_latest_definition_by_type(summary.type_id);
+    if (!defR) return referee::Result<std::vector<TypeSummary>>::err(defR.error->message);
+    if (!defR.value->has_value()) continue;
+
+    TypeSummary latest_summary;
+    latest_summary.type_id = summary.type_id;
+    latest_summary.definition_id = defR.value->value().ref.id;
+    latest_summary.name = defR.value->value().definition.name;
+    latest_summary.namespace_name = defR.value->value().definition.namespace_name;
+    latest_summary.preferred_renderer = defR.value->value().definition.preferred_renderer;
+    latest[summary.type_id.v] = std::move(latest_summary);
+  }
+
+  std::vector<TypeSummary> out;
+  out.reserve(latest.size());
+  for (auto& [_, summary] : latest) {
+    out.push_back(std::move(summary));
+  }
+  return referee::Result<std::vector<TypeSummary>>::ok(std::move(out));
+}
+
+std::optional<referee::TypeID> resolve_relationship_target(
+    const std::vector<TypeSummary>& types,
+    std::string_view target) {
+  std::optional<referee::TypeID> exact_match;
+  bool exact_ambiguous = false;
+  std::optional<referee::TypeID> bare_match;
+  bool bare_ambiguous = false;
+
+  for (const auto& summary : types) {
+    if (type_display_name(summary) == target) {
+      if (exact_match.has_value() && exact_match->v != summary.type_id.v) {
+        exact_ambiguous = true;
+      } else {
+        exact_match = summary.type_id;
+      }
+    }
+
+    if (summary.name == target) {
+      if (bare_match.has_value() && bare_match->v != summary.type_id.v) {
+        bare_ambiguous = true;
+      } else {
+        bare_match = summary.type_id;
+      }
+    }
+  }
+
+  if (exact_match.has_value() && !exact_ambiguous) return exact_match;
+  if (bare_match.has_value() && !bare_ambiguous) return bare_match;
+  return std::nullopt;
+}
+
+referee::Result<std::vector<referee::TypeID>> legacy_relationship_types(
+    SchemaRegistry& registry,
+    const TypeDefinition& def,
+    bool (*match_role)(std::string_view)) {
+  auto typesR = latest_type_summaries(registry);
+  if (!typesR) return referee::Result<std::vector<referee::TypeID>>::err(typesR.error->message);
+
+  std::vector<referee::TypeID> out;
+  std::unordered_set<std::uint64_t> seen;
+  for (const auto& rel : def.relationships) {
+    if (!match_role(rel.role)) continue;
+    auto target = resolve_relationship_target(typesR.value.value(), rel.target);
+    if (!target.has_value()) continue;
+    if (seen.insert(target->v).second) out.push_back(*target);
+  }
+  return referee::Result<std::vector<referee::TypeID>>::ok(std::move(out));
+}
+
+referee::Result<std::vector<referee::TypeID>> merge_type_lists(
+    const std::vector<referee::TypeID>& first,
+    const std::vector<referee::TypeID>& second) {
+  std::vector<referee::TypeID> out;
+  std::unordered_set<std::uint64_t> seen;
+  out.reserve(first.size() + second.size());
+  for (const auto& type : first) {
+    if (seen.insert(type.v).second) out.push_back(type);
+  }
+  for (const auto& type : second) {
+    if (seen.insert(type.v).second) out.push_back(type);
+  }
+  return referee::Result<std::vector<referee::TypeID>>::ok(std::move(out));
 }
 
 } // namespace
@@ -659,6 +783,49 @@ referee::Result<std::vector<SupersedesLink>> SchemaRegistry::list_supersedes_cha
   }
 
   return referee::Result<std::vector<SupersedesLink>>::ok(std::move(chain));
+}
+
+referee::Result<std::vector<referee::TypeID>> SchemaRegistry::list_base_types(referee::TypeID type) {
+  auto defR = get_latest_definition_by_type(type);
+  if (!defR) return referee::Result<std::vector<referee::TypeID>>::err(defR.error->message);
+  if (!defR.value->has_value()) {
+    return referee::Result<std::vector<referee::TypeID>>::err("definition not found");
+  }
+
+  const auto& def = defR.value->value().definition;
+  if (!def.base_types.empty()) {
+    return referee::Result<std::vector<referee::TypeID>>::ok(def.base_types);
+  }
+
+  return legacy_relationship_types(*this, def, is_base_role);
+}
+
+referee::Result<std::vector<referee::TypeID>> SchemaRegistry::list_interface_types(
+    referee::TypeID type) {
+  auto defR = get_latest_definition_by_type(type);
+  if (!defR) return referee::Result<std::vector<referee::TypeID>>::err(defR.error->message);
+  if (!defR.value->has_value()) {
+    return referee::Result<std::vector<referee::TypeID>>::err("definition not found");
+  }
+
+  const auto& def = defR.value->value().definition;
+  if (!def.interface_types.empty()) {
+    return referee::Result<std::vector<referee::TypeID>>::ok(def.interface_types);
+  }
+
+  return legacy_relationship_types(*this, def, is_interface_role);
+}
+
+referee::Result<std::vector<referee::TypeID>> SchemaRegistry::list_supertypes(referee::TypeID type) {
+  auto baseR = list_base_types(type);
+  if (!baseR) return referee::Result<std::vector<referee::TypeID>>::err(baseR.error->message);
+
+  auto interfaceR = list_interface_types(type);
+  if (!interfaceR) {
+    return referee::Result<std::vector<referee::TypeID>>::err(interfaceR.error->message);
+  }
+
+  return merge_type_lists(baseR.value.value(), interfaceR.value.value());
 }
 
 GenericRegistry::GenericRegistry(SchemaRegistry& schema, referee::SqliteStore& store)

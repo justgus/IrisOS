@@ -6,6 +6,32 @@
 
 namespace iris::refract {
 
+namespace {
+
+referee::Result<std::vector<referee::TypeID>> collect_supertypes(
+    SchemaRegistry& registry,
+    referee::TypeID type,
+    const OperationRegistry::InheritanceResolver& resolver) {
+  auto storedR = registry.list_supertypes(type);
+  if (!storedR) return referee::Result<std::vector<referee::TypeID>>::err(storedR.error->message);
+
+  std::vector<referee::TypeID> out = storedR.value.value();
+  std::unordered_set<std::uint64_t> seen;
+  for (const auto& parent : out) {
+    seen.insert(parent.v);
+  }
+
+  if (resolver) {
+    for (const auto& parent : resolver(type)) {
+      if (seen.insert(parent.v).second) out.push_back(parent);
+    }
+  }
+
+  return referee::Result<std::vector<referee::TypeID>>::ok(std::move(out));
+}
+
+} // namespace
+
 OperationRegistry::OperationRegistry(SchemaRegistry& registry,
                                      InheritanceResolver resolver)
   : registry_(registry),
@@ -37,8 +63,12 @@ referee::Result<std::vector<OperationDefinition>> OperationRegistry::list_operat
       if (op.scope == scope) out.push_back(op);
     }
 
-    if (include_inherited && resolver_) {
-      for (const auto& base : resolver_(current)) {
+    if (include_inherited) {
+      auto parentsR = collect_supertypes(registry_, current, resolver_);
+      if (!parentsR) {
+        return referee::Result<std::vector<OperationDefinition>>::err(parentsR.error->message);
+      }
+      for (const auto& base : parentsR.value.value()) {
         if (visited.insert(base.v).second) {
           queue.push_back(base);
         }
