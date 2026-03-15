@@ -65,5 +65,5 @@
 - ER-0053 — Verified
 - ER-0054 — Verified
 - ER-0055 — Complete
-- ER-0056 — Proposed
+- ER-0056 — Complete
 - ER-0057 — Proposed
