@@ -8,6 +8,28 @@ namespace iris::refract {
 
 namespace {
 
+referee::Result<std::vector<referee::TypeID>> collect_supertypes(
+    SchemaRegistry& registry,
+    referee::TypeID type,
+    const DispatchEngine::InheritanceResolver& resolver) {
+  auto storedR = registry.list_supertypes(type);
+  if (!storedR) return referee::Result<std::vector<referee::TypeID>>::err(storedR.error->message);
+
+  std::vector<referee::TypeID> out = storedR.value.value();
+  std::unordered_set<std::uint64_t> seen;
+  for (const auto& parent : out) {
+    seen.insert(parent.v);
+  }
+
+  if (resolver) {
+    for (const auto& parent : resolver(type)) {
+      if (seen.insert(parent.v).second) out.push_back(parent);
+    }
+  }
+
+  return referee::Result<std::vector<referee::TypeID>>::ok(std::move(out));
+}
+
 struct Candidate {
   OperationDefinition operation;
   referee::TypeID owner{};
@@ -16,10 +38,11 @@ struct Candidate {
   std::size_t optional_penalty{0};
 };
 
-bool has_base_type(referee::TypeID type,
-                   referee::TypeID base,
-                   const DispatchEngine::InheritanceResolver& resolver) {
-  if (!resolver) return false;
+referee::Result<bool> has_base_type(referee::TypeID type,
+                                    referee::TypeID base,
+                                    SchemaRegistry& registry,
+                                    const DispatchEngine::InheritanceResolver& resolver) {
+  if (type.v == base.v) return referee::Result<bool>::ok(true);
   std::deque<referee::TypeID> queue;
   std::unordered_set<std::uint64_t> visited;
   queue.push_back(type);
@@ -28,13 +51,21 @@ bool has_base_type(referee::TypeID type,
   while (!queue.empty()) {
     auto current = queue.front();
     queue.pop_front();
-    for (const auto& parent : resolver(current)) {
-      if (parent.v == base.v) return true;
+
+    auto defR = registry.get_latest_definition_by_type(current);
+    if (!defR) return referee::Result<bool>::err(defR.error->message);
+    if (!defR.value->has_value()) return referee::Result<bool>::ok(false);
+
+    auto parentsR = collect_supertypes(registry, current, resolver);
+    if (!parentsR) return referee::Result<bool>::err(parentsR.error->message);
+
+    for (const auto& parent : parentsR.value.value()) {
+      if (parent.v == base.v) return referee::Result<bool>::ok(true);
       if (visited.insert(parent.v).second) queue.push_back(parent);
     }
   }
 
-  return false;
+  return referee::Result<bool>::ok(false);
 }
 
 bool matches_arity(const OperationDefinition& op, std::size_t arg_count) {
@@ -111,7 +142,9 @@ referee::Result<DispatchMatch> DispatchEngine::resolve(
           if (arg_type.v == param_type.v) {
             continue;
           }
-          if (has_base_type(arg_type, param_type, resolver_)) {
+          auto matchR = has_base_type(arg_type, param_type, registry_, resolver_);
+          if (!matchR) return referee::Result<DispatchMatch>::err(matchR.error->message);
+          if (matchR.value.value()) {
             cand.type_penalty += 1;
             continue;
           }
@@ -124,8 +157,10 @@ referee::Result<DispatchMatch> DispatchEngine::resolve(
       matches.push_back(std::move(cand));
     }
 
-    if (include_inherited && resolver_) {
-      for (const auto& parent : resolver_(current)) {
+    if (include_inherited) {
+      auto parentsR = collect_supertypes(registry_, current, resolver_);
+      if (!parentsR) return referee::Result<DispatchMatch>::err(parentsR.error->message);
+      for (const auto& parent : parentsR.value.value()) {
         if (visited.insert(parent.v).second) {
           queue.push_back({ parent, depth + 1 });
         }

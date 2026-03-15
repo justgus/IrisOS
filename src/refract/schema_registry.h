@@ -93,6 +93,8 @@ struct TypeDefinition {
   std::optional<std::string> kind{};
   std::optional<referee::ObjectID> supersedes_definition_id{};
   std::optional<std::string> migration_hook{};
+  std::vector<referee::TypeID> base_types{};
+  std::vector<referee::TypeID> interface_types{};
   std::vector<std::string> type_params{};
   std::vector<FieldDefinition> fields{};
   bool has_enum_value_type{false};
@@ -143,6 +145,9 @@ public:
   referee::Result<std::optional<DefinitionRecord>> get_latest_definition_by_type(referee::TypeID type);
   referee::Result<std::vector<TypeSummary>> list_types();
   referee::Result<std::vector<SupersedesLink>> list_supersedes_chain(referee::ObjectID definition_id);
+  referee::Result<std::vector<referee::TypeID>> list_base_types(referee::TypeID type);
+  referee::Result<std::vector<referee::TypeID>> list_interface_types(referee::TypeID type);
+  referee::Result<std::vector<referee::TypeID>> list_supertypes(referee::TypeID type);
 
 private:
   referee::SqliteStore& store_;

@@ -1302,24 +1302,30 @@ struct OperationListing {
   std::size_t depth{0};
 };
 
-bool is_base_role(std::string_view role) {
-  return role == "base" || role == "extends";
+std::vector<TypeID> resolve_base_types(SchemaRegistry& registry,
+                                       TypeID type_id,
+                                       std::string* err_out) {
+  auto basesR = registry.list_base_types(type_id);
+  if (!basesR) {
+    if (err_out) *err_out = basesR.error->message;
+    return {};
+  }
+  return basesR.value.value();
 }
 
-std::vector<TypeID> resolve_base_types(const iris::refract::TypeDefinition& def,
-                                       const std::vector<TypeSummary>& types) {
-  std::vector<TypeID> out;
-  for (const auto& rel : def.relationships) {
-    if (!is_base_role(rel.role)) continue;
-    auto base = find_type_summary(types, rel.target, nullptr);
-    if (base.has_value()) out.push_back(base->type_id);
+std::vector<TypeID> resolve_interface_types(SchemaRegistry& registry,
+                                            TypeID type_id,
+                                            std::string* err_out) {
+  auto interfacesR = registry.list_interface_types(type_id);
+  if (!interfacesR) {
+    if (err_out) *err_out = interfacesR.error->message;
+    return {};
   }
-  return out;
+  return interfacesR.value.value();
 }
 
 referee::Result<std::vector<OperationListing>> list_operations_with_inheritance(
     SchemaRegistry& registry,
-    const std::vector<TypeSummary>& types,
     TypeID root_type,
     bool include_inherited) {
   std::vector<OperationListing> out;
@@ -1351,7 +1357,11 @@ referee::Result<std::vector<OperationListing>> list_operations_with_inheritance(
     }
 
     if (include_inherited) {
-      for (const auto& base : resolve_base_types(def, types)) {
+      auto parentsR = registry.list_supertypes(current);
+      if (!parentsR) {
+        return referee::Result<std::vector<OperationListing>>::err(parentsR.error->message);
+      }
+      for (const auto& base : parentsR.value.value()) {
         if (visited.insert(base.v).second) {
           queue.push_back({ base, depth + 1 });
         }
@@ -1369,6 +1379,17 @@ std::string type_display_name_for(const std::vector<TypeSummary>& types, TypeID 
   std::ostringstream os;
   os << "0x" << std::hex << type_id.v << std::dec;
   return os.str();
+}
+
+void print_type_line(const char* label,
+                     const std::vector<TypeSummary>& types,
+                     const std::vector<TypeID>& type_ids) {
+  if (type_ids.empty()) return;
+  std::cout << label;
+  for (const auto& type_id : type_ids) {
+    std::cout << " " << type_display_name_for(types, type_id);
+  }
+  std::cout << "\n";
 }
 
 std::string format_signature(const iris::refract::OperationDefinition& op) {
@@ -1418,7 +1439,6 @@ bool matches_arity(const iris::refract::OperationDefinition& op, std::size_t arg
 bool has_base_type(TypeID type_id,
                    TypeID base_id,
                    SchemaRegistry& registry,
-                   const std::vector<TypeSummary>& types,
                    std::string* err_out) {
   if (type_id.v == base_id.v) return true;
   std::deque<TypeID> queue;
@@ -1436,10 +1456,14 @@ bool has_base_type(TypeID type_id,
       return false;
     }
     if (!defR.value->has_value()) {
-      if (err_out) *err_out = "definition not found";
       return false;
     }
-    for (const auto& base : resolve_base_types(defR.value->value().definition, types)) {
+    auto basesR = registry.list_supertypes(current);
+    if (!basesR) {
+      if (err_out) *err_out = basesR.error->message;
+      return false;
+    }
+    for (const auto& base : basesR.value.value()) {
       if (base.v == base_id.v) return true;
       if (visited.insert(base.v).second) queue.push_back(base);
     }
@@ -2281,7 +2305,7 @@ void print_operations(SchemaRegistry& registry,
                       TypeID type_id,
                       std::optional<OperationScope> scope_filter,
                       bool include_inherited) {
-  auto listR = list_operations_with_inheritance(registry, types, type_id, include_inherited);
+  auto listR = list_operations_with_inheritance(registry, type_id, include_inherited);
   if (!listR) {
     std::cout << "error: " << listR.error->message << "\n";
     return;
@@ -3874,6 +3898,19 @@ void cmd_show_type(SchemaRegistry& registry, const std::string& name) {
   if (def.kind.has_value()) {
     std::cout << "kind " << def.kind.value() << "\n";
   }
+  std::string inheritance_err;
+  auto base_types = resolve_base_types(registry, match->type_id, &inheritance_err);
+  if (!inheritance_err.empty()) {
+    std::cout << "error: " << inheritance_err << "\n";
+    return;
+  }
+  auto interface_types = resolve_interface_types(registry, match->type_id, &inheritance_err);
+  if (!inheritance_err.empty()) {
+    std::cout << "error: " << inheritance_err << "\n";
+    return;
+  }
+  print_type_line("base types", typesR.value.value(), base_types);
+  print_type_line("interface types", typesR.value.value(), interface_types);
   if (!def.type_params.empty()) {
     std::cout << "type params";
     for (const auto& param : def.type_params) {
@@ -4161,7 +4198,7 @@ bool cmd_debug_dispatch(SchemaRegistry& registry,
     target_display = type_display_name(*summary);
   }
 
-  auto listR = list_operations_with_inheritance(registry, types, target_type, include_inherited);
+  auto listR = list_operations_with_inheritance(registry, target_type, include_inherited);
   if (!listR) {
     std::cout << "error: " << listR.error->message << "\n";
     return false;
@@ -4202,7 +4239,7 @@ bool cmd_debug_dispatch(SchemaRegistry& registry,
         const auto& param_type = op.signature.params[i].type;
         if (arg_type.v == param_type.v) continue;
         std::string err;
-        if (has_base_type(arg_type, param_type, registry, types, &err)) {
+        if (has_base_type(arg_type, param_type, registry, &err)) {
           type_penalty += 1;
           continue;
         }

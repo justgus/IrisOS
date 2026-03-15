@@ -481,6 +481,56 @@ START_TEST(test_conch_namespace_navigation)
 }
 END_TEST
 
+START_TEST(test_conch_show_type_displays_inheritance_metadata)
+{
+  auto db_path = make_temp_path("/tmp/iris-conch-show-type-XXXXXX");
+
+  SqliteStore store(SqliteConfig{ .filename=db_path, .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+  auto boot = bootstrap_core_schema(registry);
+  ck_assert_msg(boot, "bootstrap failed: %s", result_message(boot));
+
+  TypeDefinition base{};
+  base.type_id = TypeID{0xE550001ULL};
+  base.name = "BaseWidget";
+  base.namespace_name = "ConchTest";
+  base.version = 1;
+  base.fields.push_back(FieldDefinition{ "label", TypeID{0x1001ULL}, true, std::nullopt });
+  ck_assert_msg(registry.register_definition(base), "register base failed");
+
+  TypeDefinition iface{};
+  iface.type_id = TypeID{0xE550002ULL};
+  iface.name = "Renderable";
+  iface.namespace_name = "ConchTest";
+  iface.version = 1;
+  ck_assert_msg(registry.register_definition(iface), "register interface failed");
+
+  TypeDefinition derived{};
+  derived.type_id = TypeID{0xE550003ULL};
+  derived.name = "DerivedWidget";
+  derived.namespace_name = "ConchTest";
+  derived.version = 1;
+  derived.base_types.push_back(base.type_id);
+  derived.interface_types.push_back(iface.type_id);
+  derived.fields.push_back(FieldDefinition{ "label", TypeID{0x1001ULL}, true, std::nullopt });
+  ck_assert_msg(registry.register_definition(derived), "register derived failed");
+
+  ck_assert_msg(store.close(), "close failed");
+
+  auto output = run_conch_script_with_db("show type ConchTest::DerivedWidget\nexit\n", db_path);
+  ck_assert_msg(output.find("base types ConchTest::BaseWidget") != std::string::npos,
+                "expected base types in show type output");
+  ck_assert_msg(output.find("interface types ConchTest::Renderable") != std::string::npos,
+                "expected interface types in show type output");
+
+  std::filesystem::remove_all(db_path + ".segments");
+  ::unlink(db_path.c_str());
+}
+END_TEST
+
 Suite* conch_authoring_suite(void) {
   Suite* s = suite_create("ConchAuthoring");
   TCase* tc = tcase_create("core");
@@ -493,6 +543,7 @@ Suite* conch_authoring_suite(void) {
   tcase_add_test(tc, test_conch_migration_tools);
   tcase_add_test(tc, test_conch_v2_demo_script);
   tcase_add_test(tc, test_conch_namespace_navigation);
+  tcase_add_test(tc, test_conch_show_type_displays_inheritance_metadata);
 
   suite_add_tcase(s, tc);
   return s;

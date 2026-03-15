@@ -227,6 +227,82 @@ START_TEST(test_schema_registry_collection_metadata_roundtrip)
 }
 END_TEST
 
+START_TEST(test_schema_registry_inheritance_metadata_roundtrip)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+
+  auto base = make_definition(TypeID{0xE5ULL}, "BaseWidget", "Demo");
+  auto iface = make_definition(TypeID{0xE6ULL}, "Renderable", "Demo");
+  ck_assert_msg(registry.register_definition(base), "register base failed");
+  ck_assert_msg(registry.register_definition(iface), "register iface failed");
+
+  auto derived = make_definition(TypeID{0xE7ULL}, "DerivedWidget", "Demo");
+  derived.base_types.push_back(base.type_id);
+  derived.interface_types.push_back(iface.type_id);
+
+  auto derived_reg = registry.register_definition(derived);
+  ck_assert_msg(derived_reg, "register derived failed: %s", result_message(derived_reg));
+
+  auto byType = registry.get_definition_by_type(derived.type_id);
+  ck_assert_msg(byType, "get derived failed: %s", result_message(byType));
+  ck_assert_msg(byType.value->has_value(), "expected derived definition");
+  ck_assert_int_eq((int)byType.value->value().definition.base_types.size(), 1);
+  ck_assert_uint_eq(byType.value->value().definition.base_types[0].v, base.type_id.v);
+  ck_assert_int_eq((int)byType.value->value().definition.interface_types.size(), 1);
+  ck_assert_uint_eq(byType.value->value().definition.interface_types[0].v, iface.type_id.v);
+
+  auto basesR = registry.list_base_types(derived.type_id);
+  ck_assert_msg(basesR, "list_base_types failed: %s", result_message(basesR));
+  ck_assert_int_eq((int)basesR.value->size(), 1);
+  ck_assert_uint_eq(basesR.value->at(0).v, base.type_id.v);
+
+  auto interfacesR = registry.list_interface_types(derived.type_id);
+  ck_assert_msg(interfacesR, "list_interface_types failed: %s", result_message(interfacesR));
+  ck_assert_int_eq((int)interfacesR.value->size(), 1);
+  ck_assert_uint_eq(interfacesR.value->at(0).v, iface.type_id.v);
+
+  auto supertypesR = registry.list_supertypes(derived.type_id);
+  ck_assert_msg(supertypesR, "list_supertypes failed: %s", result_message(supertypesR));
+  ck_assert_int_eq((int)supertypesR.value->size(), 2);
+}
+END_TEST
+
+START_TEST(test_schema_registry_legacy_relationship_inheritance_fallback)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+
+  auto base = make_definition(TypeID{0xE8ULL}, "LegacyBase", "Demo");
+  auto iface = make_definition(TypeID{0xE9ULL}, "LegacyIface", "Demo");
+  ck_assert_msg(registry.register_definition(base), "register base failed");
+  ck_assert_msg(registry.register_definition(iface), "register iface failed");
+
+  auto derived = make_definition(TypeID{0xEAULL}, "LegacyDerived", "Demo");
+  derived.relationships.clear();
+  derived.relationships.push_back(RelationshipSpec{ "base", "one", "Demo::LegacyBase" });
+  derived.relationships.push_back(RelationshipSpec{ "implements", "many", "Demo::LegacyIface" });
+  auto reg = registry.register_definition(derived);
+  ck_assert_msg(reg, "register derived failed: %s", result_message(reg));
+
+  auto basesR = registry.list_base_types(derived.type_id);
+  ck_assert_msg(basesR, "legacy base fallback failed: %s", result_message(basesR));
+  ck_assert_int_eq((int)basesR.value->size(), 1);
+  ck_assert_uint_eq(basesR.value->at(0).v, base.type_id.v);
+
+  auto interfacesR = registry.list_interface_types(derived.type_id);
+  ck_assert_msg(interfacesR, "legacy interface fallback failed: %s", result_message(interfacesR));
+  ck_assert_int_eq((int)interfacesR.value->size(), 1);
+  ck_assert_uint_eq(interfacesR.value->at(0).v, iface.type_id.v);
+}
+END_TEST
+
 START_TEST(test_generic_instance_type_id_deterministic)
 {
   GenericInstance instance{};
@@ -343,6 +419,7 @@ START_TEST(test_operation_registry_scope_and_inheritance)
 
   auto derived = make_definition(TypeID{0xB2ULL}, "Derived", "Demo");
   derived.operations.clear();
+  derived.base_types.push_back(base.type_id);
   OperationDefinition derived_obj_op;
   derived_obj_op.name = "update";
   derived_obj_op.scope = OperationScope::Object;
@@ -351,12 +428,7 @@ START_TEST(test_operation_registry_scope_and_inheritance)
   ck_assert_msg(registry.register_definition(base), "register base failed");
   ck_assert_msg(registry.register_definition(derived), "register derived failed");
 
-  OperationRegistry op_registry(
-      registry,
-      [](TypeID type_id) -> std::vector<TypeID> {
-        if (type_id.v == 0xB2ULL) return { TypeID{0xB1ULL} };
-        return {};
-      });
+  OperationRegistry op_registry(registry);
 
   auto objR = op_registry.list_operations(TypeID{0xB2ULL}, OperationScope::Object, true);
   ck_assert_msg(objR, "list object ops failed: %s", result_message(objR));
@@ -385,11 +457,32 @@ START_TEST(test_dispatch_resolution)
   base_op.scope = OperationScope::Object;
   base_op.signature.params.push_back(ParameterDefinition{ "name", TypeID{0x1001ULL}, false });
   base.operations.push_back(base_op);
+  OperationDefinition inherited_op;
+  inherited_op.name = "pong";
+  inherited_op.scope = OperationScope::Object;
+  inherited_op.signature.params.push_back(ParameterDefinition{ "count", TypeID{0x1002ULL}, false });
+  base.operations.push_back(inherited_op);
 
   auto derived = make_definition(TypeID{0xC2ULL}, "Derived", "Demo");
   derived.operations.clear();
+  derived.base_types.push_back(base.type_id);
   OperationDefinition derived_op = base_op;
   derived.operations.push_back(derived_op);
+
+  auto value_base = make_definition(TypeID{0xC3ULL}, "ValueBase", "Demo");
+  value_base.operations.clear();
+
+  auto value_derived = make_definition(TypeID{0xC4ULL}, "ValueDerived", "Demo");
+  value_derived.operations.clear();
+  value_derived.base_types.push_back(value_base.type_id);
+
+  auto receiver = make_definition(TypeID{0xC5ULL}, "Receiver", "Demo");
+  receiver.operations.clear();
+  OperationDefinition accept_op;
+  accept_op.name = "accept";
+  accept_op.scope = OperationScope::Object;
+  accept_op.signature.params.push_back(ParameterDefinition{ "value", value_base.type_id, false });
+  receiver.operations.push_back(accept_op);
 
   auto overloads = make_definition(TypeID{0xD1ULL}, "Overloads", "Demo");
   overloads.operations.clear();
@@ -406,14 +499,12 @@ START_TEST(test_dispatch_resolution)
 
   ck_assert_msg(registry.register_definition(base), "register base failed");
   ck_assert_msg(registry.register_definition(derived), "register derived failed");
+  ck_assert_msg(registry.register_definition(value_base), "register value_base failed");
+  ck_assert_msg(registry.register_definition(value_derived), "register value_derived failed");
+  ck_assert_msg(registry.register_definition(receiver), "register receiver failed");
   ck_assert_msg(registry.register_definition(overloads), "register overloads failed");
 
-  DispatchEngine engine(
-      registry,
-      [](TypeID type_id) -> std::vector<TypeID> {
-        if (type_id.v == 0xC2ULL) return { TypeID{0xC1ULL} };
-        return {};
-      });
+  DispatchEngine engine(registry);
 
   auto overrideR = engine.resolve(
       TypeID{0xC2ULL},
@@ -424,6 +515,26 @@ START_TEST(test_dispatch_resolution)
       true);
   ck_assert_msg(overrideR, "dispatch override failed: %s", result_message(overrideR));
   ck_assert_int_eq(overrideR.value->owner_type.v, 0xC2ULL);
+
+  auto inheritedR = engine.resolve(
+      TypeID{0xC2ULL},
+      "pong",
+      OperationScope::Object,
+      { TypeID{0x1002ULL} },
+      1,
+      true);
+  ck_assert_msg(inheritedR, "dispatch inherited failed: %s", result_message(inheritedR));
+  ck_assert_int_eq(inheritedR.value->owner_type.v, 0xC1ULL);
+
+  auto subtypeR = engine.resolve(
+      receiver.type_id,
+      "accept",
+      OperationScope::Object,
+      { value_derived.type_id },
+      1,
+      false);
+  ck_assert_msg(subtypeR, "dispatch subtype failed: %s", result_message(subtypeR));
+  ck_assert_int_eq(subtypeR.value->owner_type.v, receiver.type_id.v);
 
   auto overloadR = engine.resolve(
       TypeID{0xD1ULL},
@@ -458,6 +569,8 @@ Suite* refract_registry_suite(void) {
   tcase_add_test(tc, test_schema_registry_supersedes_chain);
   tcase_add_test(tc, test_schema_registry_structured_metadata_roundtrip);
   tcase_add_test(tc, test_schema_registry_collection_metadata_roundtrip);
+  tcase_add_test(tc, test_schema_registry_inheritance_metadata_roundtrip);
+  tcase_add_test(tc, test_schema_registry_legacy_relationship_inheritance_fallback);
   tcase_add_test(tc, test_generic_instance_type_id_deterministic);
   tcase_add_test(tc, test_generic_instance_registry_roundtrip);
   tcase_add_test(tc, test_scoped_type_registry_promotion);
