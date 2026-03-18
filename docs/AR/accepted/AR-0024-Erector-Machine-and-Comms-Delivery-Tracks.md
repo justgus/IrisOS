@@ -4,7 +4,7 @@ GitHub-Issue: N/A
 
 # AR-0024 — Erector Machine And Comms Delivery Tracks
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-03-14
 - Owners: Mike
 

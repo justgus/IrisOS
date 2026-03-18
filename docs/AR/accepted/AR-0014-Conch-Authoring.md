@@ -4,7 +4,7 @@ GitHub-Issue: #78
 
 # AR-0014 — Conch Schema and Object Authoring
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-02-19
 - Owners: Mike
 

@@ -14,7 +14,7 @@ GitHub-Issue: N/A
 
 - ER ID: ER-0056
 - Title: Conch Typed AST and Shell Decomposition
-- Status: Complete
+- Status: Verified
 - Date: 2026-03-14
 - Owners: Mike
 - Type: Epic
