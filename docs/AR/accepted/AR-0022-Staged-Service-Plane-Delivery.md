@@ -5,7 +5,7 @@ ER-Dependencies: ER-0057
 
 # AR-0022 — Staged Service Plane Delivery
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-03-14
 - Owners: Mike
 

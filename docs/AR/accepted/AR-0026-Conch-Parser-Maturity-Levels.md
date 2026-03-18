@@ -5,7 +5,7 @@ ER-Dependencies: ER-0056
 
 # AR-0026 — Conch Parser Maturity Levels
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-03-14
 - Owners: Mike
 

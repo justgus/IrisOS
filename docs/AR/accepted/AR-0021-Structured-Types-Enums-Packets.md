@@ -4,7 +4,7 @@ GitHub-Issue: #TBD
 
 # AR-0021 — Structured Types, Enums, and Packets
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-02-27
 - Owners: Mike
 

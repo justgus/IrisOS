@@ -14,7 +14,7 @@ GitHub-Issue: N/A
 
 - ER ID: ER-0057
 - Title: Service Host Lifecycle and Persistent Registry
-- Status: Proposed
+- Status: Verified
 - Date: 2026-03-14
 - Owners: Mike
 - Type: Epic

@@ -4,7 +4,7 @@ GitHub-Issue: N/A
 
 # AR-0025 — Conch And Vizier Interaction Modes
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-03-14
 - Owners: Mike
 

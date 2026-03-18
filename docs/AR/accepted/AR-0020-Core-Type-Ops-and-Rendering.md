@@ -4,7 +4,7 @@ GitHub-Issue: #TBD
 
 # AR-0020 — Core Type Operations and Rendering
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-02-27
 - Owners: Mike
 

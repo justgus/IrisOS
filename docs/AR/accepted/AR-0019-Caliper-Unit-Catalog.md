@@ -4,7 +4,7 @@ GitHub-Issue: #TBD
 
 # AR-0019 — Caliper Unit Catalog
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-02-27
 - Owners: Mike
 

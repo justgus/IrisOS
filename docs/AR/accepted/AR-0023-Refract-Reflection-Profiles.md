@@ -5,7 +5,7 @@ ER-Dependencies: ER-0055
 
 # AR-0023 — Refract Reflection Profiles
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-03-14
 - Owners: Mike
 
