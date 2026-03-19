@@ -4,9 +4,9 @@
 - Date: 2026-03-18
 - Owners: Mike
 - Sources:
-  - [AR0014-AR0021-Implementation-Plan.md](/home/justgus/Dev/irisOS/docs/Plan/AR0014-AR0021-Implementation-Plan.md)
-  - [AR0022plus-Implementation-Plan-v2.md](/home/justgus/Dev/irisOS/docs/Plan/AR0022plus-Implementation-Plan-v2.md)
-  - [Implementation-Plan-2026-03-14.md](/home/justgus/Dev/irisOS/docs/reports/Implementation-Plan-2026-03-14.md)
+  - [AR0014-AR0021-Implementation-Plan.md](/home/justgus/Dev/irisOS/docs/Plans/AR0014-AR0021-Implementation-Plan.md)
+  - [AR0022plus-Implementation-Plan-v2.md](/home/justgus/Dev/irisOS/docs/Plans/AR0022plus-Implementation-Plan-v2.md)
+  - [Implementation-Plan-2026-03-14.md](/home/justgus/Dev/irisOS/docs/Plans/Implementation-Plan-2026-03-14.md)
 
 ## Purpose
 
@@ -20,7 +20,7 @@ verified ERs, and the latest implementation planning report.
 - ER-0001 through ER-0054 are verified.
 - ER-0056 and ER-0057 are verified.
 - ER-0055 is complete and remains the only ER not yet marked verified.
-- The earlier plan items that were listed as proposed in the older `docs/Plan/` documents
+- The earlier plan items that were listed as proposed in the older plan documents now under `docs/Plans/`
   (ER-0034 through ER-0053) have already been implemented and verified, so they are not repeated
   as future work in this document.
 
@@ -78,11 +78,11 @@ Remaining work:
 
 Suggested ER slices:
 
-- capability context objects and persistence
-- CEO task capability attachment
-- service boundary capability enforcement
-- sandbox identity and service isolation hooks
-- additional staged service implementations after isolation is stable
+- ER-0058 - capability context objects and persistence
+- ER-0059 - CEO task capability attachment
+- ER-0060 - service boundary capability enforcement
+- ER-0061 - sandbox identity and service isolation hooks
+- ER-0062 - additional staged service implementations after isolation is stable
 
 Exit criteria:
 
@@ -111,10 +111,10 @@ Remaining work:
 
 Suggested ER slices:
 
-- Referee graph watch and change-feed API
-- Vizier relationship-pattern routing
-- task visualization objects and Task Conchos
-- observer-driven Conch session growth
+- ER-0063 - Referee graph watch and change-feed API
+- ER-0064 - Vizier relationship-pattern routing
+- ER-0065 - task visualization objects and Task Conchos
+- ER-0066 - observer-driven Conch session growth
 
 Exit criteria:
 
@@ -141,9 +141,9 @@ Remaining work:
 
 Suggested ER slices:
 
-- reusable Conch grammar API
-- batch execution and non-interactive parser integration
-- shared parser regression harness
+- ER-0067 - reusable Conch grammar API
+- ER-0068 - batch execution and non-interactive parser integration
+- ER-0069 - shared parser regression harness
 
 Exit criteria:
 
@@ -171,11 +171,11 @@ Remaining work:
 
 Suggested ER slices:
 
-- Machine representation primitives
-- Machine descriptors and resource facts
-- Machine handles and leases
-- Comms transport and session objects
-- Comms protocol objects and hardware mapping
+- ER-0070 - Machine representation primitives
+- ER-0071 - Machine descriptors and resource facts
+- ER-0072 - Machine handles and leases
+- ER-0073 - Comms transport and session objects
+- ER-0074 - Comms protocol objects and hardware mapping
 
 Exit criteria:
 
@@ -202,9 +202,9 @@ Remaining work:
 
 Suggested ER slices:
 
-- full Caliper catalog expansion
-- runtime conversion and compatibility engine
-- Conch conversion and inspection commands
+- ER-0075 - full Caliper catalog expansion
+- ER-0076 - runtime conversion and compatibility engine
+- ER-0077 - Conch conversion and inspection commands
 
 Exit criteria:
 
@@ -229,4 +229,4 @@ Exit criteria:
 
 - `grep -RIn "Status: Proposed" docs/AR`
 - `grep -nE "ER-0055|ER-0056|ER-0057" docs/ER/ER-Status.md`
-- review this plan against the source plans and [Implementation-Plan-2026-03-14.md](/home/justgus/Dev/irisOS/docs/reports/Implementation-Plan-2026-03-14.md)
+- review this plan against the source plans and [Implementation-Plan-2026-03-14.md](/home/justgus/Dev/irisOS/docs/Plans/Implementation-Plan-2026-03-14.md)

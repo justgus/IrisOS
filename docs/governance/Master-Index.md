@@ -54,7 +54,7 @@ Proposed ARs in `docs/AR/proposed/` are active recommendation drafts under revie
 
 - Reports: `docs/reports/`
 - Gap report: `docs/reports/Gap-Analysis-2026-03-14.md`
-- Implementation plan: `docs/reports/Implementation-Plan-2026-03-14.md`
+- Implementation plan: `docs/Plans/Implementation-Plan-2026-03-14.md`
 
 ## Quick Start
 
