@@ -1,6 +1,6 @@
 ---
 GitHub-Issue: N/A
-ER-Dependencies: ER-0055
+ER-Dependencies: ER-0055, ER-0078, ER-0079, ER-0080
 ---
 
 # AR-0023 — Refract Reflection Profiles

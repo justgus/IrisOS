@@ -19,7 +19,8 @@ verified ERs, and the latest implementation planning report.
 - AR-0014 and AR-0018 through AR-0026 are accepted.
 - ER-0001 through ER-0054 are verified.
 - ER-0056 and ER-0057 are verified.
-- ER-0055 is complete and remains the only ER not yet marked verified.
+- ER-0055 is verified.
+- The remaining AR-0023 reflection-profile scope is now mapped to ER-0078 through ER-0080.
 - The earlier plan items that were listed as proposed in the older plan documents now under `docs/Plans/`
   (ER-0034 through ER-0053) have already been implemented and verified, so they are not repeated
   as future work in this document.
@@ -33,6 +34,9 @@ verified ERs, and the latest implementation planning report.
 
 ## Phase 1 - Close Current Reflection Baseline
 
+- Status: Complete
+- Completed: 2026-03-19
+
 Related architecture:
 
 - AR-0023 Refract Reflection Profiles
@@ -43,13 +47,16 @@ Objectives:
 - decide which v2 reflection items need follow-on ERs now versus explicit deferral
 - keep Refract authoritative for reflection metadata used by Conduit and Conch
 
-Remaining work:
+Completed work:
 
-- verify ER-0055 and close any review fallout
-- define follow-on ERs only for still-missing v2 profile items:
-  - constraints and validation metadata
-  - operation effects metadata
-  - documentation objects and richer introspection metadata
+- ER-0055 is verified.
+- Review of the current Refract schema and dispatch surfaces confirms that authoritative inheritance
+  and interface metadata are implemented, while constraints, operation effects, and documentation
+  objects are still missing as persisted reflection features.
+- The still-missing AR-0023 scope is now mapped into concrete follow-on ERs:
+  - ER-0078 - Refract constraints and validation metadata
+  - ER-0079 - Refract operation effects metadata
+  - ER-0080 - Refract documentation objects and richer introspection metadata
 
 Exit criteria:
 
@@ -218,15 +225,14 @@ Exit criteria:
 
 ## Delivery Order
 
-1. Verify ER-0055 and finalize the AR-0023 follow-on scope.
-2. Finish Service Plane staging work under AR-0022.
-3. Implement observer-driven Conch/Vizier behavior under AR-0025.
-4. Add reusable parser surfaces for AR-0026 Level 4.
-5. Implement Machine and Comms delivery tracks under AR-0024.
-6. Complete the Caliper catalog and runtime conversion work under AR-0019.
+1. Finish Service Plane staging work under AR-0022.
+2. Implement observer-driven Conch/Vizier behavior under AR-0025.
+3. Add reusable parser surfaces for AR-0026 Level 4.
+4. Implement Machine and Comms delivery tracks under AR-0024.
+5. Complete the Caliper catalog and runtime conversion work under AR-0019.
 
 ## Validation
 
 - `grep -RIn "Status: Proposed" docs/AR`
-- `grep -nE "ER-0055|ER-0056|ER-0057" docs/ER/ER-Status.md`
+- `grep -nE "ER-0055|ER-0056|ER-0057|ER-0078|ER-0079|ER-0080" docs/ER/ER-Status.md`
 - review this plan against the source plans and [Implementation-Plan-2026-03-14.md](/home/justgus/Dev/irisOS/docs/Plans/Implementation-Plan-2026-03-14.md)
