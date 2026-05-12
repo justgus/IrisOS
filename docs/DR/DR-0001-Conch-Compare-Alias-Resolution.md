@@ -1,5 +1,6 @@
 ---
 GitHub-Issue: #116
+AR-Dependencies: AR-0012, AR-0016
 ---
 
 # DR-0001 — Conch Compare Alias Resolution

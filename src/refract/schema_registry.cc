@@ -2,6 +2,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <algorithm>
 #include <array>
 #include <cstdio>
 #include <string_view>
@@ -11,12 +12,72 @@ namespace iris::refract {
 
 namespace {
 
+static std::string field_constraint_kind_to_string(FieldConstraintKind kind) {
+  switch (kind) {
+    case FieldConstraintKind::Required:
+      return "required";
+    case FieldConstraintKind::NonEmpty:
+      return "non_empty";
+  }
+  return "required";
+}
+
+static referee::Result<FieldConstraintKind> field_constraint_kind_from_string(std::string_view kind) {
+  if (kind == "required") {
+    return referee::Result<FieldConstraintKind>::ok(FieldConstraintKind::Required);
+  }
+  if (kind == "non_empty") {
+    return referee::Result<FieldConstraintKind>::ok(FieldConstraintKind::NonEmpty);
+  }
+  return referee::Result<FieldConstraintKind>::err("unknown field constraint kind");
+}
+
+static std::string relationship_constraint_kind_to_string(RelationshipConstraintKind kind) {
+  switch (kind) {
+    case RelationshipConstraintKind::MinOccurs:
+      return "min_occurs";
+    case RelationshipConstraintKind::MaxOccurs:
+      return "max_occurs";
+  }
+  return "min_occurs";
+}
+
+static referee::Result<RelationshipConstraintKind> relationship_constraint_kind_from_string(
+    std::string_view kind) {
+  if (kind == "min_occurs") {
+    return referee::Result<RelationshipConstraintKind>::ok(RelationshipConstraintKind::MinOccurs);
+  }
+  if (kind == "max_occurs") {
+    return referee::Result<RelationshipConstraintKind>::ok(RelationshipConstraintKind::MaxOccurs);
+  }
+  return referee::Result<RelationshipConstraintKind>::err("unknown relationship constraint kind");
+}
+
+static nlohmann::json to_json(const FieldConstraint& constraint) {
+  nlohmann::json j;
+  j["kind"] = field_constraint_kind_to_string(constraint.kind);
+  return j;
+}
+
+static nlohmann::json to_json(const RelationshipConstraint& constraint) {
+  nlohmann::json j;
+  j["kind"] = relationship_constraint_kind_to_string(constraint.kind);
+  j["value"] = constraint.value;
+  return j;
+}
+
 static nlohmann::json to_json(const FieldDefinition& field) {
   nlohmann::json j;
   j["name"] = field.name;
   j["type_id"] = field.type.v;
   j["required"] = field.required;
   if (field.default_json.has_value()) j["default_json"] = field.default_json.value();
+  if (!field.constraints.empty()) {
+    j["constraints"] = nlohmann::json::array();
+    for (const auto& constraint : field.constraints) {
+      j["constraints"].push_back(to_json(constraint));
+    }
+  }
   return j;
 }
 
@@ -63,6 +124,12 @@ static nlohmann::json to_json(const RelationshipSpec& rel) {
   j["role"] = rel.role;
   j["cardinality"] = rel.cardinality;
   j["target"] = rel.target;
+  if (!rel.constraints.empty()) {
+    j["constraints"] = nlohmann::json::array();
+    for (const auto& constraint : rel.constraints) {
+      j["constraints"].push_back(to_json(constraint));
+    }
+  }
   return j;
 }
 
@@ -172,13 +239,170 @@ static nlohmann::json to_json(const TypeDefinition& def) {
   return j;
 }
 
-static FieldDefinition field_from_json(const nlohmann::json& j) {
+static bool has_field_constraint(const FieldDefinition& field, FieldConstraintKind kind) {
+  for (const auto& constraint : field.constraints) {
+    if (constraint.kind == kind) return true;
+  }
+  return false;
+}
+
+static void add_field_constraint(FieldDefinition& field, FieldConstraintKind kind) {
+  if (has_field_constraint(field, kind)) return;
+  field.constraints.push_back(FieldConstraint{ kind });
+}
+
+static std::optional<std::uint64_t> relationship_constraint_value(
+    const RelationshipSpec& rel,
+    RelationshipConstraintKind kind) {
+  for (const auto& constraint : rel.constraints) {
+    if (constraint.kind == kind) return constraint.value;
+  }
+  return std::nullopt;
+}
+
+static void add_relationship_constraint(RelationshipSpec& rel,
+                                        RelationshipConstraintKind kind,
+                                        std::uint64_t value) {
+  if (relationship_constraint_value(rel, kind).has_value()) return;
+  rel.constraints.push_back(RelationshipConstraint{ kind, value });
+}
+
+static void sort_field_constraints(std::vector<FieldConstraint>* constraints) {
+  std::sort(constraints->begin(), constraints->end(),
+            [](const FieldConstraint& lhs, const FieldConstraint& rhs) {
+              return static_cast<int>(lhs.kind) < static_cast<int>(rhs.kind);
+            });
+}
+
+static void sort_relationship_constraints(std::vector<RelationshipConstraint>* constraints) {
+  std::sort(constraints->begin(), constraints->end(),
+            [](const RelationshipConstraint& lhs, const RelationshipConstraint& rhs) {
+              if (lhs.kind != rhs.kind) {
+                return static_cast<int>(lhs.kind) < static_cast<int>(rhs.kind);
+              }
+              return lhs.value < rhs.value;
+            });
+}
+
+static referee::Result<void> normalize_field_constraints(FieldDefinition* field) {
+  if (field->required) add_field_constraint(*field, FieldConstraintKind::Required);
+
+  bool seen_required = false;
+  bool seen_non_empty = false;
+  for (const auto& constraint : field->constraints) {
+    if (constraint.kind == FieldConstraintKind::Required) {
+      if (seen_required) {
+        return referee::Result<void>::err("field has duplicate required constraint");
+      }
+      seen_required = true;
+      field->required = true;
+      continue;
+    }
+    if (constraint.kind == FieldConstraintKind::NonEmpty) {
+      if (seen_non_empty) {
+        return referee::Result<void>::err("field has duplicate non_empty constraint");
+      }
+      seen_non_empty = true;
+    }
+  }
+
+  sort_field_constraints(&field->constraints);
+  return referee::Result<void>::ok();
+}
+
+static referee::Result<void> normalize_relationship_constraints(RelationshipSpec* rel) {
+  if (rel->cardinality == "one") {
+    add_relationship_constraint(*rel, RelationshipConstraintKind::MinOccurs, 1);
+    add_relationship_constraint(*rel, RelationshipConstraintKind::MaxOccurs, 1);
+  } else if (rel->cardinality == "many") {
+    add_relationship_constraint(*rel, RelationshipConstraintKind::MinOccurs, 0);
+  } else if (!rel->cardinality.empty()) {
+    return referee::Result<void>::err("relationship has unsupported cardinality");
+  }
+
+  bool seen_min = false;
+  bool seen_max = false;
+  std::optional<std::uint64_t> min_occurs;
+  std::optional<std::uint64_t> max_occurs;
+  for (const auto& constraint : rel->constraints) {
+    if (constraint.kind == RelationshipConstraintKind::MinOccurs) {
+      if (seen_min) {
+        return referee::Result<void>::err("relationship has duplicate min_occurs constraint");
+      }
+      seen_min = true;
+      min_occurs = constraint.value;
+      continue;
+    }
+    if (constraint.kind == RelationshipConstraintKind::MaxOccurs) {
+      if (seen_max) {
+        return referee::Result<void>::err("relationship has duplicate max_occurs constraint");
+      }
+      seen_max = true;
+      max_occurs = constraint.value;
+    }
+  }
+
+  if (min_occurs.has_value() && max_occurs.has_value() && *min_occurs > *max_occurs) {
+    return referee::Result<void>::err("relationship min_occurs exceeds max_occurs");
+  }
+  if (rel->cardinality == "one") {
+    if (!min_occurs.has_value() || !max_occurs.has_value()
+        || *min_occurs != 1 || *max_occurs != 1) {
+      return referee::Result<void>::err("relationship cardinality 'one' requires exactly one");
+    }
+  }
+
+  sort_relationship_constraints(&rel->constraints);
+  return referee::Result<void>::ok();
+}
+
+static referee::Result<FieldConstraint> field_constraint_from_json(const nlohmann::json& j) {
+  auto kind_text = j.is_string() ? j.get<std::string>() : j.value("kind", "");
+  auto kindR = field_constraint_kind_from_string(kind_text);
+  if (!kindR) {
+    return referee::Result<FieldConstraint>::err("invalid field constraint kind: " + kind_text);
+  }
+  return referee::Result<FieldConstraint>::ok(FieldConstraint{ kindR.value.value() });
+}
+
+static referee::Result<RelationshipConstraint> relationship_constraint_from_json(
+    const nlohmann::json& j) {
+  if (!j.is_object()) {
+    return referee::Result<RelationshipConstraint>::err(
+        "relationship constraint must be an object");
+  }
+  auto kind_text = j.value("kind", "");
+  auto kindR = relationship_constraint_kind_from_string(kind_text);
+  if (!kindR) {
+    return referee::Result<RelationshipConstraint>::err(
+        "invalid relationship constraint kind: " + kind_text);
+  }
+  if (!j.contains("value")) {
+    return referee::Result<RelationshipConstraint>::err(
+        "relationship constraint missing value");
+  }
+  RelationshipConstraint constraint{};
+  constraint.kind = kindR.value.value();
+  constraint.value = j.at("value").get<std::uint64_t>();
+  return referee::Result<RelationshipConstraint>::ok(std::move(constraint));
+}
+
+static referee::Result<FieldDefinition> field_from_json(const nlohmann::json& j) {
   FieldDefinition f{};
   f.name = j.value("name", "");
   f.type = referee::TypeID{j.value("type_id", 0ULL)};
   f.required = j.value("required", false);
   if (j.contains("default_json")) f.default_json = j.at("default_json").get<std::string>();
-  return f;
+  if (j.contains("constraints")) {
+    for (const auto& item : j.at("constraints")) {
+      auto constraintR = field_constraint_from_json(item);
+      if (!constraintR) return referee::Result<FieldDefinition>::err(constraintR.error->message);
+      f.constraints.push_back(constraintR.value.value());
+    }
+  }
+  auto normalizeR = normalize_field_constraints(&f);
+  if (!normalizeR) return referee::Result<FieldDefinition>::err(normalizeR.error->message);
+  return referee::Result<FieldDefinition>::ok(std::move(f));
 }
 
 static ParameterDefinition param_from_json(const nlohmann::json& j) {
@@ -219,12 +443,21 @@ static OperationDefinition operation_from_json(const nlohmann::json& j) {
   return op;
 }
 
-static RelationshipSpec relationship_from_json(const nlohmann::json& j) {
+static referee::Result<RelationshipSpec> relationship_from_json(const nlohmann::json& j) {
   RelationshipSpec rel{};
   rel.role = j.value("role", "");
   rel.cardinality = j.value("cardinality", "");
   rel.target = j.value("target", "");
-  return rel;
+  if (j.contains("constraints")) {
+    for (const auto& item : j.at("constraints")) {
+      auto constraintR = relationship_constraint_from_json(item);
+      if (!constraintR) return referee::Result<RelationshipSpec>::err(constraintR.error->message);
+      rel.constraints.push_back(constraintR.value.value());
+    }
+  }
+  auto normalizeR = normalize_relationship_constraints(&rel);
+  if (!normalizeR) return referee::Result<RelationshipSpec>::err(normalizeR.error->message);
+  return referee::Result<RelationshipSpec>::ok(std::move(rel));
 }
 
 static EnumValueDefinition enum_value_from_json(const nlohmann::json& j) {
@@ -269,7 +502,27 @@ static referee::Result<GenericArg> generic_arg_from_json(const nlohmann::json& j
   return referee::Result<GenericArg>::ok(std::move(arg));
 }
 
-static TypeDefinition definition_from_json(const nlohmann::json& j) {
+static referee::Result<TypeDefinition> normalize_definition(TypeDefinition def) {
+  for (auto& field : def.fields) {
+    auto normalizeR = normalize_field_constraints(&field);
+    if (!normalizeR) {
+      return referee::Result<TypeDefinition>::err(
+          "field '" + field.name + "': " + normalizeR.error->message);
+    }
+  }
+
+  for (auto& rel : def.relationships) {
+    auto normalizeR = normalize_relationship_constraints(&rel);
+    if (!normalizeR) {
+      return referee::Result<TypeDefinition>::err(
+          "relationship '" + rel.role + "': " + normalizeR.error->message);
+    }
+  }
+
+  return referee::Result<TypeDefinition>::ok(std::move(def));
+}
+
+static referee::Result<TypeDefinition> definition_from_json(const nlohmann::json& j) {
   TypeDefinition def{};
   def.type_id = referee::TypeID{j.value("type_id", 0ULL)};
   def.name = j.value("name", "");
@@ -294,7 +547,11 @@ static TypeDefinition definition_from_json(const nlohmann::json& j) {
   }
 
   if (j.contains("fields")) {
-    for (const auto& item : j.at("fields")) def.fields.push_back(field_from_json(item));
+    for (const auto& item : j.at("fields")) {
+      auto fieldR = field_from_json(item);
+      if (!fieldR) return referee::Result<TypeDefinition>::err(fieldR.error->message);
+      def.fields.push_back(fieldR.value.value());
+    }
   }
   if (j.contains("enum_value_type")) {
     def.enum_value_type = referee::TypeID{j.at("enum_value_type").get<std::uint64_t>()};
@@ -321,10 +578,14 @@ static TypeDefinition definition_from_json(const nlohmann::json& j) {
     for (const auto& item : j.at("operations")) def.operations.push_back(operation_from_json(item));
   }
   if (j.contains("relationships")) {
-    for (const auto& item : j.at("relationships")) def.relationships.push_back(relationship_from_json(item));
+    for (const auto& item : j.at("relationships")) {
+      auto relR = relationship_from_json(item);
+      if (!relR) return referee::Result<TypeDefinition>::err(relR.error->message);
+      def.relationships.push_back(relR.value.value());
+    }
   }
 
-  return def;
+  return normalize_definition(std::move(def));
 }
 
 static referee::Result<std::string> canonicalize_value_json(const std::string& value_json) {
@@ -420,7 +681,7 @@ static nlohmann::json generic_instance_to_json(const GenericInstance& instance,
 static referee::Result<TypeDefinition> decode_definition(const referee::Bytes& payload) {
   try {
     nlohmann::json j = nlohmann::json::from_cbor(payload);
-    return referee::Result<TypeDefinition>::ok(definition_from_json(j));
+    return definition_from_json(j);
   } catch (const std::exception& ex) {
     return referee::Result<TypeDefinition>::err(ex.what());
   }
@@ -590,14 +851,18 @@ referee::Result<DefinitionRecord> SchemaRegistry::register_definition(const Type
   if (def.name.empty()) return referee::Result<DefinitionRecord>::err("definition name is empty");
   if (def.type_id.v == 0) return referee::Result<DefinitionRecord>::err("type_id is zero");
 
-  auto payload = encode_definition(def);
+  auto normalizedR = normalize_definition(def);
+  if (!normalizedR) return referee::Result<DefinitionRecord>::err(normalizedR.error->message);
+
+  const auto& normalized = normalizedR.value.value();
+  auto payload = encode_definition(normalized);
   auto definition_id = referee::ObjectID::random();
   auto createR = store_.create_object_with_id(definition_id, kTypeDefinitionType, definition_id,
                                               payload);
   if (!createR) return referee::Result<DefinitionRecord>::err(createR.error->message);
 
-  if (def.supersedes_definition_id.has_value()) {
-    auto priorR = store_.get_latest(def.supersedes_definition_id.value());
+  if (normalized.supersedes_definition_id.has_value()) {
+    auto priorR = store_.get_latest(normalized.supersedes_definition_id.value());
     if (!priorR) return referee::Result<DefinitionRecord>::err(priorR.error->message);
     if (!priorR.value->has_value()) {
       return referee::Result<DefinitionRecord>::err("supersedes definition not found");
@@ -605,13 +870,13 @@ referee::Result<DefinitionRecord> SchemaRegistry::register_definition(const Type
     auto edgeR = store_.add_edge(createR.value->ref, priorR.value->value().ref,
                                  "supersedes", "definition", {});
     if (!edgeR) return referee::Result<DefinitionRecord>::err(edgeR.error->message);
-    if (def.migration_hook.has_value()) {
-      auto hookProps = referee::cbor_from_json_kv("hook", def.migration_hook.value());
+    if (normalized.migration_hook.has_value()) {
+      auto hookProps = referee::cbor_from_json_kv("hook", normalized.migration_hook.value());
       auto hookR = store_.add_edge(createR.value->ref, priorR.value->value().ref,
                                    "migration_hook", "definition", hookProps);
       if (!hookR) return referee::Result<DefinitionRecord>::err(hookR.error->message);
     }
-  } else if (def.migration_hook.has_value()) {
+  } else if (normalized.migration_hook.has_value()) {
     return referee::Result<DefinitionRecord>::err("migration_hook requires supersedes_definition_id");
   }
 
@@ -623,13 +888,17 @@ referee::Result<DefinitionRecord> SchemaRegistry::register_definition_with_id(
   if (def.name.empty()) return referee::Result<DefinitionRecord>::err("definition name is empty");
   if (def.type_id.v == 0) return referee::Result<DefinitionRecord>::err("type_id is zero");
 
-  auto payload = encode_definition(def);
+  auto normalizedR = normalize_definition(def);
+  if (!normalizedR) return referee::Result<DefinitionRecord>::err(normalizedR.error->message);
+
+  const auto& normalized = normalizedR.value.value();
+  auto payload = encode_definition(normalized);
   auto createR = store_.create_object_with_id(definition_id, kTypeDefinitionType, definition_id,
                                               payload);
   if (!createR) return referee::Result<DefinitionRecord>::err(createR.error->message);
 
-  if (def.supersedes_definition_id.has_value()) {
-    auto priorR = store_.get_latest(def.supersedes_definition_id.value());
+  if (normalized.supersedes_definition_id.has_value()) {
+    auto priorR = store_.get_latest(normalized.supersedes_definition_id.value());
     if (!priorR) return referee::Result<DefinitionRecord>::err(priorR.error->message);
     if (!priorR.value->has_value()) {
       return referee::Result<DefinitionRecord>::err("supersedes definition not found");
@@ -637,13 +906,13 @@ referee::Result<DefinitionRecord> SchemaRegistry::register_definition_with_id(
     auto edgeR = store_.add_edge(createR.value->ref, priorR.value->value().ref,
                                  "supersedes", "definition", {});
     if (!edgeR) return referee::Result<DefinitionRecord>::err(edgeR.error->message);
-    if (def.migration_hook.has_value()) {
-      auto hookProps = referee::cbor_from_json_kv("hook", def.migration_hook.value());
+    if (normalized.migration_hook.has_value()) {
+      auto hookProps = referee::cbor_from_json_kv("hook", normalized.migration_hook.value());
       auto hookR = store_.add_edge(createR.value->ref, priorR.value->value().ref,
                                    "migration_hook", "definition", hookProps);
       if (!hookR) return referee::Result<DefinitionRecord>::err(hookR.error->message);
     }
-  } else if (def.migration_hook.has_value()) {
+  } else if (normalized.migration_hook.has_value()) {
     return referee::Result<DefinitionRecord>::err("migration_hook requires supersedes_definition_id");
   }
 

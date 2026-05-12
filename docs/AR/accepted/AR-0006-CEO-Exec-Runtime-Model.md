@@ -1,11 +1,11 @@
 ---
 GitHub-Issue: #70
-ER-Dependencies: ER-0005, ER-0006, ER-0007
+ER-Dependencies: ER-0005, ER-0006, ER-0007, ER-0016, ER-0017, ER-0043, ER-0044, ER-0045, ER-0045.1, ER-0045.2, ER-0045.3, ER-0045.4, ER-0051, ER-0057
 ---
 
 # AR-0006 — CEO/Exec Runtime Model (Recommendation)
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-02-16
 - Owners: Mike
 

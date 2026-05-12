@@ -271,6 +271,103 @@ START_TEST(test_schema_registry_inheritance_metadata_roundtrip)
 }
 END_TEST
 
+START_TEST(test_schema_registry_constraint_metadata_roundtrip)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+
+  TypeDefinition def{};
+  def.type_id = TypeID{0xEBULL};
+  def.name = "ConstrainedWidget";
+  def.namespace_name = "Demo";
+  def.version = 1;
+
+  FieldDefinition field{ "title", TypeID{0x1001ULL}, false, std::nullopt };
+  field.constraints.push_back(FieldConstraint{ FieldConstraintKind::NonEmpty });
+  field.constraints.push_back(FieldConstraint{ FieldConstraintKind::Required });
+  def.fields.push_back(field);
+
+  RelationshipSpec rel{};
+  rel.role = "child";
+  rel.cardinality = "one";
+  rel.target = "Demo::ChildWidget";
+  rel.constraints.push_back(RelationshipConstraint{ RelationshipConstraintKind::MaxOccurs, 1 });
+  rel.constraints.push_back(RelationshipConstraint{ RelationshipConstraintKind::MinOccurs, 1 });
+  def.relationships.push_back(rel);
+
+  auto reg = registry.register_definition(def);
+  ck_assert_msg(reg, "register constrained definition failed: %s", result_message(reg));
+
+  auto byType = registry.get_definition_by_type(def.type_id);
+  ck_assert_msg(byType, "get constrained definition failed: %s", result_message(byType));
+  ck_assert_msg(byType.value->has_value(), "expected constrained definition");
+
+  const auto& stored_field = byType.value->value().definition.fields.at(0);
+  ck_assert_msg(stored_field.required, "required field flag should be normalized");
+  ck_assert_int_eq((int)stored_field.constraints.size(), 2);
+  ck_assert_int_eq((int)stored_field.constraints[0].kind, (int)FieldConstraintKind::Required);
+  ck_assert_int_eq((int)stored_field.constraints[1].kind, (int)FieldConstraintKind::NonEmpty);
+
+  const auto& stored_rel = byType.value->value().definition.relationships.at(0);
+  ck_assert_int_eq((int)stored_rel.constraints.size(), 2);
+  ck_assert_int_eq((int)stored_rel.constraints[0].kind,
+                   (int)RelationshipConstraintKind::MinOccurs);
+  ck_assert_uint_eq(stored_rel.constraints[0].value, 1);
+  ck_assert_int_eq((int)stored_rel.constraints[1].kind,
+                   (int)RelationshipConstraintKind::MaxOccurs);
+  ck_assert_uint_eq(stored_rel.constraints[1].value, 1);
+
+  auto legacy = make_definition(TypeID{0xECULL}, "LegacyConstraintWidget", "Demo");
+  auto legacy_reg = registry.register_definition(legacy);
+  ck_assert_msg(legacy_reg, "register legacy definition failed: %s", result_message(legacy_reg));
+
+  auto legacy_back = registry.get_definition_by_type(legacy.type_id);
+  ck_assert_msg(legacy_back, "get legacy definition failed: %s", result_message(legacy_back));
+  ck_assert_msg(legacy_back.value->has_value(), "expected legacy definition");
+  ck_assert_int_eq((int)legacy_back.value->value().definition.fields[0].constraints.size(), 1);
+  ck_assert_int_eq((int)legacy_back.value->value().definition.fields[0].constraints[0].kind,
+                   (int)FieldConstraintKind::Required);
+  ck_assert_int_eq((int)legacy_back.value->value().definition.relationships[0].constraints.size(), 2);
+  ck_assert_int_eq((int)legacy_back.value->value().definition.relationships[0].constraints[0].kind,
+                   (int)RelationshipConstraintKind::MinOccurs);
+  ck_assert_int_eq((int)legacy_back.value->value().definition.relationships[0].constraints[1].kind,
+                   (int)RelationshipConstraintKind::MaxOccurs);
+}
+END_TEST
+
+START_TEST(test_schema_registry_rejects_invalid_relationship_constraint_bounds)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+
+  TypeDefinition def{};
+  def.type_id = TypeID{0xEDULL};
+  def.name = "InvalidRelationshipWidget";
+  def.namespace_name = "Demo";
+  def.version = 1;
+
+  RelationshipSpec rel{};
+  rel.role = "child";
+  rel.cardinality = "many";
+  rel.target = "Demo::ChildWidget";
+  rel.constraints.push_back(RelationshipConstraint{ RelationshipConstraintKind::MinOccurs, 2 });
+  rel.constraints.push_back(RelationshipConstraint{ RelationshipConstraintKind::MaxOccurs, 1 });
+  def.relationships.push_back(rel);
+
+  auto reg = registry.register_definition(def);
+  ck_assert_msg(!reg, "expected invalid relationship constraints to fail");
+  ck_assert_msg(reg.error.has_value(), "expected invalid relationship error");
+  ck_assert_msg(reg.error->message.find("min_occurs exceeds max_occurs") != std::string::npos,
+                "unexpected error: %s", reg.error->message.c_str());
+}
+END_TEST
+
 START_TEST(test_schema_registry_legacy_relationship_inheritance_fallback)
 {
   SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
@@ -570,6 +667,8 @@ Suite* refract_registry_suite(void) {
   tcase_add_test(tc, test_schema_registry_structured_metadata_roundtrip);
   tcase_add_test(tc, test_schema_registry_collection_metadata_roundtrip);
   tcase_add_test(tc, test_schema_registry_inheritance_metadata_roundtrip);
+  tcase_add_test(tc, test_schema_registry_constraint_metadata_roundtrip);
+  tcase_add_test(tc, test_schema_registry_rejects_invalid_relationship_constraint_bounds);
   tcase_add_test(tc, test_schema_registry_legacy_relationship_inheritance_fallback);
   tcase_add_test(tc, test_generic_instance_type_id_deterministic);
   tcase_add_test(tc, test_generic_instance_registry_roundtrip);

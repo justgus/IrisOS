@@ -67,7 +67,8 @@ Proposed ARs in `docs/AR/proposed/` are active recommendation drafts under revie
 
 ## Notes
 
-- ARs are the architectural system of record for design direction.
+- ARs are the architectural system of record for design direction and the parent index for the ERs
+  and DRs that realize that direction.
 - Proposed ARs are tracked in `docs/AR/proposed/` until accepted.
 - ERs are the implementation system of record for planned work.
 - DRs are the defect system of record for bugs and regressions.

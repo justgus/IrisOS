@@ -1,10 +1,12 @@
 ---
 GitHub-Issue: #80
+ER-Dependencies: ER-0028, ER-0029, ER-0030, ER-0042, ER-0044, ER-0045.1, ER-0047.1, ER-0047.2, ER-0047.3, ER-0047.4, ER-0052
+DR-Dependencies: DR-0001
 ---
 
 # AR-0016 — Operations and Dispatch Model
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-02-21
 - Owners: Mike
 

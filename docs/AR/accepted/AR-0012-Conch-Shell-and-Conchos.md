@@ -1,6 +1,7 @@
 ---
 GitHub-Issue: #76
-ER-Dependencies: ER-0008, ER-0011
+ER-Dependencies: ER-0008, ER-0011, ER-0012, ER-0013, ER-0014, ER-0021, ER-0030, ER-0047, ER-0047.1, ER-0047.2, ER-0047.3, ER-0047.4, ER-0052, ER-0054
+DR-Dependencies: DR-0001
 ---
 
 # AR-0012 — Conch Shell and Concho Views (Recommendation)

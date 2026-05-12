@@ -32,6 +32,7 @@ The checked-in template is a source document and should remain `GitHub-Issue: N/
 Each DR should include:
 
 - `GitHub-Issue: N/A` or `GitHub-Issue: #<number>` in front matter
+- `AR-Dependencies: AR-XXXX` in front matter when the defect is tied to approved architecture
 - `DR ID`
 - `Title`
 - `Status`
@@ -73,6 +74,8 @@ Keep `docs/DR/DR-Status.md` aligned with the current document status.
 - Capture available evidence, even if it is only shell output or a short log excerpt.
 - Keep the proposed fix narrow and note alternatives only when they affect triage.
 - Include a verification plan that checks both the original failure and regression risk.
+- Tie the DR to the AR whose expected behavior exposed the defect whenever that relationship is
+  known.
 
 ## Workflow
 
@@ -107,4 +110,5 @@ presentation is needed.
 
 - Use a DR when the main job is to describe and fix a defect.
 - Link an ER only when the defect fix grows into a larger implementation effort.
-- Link an AR only when the defect reveals an architectural gap or forces a design decision.
+- Link a DR to the AR whose implemented behavior is defective. Link an AR as new architecture only
+  when the defect reveals an architectural gap or forces a design decision.

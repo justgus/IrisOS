@@ -1,10 +1,11 @@
 ---
 GitHub-Issue: #TBD
+ER-Dependencies: ER-0039, ER-0040, ER-0041
 ---
 
 # AR-0018 — Generic Type System
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-02-27
 - Owners: Mike
 

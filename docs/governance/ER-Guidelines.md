@@ -32,6 +32,7 @@ The checked-in template is a source document and should remain `GitHub-Issue: N/
 Each ER should include:
 
 - `GitHub-Issue: N/A` or `GitHub-Issue: #<number>` in front matter
+- `AR-Dependencies: AR-XXXX` in front matter when the ER implements approved architecture
 - `ER ID`
 - `Title`
 - `Status`
@@ -71,6 +72,7 @@ Keep `docs/ER/ER-Status.md` aligned with the current document status.
 - Keep goals, non-goals, and scope separate.
 - Write acceptance criteria that can actually be checked.
 - List real dependencies, including prerequisite ARs or ERs.
+- Tie each implementation ER to the AR that spawned it unless the work is explicitly standalone.
 - Add implementation notes only when they reduce ambiguity for the implementer.
 - Include a verification plan with exact tests and manual checks where practical.
 
@@ -103,6 +105,7 @@ The sync script maps `Draft` and `Proposed` to `status:proposed`, `Approved` to
 
 ## Relationship To ARs And DRs
 
-- Link ERs to the ARs they implement when applicable.
+- Link ERs to the ARs they implement. The AR should also list the ER in `ER-Dependencies` so the
+  parent AR can be marked `Implemented` or `Done` when all child work is complete.
 - Use a DR instead of an ER when the primary purpose is defect reporting, reproduction, and fix
   tracking for a bug or regression.

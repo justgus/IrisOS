@@ -1,5 +1,6 @@
 ---
 GitHub-Issue: #81
+ER-Dependencies: ER-0031, ER-0032, ER-0033, ER-0039
 ---
 
 # AR-0017 — Collections, Math Types, and Units

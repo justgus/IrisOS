@@ -48,6 +48,8 @@ constexpr referee::TypeID kTypeFieldDefinition{0x5246524346000001ULL};
 constexpr referee::TypeID kTypeOperationDefinition{0x5246524346000002ULL};
 constexpr referee::TypeID kTypeSignatureDefinition{0x5246524346000003ULL};
 constexpr referee::TypeID kTypeRelationshipSpec{0x5246524346000004ULL};
+constexpr referee::TypeID kTypeFieldConstraint{0x5246524346000005ULL};
+constexpr referee::TypeID kTypeRelationshipConstraint{0x5246524346000006ULL};
 constexpr referee::TypeID kTypeGenericInstance{0x5246524347000001ULL};
 constexpr referee::TypeID kTypeMigrationRecord{0x524652434D000001ULL};
 
@@ -457,6 +459,7 @@ TypeDefinition make_field_definition() {
   def.fields.push_back(FieldDefinition{ "name", kTypeString, true, std::nullopt });
   def.fields.push_back(FieldDefinition{ "type_id", kTypeU64, true, std::nullopt });
   def.fields.push_back(FieldDefinition{ "required", kTypeBool, false, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "constraints", kTypeBytes, false, std::nullopt });
   return def;
 }
 
@@ -489,6 +492,31 @@ TypeDefinition make_relationship_spec() {
   def.name = "RelationshipSpec";
   def.namespace_name = "Refract";
   def.version = 1;
+  def.fields.push_back(FieldDefinition{ "role", kTypeString, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "cardinality", kTypeString, false, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "target", kTypeString, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "constraints", kTypeBytes, false, std::nullopt });
+  return def;
+}
+
+TypeDefinition make_field_constraint() {
+  TypeDefinition def{};
+  def.type_id = kTypeFieldConstraint;
+  def.name = "FieldConstraint";
+  def.namespace_name = "Refract";
+  def.version = 1;
+  def.fields.push_back(FieldDefinition{ "kind", kTypeString, true, std::nullopt });
+  return def;
+}
+
+TypeDefinition make_relationship_constraint() {
+  TypeDefinition def{};
+  def.type_id = kTypeRelationshipConstraint;
+  def.name = "RelationshipConstraint";
+  def.namespace_name = "Refract";
+  def.version = 1;
+  def.fields.push_back(FieldDefinition{ "kind", kTypeString, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "value", kTypeU64, true, std::nullopt });
   return def;
 }
 
@@ -905,6 +933,8 @@ std::vector<TypeDefinition> core_schema_definitions() {
   defs.push_back(make_signature_definition());
   defs.push_back(make_operation_definition());
   defs.push_back(make_relationship_spec());
+  defs.push_back(make_field_constraint());
+  defs.push_back(make_relationship_constraint());
   defs.push_back(make_generic_instance_definition());
   defs.push_back(make_migration_record());
   defs.push_back(make_referee_object());

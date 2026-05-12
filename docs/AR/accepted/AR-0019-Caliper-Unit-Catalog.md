@@ -1,5 +1,6 @@
 ---
 GitHub-Issue: #TBD
+ER-Dependencies: ER-0033
 ---
 
 # AR-0019 — Caliper Unit Catalog

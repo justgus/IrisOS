@@ -1,10 +1,11 @@
 ---
 GitHub-Issue: #78
+ER-Dependencies: ER-0021, ER-0037, ER-0047, ER-0053
 ---
 
 # AR-0014 — Conch Schema and Object Authoring
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-02-19
 - Owners: Mike
 

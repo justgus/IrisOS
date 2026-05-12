@@ -1,11 +1,11 @@
 ---
 GitHub-Issue: #73
-ER-Dependencies: ER-0002, ER-0003, ER-0004
+ER-Dependencies: ER-0002, ER-0003, ER-0004, ER-0018, ER-0019, ER-0020, ER-0034, ER-0035, ER-0036, ER-0048, ER-0049, ER-0050
 ---
 
 # AR-0009 — Referee Object Store (Recommendation)
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-02-16
 - Owners: Mike
 

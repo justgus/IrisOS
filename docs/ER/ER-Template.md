@@ -1,5 +1,6 @@
 ---
 GitHub-Issue: N/A
+AR-Dependencies: AR-XXXX
 ---
 
 # ER Template — Enhancement Request / Epic / Sprint
