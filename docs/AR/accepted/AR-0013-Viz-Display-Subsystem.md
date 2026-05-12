@@ -1,11 +1,11 @@
 ---
 GitHub-Issue: #77
-ER-Dependencies: ER-0010, ER-0011
+ER-Dependencies: ER-0010, ER-0011, ER-0012, ER-0013, ER-0014, ER-0051
 ---
 
 # AR-0013 — Viz Display Subsystem (Recommendation)
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-02-16
 - Owners: Mike
 

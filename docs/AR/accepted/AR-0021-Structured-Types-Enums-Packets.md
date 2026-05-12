@@ -1,10 +1,11 @@
 ---
 GitHub-Issue: #TBD
+ER-Dependencies: ER-0038, ER-0039, ER-0046, ER-0053
 ---
 
 # AR-0021 — Structured Types, Enums, and Packets
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-02-27
 - Owners: Mike
 

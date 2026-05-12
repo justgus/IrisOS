@@ -1,10 +1,11 @@
 ---
 GitHub-Issue: #66
+ER-Dependencies: ER-0002, ER-0003, ER-0004
 ---
 
 # AR-0002 — Object Identity and Versioning Semantics
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-02-14
 - Owners: Mike
 

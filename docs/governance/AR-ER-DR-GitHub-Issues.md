@@ -16,6 +16,9 @@ each document links back to its Issue.
 - ER (Engineering Request) -> Issue label `er`
 - DR (Defect Report) -> Issue label `dr`
 
+ERs and DRs should point back to the AR that spawned them through `AR-Dependencies`. ARs should
+list their child implementation and defect work through `ER-Dependencies` and `DR-Dependencies`.
+
 Status is tracked by labels:
 
 - `status:proposed`
@@ -37,6 +40,8 @@ Status is tracked by labels:
 5. Add the document path, or all related document paths for grouped work, back into the Issue body.
 6. When a PR implements the work, reference the Issue with `Fixes #123`.
 7. On acceptance, update labels and move ARs from `docs/AR/proposed/` to `docs/AR/accepted/`.
+8. When all child ERs and DRs are complete, update the AR to `Implemented` or `Done` and move the
+   Issue to `status:done`.
 
 ## Automation (Optional)
 
@@ -53,5 +58,6 @@ When multiple docs share one Issue, the sync script updates that Issue from the 
 passed on the command line. The most recently synced document therefore controls the Issue title/body,
 so grouped Issues should be reviewed manually after sync.
 
-When `ER-Dependencies` is present in an AR, the sync script will close the AR Issue automatically
-once all referenced ERs are marked Verified.
+When `ER-Dependencies` or `DR-Dependencies` is present in an AR, the sync script will close the AR
+Issue automatically once the AR is marked `Implemented` or `Done` and all referenced ERs/DRs are
+marked `Verified`.

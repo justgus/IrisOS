@@ -1,5 +1,6 @@
 ---
 GitHub-Issue: N/A
+AR-Dependencies: AR-XXXX
 ---
 
 # DR Template — Discrepancy Report / Bug / Issue / Task

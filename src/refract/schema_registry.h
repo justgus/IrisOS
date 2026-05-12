@@ -12,11 +12,21 @@
 
 namespace iris::refract {
 
+enum class FieldConstraintKind {
+  Required,
+  NonEmpty
+};
+
+struct FieldConstraint {
+  FieldConstraintKind kind{FieldConstraintKind::Required};
+};
+
 struct FieldDefinition {
   std::string name;
   referee::TypeID type{};
   bool required{false};
   std::optional<std::string> default_json;
+  std::vector<FieldConstraint> constraints{};
 };
 
 struct ParameterDefinition {
@@ -42,10 +52,21 @@ struct OperationDefinition {
   std::vector<std::string> required_capabilities{};
 };
 
+enum class RelationshipConstraintKind {
+  MinOccurs,
+  MaxOccurs
+};
+
+struct RelationshipConstraint {
+  RelationshipConstraintKind kind{RelationshipConstraintKind::MinOccurs};
+  std::uint64_t value{0};
+};
+
 struct RelationshipSpec {
   std::string role;
   std::string cardinality;
   std::string target;
+  std::vector<RelationshipConstraint> constraints{};
 };
 
 struct EnumValueDefinition {

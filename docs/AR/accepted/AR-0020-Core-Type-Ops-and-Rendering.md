@@ -1,10 +1,11 @@
 ---
 GitHub-Issue: #TBD
+ER-Dependencies: ER-0042
 ---
 
 # AR-0020 — Core Type Operations and Rendering
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-02-27
 - Owners: Mike
 

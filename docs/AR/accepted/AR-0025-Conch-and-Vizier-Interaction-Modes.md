@@ -1,5 +1,6 @@
 ---
 GitHub-Issue: N/A
+ER-Dependencies: ER-0008, ER-0009, ER-0010, ER-0011, ER-0052, ER-0054
 ---
 
 # AR-0025 — Conch And Vizier Interaction Modes

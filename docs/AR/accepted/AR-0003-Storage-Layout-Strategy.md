@@ -1,11 +1,11 @@
 ---
 GitHub-Issue: #67
-ER-Dependencies: ER-0018, ER-0019, ER-0020
+ER-Dependencies: ER-0018, ER-0019, ER-0020, ER-0034, ER-0035, ER-0036, ER-0048, ER-0049, ER-0050
 ---
 
 # AR-0003 — Storage Layout Strategy
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-02-16
 - Owners: Mike
 

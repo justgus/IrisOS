@@ -1,6 +1,6 @@
 ---
 GitHub-Issue: #75
-ER-Dependencies: ER-0009, ER-0011
+ER-Dependencies: ER-0009, ER-0011, ER-0012, ER-0013, ER-0014, ER-0052
 ---
 
 # AR-0011 — Vizier Interpretation Layer (Recommendation)

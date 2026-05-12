@@ -1112,6 +1112,45 @@ referee::Result<void> parse_new_expr(const std::string& expr,
   return referee::Result<void>::ok();
 }
 
+bool field_has_constraint(const iris::refract::FieldDefinition& field,
+                          iris::refract::FieldConstraintKind kind) {
+  for (const auto& constraint : field.constraints) {
+    if (constraint.kind == kind) return true;
+  }
+  return false;
+}
+
+bool json_value_is_empty(const nlohmann::json& value) {
+  if (value.is_string()) return value.get_ref<const std::string&>().empty();
+  if (value.is_array() || value.is_object()) return value.empty();
+  return false;
+}
+
+referee::Result<void> validate_payload_constraints(const iris::refract::TypeDefinition& def,
+                                                   const nlohmann::json& payload) {
+  if (!payload.is_object()) {
+    return referee::Result<void>::err("payload must be a JSON object");
+  }
+
+  for (const auto& field : def.fields) {
+    const bool required = field_has_constraint(field, iris::refract::FieldConstraintKind::Required);
+    auto it = payload.find(field.name);
+    bool present = it != payload.end() && !it->is_null();
+
+    if (required && !present) {
+      return referee::Result<void>::err("missing required field '" + field.name + "'");
+    }
+    if (!present) continue;
+
+    if (field_has_constraint(field, iris::refract::FieldConstraintKind::NonEmpty)
+        && json_value_is_empty(*it)) {
+      return referee::Result<void>::err("field '" + field.name + "' must be non-empty");
+    }
+  }
+
+  return referee::Result<void>::ok();
+}
+
 std::string type_display_name(const TypeSummary& summary) {
   if (summary.namespace_name.empty()) return summary.name;
   return summary.namespace_name + "::" + summary.name;
@@ -3686,6 +3725,48 @@ std::optional<iris::refract::FieldDefinition> parse_field_spec(
   return field;
 }
 
+std::optional<iris::refract::FieldConstraint> parse_field_constraint_json(
+    const nlohmann::json& item,
+    std::string* err_out) {
+  std::string kind = item.is_string() ? item.get<std::string>() : item.value("kind", "");
+  if (kind == "required") {
+    return iris::refract::FieldConstraint{ iris::refract::FieldConstraintKind::Required };
+  }
+  if (kind == "non_empty") {
+    return iris::refract::FieldConstraint{ iris::refract::FieldConstraintKind::NonEmpty };
+  }
+  if (err_out) *err_out = "unknown field constraint kind";
+  return std::nullopt;
+}
+
+std::optional<iris::refract::RelationshipConstraint> parse_relationship_constraint_json(
+    const nlohmann::json& item,
+    std::string* err_out) {
+  if (!item.is_object()) {
+    if (err_out) *err_out = "relationship constraint must be an object";
+    return std::nullopt;
+  }
+
+  std::string kind = item.value("kind", "");
+  if (!item.contains("value")) {
+    if (err_out) *err_out = "relationship constraint missing value";
+    return std::nullopt;
+  }
+
+  iris::refract::RelationshipConstraint constraint{};
+  if (kind == "min_occurs") {
+    constraint.kind = iris::refract::RelationshipConstraintKind::MinOccurs;
+  } else if (kind == "max_occurs") {
+    constraint.kind = iris::refract::RelationshipConstraintKind::MaxOccurs;
+  } else {
+    if (err_out) *err_out = "unknown relationship constraint kind";
+    return std::nullopt;
+  }
+
+  constraint.value = item.at("value").get<std::uint64_t>();
+  return constraint;
+}
+
 std::optional<iris::refract::TypeDefinition> parse_define_inline(
     SchemaRegistry& registry, const std::vector<std::string>& tokens, std::string* err_out) {
   if (tokens.size() < 5) {
@@ -3780,7 +3861,38 @@ std::optional<iris::refract::TypeDefinition> parse_define_json(
         field.name = field_name;
         field.type = type_summary->type_id;
         field.required = required;
+        if (item.contains("constraints")) {
+          for (const auto& constraint_item : item.at("constraints")) {
+            auto constraint = parse_field_constraint_json(constraint_item, err_out);
+            if (!constraint.has_value()) return std::nullopt;
+            field.constraints.push_back(constraint.value());
+          }
+        }
         def.fields.push_back(std::move(field));
+      }
+    }
+
+    if (j.contains("relationships")) {
+      for (const auto& item : j.at("relationships")) {
+        std::string role = item.value("role", "");
+        std::string cardinality = item.value("cardinality", "");
+        std::string target_name = item.value("target", "");
+        if (role.empty() || target_name.empty()) {
+          if (err_out) *err_out = "relationship missing role or target";
+          return std::nullopt;
+        }
+        iris::refract::RelationshipSpec rel;
+        rel.role = role;
+        rel.cardinality = cardinality;
+        rel.target = target_name;
+        if (item.contains("constraints")) {
+          for (const auto& constraint_item : item.at("constraints")) {
+            auto constraint = parse_relationship_constraint_json(constraint_item, err_out);
+            if (!constraint.has_value()) return std::nullopt;
+            rel.constraints.push_back(constraint.value());
+          }
+        }
+        def.relationships.push_back(std::move(rel));
       }
     }
 
@@ -3994,6 +4106,49 @@ void cmd_find_type(SchemaRegistry& registry, const std::string& name) {
             << std::dec << " def=" << match->definition_id.to_hex() << "\n";
 }
 
+std::string format_field_constraint(const iris::refract::FieldConstraint& constraint) {
+  switch (constraint.kind) {
+    case iris::refract::FieldConstraintKind::Required:
+      return "required";
+    case iris::refract::FieldConstraintKind::NonEmpty:
+      return "non_empty";
+  }
+  return "required";
+}
+
+std::string format_relationship_constraint(
+    const iris::refract::RelationshipConstraint& constraint) {
+  switch (constraint.kind) {
+    case iris::refract::RelationshipConstraintKind::MinOccurs:
+      return "min_occurs=" + std::to_string(constraint.value);
+    case iris::refract::RelationshipConstraintKind::MaxOccurs:
+      return "max_occurs=" + std::to_string(constraint.value);
+  }
+  return "min_occurs=0";
+}
+
+std::string format_field_constraints(const iris::refract::FieldDefinition& field) {
+  if (field.constraints.empty()) return "";
+  std::ostringstream os;
+  os << " constraints=";
+  for (size_t i = 0; i < field.constraints.size(); ++i) {
+    if (i > 0) os << ",";
+    os << format_field_constraint(field.constraints[i]);
+  }
+  return os.str();
+}
+
+std::string format_relationship_constraints(const iris::refract::RelationshipSpec& rel) {
+  if (rel.constraints.empty()) return "";
+  std::ostringstream os;
+  os << " constraints=";
+  for (size_t i = 0; i < rel.constraints.size(); ++i) {
+    if (i > 0) os << ",";
+    os << format_relationship_constraint(rel.constraints[i]);
+  }
+  return os.str();
+}
+
 void cmd_show_type(SchemaRegistry& registry, const std::string& name) {
   auto typesR = registry.list_types();
   if (!typesR) {
@@ -4070,12 +4225,23 @@ void cmd_show_type(SchemaRegistry& registry, const std::string& name) {
                 << std::dec << "\n";
     }
   }
+  if (!def.relationships.empty()) {
+    std::cout << "relationships\n";
+    for (const auto& rel : def.relationships) {
+      std::cout << "  role=" << rel.role;
+      if (!rel.cardinality.empty()) std::cout << " card=" << rel.cardinality;
+      if (!rel.target.empty()) std::cout << " target=" << rel.target;
+      std::cout << format_relationship_constraints(rel);
+      std::cout << "\n";
+    }
+  }
   if (!def.fields.empty()) {
     std::cout << "fields\n";
     for (const auto& field : def.fields) {
       std::cout << "  " << field.name << " type=0x" << std::hex << field.type.v << std::dec;
       if (field.required) std::cout << " required";
       if (field.default_json.has_value()) std::cout << " default=" << field.default_json.value();
+      std::cout << format_field_constraints(field);
       std::cout << "\n";
     }
   }
@@ -4907,6 +5073,15 @@ referee::Result<ObjectID> create_object(SchemaRegistry& registry, SqliteStore& s
   if (!type_summary.has_value()) {
     return referee::Result<ObjectID>::err(err);
   }
+
+  auto defR = registry.get_definition_by_id(type_summary->definition_id);
+  if (!defR) return referee::Result<ObjectID>::err(defR.error->message);
+  if (!defR.value->has_value()) {
+    return referee::Result<ObjectID>::err("definition not found");
+  }
+
+  auto validateR = validate_payload_constraints(defR.value->value().definition, payload);
+  if (!validateR) return referee::Result<ObjectID>::err(validateR.error->message);
 
   auto cbor = nlohmann::json::to_cbor(payload);
   auto createR = store.create_object(type_summary->type_id, type_summary->definition_id, cbor);

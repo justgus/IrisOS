@@ -531,6 +531,66 @@ START_TEST(test_conch_show_type_displays_inheritance_metadata)
 }
 END_TEST
 
+START_TEST(test_conch_constraint_metadata_display_and_validation)
+{
+  auto db_path = make_temp_path("/tmp/iris-conch-constraints-XXXXXX");
+
+  SqliteStore store(SqliteConfig{ .filename=db_path, .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+  auto boot = bootstrap_core_schema(registry);
+  ck_assert_msg(boot, "bootstrap failed: %s", result_message(boot));
+
+  TypeDefinition def{};
+  def.type_id = TypeID{0xE550004ULL};
+  def.name = "ConstraintWidget";
+  def.namespace_name = "ConchTest";
+  def.version = 1;
+
+  FieldDefinition title{ "title", TypeID{0x1001ULL}, false, std::nullopt };
+  title.constraints.push_back(FieldConstraint{ FieldConstraintKind::Required });
+  title.constraints.push_back(FieldConstraint{ FieldConstraintKind::NonEmpty });
+  def.fields.push_back(title);
+
+  RelationshipSpec rel{};
+  rel.role = "child";
+  rel.cardinality = "one";
+  rel.target = "ConchTest::ConstraintWidget";
+  rel.constraints.push_back(RelationshipConstraint{ RelationshipConstraintKind::MinOccurs, 1 });
+  rel.constraints.push_back(RelationshipConstraint{ RelationshipConstraintKind::MaxOccurs, 1 });
+  def.relationships.push_back(rel);
+
+  auto regR = registry.register_definition(def);
+  ck_assert_msg(regR, "register constrained type failed: %s", result_message(regR));
+
+  ck_assert_msg(store.close(), "close failed");
+
+  std::ostringstream script;
+  script << "show type ConchTest::ConstraintWidget\n";
+  script << "new ConchTest::ConstraintWidget\n";
+  script << "new ConchTest::ConstraintWidget title:=''\n";
+  script << "new ConchTest::ConstraintWidget title:=alpha\n";
+  script << "exit\n";
+
+  auto output = run_conch_script_with_db(script.str(), db_path);
+  ck_assert_msg(output.find("constraints=required,non_empty") != std::string::npos,
+                "expected field constraints in show type output");
+  ck_assert_msg(output.find("constraints=min_occurs=1,max_occurs=1") != std::string::npos,
+                "expected relationship constraints in show type output");
+  ck_assert_msg(output.find("error: missing required field 'title'") != std::string::npos,
+                "expected required field validation error");
+  ck_assert_msg(output.find("error: field 'title' must be non-empty") != std::string::npos,
+                "expected non-empty validation error");
+  ck_assert_msg(output.find("created ") != std::string::npos,
+                "expected successful constrained object creation");
+
+  std::filesystem::remove_all(db_path + ".segments");
+  ::unlink(db_path.c_str());
+}
+END_TEST
+
 Suite* conch_authoring_suite(void) {
   Suite* s = suite_create("ConchAuthoring");
   TCase* tc = tcase_create("core");
@@ -544,6 +604,7 @@ Suite* conch_authoring_suite(void) {
   tcase_add_test(tc, test_conch_v2_demo_script);
   tcase_add_test(tc, test_conch_namespace_navigation);
   tcase_add_test(tc, test_conch_show_type_displays_inheritance_metadata);
+  tcase_add_test(tc, test_conch_constraint_metadata_display_and_validation);
 
   suite_add_tcase(s, tc);
   return s;

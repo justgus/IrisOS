@@ -1,5 +1,6 @@
 ---
 GitHub-Issue: #72
+ER-Dependencies: ER-0015, ER-0016, ER-0017, ER-0032, ER-0033, ER-0045, ER-0045.1, ER-0045.2, ER-0045.3, ER-0045.4
 ---
 
 # AR-0008 — Erector Subsystems (Recommendation)

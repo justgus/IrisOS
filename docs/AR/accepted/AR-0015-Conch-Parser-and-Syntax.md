@@ -1,5 +1,6 @@
 ---
 GitHub-Issue: #79
+ER-Dependencies: ER-0022, ER-0023, ER-0024, ER-0025, ER-0026, ER-0027, ER-0054, ER-0056
 ---
 
 # AR-0015 — Conch Parser and Syntax

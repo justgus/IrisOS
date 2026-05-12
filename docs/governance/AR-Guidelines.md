@@ -29,19 +29,22 @@ Each AR should start with front matter and a concise title:
 ```md
 ---
 GitHub-Issue: N/A | #123
+ER-Dependencies: ER-XXXX, ER-YYYY
+DR-Dependencies: DR-XXXX
 ---
 
 # AR-XXXX — Short Title
 
-- Status: Proposed | Accepted | Rejected
+- Status: Proposed | Accepted | Implemented | Done | Rejected
 - Date: YYYY-MM-DD
 - Owners:
 ```
 
-If the AR drives implementation work, include:
+If the AR drives implementation work, include the ERs and DRs that realize or correct the AR:
 
 ```md
 ER-Dependencies: ER-XXXX, ER-YYYY
+DR-Dependencies: DR-XXXX
 ```
 
 Use `GitHub-Issue: N/A` while drafting a new AR before an Issue exists. `scripts/issue_sync.sh <doc_path>`
@@ -72,6 +75,7 @@ without expanding into implementation task detail.
 - Record non-goals so later ERs do not drift.
 - When alternatives were considered, summarize the rejection reason briefly.
 - Add `ER-Dependencies` only for ERs that directly implement or complete the AR.
+- Add `DR-Dependencies` only for DRs whose fix is required for the AR to be considered done.
 
 ## Lifecycle
 
@@ -85,6 +89,7 @@ without expanding into implementation task detail.
    accepts or rejects it.
 4. On acceptance, update `- Status:` and move the file to `docs/AR/accepted/`.
 5. When implementation is needed, create or link the dependent ERs.
+6. When all dependent ERs and DRs are complete, update the AR status to `Implemented` or `Done`.
 
 ## GitHub Workflow
 
@@ -96,14 +101,15 @@ without expanding into implementation task detail.
   For shared Issues, the most recently synced document becomes the Issue title/body source of truth,
   so review grouped Issues manually after syncing.
 
-If `ER-Dependencies` is present, the sync script can close the AR Issue automatically when all
-listed ERs are marked `Verified`.
+If `ER-Dependencies` or `DR-Dependencies` is present, the sync script can close the AR Issue
+automatically when the AR is marked `Implemented` or `Done` and all listed ERs/DRs are marked
+`Verified`.
 
 ## Relationship To ERs And DRs
 
-- ARs define direction.
+- ARs define direction and group the ERs/DRs that realize that direction.
 - ERs define implementation work that realizes approved direction.
 - DRs record defects, regressions, or discrepancy-driven fixes.
 
-Do not use an AR to track implementation progress. Once implementation planning is needed, create
-or update ERs.
+Do not use an AR to track implementation progress beyond the dependency list and final
+implementation status. Once implementation planning is needed, create or update ERs and DRs.

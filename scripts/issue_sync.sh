@@ -71,6 +71,19 @@ if [[ -n "$deps_line" ]]; then
   done
 fi
 
+dr_deps=()
+dr_deps_line="$(grep -m1 -E '^DR-Dependencies:' "$doc_path" || true)"
+if [[ -n "$dr_deps_line" ]]; then
+  dr_deps_raw="${dr_deps_line#DR-Dependencies: }"
+  IFS=',' read -ra dr_deps_items <<< "$dr_deps_raw"
+  for item in "${dr_deps_items[@]}"; do
+    dep="$(echo "$item" | xargs)"
+    if [[ -n "$dep" ]]; then
+      dr_deps+=("$dep")
+    fi
+  done
+fi
+
 map_status_label() {
   local status="$1"
   status="${status// /}"
@@ -96,6 +109,11 @@ if [[ ${#deps[@]} -gt 0 ]]; then
   deps_joined="$(printf "%s, " "${deps[@]}")"
   deps_joined="${deps_joined%, }"
   issue_body="${issue_body}"$'\n'"ER-Dependencies: ${deps_joined}"
+fi
+if [[ ${#dr_deps[@]} -gt 0 ]]; then
+  dr_deps_joined="$(printf "%s, " "${dr_deps[@]}")"
+  dr_deps_joined="${dr_deps_joined%, }"
+  issue_body="${issue_body}"$'\n'"DR-Dependencies: ${dr_deps_joined}"
 fi
 
 ensure_labels() {
@@ -138,9 +156,30 @@ er_verified() {
   return 1
 }
 
+dr_verified() {
+  local dr_id="$1"
+  local dr_doc
+  dr_doc="$(ls "docs/DR/${dr_id}-"*.md 2>/dev/null | head -n1 || true)"
+  if [[ -z "$dr_doc" ]]; then
+    return 2
+  fi
+  local dr_status_line
+  dr_status_line="$(grep -m1 -E '^- Status:' "$dr_doc" || true)"
+  if [[ -z "$dr_status_line" ]]; then
+    return 1
+  fi
+  local dr_status
+  dr_status="${dr_status_line#- Status: }"
+  dr_status="${dr_status%% *}"
+  if [[ "$dr_status" == "Verified" ]]; then
+    return 0
+  fi
+  return 1
+}
+
 close_or_reopen() {
   local issue_number="$1"
-  if [[ "$doc_type" == "ar" && ${#deps[@]} -gt 0 ]]; then
+  if [[ "$doc_type" == "ar" && ( ${#deps[@]} -gt 0 || ${#dr_deps[@]} -gt 0 ) ]]; then
     for dep in "${deps[@]}"; do
       er_verified "$dep"
       case $? in
@@ -155,10 +194,28 @@ close_or_reopen() {
           ;;
       esac
     done
-    gh issue close "$issue_number" --comment "Auto-closed by issue_sync: all ER dependencies verified." >/dev/null
+    for dep in "${dr_deps[@]}"; do
+      dr_verified "$dep"
+      case $? in
+        0) ;;
+        1)
+          gh issue reopen "$issue_number" >/dev/null
+          return
+          ;;
+        2)
+          echo "error: missing DR doc for dependency: $dep"
+          exit 1
+          ;;
+      esac
+    done
+    if [[ "$status_label" == "status:done" ]]; then
+      gh issue close "$issue_number" --comment "Auto-closed by issue_sync: status=$status_raw and all ER/DR dependencies verified." >/dev/null
+    else
+      gh issue reopen "$issue_number" >/dev/null
+    fi
     return
   fi
-  if [[ "$doc_type" == "ar" && ${#deps[@]} -eq 0 ]]; then
+  if [[ "$doc_type" == "ar" && ${#deps[@]} -eq 0 && ${#dr_deps[@]} -eq 0 ]]; then
     return
   fi
   if [[ "$status_label" == "status:done" ]]; then
