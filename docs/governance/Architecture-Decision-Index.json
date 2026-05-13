@@ -1,0 +1,331 @@
+{
+  "document": {
+    "title": "Architecture Decision Index",
+    "status": "Draft",
+    "date": "2026-05-13",
+    "owner_role": "System Engineer",
+    "purpose": [
+      "Provide a single, machine-readable and human-readable outline of the architecture decisions captured in AR files.",
+      "Make cross-cutting code structure, style, and conformance principles explicit for implementation work.",
+      "Help implementation agents check proposed code changes against accepted architecture before editing."
+    ],
+    "source_of_truth": [
+      "AR files remain the canonical record for individual architecture decisions.",
+      "ER and DR files remain the canonical records for implementation and defect closure.",
+      "This index is a derived guide and must be updated when AR decisions materially change."
+    ]
+  },
+  "use_policy": {
+    "implementation_engineer": [
+      "Read this document before making code changes that touch public APIs, subsystem boundaries, persistence formats, error handling, or command behavior.",
+      "When this document conflicts with an accepted AR, follow the AR and update this document in the same change if the conflict is in scope.",
+      "When implementation behavior conflicts with this document, do not silently normalize the code. Record the mismatch as an ER, DR, or AR update as appropriate.",
+      "Do not mark ARs, ERs, or DRs Verified. Verification is reserved for the System Engineer."
+    ],
+    "change_control": [
+      "New accepted ARs should add or update entries under architecture_decisions.",
+      "AR status changes to Implemented should be reflected here only after dependent ERs and DRs are verified or explicitly scoped out.",
+      "Cross-cutting principles should be changed by an AR, governance decision, or explicit System Engineer direction."
+    ]
+  },
+  "conformance_principles": {
+    "scope_control": [
+      "Prefer the smallest correct diff.",
+      "Do not change behavior unrelated to the request.",
+      "Do not introduce new dependencies unless explicitly approved or unavoidable and justified.",
+      "When multiple valid architecture choices exist, ask the System Engineer instead of choosing silently."
+    ],
+    "code_structure": [
+      "Subsystems should live behind explicit local module boundaries under src/.",
+      "Shared concepts should be represented through existing Referee, Refract, CEO, Conduit, Conch, Vizier, Services, Exec, Comms, Crate, Astra, Caliper, or Machine boundaries before adding a new boundary.",
+      "Large files should not grow through unrelated additions. Split new implementation into local modules when a subsystem is expanding.",
+      "Headers should expose stable contracts and keep implementation detail in source files unless a header-only template is clearly justified."
+    ],
+    "error_handling": [
+      "Public subsystem APIs should return a project Result type rather than using exceptions for normal control flow.",
+      "Exceptions must not cross subsystem boundaries as the normal error mechanism.",
+      "NotFound semantics must be explicit and consistent at the API boundary.",
+      "The accepted AR-0001 target is typed expected-style errors with ErrorCode. Current implementation uses string-based referee::Result, so this remains a known conformance gap until resolved or AR-0001 is amended."
+    ],
+    "persistence": [
+      "Persisted data must be deterministic across process restarts.",
+      "New persisted metadata requires explicit migration or compatibility behavior.",
+      "Referee and Refract are preferred sources of truth for object identity, schema, relationships, and reflection metadata.",
+      "Do not mutate generated Autotools artifacts unless explicitly instructed or required by a regeneration step that is called out."
+    ],
+    "testing": [
+      "New behavior should be covered at the narrowest useful layer.",
+      "Changes to subsystem contracts, persistence, command behavior, or architecture closure require tests or an explicit reason tests were not run.",
+      "Defect fixes should include DR-linked regression coverage when practical."
+    ],
+    "user_interfaces": [
+      "Conch command behavior should remain stable unless an ER or AR explicitly changes syntax or semantics.",
+      "Parser behavior should move toward typed AST and reusable command grammar surfaces without breaking existing command workflows unnecessarily.",
+      "Vizier and Conch view growth should preserve existing triggered artifact routing while staged observer-driven routing is introduced."
+    ]
+  },
+  "architecture_decisions": [
+    {
+      "id": "AR-0001",
+      "name": "Expected-Style Error Model",
+      "status": "Accepted",
+      "decision": "Use explicit result-style error propagation and avoid exceptions as normal cross-boundary control flow.",
+      "conformance": "Partial",
+      "notes": [
+        "The AR specifies std::expected<T, ErrorCode> and enum class ErrorCode.",
+        "The current implementation uses referee::Result<T> with string Error messages.",
+        "A follow-up ER or AR amendment is needed before this can be treated as implemented."
+      ]
+    },
+    {
+      "id": "AR-0002",
+      "name": "Object Identity and Versioning Semantics",
+      "status": "Implemented",
+      "decision": "Use stable UUID-style ObjectID values with versioning represented separately."
+    },
+    {
+      "id": "AR-0003",
+      "name": "Storage Layout Strategy",
+      "status": "Implemented",
+      "decision": "Use deterministic object storage with explicit layout/versioning; SQLite is accepted as the current realized backend while segment/index concepts remain architectural direction."
+    },
+    {
+      "id": "AR-0004",
+      "name": "Index and Graph Storage Strategy",
+      "status": "Implemented",
+      "decision": "Represent object and relationship indexes explicitly and support deterministic graph traversal and rebuild behavior."
+    },
+    {
+      "id": "AR-0005",
+      "name": "Service Plane Model",
+      "status": "Accepted",
+      "decision": "Model long-running services as stable service objects with lifecycle, discovery, messaging, and isolation.",
+      "conformance": "Partial",
+      "notes": [
+        "Later staged delivery is defined by AR-0022.",
+        "Persistent capability context, service boundary enforcement, isolation hooks, and expanded service classes remain planned work."
+      ]
+    },
+    {
+      "id": "AR-0006",
+      "name": "CEO/Exec Runtime Model",
+      "status": "Implemented",
+      "decision": "Use CEO/Exec as the core task, waitable, message, and resource coordination substrate."
+    },
+    {
+      "id": "AR-0007",
+      "name": "Refract Reflection Graph",
+      "status": "Accepted",
+      "decision": "Make Refract the persistent reflection graph for types, fields, operations, relationships, constraints, effects, and documentation.",
+      "conformance": "Partial",
+      "notes": [
+        "AR-0023 defines profile boundaries.",
+        "ER-0078, ER-0079, and ER-0080 close remaining extended reflection scope."
+      ]
+    },
+    {
+      "id": "AR-0008",
+      "name": "Erector Subsystems",
+      "status": "Accepted",
+      "decision": "Use Erector as the foundation for Math, Refract, Machine, Exec, and Comms object types.",
+      "conformance": "Partial",
+      "notes": [
+        "Exec, Comms primitives, Astra, and Caliper exist.",
+        "Erector::Machine remains a planned subsystem under AR-0024."
+      ]
+    },
+    {
+      "id": "AR-0009",
+      "name": "Referee Object Store",
+      "status": "Implemented",
+      "decision": "Use Referee as the canonical object store and relationship graph manager."
+    },
+    {
+      "id": "AR-0010",
+      "name": "Comms Subsystem",
+      "status": "Accepted",
+      "decision": "Model communication through object-oriented link, transport, session, protocol, and addressing abstractions.",
+      "conformance": "Partial",
+      "notes": [
+        "Current implementation covers in-memory primitives and CEO I/O integration.",
+        "Machine-backed transport, session, and protocol objects remain planned work under AR-0024."
+      ]
+    },
+    {
+      "id": "AR-0011",
+      "name": "Vizier Interpretation Layer",
+      "status": "Accepted",
+      "decision": "Use Vizier to route object graph and artifact state into view models and Concho growth.",
+      "conformance": "Partial",
+      "notes": [
+        "Triggered artifact routing exists.",
+        "Observer-driven graph routing remains planned under AR-0025."
+      ]
+    },
+    {
+      "id": "AR-0012",
+      "name": "Conch Shell and Concho Views",
+      "status": "Accepted",
+      "decision": "Use Conch as the terminal-first shell over object graph state and Conchos as object-backed views.",
+      "conformance": "Staged",
+      "notes": [
+        "Existing ER dependencies are verified for current shell and view behavior.",
+        "Observer-driven session growth remains later-stage work under AR-0025."
+      ]
+    },
+    {
+      "id": "AR-0013",
+      "name": "Viz Display Subsystem",
+      "status": "Implemented",
+      "decision": "Represent display artifacts as explicit objects such as panels, logs, metrics, tables, and trees."
+    },
+    {
+      "id": "AR-0014",
+      "name": "Conch Schema and Object Authoring",
+      "status": "Implemented",
+      "decision": "Allow Conch to define schemas and create object graph records through Refract and Referee."
+    },
+    {
+      "id": "AR-0015",
+      "name": "Conch Parser and Syntax",
+      "status": "Accepted",
+      "decision": "Move command parsing toward typed ASTs, parser-driven validation, and reusable grammar surfaces.",
+      "conformance": "Staged",
+      "notes": [
+        "AR-0026 defines parser maturity levels.",
+        "Existing parser ER dependencies are verified through ER-0056, but Level 4 reuse remains planned."
+      ]
+    },
+    {
+      "id": "AR-0016",
+      "name": "Operations and Dispatch Model",
+      "status": "Implemented",
+      "decision": "Use Conduit and Refract metadata to resolve and dispatch operations across types."
+    },
+    {
+      "id": "AR-0017",
+      "name": "Collections, Math Types, and Units",
+      "status": "Accepted",
+      "decision": "Provide first-class collection, math, and unit type foundations.",
+      "conformance": "Staged",
+      "notes": [
+        "Collection, math, and starter unit ERs are verified.",
+        "Full runtime unit conversion is tracked separately by AR-0019 planning."
+      ]
+    },
+    {
+      "id": "AR-0018",
+      "name": "Generic Type System",
+      "status": "Implemented",
+      "decision": "Use explicit generic instance identity and scoped type registries for generic type behavior."
+    },
+    {
+      "id": "AR-0019",
+      "name": "Caliper Unit Catalog",
+      "status": "Accepted",
+      "decision": "Ship a complete, deterministic, versioned unit catalog with conversion metadata and extension rules.",
+      "conformance": "Partial",
+      "notes": [
+        "Starter catalog metadata exists through ER-0033.",
+        "Full catalog expansion and runtime conversion behavior remain planned work."
+      ]
+    },
+    {
+      "id": "AR-0020",
+      "name": "Core Type Operations and Rendering",
+      "status": "Implemented",
+      "decision": "Expose standard operations and rendering hooks for core types through Refract and Conduit."
+    },
+    {
+      "id": "AR-0021",
+      "name": "Structured Types, Enums, and Packets",
+      "status": "Implemented",
+      "decision": "Make structs, packets, enums, and structured arrays first-class Refract types."
+    },
+    {
+      "id": "AR-0022",
+      "name": "Staged Service Plane Delivery",
+      "status": "Accepted",
+      "decision": "Define Service Plane delivery stages A through E so implementation can close one maturity level at a time.",
+      "conformance": "Staged",
+      "notes": [
+        "ER-0057 verifies the current service host lifecycle and persistent registry slice.",
+        "Later stages remain planned under ER-0058 through ER-0062."
+      ]
+    },
+    {
+      "id": "AR-0023",
+      "name": "Refract Reflection Profiles",
+      "status": "Accepted",
+      "decision": "Separate Refract v1 core reflection from v2 extended reflection features.",
+      "conformance": "Partial",
+      "notes": [
+        "ER-0055 is verified.",
+        "ER-0078 is Complete but not Verified.",
+        "ER-0079 and ER-0080 are Proposed."
+      ]
+    },
+    {
+      "id": "AR-0024",
+      "name": "Erector Machine and Comms Delivery Tracks",
+      "status": "Accepted",
+      "decision": "Stage Machine and Comms expansion into Machine core, descriptors, handles/leases, and Machine-backed Comms realization.",
+      "conformance": "Planned"
+    },
+    {
+      "id": "AR-0025",
+      "name": "Conch and Vizier Interaction Modes",
+      "status": "Accepted",
+      "decision": "Recognize triggered artifact routing as Mode 1 and define observer-driven graph routing as Mode 2.",
+      "conformance": "Staged",
+      "notes": [
+        "Mode 1 is implemented by verified ERs.",
+        "Mode 2 remains planned under ER-0063 through ER-0066."
+      ]
+    },
+    {
+      "id": "AR-0026",
+      "name": "Conch Parser Maturity Levels",
+      "status": "Accepted",
+      "decision": "Define parser maturity levels from quote-aware command parsing through reusable command grammar surfaces.",
+      "conformance": "Staged",
+      "notes": [
+        "ER-0056 implements Level 2 and begins Level 3.",
+        "Level 4 remains planned under ER-0067 through ER-0069."
+      ]
+    }
+  ],
+  "known_conformance_gaps": [
+    {
+      "area": "Error model",
+      "source": "AR-0001",
+      "gap": "No enum class ErrorCode exists, and Result is string-based rather than std::expected<T, ErrorCode>.",
+      "recommended_resolution": "Draft an ER to implement typed errors or amend AR-0001 to match the accepted project Result model."
+    },
+    {
+      "area": "Service Plane",
+      "source": "AR-0005, AR-0022",
+      "gap": "Later service stages for capability context, isolation, and expanded core services remain planned."
+    },
+    {
+      "area": "Machine and Comms",
+      "source": "AR-0008, AR-0010, AR-0024",
+      "gap": "Erector::Machine and Machine-backed Comms tracks remain planned."
+    },
+    {
+      "area": "Conch and Vizier",
+      "source": "AR-0011, AR-0012, AR-0025",
+      "gap": "Observer-driven graph routing and Task Conchos remain planned."
+    },
+    {
+      "area": "Refract extended reflection",
+      "source": "AR-0007, AR-0023",
+      "gap": "Constraints, operation effects, and documentation metadata are not fully verified."
+    },
+    {
+      "area": "Caliper runtime behavior",
+      "source": "AR-0019",
+      "gap": "Full catalog expansion and runtime conversion behavior remain planned."
+    }
+  ]
+}
