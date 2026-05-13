@@ -5,7 +5,7 @@ ER-Dependencies: ER-0015, ER-0016, ER-0017, ER-0045, ER-0045.1, ER-0045.2, ER-00
 
 # AR-0010 — Comms Subsystem (Recommendation)
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-02-16
 - Owners: Mike
 

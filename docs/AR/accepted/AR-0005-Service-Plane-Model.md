@@ -5,7 +5,7 @@ ER-Dependencies: ER-0001, ER-0044, ER-0057
 
 # AR-0005 — Service Plane Model (Recommendation)
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-02-16
 - Owners: Mike
 
