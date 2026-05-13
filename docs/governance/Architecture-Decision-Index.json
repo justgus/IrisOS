@@ -45,7 +45,7 @@
       "Public subsystem APIs should return a project Result type rather than using exceptions for normal control flow.",
       "Exceptions must not cross subsystem boundaries as the normal error mechanism.",
       "NotFound semantics must be explicit and consistent at the API boundary.",
-      "The accepted AR-0001 target is typed expected-style errors with ErrorCode. Current implementation uses string-based referee::Result, so this remains a known conformance gap until resolved or AR-0001 is amended."
+      "The accepted AR-0001 target is typed expected-style errors with ErrorCode. Current implementation exposes typed ErrorCode through the existing referee::Result compatibility wrapper; migration to std::expected remains future work unless AR-0001 is amended."
     ],
     "persistence": [
       "Persisted data must be deterministic across process restarts.",
@@ -73,8 +73,8 @@
       "conformance": "Partial",
       "notes": [
         "The AR specifies std::expected<T, ErrorCode> and enum class ErrorCode.",
-        "The current implementation uses referee::Result<T> with string Error messages.",
-        "A follow-up ER or AR amendment is needed before this can be treated as implemented."
+        "The current implementation provides enum class ErrorCode through the existing referee::Result<T> wrapper for source compatibility.",
+        "A follow-up ER or AR amendment is needed before the exact std::expected alias can be treated as implemented."
       ]
     },
     {
@@ -98,9 +98,9 @@
     {
       "id": "AR-0005",
       "name": "Service Plane Model",
-      "status": "Accepted",
+      "status": "Implemented",
       "decision": "Model long-running services as stable service objects with lifecycle, discovery, messaging, and isolation.",
-      "conformance": "Partial",
+      "conformance": "Implemented with future stages",
       "notes": [
         "Later staged delivery is defined by AR-0022.",
         "Persistent capability context, service boundary enforcement, isolation hooks, and expanded service classes remain planned work."
@@ -115,9 +115,9 @@
     {
       "id": "AR-0007",
       "name": "Refract Reflection Graph",
-      "status": "Accepted",
+      "status": "Implemented",
       "decision": "Make Refract the persistent reflection graph for types, fields, operations, relationships, constraints, effects, and documentation.",
-      "conformance": "Partial",
+      "conformance": "Implemented with future stages",
       "notes": [
         "AR-0023 defines profile boundaries.",
         "ER-0078, ER-0079, and ER-0080 close remaining extended reflection scope."
@@ -126,9 +126,9 @@
     {
       "id": "AR-0008",
       "name": "Erector Subsystems",
-      "status": "Accepted",
+      "status": "Implemented",
       "decision": "Use Erector as the foundation for Math, Refract, Machine, Exec, and Comms object types.",
-      "conformance": "Partial",
+      "conformance": "Implemented with future stages",
       "notes": [
         "Exec, Comms primitives, Astra, and Caliper exist.",
         "Erector::Machine remains a planned subsystem under AR-0024."
@@ -143,9 +143,9 @@
     {
       "id": "AR-0010",
       "name": "Comms Subsystem",
-      "status": "Accepted",
+      "status": "Implemented",
       "decision": "Model communication through object-oriented link, transport, session, protocol, and addressing abstractions.",
-      "conformance": "Partial",
+      "conformance": "Implemented with future stages",
       "notes": [
         "Current implementation covers in-memory primitives and CEO I/O integration.",
         "Machine-backed transport, session, and protocol objects remain planned work under AR-0024."
@@ -299,8 +299,8 @@
     {
       "area": "Error model",
       "source": "AR-0001",
-      "gap": "No enum class ErrorCode exists, and Result is string-based rather than std::expected<T, ErrorCode>.",
-      "recommended_resolution": "Draft an ER to implement typed errors or amend AR-0001 to match the accepted project Result model."
+      "gap": "Result now carries ErrorCode, but the project still uses its compatibility wrapper rather than std::expected<T, ErrorCode>.",
+      "recommended_resolution": "Draft a follow-up ER for std::expected migration or amend AR-0001 to accept the existing project Result wrapper."
     },
     {
       "area": "Service Plane",

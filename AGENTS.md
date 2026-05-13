@@ -8,11 +8,16 @@ Your job: make safe, reviewable, minimal diffs that pass CI and match existing a
 ---
 
 ## Non-Negotiables
+- **Don't assume.  If there is something that has multiple solutions, ask.
+- **Don't hide confusion.  Say "I don't know" often.
+- **Surface tradeoffs.  You may not make decisions by yourself.
 - **Do not change behavior unrelated to the request.**
 - **Prefer the smallest correct diff.**
+- **Do not speculate solutions.  ask**
 - **No drive-by refactors** (formatting, renaming, reorganizing, “cleanups”) unless explicitly asked.
 - **No destructive actions** (deleting files, force pushes, history edits, massive rewrites) without explicit instruction.
 - **Do not add new dependencies** unless explicitly requested or truly unavoidable (and justified).
+- **Continuously redefine success criteria until approved.
 
 ### File Size & Formatting
 - Do not compact or reflow lines in ways that risk obscuring or losing content.

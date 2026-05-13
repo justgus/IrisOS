@@ -99,12 +99,29 @@ START_TEST(test_edges_from_and_to)
 }
 END_TEST
 
+START_TEST(test_result_carries_typed_error_code)
+{
+  auto invalid = Result<int>::err(ErrorCode::InvalidArgument, "bad input");
+  ck_assert_msg(!invalid, "expected typed error result");
+  ck_assert_msg(invalid.error.has_value(), "expected error payload");
+  ck_assert(invalid.error->code == ErrorCode::InvalidArgument);
+  ck_assert_str_eq(invalid.error->message.c_str(), "bad input");
+
+  auto legacy = Result<void>::err("legacy error");
+  ck_assert_msg(!legacy, "expected legacy error result");
+  ck_assert_msg(legacy.error.has_value(), "expected legacy error payload");
+  ck_assert(legacy.error->code == ErrorCode::Unknown);
+  ck_assert_str_eq(legacy.error->message.c_str(), "legacy error");
+}
+END_TEST
+
 Suite* referee_suite(void) {
   Suite* s = suite_create("RefereeCore");
   TCase* tc = tcase_create("core");
 
   tcase_add_test(tc, test_create_and_get_object_roundtrip);
   tcase_add_test(tc, test_edges_from_and_to);
+  tcase_add_test(tc, test_result_carries_typed_error_code);
 
   suite_add_tcase(s, tc);
   return s;

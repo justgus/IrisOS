@@ -5,6 +5,7 @@
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace referee {
@@ -72,7 +73,22 @@ struct EdgeRecord {
 // -----------------------------
 // Errors
 // -----------------------------
+enum class ErrorCode {
+  Unknown,
+  InvalidArgument,
+  NotFound,
+  AlreadyExists,
+  FailedPrecondition,
+  IoError,
+  ParseError,
+  Timeout,
+  CorruptData,
+  Unsupported,
+  Internal,
+};
+
 struct Error {
+  ErrorCode code{ErrorCode::Unknown};
   std::string message;
 };
 
@@ -84,7 +100,13 @@ struct Result {
   std::optional<Error> error;
 
   static Result ok(T v) { return Result{std::optional<T>(std::move(v)), std::nullopt}; }
-  static Result err(std::string msg) { return Result{std::nullopt, Error{std::move(msg)}}; }
+  static Result err(std::string msg) {
+    return Result{std::nullopt, Error{ErrorCode::Unknown, std::move(msg)}};
+  }
+  static Result err(ErrorCode code, std::string msg) {
+    return Result{std::nullopt, Error{code, std::move(msg)}};
+  }
+  static Result err(Error error) { return Result{std::nullopt, std::move(error)}; }
 
   explicit operator bool() const { return value.has_value() && !error.has_value(); }
 };
@@ -96,7 +118,13 @@ struct Result<void> {
   std::optional<Error> error;
 
   static Result ok() { return Result{true, std::nullopt}; }
-  static Result err(std::string msg) { return Result{false, Error{std::move(msg)}}; }
+  static Result err(std::string msg) {
+    return Result{false, Error{ErrorCode::Unknown, std::move(msg)}};
+  }
+  static Result err(ErrorCode code, std::string msg) {
+    return Result{false, Error{code, std::move(msg)}};
+  }
+  static Result err(Error error) { return Result{false, std::move(error)}; }
 
   explicit operator bool() const { return ok_ && !error.has_value(); }
 };

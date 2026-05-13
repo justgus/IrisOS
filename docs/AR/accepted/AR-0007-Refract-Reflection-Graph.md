@@ -5,7 +5,7 @@ ER-Dependencies: ER-0002, ER-0004, ER-0037, ER-0055, ER-0078, ER-0079, ER-0080
 
 # AR-0007 — Refract Reflection Graph (Recommendation)
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-02-16
 - Owners: Mike
 
