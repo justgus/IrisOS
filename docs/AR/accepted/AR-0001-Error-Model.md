@@ -31,11 +31,11 @@ We must decide:
 
 ## Decision
 
-Referee adopts an expected-style return model:
+Referee adopts a project result return model with expected-style semantics:
 
 1. Public APIs return:
 
-   `std::expected<T, ErrorCode>`
+   `Result<T>`
 
 2. Exceptions are NOT used for normal control flow.
 
@@ -49,7 +49,12 @@ Referee adopts an expected-style return model:
 6. A project alias will be defined:
 
    `template<typename T>`
-   `using Result = std::expected<T, ErrorCode>;`
+   `using Result = ...;`
+
+   The concrete backing type is an irisOS implementation detail. It may be
+   `std::expected<T, ErrorCode>` where the project toolchain supports it, or a
+   project-owned compatibility wrapper with the same success/error boundary
+   semantics.
 
 ## Alternatives Considered
 
@@ -85,6 +90,7 @@ Negative:
 
 - More verbose call sites
 - Slight increase in template surface
+- Project code must preserve `Result<T>` semantics if the backing type changes
 
 ## Implementation Notes
 
@@ -93,4 +99,3 @@ Negative:
 - Provide helper functions for ergonomic chaining
 - Update storage layer first
 - Tests assert on specific error codes
-
