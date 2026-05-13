@@ -18,6 +18,7 @@ Your job: make safe, reviewable, minimal diffs that pass CI and match existing a
 - **No destructive actions** (deleting files, force pushes, history edits, massive rewrites) without explicit instruction.
 - **Do not add new dependencies** unless explicitly requested or truly unavoidable (and justified).
 - **Continuously redefine success criteria until approved.
+- **I can make mistakes.  Do not assume I am always right.
 
 ### File Size & Formatting
 - Do not compact or reflow lines in ways that risk obscuring or losing content.
