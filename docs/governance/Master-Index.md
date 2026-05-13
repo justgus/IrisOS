@@ -12,6 +12,7 @@ tracking.
 
 ## Governance Docs
 
+- `docs/governance/Architecture-Decision-Index.json`
 - `docs/governance/AR-Guidelines.md`
 - `docs/governance/ER-Guidelines.md`
 - `docs/governance/DR-Guidelines.md`
@@ -69,6 +70,8 @@ Proposed ARs in `docs/AR/proposed/` are active recommendation drafts under revie
 
 - ARs are the architectural system of record for design direction and the parent index for the ERs
   and DRs that realize that direction.
+- `Architecture-Decision-Index.json` is the derived implementation guide for cross-cutting
+  architecture decisions, code structure, style, and conformance checks.
 - Proposed ARs are tracked in `docs/AR/proposed/` until accepted.
 - ERs are the implementation system of record for planned work.
 - DRs are the defect system of record for bugs and regressions.
