@@ -45,7 +45,7 @@
       "Public subsystem APIs should return a project Result type rather than using exceptions for normal control flow.",
       "Exceptions must not cross subsystem boundaries as the normal error mechanism.",
       "NotFound semantics must be explicit and consistent at the API boundary.",
-      "The accepted AR-0001 target is typed expected-style errors with ErrorCode. Current implementation exposes typed ErrorCode through the existing referee::Result compatibility wrapper; migration to std::expected remains future work unless AR-0001 is amended."
+      "The accepted AR-0001 target is typed expected-style errors with ErrorCode exposed through the project Result abstraction."
     ],
     "persistence": [
       "Persisted data must be deterministic across process restarts.",
@@ -72,9 +72,9 @@
       "decision": "Use explicit result-style error propagation and avoid exceptions as normal cross-boundary control flow.",
       "conformance": "Partial",
       "notes": [
-        "The AR specifies std::expected<T, ErrorCode> and enum class ErrorCode.",
-        "The current implementation provides enum class ErrorCode through the existing referee::Result<T> wrapper for source compatibility.",
-        "A follow-up ER or AR amendment is needed before the exact std::expected alias can be treated as implemented."
+        "The AR specifies Result<T> with expected-style semantics and enum class ErrorCode.",
+        "The current implementation provides enum class ErrorCode through referee::Result<T>.",
+        "Remaining conformance depends on settling lookup absence semantics consistently with the AR."
       ]
     },
     {
@@ -299,8 +299,8 @@
     {
       "area": "Error model",
       "source": "AR-0001",
-      "gap": "Result now carries ErrorCode, but the project still uses its compatibility wrapper rather than std::expected<T, ErrorCode>.",
-      "recommended_resolution": "Draft a follow-up ER for std::expected migration or amend AR-0001 to accept the existing project Result wrapper."
+      "gap": "Lookup absence semantics still need to be settled consistently with the AR's NotFound guidance.",
+      "recommended_resolution": "Amend AR-0001 to accept intentional Result<std::optional<T>> probe APIs, or create an ER to migrate lookup absence to ErrorCode::NotFound."
     },
     {
       "area": "Service Plane",
