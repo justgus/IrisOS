@@ -14,6 +14,8 @@ extern "C" {
 #include <utility>
 #include <vector>
 
+#include <nlohmann/json.hpp>
+
 using namespace referee;
 using namespace iris::service;
 
@@ -223,6 +225,143 @@ START_TEST(test_ipc_enforces_endpoint_required_grants_for_declared_endpoint)
 }
 END_TEST
 
+START_TEST(test_memory_service_registers_and_lists_regions)
+{
+  ServiceRegistry registry;
+  MemoryService memory(ObjectID::random());
+  ck_assert_msg(registry.register_service(memory.descriptor(), &memory), "register_service failed");
+
+  IpcService ipc(registry);
+  auto region_id = ObjectID::random();
+
+  nlohmann::json payload;
+  payload["id"] = region_id.to_hex();
+  payload["name"] = "main-ram";
+  payload["kind"] = "ram";
+  payload["base"] = 4096ULL;
+  payload["size"] = 8192ULL;
+
+  auto request = make_request_to_object(ObjectID::random(),
+                                        memory.descriptor().id,
+                                        kMemoryRegisterRegionType,
+                                        nlohmann::json::to_cbor(payload));
+  request.endpoint = Endpoint{"memory.register_region", kMemoryRegisterRegionType, {}};
+
+  auto response = ipc.send_request(request, std::chrono::milliseconds(5));
+  ck_assert_msg(response, "register region failed: %s", result_message(response));
+  ck_assert_uint_eq(response.value->message_type.v, kMemoryRegionResponseType.v);
+
+  auto registered = nlohmann::json::from_cbor(response.value->payload_cbor);
+  ck_assert_str_eq(registered.at("name").get<std::string>().c_str(), "main-ram");
+  ck_assert_str_eq(registered.at("kind").get<std::string>().c_str(), "ram");
+  ck_assert(registered.at("writable").get<bool>());
+  ck_assert(!registered.at("persistent").get<bool>());
+
+  auto list_request = make_request_to_object(ObjectID::random(),
+                                             memory.descriptor().id,
+                                             kMemoryListRegionsType,
+                                             {});
+  list_request.endpoint = Endpoint{"memory.list_regions", kMemoryListRegionsType, {}};
+
+  auto list_response = ipc.send_request(list_request, std::chrono::milliseconds(5));
+  ck_assert_msg(list_response, "list regions failed: %s", result_message(list_response));
+  ck_assert_uint_eq(list_response.value->message_type.v, kMemoryRegionListResponseType.v);
+
+  auto list_payload = nlohmann::json::from_cbor(list_response.value->payload_cbor);
+  ck_assert_uint_eq(list_payload.at("regions").size(), 1);
+  ck_assert_str_eq(list_payload.at("regions").at(0).at("id").get<std::string>().c_str(),
+                   region_id.to_hex().c_str());
+}
+END_TEST
+
+START_TEST(test_memory_service_rejects_duplicates_and_invalid_regions)
+{
+  MemoryService memory(ObjectID::random());
+  MemoryRegion ram;
+  ram.id = ObjectID::random();
+  ram.name = "main-ram";
+  ram.kind = MemoryRegionKind::Ram;
+  ram.base = 0;
+  ram.size = 4096;
+
+  auto registered = memory.register_region(ram);
+  ck_assert_msg(registered, "register_region failed: %s", result_message(registered));
+
+  auto duplicate_id = memory.register_region(ram);
+  ck_assert_msg(!duplicate_id, "expected duplicate id rejection");
+  ck_assert_int_eq((int)duplicate_id.error->code, (int)ErrorCode::AlreadyExists);
+
+  MemoryRegion duplicate_name = ram;
+  duplicate_name.id = ObjectID::random();
+  auto duplicate_nameR = memory.register_region(duplicate_name);
+  ck_assert_msg(!duplicate_nameR, "expected duplicate name rejection");
+  ck_assert_int_eq((int)duplicate_nameR.error->code, (int)ErrorCode::AlreadyExists);
+
+  MemoryRegion empty_name = ram;
+  empty_name.id = ObjectID::random();
+  empty_name.name.clear();
+  auto empty_nameR = memory.register_region(empty_name);
+  ck_assert_msg(!empty_nameR, "expected empty name rejection");
+  ck_assert_int_eq((int)empty_nameR.error->code, (int)ErrorCode::InvalidArgument);
+
+  MemoryRegion empty_region = ram;
+  empty_region.id = ObjectID::random();
+  empty_region.name = "empty";
+  empty_region.size = 0;
+  auto empty_regionR = memory.register_region(empty_region);
+  ck_assert_msg(!empty_regionR, "expected zero-size rejection");
+  ck_assert_int_eq((int)empty_regionR.error->code, (int)ErrorCode::InvalidArgument);
+}
+END_TEST
+
+START_TEST(test_memory_service_lookup_and_mutability_classification)
+{
+  ServiceRegistry registry;
+  MemoryService memory(ObjectID::random());
+  ck_assert_msg(registry.register_service(memory.descriptor(), &memory), "register_service failed");
+
+  MemoryRegion flash;
+  flash.id = ObjectID::random();
+  flash.name = "boot-flash";
+  flash.kind = MemoryRegionKind::Flash;
+  flash.base = 65536;
+  flash.size = 4096;
+  ck_assert_msg(memory.register_region(flash), "flash register failed");
+
+  MemoryRegion readonly;
+  readonly.id = ObjectID::random();
+  readonly.name = "rom";
+  readonly.kind = MemoryRegionKind::ReadOnly;
+  readonly.base = 131072;
+  readonly.size = 4096;
+  ck_assert_msg(memory.register_region(readonly), "readonly register failed");
+
+  ck_assert(memory_region_is_writable(MemoryRegionKind::Flash));
+  ck_assert(memory_region_is_persistent(MemoryRegionKind::Flash));
+  ck_assert(!memory_region_is_writable(MemoryRegionKind::ReadOnly));
+  ck_assert(memory_region_is_persistent(MemoryRegionKind::ReadOnly));
+
+  IpcService ipc(registry);
+  nlohmann::json payload;
+  payload["id"] = readonly.id.to_hex();
+
+  auto request = make_request_to_object(ObjectID::random(),
+                                        memory.descriptor().id,
+                                        kMemoryLookupRegionType,
+                                        nlohmann::json::to_cbor(payload));
+  request.endpoint = Endpoint{"memory.lookup_region", kMemoryLookupRegionType, {}};
+
+  auto response = ipc.send_request(request, std::chrono::milliseconds(5));
+  ck_assert_msg(response, "lookup region failed: %s", result_message(response));
+
+  auto lookup_payload = nlohmann::json::from_cbor(response.value->payload_cbor);
+  ck_assert(lookup_payload.at("found").get<bool>());
+  ck_assert_str_eq(lookup_payload.at("region").at("kind").get<std::string>().c_str(), "read_only");
+  ck_assert(!lookup_payload.at("region").at("writable").get<bool>());
+  ck_assert(lookup_payload.at("region").at("persistent").get<bool>());
+}
+END_TEST
+
 Suite* service_ipc_suite(void) {
   Suite* s = suite_create("ServiceIPC");
   TCase* tc = tcase_create("core");
@@ -232,6 +371,9 @@ Suite* service_ipc_suite(void) {
   tcase_add_test(tc, test_ipc_preserves_sandbox_identity_hook);
   tcase_add_test(tc, test_ipc_enforces_descriptor_required_grants);
   tcase_add_test(tc, test_ipc_enforces_endpoint_required_grants_for_declared_endpoint);
+  tcase_add_test(tc, test_memory_service_registers_and_lists_regions);
+  tcase_add_test(tc, test_memory_service_rejects_duplicates_and_invalid_regions);
+  tcase_add_test(tc, test_memory_service_lookup_and_mutability_classification);
 
   suite_add_tcase(s, tc);
   return s;
