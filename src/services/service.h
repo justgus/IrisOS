@@ -125,4 +125,45 @@ private:
   ServiceBoundaryAuthorizer* authorizer_{nullptr};
 };
 
+enum class MemoryRegionKind {
+  Ram,
+  Flash,
+  ReadOnly,
+};
+
+struct MemoryRegion {
+  referee::ObjectID id{};
+  std::string name;
+  MemoryRegionKind kind{MemoryRegionKind::Ram};
+  std::uint64_t base{};
+  std::uint64_t size{};
+};
+
+constexpr referee::TypeID kMemoryServiceType{0x5356434D454D0001ULL};
+constexpr referee::TypeID kMemoryRegisterRegionType{0x5356434D454D1001ULL};
+constexpr referee::TypeID kMemoryListRegionsType{0x5356434D454D1002ULL};
+constexpr referee::TypeID kMemoryLookupRegionType{0x5356434D454D1003ULL};
+constexpr referee::TypeID kMemoryRegionResponseType{0x5356434D454D2001ULL};
+constexpr referee::TypeID kMemoryRegionListResponseType{0x5356434D454D2002ULL};
+
+std::string_view memory_region_kind_name(MemoryRegionKind kind);
+bool memory_region_is_writable(MemoryRegionKind kind);
+bool memory_region_is_persistent(MemoryRegionKind kind);
+
+class MemoryService final : public ServiceObject {
+public:
+  explicit MemoryService(referee::ObjectID id);
+
+  ServiceDescriptor descriptor() const override;
+  referee::Result<MessageEnvelope> handle_message(const MessageEnvelope& request) override;
+
+  referee::Result<MemoryRegion> register_region(const MemoryRegion& region);
+  referee::Result<std::optional<MemoryRegion>> lookup_region(referee::ObjectID id) const;
+  std::vector<MemoryRegion> list_regions() const;
+
+private:
+  ServiceDescriptor desc_{};
+  std::vector<MemoryRegion> regions_;
+};
+
 } // namespace iris::service

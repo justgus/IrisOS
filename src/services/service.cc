@@ -3,7 +3,10 @@
 #include "services/capability_context.h"
 
 #include <chrono>
+#include <stdexcept>
 #include <unordered_set>
+
+#include <nlohmann/json.hpp>
 
 namespace iris::service {
 
@@ -29,6 +32,17 @@ static std::optional<Endpoint> find_declared_endpoint(const ServiceDescriptor& s
     if (endpoint_matches(endpoint, requested.value())) return endpoint;
   }
   return std::nullopt;
+}
+
+static std::string endpoint_key(const std::optional<Endpoint>& endpoint) {
+  if (!endpoint.has_value()) return {};
+  if (!endpoint->name.empty()) return endpoint->name;
+  if (endpoint->type.has_value()) {
+    if (endpoint->type.value() == kMemoryRegisterRegionType) return "memory.register_region";
+    if (endpoint->type.value() == kMemoryListRegionsType) return "memory.list_regions";
+    if (endpoint->type.value() == kMemoryLookupRegionType) return "memory.lookup_region";
+  }
+  return {};
 }
 
 MessageEnvelope make_request_to_object(referee::ObjectID sender,
@@ -74,6 +88,184 @@ MessageEnvelope make_response(const MessageEnvelope& request,
   env.correlation_id = request.correlation_id;
   env.timestamp_unix_ms = referee::unix_ms_now();
   return env;
+}
+
+std::string_view memory_region_kind_name(MemoryRegionKind kind) {
+  switch (kind) {
+  case MemoryRegionKind::Ram:
+    return "ram";
+  case MemoryRegionKind::Flash:
+    return "flash";
+  case MemoryRegionKind::ReadOnly:
+    return "read_only";
+  }
+  return "unknown";
+}
+
+bool memory_region_is_writable(MemoryRegionKind kind) {
+  return kind == MemoryRegionKind::Ram || kind == MemoryRegionKind::Flash;
+}
+
+bool memory_region_is_persistent(MemoryRegionKind kind) {
+  return kind == MemoryRegionKind::Flash || kind == MemoryRegionKind::ReadOnly;
+}
+
+static referee::Result<MemoryRegionKind> memory_region_kind_from_name(std::string_view name) {
+  if (name == "ram") return referee::Result<MemoryRegionKind>::ok(MemoryRegionKind::Ram);
+  if (name == "flash") return referee::Result<MemoryRegionKind>::ok(MemoryRegionKind::Flash);
+  if (name == "read_only") return referee::Result<MemoryRegionKind>::ok(MemoryRegionKind::ReadOnly);
+  return referee::Result<MemoryRegionKind>::err(referee::ErrorCode::InvalidArgument,
+                                                "unknown memory region kind");
+}
+
+static nlohmann::json memory_region_to_json(const MemoryRegion& region) {
+  nlohmann::json j;
+  j["id"] = region.id.to_hex();
+  j["name"] = region.name;
+  j["kind"] = std::string(memory_region_kind_name(region.kind));
+  j["base"] = region.base;
+  j["size"] = region.size;
+  j["writable"] = memory_region_is_writable(region.kind);
+  j["persistent"] = memory_region_is_persistent(region.kind);
+  return j;
+}
+
+static referee::Result<MemoryRegion> memory_region_from_json(const nlohmann::json& j) {
+  if (!j.is_object()) {
+    return referee::Result<MemoryRegion>::err(referee::ErrorCode::InvalidArgument,
+                                              "memory region payload must be an object");
+  }
+
+  try {
+    MemoryRegion region;
+    region.id = referee::ObjectID::from_hex(j.at("id").get<std::string>());
+    region.name = j.at("name").get<std::string>();
+    auto kindR = memory_region_kind_from_name(j.at("kind").get<std::string>());
+    if (!kindR) return referee::Result<MemoryRegion>::err(kindR.error.value());
+    region.kind = kindR.value.value();
+    region.base = j.at("base").get<std::uint64_t>();
+    region.size = j.at("size").get<std::uint64_t>();
+    return referee::Result<MemoryRegion>::ok(std::move(region));
+  } catch (const std::exception& ex) {
+    return referee::Result<MemoryRegion>::err(referee::ErrorCode::InvalidArgument, ex.what());
+  }
+}
+
+static referee::Result<nlohmann::json> json_from_cbor_payload(const referee::Bytes& payload) {
+  try {
+    return referee::Result<nlohmann::json>::ok(nlohmann::json::from_cbor(payload));
+  } catch (const std::exception& ex) {
+    return referee::Result<nlohmann::json>::err(referee::ErrorCode::InvalidArgument, ex.what());
+  }
+}
+
+MemoryService::MemoryService(referee::ObjectID id) {
+  desc_.id = id;
+  desc_.type = kMemoryServiceType;
+  desc_.name = "memory";
+  desc_.endpoints.push_back(Endpoint{"memory.register_region", kMemoryRegisterRegionType, {}});
+  desc_.endpoints.push_back(Endpoint{"memory.list_regions", kMemoryListRegionsType, {}});
+  desc_.endpoints.push_back(Endpoint{"memory.lookup_region", kMemoryLookupRegionType, {}});
+}
+
+ServiceDescriptor MemoryService::descriptor() const {
+  return desc_;
+}
+
+referee::Result<MemoryRegion> MemoryService::register_region(const MemoryRegion& region) {
+  if (region.name.empty()) {
+    return referee::Result<MemoryRegion>::err(referee::ErrorCode::InvalidArgument,
+                                              "memory region name is empty");
+  }
+  if (region.size == 0) {
+    return referee::Result<MemoryRegion>::err(referee::ErrorCode::InvalidArgument,
+                                              "memory region size is zero");
+  }
+
+  for (const auto& existing : regions_) {
+    if (existing.id == region.id) {
+      return referee::Result<MemoryRegion>::err(referee::ErrorCode::AlreadyExists,
+                                                "memory region id already registered");
+    }
+    if (existing.name == region.name) {
+      return referee::Result<MemoryRegion>::err(referee::ErrorCode::AlreadyExists,
+                                                "memory region name already registered");
+    }
+  }
+
+  regions_.push_back(region);
+  return referee::Result<MemoryRegion>::ok(region);
+}
+
+referee::Result<std::optional<MemoryRegion>> MemoryService::lookup_region(referee::ObjectID id) const {
+  for (const auto& region : regions_) {
+    if (region.id == id) {
+      return referee::Result<std::optional<MemoryRegion>>::ok(std::optional<MemoryRegion>{region});
+    }
+  }
+  return referee::Result<std::optional<MemoryRegion>>::ok(std::optional<MemoryRegion>{});
+}
+
+std::vector<MemoryRegion> MemoryService::list_regions() const {
+  return regions_;
+}
+
+referee::Result<MessageEnvelope> MemoryService::handle_message(const MessageEnvelope& request) {
+  auto key = endpoint_key(request.endpoint);
+  if (key == "memory.register_region") {
+    auto jsonR = json_from_cbor_payload(request.payload_cbor);
+    if (!jsonR) return referee::Result<MessageEnvelope>::err(jsonR.error.value());
+    auto regionR = memory_region_from_json(jsonR.value.value());
+    if (!regionR) return referee::Result<MessageEnvelope>::err(regionR.error.value());
+    auto registeredR = register_region(regionR.value.value());
+    if (!registeredR) return referee::Result<MessageEnvelope>::err(registeredR.error.value());
+    auto response = make_response(request,
+                                  desc_.id,
+                                  kMemoryRegionResponseType,
+                                  nlohmann::json::to_cbor(memory_region_to_json(registeredR.value.value())));
+    return referee::Result<MessageEnvelope>::ok(std::move(response));
+  }
+
+  if (key == "memory.list_regions") {
+    nlohmann::json root;
+    root["regions"] = nlohmann::json::array();
+    for (const auto& region : regions_) {
+      root["regions"].push_back(memory_region_to_json(region));
+    }
+    auto response = make_response(request,
+                                  desc_.id,
+                                  kMemoryRegionListResponseType,
+                                  nlohmann::json::to_cbor(root));
+    return referee::Result<MessageEnvelope>::ok(std::move(response));
+  }
+
+  if (key == "memory.lookup_region") {
+    auto jsonR = json_from_cbor_payload(request.payload_cbor);
+    if (!jsonR) return referee::Result<MessageEnvelope>::err(jsonR.error.value());
+
+    try {
+      auto id = referee::ObjectID::from_hex(jsonR.value->at("id").get<std::string>());
+      auto foundR = lookup_region(id);
+      if (!foundR) return referee::Result<MessageEnvelope>::err(foundR.error.value());
+
+      nlohmann::json root;
+      root["found"] = foundR.value->has_value();
+      if (foundR.value->has_value()) {
+        root["region"] = memory_region_to_json(foundR.value->value());
+      }
+
+      auto response = make_response(request,
+                                    desc_.id,
+                                    kMemoryRegionResponseType,
+                                    nlohmann::json::to_cbor(root));
+      return referee::Result<MessageEnvelope>::ok(std::move(response));
+    } catch (const std::exception& ex) {
+      return referee::Result<MessageEnvelope>::err(referee::ErrorCode::InvalidArgument, ex.what());
+    }
+  }
+
+  return referee::Result<MessageEnvelope>::err(referee::ErrorCode::InvalidArgument,
+                                               "unsupported memory service endpoint");
 }
 
 referee::Result<void> ServiceRegistry::register_service(const ServiceDescriptor& desc,
