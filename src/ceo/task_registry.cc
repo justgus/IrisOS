@@ -195,6 +195,24 @@ referee::Result<void> TaskRegistry::fail_task(TaskID id, std::string reason) {
   return referee::Result<void>::ok();
 }
 
+referee::Result<void> TaskRegistry::attach_capability_context(
+    TaskID id,
+    referee::ObjectID capability_context_id) {
+  auto* rec = find_task(id);
+  if (!rec) return referee::Result<void>::err("task not found");
+  if (is_terminal(rec->state)) return referee::Result<void>::err("task already terminal");
+  rec->capability_context_id = capability_context_id;
+  return referee::Result<void>::ok();
+}
+
+referee::Result<void> TaskRegistry::clear_capability_context(TaskID id) {
+  auto* rec = find_task(id);
+  if (!rec) return referee::Result<void>::err("task not found");
+  if (is_terminal(rec->state)) return referee::Result<void>::err("task already terminal");
+  rec->capability_context_id.reset();
+  return referee::Result<void>::ok();
+}
+
 referee::Result<std::optional<TaskRecord>> TaskRegistry::get_task(TaskID id) const {
   const auto* rec = find_task(id);
   if (!rec) return referee::Result<std::optional<TaskRecord>>::ok(std::nullopt);
@@ -205,6 +223,22 @@ referee::Result<std::vector<TaskRecord>> TaskRegistry::list_tasks() const {
   std::vector<TaskRecord> out;
   out.reserve(tasks_.size());
   for (const auto& kv : tasks_) out.push_back(kv.second);
+  std::sort(out.begin(), out.end(), [](const TaskRecord& a, const TaskRecord& b) {
+    return a.id < b.id;
+  });
+  return referee::Result<std::vector<TaskRecord>>::ok(std::move(out));
+}
+
+referee::Result<std::vector<TaskRecord>> TaskRegistry::list_tasks_for_capability_context(
+    referee::ObjectID capability_context_id) const {
+  std::vector<TaskRecord> out;
+  out.reserve(tasks_.size());
+  for (const auto& kv : tasks_) {
+    if (kv.second.capability_context_id.has_value()
+        && kv.second.capability_context_id.value() == capability_context_id) {
+      out.push_back(kv.second);
+    }
+  }
   std::sort(out.begin(), out.end(), [](const TaskRecord& a, const TaskRecord& b) {
     return a.id < b.id;
   });
@@ -225,6 +259,7 @@ TaskProfileSnapshot TaskRegistry::profile_snapshot() const {
     TaskProfile profile;
     profile.id = rec.id;
     profile.object_id = rec.object_id;
+    profile.capability_context_id = rec.capability_context_id;
     profile.name = rec.name;
     profile.mode = rec.mode;
     profile.state = rec.state;

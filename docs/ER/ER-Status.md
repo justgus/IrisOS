@@ -68,6 +68,7 @@
 - ER-0056 — Verified
 - ER-0057 — Verified
 - ER-0058 — Complete
+- ER-0059 — Complete
 - ER-0078 — Complete
 - ER-0079 — Proposed
 - ER-0080 — Proposed
