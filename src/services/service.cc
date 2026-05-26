@@ -1,11 +1,34 @@
 #include "services/service.h"
 
+#include "services/capability_context.h"
+
 #include <chrono>
+#include <unordered_set>
 
 namespace iris::service {
 
 static std::string id_key(const referee::ObjectID& id) {
   return id.to_hex();
+}
+
+static bool endpoint_matches(const Endpoint& declared, const Endpoint& requested) {
+  if (!declared.name.empty() && !requested.name.empty() && declared.name == requested.name) {
+    return true;
+  }
+  if (declared.type.has_value() && requested.type.has_value() &&
+      declared.type.value() == requested.type.value()) {
+    return true;
+  }
+  return false;
+}
+
+static std::optional<Endpoint> find_declared_endpoint(const ServiceDescriptor& service,
+                                                      const std::optional<Endpoint>& requested) {
+  if (!requested.has_value()) return std::nullopt;
+  for (const auto& endpoint : service.endpoints) {
+    if (endpoint_matches(endpoint, requested.value())) return endpoint;
+  }
+  return std::nullopt;
 }
 
 MessageEnvelope make_request_to_object(referee::ObjectID sender,
@@ -127,37 +150,94 @@ ServiceObject* ServiceRegistry::handler_for(const referee::ObjectID& id) const {
   return it->second.handler;
 }
 
+CapabilityContextAuthorizer::CapabilityContextAuthorizer(CapabilityContextStore& contexts)
+    : contexts_(contexts) {}
+
+referee::Result<void> CapabilityContextAuthorizer::authorize(
+    const MessageEnvelope& request,
+    const ServiceDescriptor& service,
+    const std::optional<Endpoint>& endpoint) {
+  std::vector<std::string> required;
+  required.reserve(service.required_grants.size() +
+                   (endpoint.has_value() ? endpoint->required_grants.size() : 0));
+  for (const auto& grant : service.required_grants) required.push_back(grant);
+  if (endpoint.has_value()) {
+    for (const auto& grant : endpoint->required_grants) required.push_back(grant);
+  }
+
+  if (required.empty()) return referee::Result<void>::ok();
+
+  auto contextsR = contexts_.list_contexts_for_subject(request.sender);
+  if (!contextsR) return referee::Result<void>::err(contextsR.error.value());
+
+  std::unordered_set<std::string> granted;
+  for (const auto& record : contextsR.value.value()) {
+    for (const auto& grant : record.context.grants) {
+      granted.insert(grant.name);
+    }
+  }
+
+  for (const auto& grant : required) {
+    if (granted.find(grant) == granted.end()) {
+      return referee::Result<void>::err(referee::ErrorCode::FailedPrecondition,
+                                        "missing capability grant: " + grant);
+    }
+  }
+
+  return referee::Result<void>::ok();
+}
+
 IpcService::IpcService(ServiceRegistry& registry) : registry_(registry) {}
 
-ServiceObject* IpcService::resolve_handler(const MessageEnvelope& request) const {
-  if (request.recipient.has_value()) return registry_.handler_for(request.recipient.value());
-  if (!request.endpoint.has_value()) return nullptr;
+IpcService::IpcService(ServiceRegistry& registry, ServiceBoundaryAuthorizer* authorizer)
+    : registry_(registry), authorizer_(authorizer) {}
+
+std::optional<IpcService::ResolvedService> IpcService::resolve_service(
+    const MessageEnvelope& request) const {
+  if (request.recipient.has_value()) {
+    auto* handler = registry_.handler_for(request.recipient.value());
+    if (!handler) return std::nullopt;
+    auto descriptor = handler->descriptor();
+    return ResolvedService{descriptor, find_declared_endpoint(descriptor, request.endpoint), handler};
+  }
+  if (!request.endpoint.has_value()) return std::nullopt;
 
   const auto& endpoint = request.endpoint.value();
   if (!endpoint.name.empty()) {
     auto resolved = registry_.resolve_by_name(endpoint.name);
-    if (!resolved || !resolved.value->has_value()) return nullptr;
-    return registry_.handler_for(resolved.value->value().id);
+    if (!resolved || !resolved.value->has_value()) return std::nullopt;
+    const auto& descriptor = resolved.value->value();
+    auto* handler = registry_.handler_for(descriptor.id);
+    if (!handler) return std::nullopt;
+    return ResolvedService{descriptor, find_declared_endpoint(descriptor, request.endpoint), handler};
   }
 
   if (endpoint.type.has_value()) {
     auto resolved = registry_.resolve_by_type(endpoint.type.value());
-    if (!resolved || !resolved.value->has_value()) return nullptr;
-    return registry_.handler_for(resolved.value->value().id);
+    if (!resolved || !resolved.value->has_value()) return std::nullopt;
+    const auto& descriptor = resolved.value->value();
+    auto* handler = registry_.handler_for(descriptor.id);
+    if (!handler) return std::nullopt;
+    return ResolvedService{descriptor, find_declared_endpoint(descriptor, request.endpoint), handler};
   }
 
-  return nullptr;
+  return std::nullopt;
 }
 
 referee::Result<MessageEnvelope> IpcService::send_request(const MessageEnvelope& request,
                                                           std::chrono::milliseconds timeout) {
   if (timeout.count() <= 0) return referee::Result<MessageEnvelope>::err("timeout");
 
-  auto* handler = resolve_handler(request);
-  if (!handler) return referee::Result<MessageEnvelope>::err("service not found");
+  auto resolved = resolve_service(request);
+  if (!resolved.has_value()) return referee::Result<MessageEnvelope>::err("service not found");
+
+  if (authorizer_) {
+    auto authR = authorizer_->authorize(request, resolved->descriptor, resolved->endpoint);
+    if (!authR) return referee::Result<MessageEnvelope>::err(authR.error.value());
+  }
 
   auto start = std::chrono::steady_clock::now();
-  auto response = handler->handle_message(request);
+  auto response = resolved->handler->handle_message(request);
   auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
 
   if (elapsed > timeout) return referee::Result<MessageEnvelope>::err("timeout");
