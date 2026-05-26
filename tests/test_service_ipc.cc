@@ -6,10 +6,13 @@ extern "C" {
 #endif
 
 #include "referee/referee.h"
+#include "services/capability_context.h"
 #include "services/service.h"
 
 #include <chrono>
 #include <string>
+#include <utility>
+#include <vector>
 
 using namespace referee;
 using namespace iris::service;
@@ -23,14 +26,20 @@ const char* result_message(const Result<T>& r) {
 
 class EchoService final : public ServiceObject {
 public:
-  EchoService(ObjectID id, TypeID type, std::string name)
+  EchoService(ObjectID id,
+              TypeID type,
+              std::string name,
+              std::vector<std::string> required_grants = {},
+              std::vector<std::string> endpoint_required_grants = {})
       : ack_type_{0xACCA0001ULL} {
     desc_.id = id;
     desc_.type = type;
     desc_.name = std::move(name);
+    desc_.required_grants = std::move(required_grants);
     Endpoint ep;
     ep.name = "echo";
     ep.type = TypeID{0xE001ULL};
+    ep.required_grants = std::move(endpoint_required_grants);
     desc_.endpoints.push_back(ep);
   }
 
@@ -47,6 +56,16 @@ private:
   ServiceDescriptor desc_{};
   TypeID ack_type_{};
 };
+
+CapabilityContext make_context(ObjectID id, ObjectID subject, std::vector<std::string> grants) {
+  CapabilityContext context;
+  context.id = id;
+  context.subject = subject;
+  for (auto& grant : grants) {
+    context.grants.push_back(CapabilityGrant{std::move(grant)});
+  }
+  return context;
+}
 
 } // namespace
 
@@ -104,12 +123,92 @@ START_TEST(test_ipc_send_receive_ack_and_timeout)
 }
 END_TEST
 
+START_TEST(test_ipc_enforces_descriptor_required_grants)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  CapabilityContextStore contexts(store);
+  CapabilityContextAuthorizer authorizer(contexts);
+
+  ServiceRegistry registry;
+  EchoService svc(ObjectID::random(), TypeID{0x9003ULL}, "restricted-service",
+                  {"service.echo.call"});
+  ck_assert_msg(registry.register_service(svc.descriptor(), &svc), "register_service failed");
+
+  IpcService ipc(registry, &authorizer);
+  Endpoint endpoint;
+  endpoint.name = "restricted-service";
+
+  auto sender = ObjectID::random();
+  auto request = make_request_to_endpoint(sender, endpoint, TypeID{0xBEEF0002ULL}, {});
+
+  auto denied = ipc.send_request(request, std::chrono::milliseconds(5));
+  ck_assert_msg(!denied, "expected missing capability grant to fail");
+  ck_assert_msg(denied.error.has_value(), "expected error details");
+  ck_assert_int_eq((int)denied.error->code, (int)ErrorCode::FailedPrecondition);
+
+  auto context = make_context(ObjectID::random(), sender, {"service.echo.call"});
+  auto savedR = contexts.persist_context(context);
+  ck_assert_msg(savedR, "persist_context failed: %s", result_message(savedR));
+
+  auto allowed = ipc.send_request(request, std::chrono::milliseconds(5));
+  ck_assert_msg(allowed, "send_request with capability failed: %s", result_message(allowed));
+  ck_assert(allowed.value->correlation_id == request.correlation_id);
+
+  ck_assert_msg(store.close(), "close failed");
+}
+END_TEST
+
+START_TEST(test_ipc_enforces_endpoint_required_grants_for_declared_endpoint)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  CapabilityContextStore contexts(store);
+  CapabilityContextAuthorizer authorizer(contexts);
+
+  ServiceRegistry registry;
+  EchoService svc(ObjectID::random(), TypeID{0x9004ULL}, "endpoint-service", {},
+                  {"service.echo.endpoint"});
+  ck_assert_msg(registry.register_service(svc.descriptor(), &svc), "register_service failed");
+
+  IpcService ipc(registry, &authorizer);
+  Endpoint endpoint;
+  endpoint.name = "echo";
+
+  auto sender = ObjectID::random();
+  auto request = make_request_to_object(sender, svc.descriptor().id, TypeID{0xBEEF0003ULL}, {});
+  request.endpoint = endpoint;
+
+  auto denied = ipc.send_request(request, std::chrono::milliseconds(5));
+  ck_assert_msg(!denied, "expected missing endpoint capability grant to fail");
+  ck_assert_msg(denied.error.has_value(), "expected error details");
+  ck_assert_int_eq((int)denied.error->code, (int)ErrorCode::FailedPrecondition);
+
+  auto context = make_context(ObjectID::random(), sender, {"service.echo.endpoint"});
+  auto savedR = contexts.persist_context(context);
+  ck_assert_msg(savedR, "persist_context failed: %s", result_message(savedR));
+
+  auto allowed = ipc.send_request(request, std::chrono::milliseconds(5));
+  ck_assert_msg(allowed, "send_request with endpoint capability failed: %s",
+                result_message(allowed));
+  ck_assert(allowed.value->correlation_id == request.correlation_id);
+
+  ck_assert_msg(store.close(), "close failed");
+}
+END_TEST
+
 Suite* service_ipc_suite(void) {
   Suite* s = suite_create("ServiceIPC");
   TCase* tc = tcase_create("core");
 
   tcase_add_test(tc, test_service_registry_register_resolve_unregister);
   tcase_add_test(tc, test_ipc_send_receive_ack_and_timeout);
+  tcase_add_test(tc, test_ipc_enforces_descriptor_required_grants);
+  tcase_add_test(tc, test_ipc_enforces_endpoint_required_grants_for_declared_endpoint);
 
   suite_add_tcase(s, tc);
   return s;

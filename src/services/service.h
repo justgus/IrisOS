@@ -12,9 +12,12 @@
 
 namespace iris::service {
 
+class CapabilityContextStore;
+
 struct Endpoint {
   std::string name;
   std::optional<referee::TypeID> type;
+  std::vector<std::string> required_grants;
 };
 
 struct MessageEnvelope {
@@ -48,6 +51,7 @@ struct ServiceDescriptor {
   referee::ObjectID id{};
   referee::TypeID type{};
   std::string name;
+  std::vector<std::string> required_grants;
   std::vector<Endpoint> endpoints;
 };
 
@@ -79,17 +83,45 @@ private:
   std::unordered_map<std::uint64_t, std::string> by_type_;
 };
 
+class ServiceBoundaryAuthorizer {
+public:
+  virtual ~ServiceBoundaryAuthorizer() = default;
+  virtual referee::Result<void> authorize(const MessageEnvelope& request,
+                                          const ServiceDescriptor& service,
+                                          const std::optional<Endpoint>& endpoint) = 0;
+};
+
+class CapabilityContextAuthorizer final : public ServiceBoundaryAuthorizer {
+public:
+  explicit CapabilityContextAuthorizer(CapabilityContextStore& contexts);
+
+  referee::Result<void> authorize(const MessageEnvelope& request,
+                                  const ServiceDescriptor& service,
+                                  const std::optional<Endpoint>& endpoint) override;
+
+private:
+  CapabilityContextStore& contexts_;
+};
+
 class IpcService {
 public:
   explicit IpcService(ServiceRegistry& registry);
+  IpcService(ServiceRegistry& registry, ServiceBoundaryAuthorizer* authorizer);
 
   referee::Result<MessageEnvelope> send_request(const MessageEnvelope& request,
                                                 std::chrono::milliseconds timeout);
 
 private:
-  ServiceObject* resolve_handler(const MessageEnvelope& request) const;
+  struct ResolvedService {
+    ServiceDescriptor descriptor{};
+    std::optional<Endpoint> endpoint;
+    ServiceObject* handler{nullptr};
+  };
+
+  std::optional<ResolvedService> resolve_service(const MessageEnvelope& request) const;
 
   ServiceRegistry& registry_;
+  ServiceBoundaryAuthorizer* authorizer_{nullptr};
 };
 
 } // namespace iris::service
