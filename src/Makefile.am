@@ -33,6 +33,8 @@ libreferee_la_SOURCES = \
    vizier/routing.cc \
    viz/artifacts.h \
    viz/artifacts.cc \
+   services/capability_context.h \
+   services/capability_context.cc \
    services/service.h \
    services/service.cc \
    refract/bootstrap.h \
@@ -68,4 +70,5 @@ include_HEADERS = referee/referee.h \
    parser/xml_parser.h \
    comms/primitives.h \
    vizier/routing.h \
-   viz/artifacts.h
+   viz/artifacts.h \
+   services/capability_context.h
