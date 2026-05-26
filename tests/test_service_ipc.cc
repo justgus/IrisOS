@@ -123,6 +123,28 @@ START_TEST(test_ipc_send_receive_ack_and_timeout)
 }
 END_TEST
 
+START_TEST(test_ipc_preserves_sandbox_identity_hook)
+{
+  ServiceRegistry registry;
+  EchoService svc(ObjectID::random(), TypeID{0x9005ULL}, "sandbox-service");
+  ck_assert_msg(registry.register_service(svc.descriptor(), &svc), "register_service failed");
+
+  IpcService ipc(registry);
+  Endpoint endpoint;
+  endpoint.name = "sandbox-service";
+
+  auto sandbox_id = ObjectID::random();
+  auto request = make_request_to_endpoint(ObjectID::random(), endpoint, TypeID{0xBEEF0004ULL}, {});
+  request.sandbox = sandbox_id;
+
+  auto response = ipc.send_request(request, std::chrono::milliseconds(5));
+  ck_assert_msg(response, "send_request failed: %s", result_message(response));
+  ck_assert_msg(response.value.has_value(), "expected response envelope");
+  ck_assert_msg(response.value->sandbox.has_value(), "expected sandbox identity on response");
+  ck_assert(response.value->sandbox.value() == sandbox_id);
+}
+END_TEST
+
 START_TEST(test_ipc_enforces_descriptor_required_grants)
 {
   SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
@@ -207,6 +229,7 @@ Suite* service_ipc_suite(void) {
 
   tcase_add_test(tc, test_service_registry_register_resolve_unregister);
   tcase_add_test(tc, test_ipc_send_receive_ack_and_timeout);
+  tcase_add_test(tc, test_ipc_preserves_sandbox_identity_hook);
   tcase_add_test(tc, test_ipc_enforces_descriptor_required_grants);
   tcase_add_test(tc, test_ipc_enforces_endpoint_required_grants_for_declared_endpoint);
 

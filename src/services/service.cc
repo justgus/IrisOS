@@ -68,6 +68,7 @@ MessageEnvelope make_response(const MessageEnvelope& request,
   MessageEnvelope env;
   env.sender = responder;
   env.recipient = request.sender;
+  env.sandbox = request.sandbox;
   env.message_type = message_type;
   env.payload_cbor = std::move(payload_cbor);
   env.correlation_id = request.correlation_id;
