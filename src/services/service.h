@@ -24,6 +24,7 @@ struct MessageEnvelope {
   referee::ObjectID sender{};
   std::optional<referee::ObjectID> recipient{};
   std::optional<Endpoint> endpoint{};
+  std::optional<referee::ObjectID> sandbox{};
   referee::TypeID message_type{};
   referee::Bytes payload_cbor{};
   referee::ObjectID correlation_id{};
