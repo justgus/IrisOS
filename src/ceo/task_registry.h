@@ -46,6 +46,7 @@ struct ChildLink {
 struct TaskRecord {
   TaskID id{0};
   referee::ObjectID object_id{};
+  std::optional<referee::ObjectID> capability_context_id;
   std::optional<TaskID> parent;
   std::vector<ChildLink> children;
   TaskState state{TaskState::Created};
@@ -56,6 +57,7 @@ struct TaskRecord {
 struct TaskProfile {
   TaskID id{0};
   referee::ObjectID object_id{};
+  std::optional<referee::ObjectID> capability_context_id;
   std::string name;
   TaskMode mode{TaskMode::Inline};
   TaskState state{TaskState::Created};
@@ -124,9 +126,13 @@ public:
   referee::Result<void> kill_task(TaskID id);
   referee::Result<void> complete_task(TaskID id);
   referee::Result<void> fail_task(TaskID id, std::string reason);
+  referee::Result<void> attach_capability_context(TaskID id, referee::ObjectID capability_context_id);
+  referee::Result<void> clear_capability_context(TaskID id);
 
   referee::Result<std::optional<TaskRecord>> get_task(TaskID id) const;
   referee::Result<std::vector<TaskRecord>> list_tasks() const;
+  referee::Result<std::vector<TaskRecord>> list_tasks_for_capability_context(
+      referee::ObjectID capability_context_id) const;
   TaskProfileSnapshot profile_snapshot() const;
   TaskTraceSnapshot trace_snapshot() const;
   void clear_trace();

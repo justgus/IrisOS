@@ -121,6 +121,67 @@ START_TEST(test_create_start_stop)
 }
 END_TEST
 
+START_TEST(test_capability_context_attachment)
+{
+  TaskRegistry registry;
+  auto task = registry.create_task(referee::ObjectID::random(), std::nullopt, "cap-task",
+                                   TaskMode::Service);
+  ck_assert_msg(task, "create task failed");
+
+  auto context_id = referee::ObjectID::random();
+  ck_assert_msg(registry.attach_capability_context(task.value->id, context_id),
+                "attach_capability_context failed");
+
+  auto lookup = registry.get_task(task.value->id);
+  ck_assert_msg(lookup, "get_task failed");
+  ck_assert_msg(lookup.value->has_value(), "expected task record");
+  ck_assert_msg(lookup.value->value().capability_context_id.has_value(),
+                "expected capability context attachment");
+  ck_assert(lookup.value->value().capability_context_id.value() == context_id);
+
+  auto by_context = registry.list_tasks_for_capability_context(context_id);
+  ck_assert_msg(by_context, "list_tasks_for_capability_context failed");
+  ck_assert_uint_eq((unsigned int)by_context.value->size(), 1U);
+  ck_assert_uint_eq((unsigned int)by_context.value->front().id, (unsigned int)task.value->id);
+
+  auto profile = registry.profile_snapshot();
+  ck_assert_uint_eq((unsigned int)profile.tasks.size(), 1U);
+  ck_assert_msg(profile.tasks.front().capability_context_id.has_value(),
+                "expected profile capability context attachment");
+  ck_assert(profile.tasks.front().capability_context_id.value() == context_id);
+
+  ck_assert_msg(registry.start_task(task.value->id), "start_task failed");
+  ck_assert_msg(registry.wait_task(task.value->id), "wait_task failed");
+  ck_assert_msg(registry.resume_task(task.value->id), "resume_task failed");
+
+  auto after_lifecycle = registry.get_task(task.value->id);
+  ck_assert_msg(after_lifecycle, "get_task after lifecycle failed");
+  ck_assert(after_lifecycle.value->value().capability_context_id.value() == context_id);
+
+  ck_assert_msg(registry.clear_capability_context(task.value->id),
+                "clear_capability_context failed");
+  auto cleared = registry.get_task(task.value->id);
+  ck_assert_msg(cleared, "get_task after clear failed");
+  ck_assert_msg(!cleared.value->value().capability_context_id.has_value(),
+                "expected cleared capability context");
+}
+END_TEST
+
+START_TEST(test_capability_context_terminal_task_rejects_attachment_changes)
+{
+  TaskRegistry registry;
+  auto task = registry.spawn_task(referee::ObjectID::random());
+  ck_assert_msg(task, "spawn task failed");
+  ck_assert_msg(registry.complete_task(task.value->id), "complete_task failed");
+
+  auto attach = registry.attach_capability_context(task.value->id, referee::ObjectID::random());
+  ck_assert_msg(!attach, "expected terminal task attachment to fail");
+
+  auto clear = registry.clear_capability_context(task.value->id);
+  ck_assert_msg(!clear, "expected terminal task clear to fail");
+}
+END_TEST
+
 START_TEST(test_task_comms_open_close)
 {
   TaskRegistry registry;
@@ -201,6 +262,8 @@ Suite* ceo_task_suite(void) {
   tcase_add_test(tc, test_wait_and_resume);
   tcase_add_test(tc, test_invalid_parent);
   tcase_add_test(tc, test_create_start_stop);
+  tcase_add_test(tc, test_capability_context_attachment);
+  tcase_add_test(tc, test_capability_context_terminal_task_rejects_attachment_changes);
   tcase_add_test(tc, test_task_comms_open_close);
   tcase_add_test(tc, test_supervision_tree_detach_on_terminal);
   tcase_add_test(tc, test_long_run_task_stability);
