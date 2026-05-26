@@ -4,7 +4,7 @@ AM_CPPFLAGS = -I$(top_srcdir)/src $(CHECK_CFLAGS) \
 	-DIRIS_TOP_BUILDDIR=\"$(abs_top_builddir)\"
 AM_TESTS_ENVIRONMENT = CK_FORK=no
 
-TESTS = test_referee_core test_service_ipc test_refract_registry test_refract_bootstrap test_ceo_tasks test_exec_waitables test_exec_integration test_vizier_routing test_viz_artifacts test_phase3_integration test_comms_primitives test_ceo_io_reactor test_phase5_integration test_phase6_persistence test_conch_authoring test_parser_core test_conch_parser test_json_parser test_cpp_parser test_python_parser test_xml_parser
+TESTS = test_referee_core test_service_ipc test_capability_context test_refract_registry test_refract_bootstrap test_ceo_tasks test_exec_waitables test_exec_integration test_vizier_routing test_viz_artifacts test_phase3_integration test_comms_primitives test_ceo_io_reactor test_phase5_integration test_phase6_persistence test_conch_authoring test_parser_core test_conch_parser test_json_parser test_cpp_parser test_python_parser test_xml_parser
 check_PROGRAMS = $(TESTS)
 
 test_referee_core_SOURCES = test_referee_core.cc
@@ -12,6 +12,9 @@ test_referee_core_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
 
 test_service_ipc_SOURCES = test_service_ipc.cc
 test_service_ipc_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
+
+test_capability_context_SOURCES = test_capability_context.cc
+test_capability_context_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
 
 test_refract_registry_SOURCES = test_refract_registry.cc
 test_refract_registry_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
