@@ -11,6 +11,9 @@ namespace {
 
 constexpr std::uint32_t kObjTag = 0x314a424f; // "OBJ1"
 constexpr std::uint32_t kEdgeTag = 0x31474445; // "EDG1"
+constexpr std::uint32_t kGraphChangeTag = 0x31484347; // "GCH1"
+constexpr std::uint8_t kGraphChangeObjectCreated = 1;
+constexpr std::uint8_t kGraphChangeEdgeCreated = 2;
 
 void write_u32(std::ostream& out, std::uint32_t v) {
   std::array<std::uint8_t, 4> b{
@@ -34,6 +37,10 @@ void write_u64(std::ostream& out, std::uint64_t v) {
     static_cast<std::uint8_t>((v >> 56) & 0xFFu)
   };
   out.write(reinterpret_cast<const char*>(b.data()), b.size());
+}
+
+void write_u8(std::ostream& out, std::uint8_t v) {
+  out.write(reinterpret_cast<const char*>(&v), 1);
 }
 
 bool read_exact(std::istream& in, void* dst, std::size_t n) {
@@ -65,6 +72,10 @@ bool read_u64(std::istream& in, std::uint64_t* out) {
   return true;
 }
 
+bool read_u8(std::istream& in, std::uint8_t* out) {
+  return read_exact(in, out, 1);
+}
+
 std::string key_object_id(const ObjectID& id, std::uint64_t ver) {
   return id.to_hex() + ":" + std::to_string(ver);
 }
@@ -86,6 +97,21 @@ std::string key_edge_to(const EdgeRecord& rec) {
 void append_index(std::ofstream& out, const std::string& key, std::uint64_t offset) {
   if (!out.is_open()) return;
   out << key << '\t' << offset << '\n';
+}
+
+bool object_matches(const ObjectRecord& rec, const GraphChangeFilter& filter) {
+  if (filter.edge_name || filter.edge_role || filter.edge_from || filter.edge_to) return false;
+  if (filter.object_type && rec.type != *filter.object_type) return false;
+  return true;
+}
+
+bool edge_matches(const EdgeRecord& rec, const GraphChangeFilter& filter) {
+  if (filter.object_type) return false;
+  if (filter.edge_name && rec.name != *filter.edge_name) return false;
+  if (filter.edge_role && rec.role != *filter.edge_role) return false;
+  if (filter.edge_from && !(rec.from == *filter.edge_from)) return false;
+  if (filter.edge_to && !(rec.to == *filter.edge_to)) return false;
+  return true;
 }
 
 } // namespace
@@ -138,11 +164,14 @@ Result<void> SqliteStore::open() {
 
   const auto obj_path = segments_dir / "objects.seg";
   const auto edge_path = segments_dir / "edges.seg";
+  const auto graph_change_path = segments_dir / "graph_changes.seg";
 
   object_seg_.open(obj_path, std::ios::binary | std::ios::app);
   if (!object_seg_) return Result<void>::err("failed to open objects.seg");
   edge_seg_.open(edge_path, std::ios::binary | std::ios::app);
   if (!edge_seg_) return Result<void>::err("failed to open edges.seg");
+  graph_change_seg_.open(graph_change_path, std::ios::binary | std::ios::app);
+  if (!graph_change_seg_) return Result<void>::err("failed to open graph_changes.seg");
 
   idx_objects_by_id_.open(indexes_dir / "objects_by_id.idx", std::ios::app);
   idx_objects_by_type_.open(indexes_dir / "objects_by_type.idx", std::ios::app);
@@ -166,6 +195,7 @@ Result<void> SqliteStore::close() {
   if (idx_objects_by_type_.is_open()) idx_objects_by_type_.close();
   if (idx_edges_from_.is_open()) idx_edges_from_.close();
   if (idx_edges_to_.is_open()) idx_edges_to_.close();
+  if (graph_change_seg_.is_open()) graph_change_seg_.close();
   open_ = false;
   return Result<void>::ok();
 }
@@ -179,6 +209,7 @@ Result<void> SqliteStore::begin() {
   in_txn_ = true;
   pending_objects_.clear();
   pending_edges_.clear();
+  pending_graph_changes_.clear();
   return Result<void>::ok();
 }
 
@@ -194,8 +225,14 @@ Result<void> SqliteStore::commit() {
     if (!r) return r;
     index_edge(rec);
   }
+  for (const auto& rec : pending_graph_changes_) {
+    auto r = append_graph_change(rec);
+    if (!r) return r;
+    graph_changes_.push_back(rec);
+  }
   pending_objects_.clear();
   pending_edges_.clear();
+  pending_graph_changes_.clear();
   in_txn_ = false;
   return Result<void>::ok();
 }
@@ -204,6 +241,7 @@ Result<void> SqliteStore::rollback() {
   if (!in_txn_) return Result<void>::ok();
   pending_objects_.clear();
   pending_edges_.clear();
+  pending_graph_changes_.clear();
   in_txn_ = false;
   return Result<void>::ok();
 }
@@ -228,10 +266,16 @@ Result<ObjectRecord> SqliteStore::create_object_with_id(ObjectID object_id, Type
 
   if (in_txn_) {
     pending_objects_.push_back(rec);
+    pending_graph_changes_.push_back(
+        GraphChangeRecord{GraphChangeKind::ObjectCreated, GraphChangeCursor(next_graph_sequence_++),
+                          rec, std::nullopt});
   } else {
     auto r = append_object(rec);
     if (!r) return Result<ObjectRecord>::err(r.error->message);
     index_object(rec);
+    index_graph_object(rec);
+    r = append_graph_change(graph_changes_.back());
+    if (!r) return Result<ObjectRecord>::err(r.error->message);
   }
 
   return Result<ObjectRecord>::ok(std::move(rec));
@@ -306,10 +350,16 @@ Result<void> SqliteStore::add_edge(ObjectRef from, ObjectRef to, std::string nam
 
   if (in_txn_) {
     pending_edges_.push_back(rec);
+    pending_graph_changes_.push_back(
+        GraphChangeRecord{GraphChangeKind::EdgeCreated, GraphChangeCursor(next_graph_sequence_++),
+                          std::nullopt, rec});
   } else {
     auto r = append_edge(rec);
     if (!r) return r;
     index_edge(rec);
+    index_graph_edge(rec);
+    r = append_graph_change(graph_changes_.back());
+    if (!r) return r;
   }
 
   return Result<void>::ok();
@@ -363,6 +413,44 @@ Result<std::vector<EdgeRecord>> SqliteStore::edges_to(ObjectRef to,
     }
   }
   return Result<std::vector<EdgeRecord>>::ok(std::move(out));
+}
+
+Result<GraphChangeCursor> SqliteStore::graph_cursor() {
+  if (!open_) return Result<GraphChangeCursor>::err("store not open");
+  return Result<GraphChangeCursor>::ok(GraphChangeCursor(next_graph_sequence_ - 1));
+}
+
+Result<std::vector<GraphChangeRecord>> SqliteStore::graph_changes_after(
+    GraphChangeCursor cursor,
+    GraphChangeFilter filter) {
+  if (!open_) return Result<std::vector<GraphChangeRecord>>::err("store not open");
+
+  std::vector<GraphChangeRecord> out;
+  for (const auto& rec : graph_changes_) {
+    if (rec.cursor.sequence_ <= cursor.sequence_) continue;
+    if (rec.kind == GraphChangeKind::ObjectCreated) {
+      if (!rec.object.has_value()) continue;
+      if (!object_matches(*rec.object, filter)) continue;
+    } else if (rec.kind == GraphChangeKind::EdgeCreated) {
+      if (!rec.edge.has_value()) continue;
+      if (!edge_matches(*rec.edge, filter)) continue;
+    }
+    out.push_back(rec);
+  }
+  if (in_txn_) {
+    for (const auto& rec : pending_graph_changes_) {
+      if (rec.cursor.sequence_ <= cursor.sequence_) continue;
+      if (rec.kind == GraphChangeKind::ObjectCreated) {
+        if (!rec.object.has_value()) continue;
+        if (!object_matches(*rec.object, filter)) continue;
+      } else if (rec.kind == GraphChangeKind::EdgeCreated) {
+        if (!rec.edge.has_value()) continue;
+        if (!edge_matches(*rec.edge, filter)) continue;
+      }
+      out.push_back(rec);
+    }
+  }
+  return Result<std::vector<GraphChangeRecord>>::ok(std::move(out));
 }
 
 Result<void> SqliteStore::append_object(const ObjectRecord& rec) {
@@ -420,6 +508,60 @@ Result<void> SqliteStore::append_edge(const EdgeRecord& rec) {
   return Result<void>::ok();
 }
 
+Result<void> SqliteStore::append_graph_change(const GraphChangeRecord& rec) {
+  if (memory_only_) return Result<void>::ok();
+  if (!graph_change_seg_.is_open()) return Result<void>::err("graph_changes segment not open");
+
+  write_u32(graph_change_seg_, kGraphChangeTag);
+  write_u64(graph_change_seg_, rec.cursor.sequence_);
+  if (rec.kind == GraphChangeKind::ObjectCreated) {
+    if (!rec.object.has_value()) return Result<void>::err("object graph change missing record");
+    const auto& obj = rec.object.value();
+    write_u8(graph_change_seg_, kGraphChangeObjectCreated);
+    write_u32(graph_change_seg_, static_cast<std::uint32_t>(obj.payload_cbor.size()));
+    write_u64(graph_change_seg_, obj.ref.ver.v);
+    write_u64(graph_change_seg_, obj.type.v);
+    write_u64(graph_change_seg_, obj.created_at_unix_ms);
+    graph_change_seg_.write(reinterpret_cast<const char*>(obj.ref.id.bytes.data()),
+                            obj.ref.id.bytes.size());
+    graph_change_seg_.write(reinterpret_cast<const char*>(obj.definition_id.bytes.data()),
+                            obj.definition_id.bytes.size());
+    if (!obj.payload_cbor.empty()) {
+      graph_change_seg_.write(reinterpret_cast<const char*>(obj.payload_cbor.data()),
+                              static_cast<std::streamsize>(obj.payload_cbor.size()));
+    }
+  } else if (rec.kind == GraphChangeKind::EdgeCreated) {
+    if (!rec.edge.has_value()) return Result<void>::err("edge graph change missing record");
+    const auto& edge = rec.edge.value();
+    write_u8(graph_change_seg_, kGraphChangeEdgeCreated);
+    write_u32(graph_change_seg_, static_cast<std::uint32_t>(edge.name.size()));
+    write_u32(graph_change_seg_, static_cast<std::uint32_t>(edge.role.size()));
+    write_u32(graph_change_seg_, static_cast<std::uint32_t>(edge.props_cbor.size()));
+    write_u64(graph_change_seg_, edge.created_at_unix_ms);
+    graph_change_seg_.write(reinterpret_cast<const char*>(edge.from.id.bytes.data()),
+                            edge.from.id.bytes.size());
+    write_u64(graph_change_seg_, edge.from.ver.v);
+    graph_change_seg_.write(reinterpret_cast<const char*>(edge.to.id.bytes.data()),
+                            edge.to.id.bytes.size());
+    write_u64(graph_change_seg_, edge.to.ver.v);
+    if (!edge.name.empty()) {
+      graph_change_seg_.write(edge.name.data(), static_cast<std::streamsize>(edge.name.size()));
+    }
+    if (!edge.role.empty()) {
+      graph_change_seg_.write(edge.role.data(), static_cast<std::streamsize>(edge.role.size()));
+    }
+    if (!edge.props_cbor.empty()) {
+      graph_change_seg_.write(reinterpret_cast<const char*>(edge.props_cbor.data()),
+                              static_cast<std::streamsize>(edge.props_cbor.size()));
+    }
+  } else {
+    return Result<void>::err("unknown graph change kind");
+  }
+
+  graph_change_seg_.flush();
+  return Result<void>::ok();
+}
+
 void SqliteStore::index_object(const ObjectRecord& rec) {
   ObjectRefKey key{rec.ref.id, rec.ref.ver};
   objects_by_ref_[key] = rec;
@@ -434,6 +576,18 @@ void SqliteStore::index_edge(const EdgeRecord& rec) {
   edges_to_[to_key].push_back(rec);
 }
 
+void SqliteStore::index_graph_object(const ObjectRecord& rec) {
+  graph_changes_.push_back(
+      GraphChangeRecord{GraphChangeKind::ObjectCreated, GraphChangeCursor(next_graph_sequence_++),
+                        rec, std::nullopt});
+}
+
+void SqliteStore::index_graph_edge(const EdgeRecord& rec) {
+  graph_changes_.push_back(
+      GraphChangeRecord{GraphChangeKind::EdgeCreated, GraphChangeCursor(next_graph_sequence_++),
+                        std::nullopt, rec});
+}
+
 Result<void> SqliteStore::load_segments() {
   if (memory_only_) return Result<void>::ok();
 
@@ -441,6 +595,7 @@ Result<void> SqliteStore::load_segments() {
   const auto segments_dir = std::filesystem::path(base) / "segments";
   const auto obj_path = segments_dir / "objects.seg";
   const auto edge_path = segments_dir / "edges.seg";
+  const auto graph_change_path = segments_dir / "graph_changes.seg";
 
   if (std::filesystem::exists(obj_path)) {
     std::ifstream in(obj_path, std::ios::binary);
@@ -509,6 +664,85 @@ Result<void> SqliteStore::load_segments() {
       if (props_len > 0 && !read_exact(in, rec.props_cbor.data(), props_len)) break;
 
       index_edge(rec);
+    }
+  }
+
+  if (std::filesystem::exists(graph_change_path)) {
+    graph_changes_.clear();
+    next_graph_sequence_ = 1;
+
+    std::ifstream in(graph_change_path, std::ios::binary);
+    while (in.good()) {
+      std::uint32_t tag = 0;
+      if (!read_u32(in, &tag)) break;
+      if (tag != kGraphChangeTag) return Result<void>::err("invalid graph change segment tag");
+
+      std::uint64_t sequence = 0;
+      std::uint8_t kind = 0;
+      if (!read_u64(in, &sequence)) break;
+      if (!read_u8(in, &kind)) break;
+
+      if (kind == kGraphChangeObjectCreated) {
+        std::uint32_t payload_size = 0;
+        std::uint64_t ver = 0;
+        std::uint64_t type = 0;
+        std::uint64_t created = 0;
+        if (!read_u32(in, &payload_size)) break;
+        if (!read_u64(in, &ver)) break;
+        if (!read_u64(in, &type)) break;
+        if (!read_u64(in, &created)) break;
+
+        ObjectRecord rec;
+        if (!read_exact(in, rec.ref.id.bytes.data(), rec.ref.id.bytes.size())) break;
+        if (!read_exact(in, rec.definition_id.bytes.data(), rec.definition_id.bytes.size())) break;
+
+        rec.ref.ver = Version{ver};
+        rec.type = TypeID{type};
+        rec.created_at_unix_ms = created;
+        rec.payload_cbor.resize(payload_size);
+        if (payload_size > 0 && !read_exact(in, rec.payload_cbor.data(), payload_size)) break;
+
+        graph_changes_.push_back(
+            GraphChangeRecord{GraphChangeKind::ObjectCreated, GraphChangeCursor(sequence),
+                              rec, std::nullopt});
+      } else if (kind == kGraphChangeEdgeCreated) {
+        std::uint32_t name_len = 0;
+        std::uint32_t role_len = 0;
+        std::uint32_t props_len = 0;
+        std::uint64_t created = 0;
+        if (!read_u32(in, &name_len)) break;
+        if (!read_u32(in, &role_len)) break;
+        if (!read_u32(in, &props_len)) break;
+        if (!read_u64(in, &created)) break;
+
+        EdgeRecord rec;
+        if (!read_exact(in, rec.from.id.bytes.data(), rec.from.id.bytes.size())) break;
+        std::uint64_t from_ver = 0;
+        if (!read_u64(in, &from_ver)) break;
+        rec.from.ver = Version{from_ver};
+
+        if (!read_exact(in, rec.to.id.bytes.data(), rec.to.id.bytes.size())) break;
+        std::uint64_t to_ver = 0;
+        if (!read_u64(in, &to_ver)) break;
+        rec.to.ver = Version{to_ver};
+
+        rec.created_at_unix_ms = created;
+        rec.name.resize(name_len);
+        rec.role.resize(role_len);
+        rec.props_cbor.resize(props_len);
+
+        if (name_len > 0 && !read_exact(in, rec.name.data(), name_len)) break;
+        if (role_len > 0 && !read_exact(in, rec.role.data(), role_len)) break;
+        if (props_len > 0 && !read_exact(in, rec.props_cbor.data(), props_len)) break;
+
+        graph_changes_.push_back(
+            GraphChangeRecord{GraphChangeKind::EdgeCreated, GraphChangeCursor(sequence),
+                              std::nullopt, rec});
+      } else {
+        return Result<void>::err("invalid graph change kind");
+      }
+
+      if (sequence >= next_graph_sequence_) next_graph_sequence_ = sequence + 1;
     }
   }
 

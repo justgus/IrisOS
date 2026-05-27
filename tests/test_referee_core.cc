@@ -115,6 +115,66 @@ START_TEST(test_result_carries_typed_error_code)
 }
 END_TEST
 
+START_TEST(test_graph_change_feed_filters_objects_and_edges)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  auto start = store.graph_cursor();
+  ck_assert_msg(start, "graph_cursor failed: %s", result_message(start));
+
+  TypeID typeA{0xA1ULL};
+  TypeID typeB{0xB2ULL};
+  ObjectID defA = ObjectID::random();
+  ObjectID defB = ObjectID::random();
+  auto aR = store.create_object(typeA, defA, cbor_from_json_string(R"({"a":1})"));
+  ck_assert_msg(aR, "create a failed: %s", result_message(aR));
+  auto bR = store.create_object(typeB, defB, cbor_from_json_string(R"({"b":2})"));
+  ck_assert_msg(bR, "create b failed: %s", result_message(bR));
+
+  Bytes props = cbor_from_json_string(R"({"name":"produced"})");
+  auto edgeR = store.add_edge(aR.value->ref, bR.value->ref, "produced", "artifact", props);
+  ck_assert_msg(edgeR, "add_edge failed: %s", result_message(edgeR));
+
+  auto allR = store.graph_changes_after(start.value.value());
+  ck_assert_msg(allR, "graph_changes_after failed: %s", result_message(allR));
+  ck_assert_int_eq((int)allR.value->size(), 3);
+  ck_assert(allR.value->at(0).kind == GraphChangeKind::ObjectCreated);
+  ck_assert(allR.value->at(1).kind == GraphChangeKind::ObjectCreated);
+  ck_assert(allR.value->at(2).kind == GraphChangeKind::EdgeCreated);
+
+  GraphChangeFilter typeFilter;
+  typeFilter.object_type = typeB;
+  auto typedR = store.graph_changes_after(start.value.value(), typeFilter);
+  ck_assert_msg(typedR, "typed graph_changes_after failed: %s", result_message(typedR));
+  ck_assert_int_eq((int)typedR.value->size(), 1);
+  ck_assert(typedR.value->at(0).kind == GraphChangeKind::ObjectCreated);
+  ck_assert(typedR.value->at(0).object.has_value());
+  ck_assert_uint_eq(typedR.value->at(0).object->type.v, typeB.v);
+
+  GraphChangeFilter edgeFilter;
+  edgeFilter.edge_name = "produced";
+  edgeFilter.edge_role = "artifact";
+  edgeFilter.edge_from = aR.value->ref;
+  edgeFilter.edge_to = bR.value->ref;
+  auto edgeOnlyR = store.graph_changes_after(start.value.value(), edgeFilter);
+  ck_assert_msg(edgeOnlyR, "edge graph_changes_after failed: %s", result_message(edgeOnlyR));
+  ck_assert_int_eq((int)edgeOnlyR.value->size(), 1);
+  ck_assert(edgeOnlyR.value->at(0).kind == GraphChangeKind::EdgeCreated);
+  ck_assert(edgeOnlyR.value->at(0).edge.has_value());
+  ck_assert_str_eq(edgeOnlyR.value->at(0).edge->name.c_str(), "produced");
+
+  auto end = store.graph_cursor();
+  ck_assert_msg(end, "graph_cursor failed: %s", result_message(end));
+  auto noneR = store.graph_changes_after(end.value.value());
+  ck_assert_msg(noneR, "graph_changes_after after end failed: %s", result_message(noneR));
+  ck_assert_int_eq((int)noneR.value->size(), 0);
+
+  ck_assert_msg(store.close(), "close failed");
+}
+END_TEST
+
 Suite* referee_suite(void) {
   Suite* s = suite_create("RefereeCore");
   TCase* tc = tcase_create("core");
@@ -122,6 +182,7 @@ Suite* referee_suite(void) {
   tcase_add_test(tc, test_create_and_get_object_roundtrip);
   tcase_add_test(tc, test_edges_from_and_to);
   tcase_add_test(tc, test_result_carries_typed_error_code);
+  tcase_add_test(tc, test_graph_change_feed_filters_objects_and_edges);
 
   suite_add_tcase(s, tc);
   return s;
