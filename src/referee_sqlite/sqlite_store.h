@@ -21,6 +21,45 @@ struct SqliteConfig {
   bool enable_foreign_keys{true};
 };
 
+enum class GraphChangeKind {
+  ObjectCreated,
+  EdgeCreated,
+};
+
+class GraphChangeCursor {
+public:
+  GraphChangeCursor() = default;
+
+  friend bool operator==(GraphChangeCursor a, GraphChangeCursor b) noexcept {
+    return a.sequence_ == b.sequence_;
+  }
+
+  friend bool operator!=(GraphChangeCursor a, GraphChangeCursor b) noexcept {
+    return !(a == b);
+  }
+
+private:
+  friend class SqliteStore;
+  explicit GraphChangeCursor(std::uint64_t sequence) : sequence_(sequence) {}
+
+  std::uint64_t sequence_{0};
+};
+
+struct GraphChangeFilter {
+  std::optional<TypeID> object_type{};
+  std::optional<std::string> edge_name{};
+  std::optional<std::string> edge_role{};
+  std::optional<ObjectRef> edge_from{};
+  std::optional<ObjectRef> edge_to{};
+};
+
+struct GraphChangeRecord {
+  GraphChangeKind kind{GraphChangeKind::ObjectCreated};
+  GraphChangeCursor cursor{};
+  std::optional<ObjectRecord> object{};
+  std::optional<EdgeRecord> edge{};
+};
+
 class SqliteStore {
 public:
   explicit SqliteStore(SqliteConfig cfg);
@@ -58,6 +97,12 @@ public:
                                            std::optional<std::string> name_filter = std::nullopt,
                                            std::optional<std::string> role_filter = std::nullopt);
 
+  // Pull-based graph change feed
+  Result<GraphChangeCursor> graph_cursor();
+  Result<std::vector<GraphChangeRecord>> graph_changes_after(
+      GraphChangeCursor cursor,
+      GraphChangeFilter filter = {});
+
 private:
   struct ObjectRefKey {
     ObjectID id{};
@@ -86,8 +131,11 @@ private:
   Result<void> rebuild_indexes();
   Result<void> append_object(const ObjectRecord& rec);
   Result<void> append_edge(const EdgeRecord& rec);
+  Result<void> append_graph_change(const GraphChangeRecord& rec);
   void index_object(const ObjectRecord& rec);
   void index_edge(const EdgeRecord& rec);
+  void index_graph_object(const ObjectRecord& rec);
+  void index_graph_edge(const EdgeRecord& rec);
 
   std::string base_dir() const;
   static std::string store_dir_from_filename(std::string_view filename);
@@ -104,15 +152,19 @@ private:
   std::ofstream idx_objects_by_type_;
   std::ofstream idx_edges_from_;
   std::ofstream idx_edges_to_;
+  std::ofstream graph_change_seg_;
 
   std::vector<ObjectRecord> pending_objects_;
   std::vector<EdgeRecord> pending_edges_;
+  std::vector<GraphChangeRecord> pending_graph_changes_;
 
   std::unordered_map<ObjectRefKey, ObjectRecord, ObjectRefKeyHash> objects_by_ref_;
   std::unordered_map<ObjectID, ObjectRecord, ObjectIDHash> latest_by_id_;
   std::unordered_map<TypeID, std::vector<ObjectRecord>, TypeIDHash> objects_by_type_;
   std::unordered_map<ObjectRefKey, std::vector<EdgeRecord>, ObjectRefKeyHash> edges_from_;
   std::unordered_map<ObjectRefKey, std::vector<EdgeRecord>, ObjectRefKeyHash> edges_to_;
+  std::vector<GraphChangeRecord> graph_changes_;
+  std::uint64_t next_graph_sequence_{1};
 };
 
 } // namespace referee

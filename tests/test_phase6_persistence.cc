@@ -54,6 +54,17 @@ void cleanup_db_files(const std::string& path) {
   std::string wal = path + "-wal";
   std::remove(shm.c_str());
   std::remove(wal.c_str());
+  std::string segments = path + ".segments";
+  std::remove((segments + "/segments/objects.seg").c_str());
+  std::remove((segments + "/segments/edges.seg").c_str());
+  std::remove((segments + "/segments/graph_changes.seg").c_str());
+  std::remove((segments + "/indexes/objects_by_id.idx").c_str());
+  std::remove((segments + "/indexes/objects_by_type.idx").c_str());
+  std::remove((segments + "/indexes/edges_from.idx").c_str());
+  std::remove((segments + "/indexes/edges_to.idx").c_str());
+  rmdir((segments + "/segments").c_str());
+  rmdir((segments + "/indexes").c_str());
+  rmdir(segments.c_str());
 }
 
 } // namespace
@@ -210,6 +221,73 @@ START_TEST(test_phase6_demo_persistence)
 }
 END_TEST
 
+START_TEST(test_graph_change_feed_replays_after_reopen)
+{
+  std::string db_path = make_temp_db_path();
+  GraphChangeCursor cursor;
+  ObjectRef source_ref{};
+  ObjectRef artifact_ref{};
+
+  {
+    SqliteStore store(SqliteConfig{ .filename=db_path, .enable_wal=true });
+    ck_assert_msg(store.open(), "open failed");
+    ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+    auto cursorR = store.graph_cursor();
+    ck_assert_msg(cursorR, "graph_cursor failed: %s", result_message(cursorR));
+    cursor = cursorR.value.value();
+
+    auto sourceR = store.create_object(TypeID{0x1010ULL}, ObjectID::random(), Bytes{0x01});
+    ck_assert_msg(sourceR, "create source failed: %s", result_message(sourceR));
+    source_ref = sourceR.value->ref;
+
+    auto artifactR = store.create_object(TypeID{0x2020ULL}, ObjectID::random(), Bytes{0x02});
+    ck_assert_msg(artifactR, "create artifact failed: %s", result_message(artifactR));
+    artifact_ref = artifactR.value->ref;
+
+    auto edgeR = store.add_edge(source_ref, artifact_ref, "produced", "artifact", Bytes{});
+    ck_assert_msg(edgeR, "add produced edge failed: %s", result_message(edgeR));
+
+    ck_assert_msg(store.close(), "close failed");
+  }
+
+  {
+    SqliteStore store(SqliteConfig{ .filename=db_path, .enable_wal=true });
+    ck_assert_msg(store.open(), "open failed");
+    ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+    auto changesR = store.graph_changes_after(cursor);
+    ck_assert_msg(changesR, "graph_changes_after failed: %s", result_message(changesR));
+    ck_assert_int_eq((int)changesR.value->size(), 3);
+    ck_assert(changesR.value->at(0).kind == GraphChangeKind::ObjectCreated);
+    ck_assert(changesR.value->at(1).kind == GraphChangeKind::ObjectCreated);
+    ck_assert(changesR.value->at(2).kind == GraphChangeKind::EdgeCreated);
+
+    GraphChangeFilter edgeFilter;
+    edgeFilter.edge_name = "produced";
+    edgeFilter.edge_role = "artifact";
+    auto edgeChangesR = store.graph_changes_after(cursor, edgeFilter);
+    ck_assert_msg(edgeChangesR, "filtered graph_changes_after failed: %s", result_message(edgeChangesR));
+    ck_assert_int_eq((int)edgeChangesR.value->size(), 1);
+    ck_assert(edgeChangesR.value->at(0).edge.has_value());
+    ck_assert(edgeChangesR.value->at(0).edge->from == source_ref);
+    ck_assert(edgeChangesR.value->at(0).edge->to == artifact_ref);
+
+    GraphChangeFilter typeFilter;
+    typeFilter.object_type = TypeID{0x2020ULL};
+    auto typeChangesR = store.graph_changes_after(cursor, typeFilter);
+    ck_assert_msg(typeChangesR, "type graph_changes_after failed: %s", result_message(typeChangesR));
+    ck_assert_int_eq((int)typeChangesR.value->size(), 1);
+    ck_assert(typeChangesR.value->at(0).object.has_value());
+    ck_assert_uint_eq(typeChangesR.value->at(0).object->type.v, 0x2020ULL);
+
+    ck_assert_msg(store.close(), "close failed");
+  }
+
+  cleanup_db_files(db_path);
+}
+END_TEST
+
 START_TEST(test_phase6_definition_migration)
 {
   std::string db_path = make_temp_db_path();
@@ -251,6 +329,7 @@ Suite* phase6_persistence_suite(void) {
   tcase_add_test(tc, test_phase6_persistence_roundtrip);
   tcase_add_test(tc, test_phase6_definition_migration);
   tcase_add_test(tc, test_phase6_demo_persistence);
+  tcase_add_test(tc, test_graph_change_feed_replays_after_reopen);
 
   suite_add_tcase(s, tc);
   return s;
