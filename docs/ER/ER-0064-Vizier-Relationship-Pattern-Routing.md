@@ -16,7 +16,7 @@ ER-Dependencies: ER-0009, ER-0010, ER-0063
 
 - ER ID: ER-0064
 - Title: Vizier Relationship-Pattern Routing
-- Status: Proposed
+- Status: Complete
 - Date: 2026-05-27
 - Owners: Mike
 - Type: Enhancement

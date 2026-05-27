@@ -9,6 +9,13 @@ static std::string display_name(const iris::refract::TypeSummary& summary) {
   return summary.namespace_name + "::" + summary.name;
 }
 
+static bool is_routable_relationship(const std::string& relationship) {
+  return relationship == "produced"
+      || relationship == "progress"
+      || relationship == "diagnostic"
+      || relationship == "stream";
+}
+
 std::optional<Route> route_for_type(const iris::refract::TypeSummary& summary) {
   if (summary.preferred_renderer.has_value() && !summary.preferred_renderer->empty()) {
     return Route{summary.preferred_renderer.value()};
@@ -19,6 +26,62 @@ std::optional<Route> route_for_type(const iris::refract::TypeSummary& summary) {
   if (full == "Viz::Table") return Route{"Table"};
   if (full == "Viz::Tree") return Route{"Tree"};
   return std::nullopt;
+}
+
+std::optional<RelationshipRouteDecision> route_for_relationship(
+    const referee::EdgeRecord& edge,
+    const iris::refract::TypeSummary& target_type) {
+  if (!is_routable_relationship(edge.name)) return std::nullopt;
+
+  auto route = route_for_type(target_type);
+  if (!route.has_value()) return std::nullopt;
+
+  return RelationshipRouteDecision{edge.from, edge.to, edge.name, edge.role, route.value()};
+}
+
+referee::Result<std::optional<RelationshipRouteDecision>> route_for_relationship(
+    iris::refract::SchemaRegistry& registry,
+    referee::SqliteStore& store,
+    const referee::EdgeRecord& edge) {
+  if (!is_routable_relationship(edge.name)) {
+    return referee::Result<std::optional<RelationshipRouteDecision>>::ok(
+        std::optional<RelationshipRouteDecision>{});
+  }
+
+  auto artifactR = store.get_object(edge.to);
+  if (!artifactR) {
+    return referee::Result<std::optional<RelationshipRouteDecision>>::err(artifactR.error->message);
+  }
+  if (!artifactR.value->has_value()) {
+    return referee::Result<std::optional<RelationshipRouteDecision>>::ok(
+        std::optional<RelationshipRouteDecision>{});
+  }
+
+  auto typesR = registry.list_types();
+  if (!typesR) {
+    return referee::Result<std::optional<RelationshipRouteDecision>>::err(typesR.error->message);
+  }
+  for (const auto& summary : typesR.value.value()) {
+    if (summary.type_id == artifactR.value->value().type) {
+      return referee::Result<std::optional<RelationshipRouteDecision>>::ok(
+          route_for_relationship(edge, summary));
+    }
+  }
+
+  return referee::Result<std::optional<RelationshipRouteDecision>>::ok(
+      std::optional<RelationshipRouteDecision>{});
+}
+
+referee::Result<std::optional<RelationshipRouteDecision>> route_for_graph_change(
+    iris::refract::SchemaRegistry& registry,
+    referee::SqliteStore& store,
+    const referee::GraphChangeRecord& change) {
+  if (change.kind != referee::GraphChangeKind::EdgeCreated || !change.edge.has_value()) {
+    return referee::Result<std::optional<RelationshipRouteDecision>>::ok(
+        std::optional<RelationshipRouteDecision>{});
+  }
+
+  return route_for_relationship(registry, store, change.edge.value());
 }
 
 std::optional<Route> route_for_type_id(iris::refract::SchemaRegistry& registry,

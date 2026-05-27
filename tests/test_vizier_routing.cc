@@ -7,8 +7,37 @@ extern "C" {
 
 #include "vizier/routing.h"
 
+#include <optional>
+#include <string>
+#include <utility>
+
+using iris::refract::SchemaRegistry;
+using iris::refract::TypeDefinition;
 using iris::refract::TypeSummary;
+using iris::vizier::route_for_graph_change;
+using iris::vizier::route_for_relationship;
 using iris::vizier::route_for_type;
+
+namespace {
+
+template <typename T>
+const char* result_message(const referee::Result<T>& r) {
+  return r.error.has_value() ? r.error->message.c_str() : "ok";
+}
+
+TypeDefinition make_type(referee::TypeID type_id,
+                         const std::string& name,
+                         const std::string& ns,
+                         std::optional<std::string> preferred_renderer = std::nullopt) {
+  TypeDefinition def;
+  def.type_id = type_id;
+  def.name = name;
+  def.namespace_name = ns;
+  def.preferred_renderer = std::move(preferred_renderer);
+  return def;
+}
+
+} // namespace
 
 START_TEST(test_viz_routes)
 {
@@ -41,6 +70,108 @@ START_TEST(test_preferred_renderer_route)
 }
 END_TEST
 
+START_TEST(test_relationship_routes_known_artifact_relationships)
+{
+  TypeSummary log{referee::TypeID{10}, referee::ObjectID{}, "TextLog", "Viz", std::nullopt};
+  referee::ObjectRef source{referee::ObjectID::random(), referee::Version{1}};
+  referee::ObjectRef artifact{referee::ObjectID::random(), referee::Version{1}};
+
+  for (const auto* name : {"produced", "progress", "diagnostic", "stream"}) {
+    referee::EdgeRecord edge;
+    edge.from = source;
+    edge.to = artifact;
+    edge.name = name;
+    edge.role = "artifact";
+
+    auto decision = route_for_relationship(edge, log);
+    ck_assert_msg(decision.has_value(), "expected %s relationship to route", name);
+    ck_assert(decision->source == source);
+    ck_assert(decision->artifact == artifact);
+    ck_assert_str_eq(decision->relationship.c_str(), name);
+    ck_assert_str_eq(decision->role.c_str(), "artifact");
+    ck_assert_str_eq(decision->route.concho.c_str(), "Log");
+  }
+}
+END_TEST
+
+START_TEST(test_relationship_route_honors_preferred_renderer)
+{
+  TypeSummary widget{referee::TypeID{11}, referee::ObjectID{}, "Widget", "Demo", "Panel"};
+  referee::EdgeRecord edge;
+  edge.from = referee::ObjectRef{referee::ObjectID::random(), referee::Version{1}};
+  edge.to = referee::ObjectRef{referee::ObjectID::random(), referee::Version{1}};
+  edge.name = "produced";
+  edge.role = "artifact";
+
+  auto decision = route_for_relationship(edge, widget);
+  ck_assert(decision.has_value());
+  ck_assert_str_eq(decision->route.concho.c_str(), "Panel");
+}
+END_TEST
+
+START_TEST(test_relationship_route_rejects_unknown_relationship_and_target)
+{
+  TypeSummary log{referee::TypeID{12}, referee::ObjectID{}, "TextLog", "Viz", std::nullopt};
+  TypeSummary unknown{referee::TypeID{13}, referee::ObjectID{}, "Unknown", "Demo", std::nullopt};
+  referee::EdgeRecord edge;
+  edge.from = referee::ObjectRef{referee::ObjectID::random(), referee::Version{1}};
+  edge.to = referee::ObjectRef{referee::ObjectID::random(), referee::Version{1}};
+  edge.name = "summary";
+  edge.role = "root";
+
+  ck_assert(!route_for_relationship(edge, log).has_value());
+
+  edge.name = "produced";
+  edge.role = "artifact";
+  ck_assert(!route_for_relationship(edge, unknown).has_value());
+}
+END_TEST
+
+START_TEST(test_graph_change_relationship_route_uses_registry_target_type)
+{
+  referee::SqliteStore store(referee::SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+  auto sourceDefR = registry.register_definition(make_type(referee::TypeID{0x1001ULL}, "Producer", "Demo"));
+  ck_assert_msg(sourceDefR, "register source type failed: %s", result_message(sourceDefR));
+  auto artifactDefR = registry.register_definition(make_type(referee::TypeID{0x1002ULL}, "TextLog", "Viz"));
+  ck_assert_msg(artifactDefR, "register artifact type failed: %s", result_message(artifactDefR));
+
+  auto sourceR = store.create_object(referee::TypeID{0x1001ULL}, sourceDefR.value->ref.id,
+                                     referee::Bytes{0x01});
+  ck_assert_msg(sourceR, "create source failed: %s", result_message(sourceR));
+  auto artifactR = store.create_object(referee::TypeID{0x1002ULL}, artifactDefR.value->ref.id,
+                                       referee::Bytes{0x02});
+  ck_assert_msg(artifactR, "create artifact failed: %s", result_message(artifactR));
+
+  auto cursorR = store.graph_cursor();
+  ck_assert_msg(cursorR, "graph_cursor failed: %s", result_message(cursorR));
+
+  auto edgeR = store.add_edge(sourceR.value->ref, artifactR.value->ref, "produced", "artifact",
+                              referee::Bytes{});
+  ck_assert_msg(edgeR, "add edge failed: %s", result_message(edgeR));
+
+  referee::GraphChangeFilter filter;
+  filter.edge_name = "produced";
+  filter.edge_role = "artifact";
+  auto changesR = store.graph_changes_after(cursorR.value.value(), filter);
+  ck_assert_msg(changesR, "graph_changes_after failed: %s", result_message(changesR));
+  ck_assert_int_eq((int)changesR.value->size(), 1);
+
+  auto decisionR = route_for_graph_change(registry, store, changesR.value->at(0));
+  ck_assert_msg(decisionR, "route_for_graph_change failed: %s", result_message(decisionR));
+  ck_assert(decisionR.value->has_value());
+  ck_assert(decisionR.value->value().source == sourceR.value->ref);
+  ck_assert(decisionR.value->value().artifact == artifactR.value->ref);
+  ck_assert_str_eq(decisionR.value->value().relationship.c_str(), "produced");
+  ck_assert_str_eq(decisionR.value->value().route.concho.c_str(), "Log");
+
+  ck_assert_msg(store.close(), "close failed");
+}
+END_TEST
+
 Suite* vizier_routing_suite(void) {
   Suite* s = suite_create("VizierRouting");
   TCase* tc = tcase_create("core");
@@ -48,6 +179,10 @@ Suite* vizier_routing_suite(void) {
   tcase_add_test(tc, test_viz_routes);
   tcase_add_test(tc, test_unknown_route);
   tcase_add_test(tc, test_preferred_renderer_route);
+  tcase_add_test(tc, test_relationship_routes_known_artifact_relationships);
+  tcase_add_test(tc, test_relationship_route_honors_preferred_renderer);
+  tcase_add_test(tc, test_relationship_route_rejects_unknown_relationship_and_target);
+  tcase_add_test(tc, test_graph_change_relationship_route_uses_registry_target_type);
 
   suite_add_tcase(s, tc);
   return s;
