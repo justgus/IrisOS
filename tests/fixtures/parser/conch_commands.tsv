@@ -1,0 +1,6 @@
+# status	input	name	kind	args	error
+ok	namespace Demo::Inner	namespace	Namespace	Demo::Inner	
+ok	show type Demo::Widget	show	Schema	type|Demo::Widget	
+ok	call demo expand 2	call	Call	demo|expand|2	
+ok	task spawn demo service	task	Task	spawn|demo|service	
+error	say "oops	say	Unknown		unterminated string

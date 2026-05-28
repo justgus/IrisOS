@@ -19,6 +19,10 @@ libreferee_la_SOURCES = \
    parser/parser.cc \
    parser/conch_command.h \
    parser/conch_command.cc \
+   parser/conch_grammar.h \
+   parser/conch_grammar.cc \
+   parser/conch_batch.h \
+   parser/conch_batch.cc \
    parser/json_parser.h \
    parser/json_parser.cc \
    parser/python_parser.h \
@@ -66,6 +70,8 @@ include_HEADERS = referee/referee.h \
    parser/tokenizer.h \
    parser/parser.h \
    parser/conch_command.h \
+   parser/conch_grammar.h \
+   parser/conch_batch.h \
    parser/json_parser.h \
    parser/python_parser.h \
    parser/cpp_parser.h \

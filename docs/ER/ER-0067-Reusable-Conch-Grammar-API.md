@@ -16,7 +16,7 @@ ER-Dependencies: ER-0056
 
 - ER ID: ER-0067
 - Title: Reusable Conch Grammar API
-- Status: Proposed
+- Status: Complete
 - Date: 2026-05-28
 - Owners: Mike
 - Type: Enhancement
