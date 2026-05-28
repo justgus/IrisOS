@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #287
 ---
 
 # ER-0079 — Refract Operation Effects Metadata
