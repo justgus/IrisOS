@@ -16,7 +16,7 @@ ER-Dependencies: ER-0067, ER-0068
 
 - ER ID: ER-0069
 - Title: Shared Parser Regression Harness
-- Status: Proposed
+- Status: Complete
 - Date: 2026-05-28
 - Owners: Mike
 - Type: Enhancement

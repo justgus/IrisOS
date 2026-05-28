@@ -189,9 +189,9 @@ Remaining work:
 
 Proposed ER slices:
 
-- ER-0067 - reusable Conch grammar API
-- ER-0068 - batch execution and non-interactive parser integration
-- ER-0069 - shared parser regression harness
+- ER-0067 - reusable Conch grammar API - Complete
+- ER-0068 - batch execution and non-interactive parser integration - Complete
+- ER-0069 - shared parser regression harness - Complete
 
 Exit criteria:
 
