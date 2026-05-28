@@ -1,6 +1,11 @@
 #include "vizier/routing.h"
 
+#include "ceo/task_registry.h"
+#include "viz/artifacts.h"
+
 #include <nlohmann/json.hpp>
+
+#include <array>
 
 namespace iris::vizier {
 
@@ -16,6 +21,28 @@ static bool is_routable_relationship(const std::string& relationship) {
       || relationship == "stream";
 }
 
+static bool is_task_relationship(const std::string& relationship) {
+  return relationship == "task_state";
+}
+
+static bool is_known_task_state(const std::string& state) {
+  static constexpr std::array<iris::ceo::TaskState, 8> states = {
+      iris::ceo::TaskState::Created,
+      iris::ceo::TaskState::Running,
+      iris::ceo::TaskState::Waiting,
+      iris::ceo::TaskState::CancelRequested,
+      iris::ceo::TaskState::Canceled,
+      iris::ceo::TaskState::Completed,
+      iris::ceo::TaskState::Failed,
+      iris::ceo::TaskState::Killed,
+  };
+
+  for (auto known : states) {
+    if (state == iris::ceo::to_string(known)) return true;
+  }
+  return false;
+}
+
 std::optional<Route> route_for_type(const iris::refract::TypeSummary& summary) {
   if (summary.preferred_renderer.has_value() && !summary.preferred_renderer->empty()) {
     return Route{summary.preferred_renderer.value()};
@@ -25,6 +52,7 @@ std::optional<Route> route_for_type(const iris::refract::TypeSummary& summary) {
   if (full == "Viz::Metric") return Route{"Metric"};
   if (full == "Viz::Table") return Route{"Table"};
   if (full == "Viz::Tree") return Route{"Tree"};
+  if (full == "Viz::TaskView") return Route{"Task"};
   return std::nullopt;
 }
 
@@ -43,7 +71,7 @@ referee::Result<std::optional<RelationshipRouteDecision>> route_for_relationship
     iris::refract::SchemaRegistry& registry,
     referee::SqliteStore& store,
     const referee::EdgeRecord& edge) {
-  if (!is_routable_relationship(edge.name)) {
+  if (!is_routable_relationship(edge.name) && !is_task_relationship(edge.name)) {
     return referee::Result<std::optional<RelationshipRouteDecision>>::ok(
         std::optional<RelationshipRouteDecision>{});
   }
@@ -63,6 +91,37 @@ referee::Result<std::optional<RelationshipRouteDecision>> route_for_relationship
   }
   for (const auto& summary : typesR.value.value()) {
     if (summary.type_id == artifactR.value->value().type) {
+      if (is_task_relationship(edge.name)) {
+        if (summary.type_id != iris::viz::kTypeVizTaskView) {
+          return referee::Result<std::optional<RelationshipRouteDecision>>::ok(
+              std::optional<RelationshipRouteDecision>{});
+        }
+
+        nlohmann::json payload;
+        try {
+          payload = nlohmann::json::from_cbor(artifactR.value->value().payload_cbor);
+        } catch (const nlohmann::json::exception&) {
+          return referee::Result<std::optional<RelationshipRouteDecision>>::ok(
+              std::optional<RelationshipRouteDecision>{});
+        }
+        if (!payload.contains("task_id") || !payload["task_id"].is_number_unsigned()
+            || !payload.contains("state") || !payload["state"].is_string()) {
+          return referee::Result<std::optional<RelationshipRouteDecision>>::ok(
+              std::optional<RelationshipRouteDecision>{});
+        }
+
+        auto state = payload["state"].get<std::string>();
+        if (!is_known_task_state(state)) {
+          return referee::Result<std::optional<RelationshipRouteDecision>>::ok(
+              std::optional<RelationshipRouteDecision>{});
+        }
+
+        RelationshipRouteDecision decision{edge.from, edge.to, edge.name, edge.role, Route{"Task"}};
+        decision.task_id = payload["task_id"].get<std::uint64_t>();
+        decision.task_state = std::move(state);
+        return referee::Result<std::optional<RelationshipRouteDecision>>::ok(decision);
+      }
+
       return referee::Result<std::optional<RelationshipRouteDecision>>::ok(
           route_for_relationship(edge, summary));
     }

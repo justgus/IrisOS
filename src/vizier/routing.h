@@ -3,6 +3,7 @@
 #include "refract/schema_registry.h"
 #include "referee_sqlite/sqlite_store.h"
 
+#include <cstdint>
 #include <optional>
 #include <string>
 
@@ -18,6 +19,8 @@ struct RelationshipRouteDecision {
   std::string relationship;
   std::string role;
   Route route;
+  std::optional<std::uint64_t> task_id{};
+  std::optional<std::string> task_state{};
 };
 
 std::optional<Route> route_for_type(const iris::refract::TypeSummary& summary);

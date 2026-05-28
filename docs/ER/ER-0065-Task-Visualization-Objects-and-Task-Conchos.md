@@ -16,7 +16,7 @@ ER-Dependencies: ER-0005, ER-0009, ER-0010, ER-0063, ER-0064
 
 - ER ID: ER-0065
 - Title: Task Visualization Objects and Task Conchos
-- Status: Proposed
+- Status: Complete
 - Date: 2026-05-28
 - Owners: Mike
 - Type: Enhancement

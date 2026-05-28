@@ -161,8 +161,8 @@ ER slices:
 
 - ER-0063 - Referee graph watch and change-feed API - Verified
 - ER-0064 - Vizier relationship-pattern routing - Verified
-- ER-0065 - task visualization objects and Task Conchos - Proposed
-- ER-0066 - observer-driven Conch session growth - Proposed
+- ER-0065 - task visualization objects and Task Conchos - Complete
+- ER-0066 - observer-driven Conch session growth - Complete
 
 Exit criteria:
 

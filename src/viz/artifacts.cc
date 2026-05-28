@@ -70,4 +70,25 @@ referee::Result<referee::ObjectID> create_tree(iris::refract::SchemaRegistry& re
   return create_with_payload(registry, store, kTypeVizTree, payload);
 }
 
+referee::Result<referee::ObjectID> create_task_view(iris::refract::SchemaRegistry& registry,
+                                                    referee::SqliteStore& store,
+                                                    const TaskView& task) {
+  nlohmann::json payload;
+  payload["task_id"] = task.task_id;
+  payload["state"] = task.state;
+  if (task.task_object.has_value()) payload["task_object_id"] = task.task_object->to_hex();
+
+  std::vector<std::string> artifact_ids;
+  artifact_ids.reserve(task.artifacts.size());
+  for (const auto& id : task.artifacts) artifact_ids.push_back(id.to_hex());
+  payload["artifacts"] = artifact_ids;
+
+  std::vector<std::string> diagnostic_ids;
+  diagnostic_ids.reserve(task.diagnostics.size());
+  for (const auto& id : task.diagnostics) diagnostic_ids.push_back(id.to_hex());
+  payload["diagnostics"] = diagnostic_ids;
+
+  return create_with_payload(registry, store, kTypeVizTaskView, payload);
+}
+
 } // namespace iris::viz
