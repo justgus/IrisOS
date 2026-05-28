@@ -73,6 +73,34 @@ START_TEST(test_viz_metric_create)
 }
 END_TEST
 
+START_TEST(test_task_view_create)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+  auto boot = bootstrap_core_schema(registry);
+  ck_assert_msg(boot, "bootstrap failed: %s", result_message(boot));
+
+  TaskView task;
+  task.task_id = 42;
+  task.state = "Running";
+  task.task_object = ObjectID::random();
+  task.artifacts.push_back(ObjectID::random());
+  task.diagnostics.push_back(ObjectID::random());
+  auto taskR = create_task_view(registry, store, task);
+  ck_assert_msg(taskR, "create_task_view failed: %s", result_message(taskR));
+
+  auto recR = store.get_latest(taskR.value.value());
+  ck_assert_msg(recR, "get_latest failed: %s", result_message(recR));
+  ck_assert_msg(recR.value->has_value(), "expected object present");
+  ck_assert_uint_eq(recR.value->value().type.v, kTypeVizTaskView.v);
+
+  ck_assert_msg(store.close(), "close failed");
+}
+END_TEST
+
 START_TEST(test_viz_schema_definitions)
 {
   SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
@@ -96,6 +124,13 @@ START_TEST(test_viz_schema_definitions)
   ck_assert_str_eq(metricDefR.value->value().definition.fields[0].name.c_str(), "name");
   ck_assert_str_eq(metricDefR.value->value().definition.fields[1].name.c_str(), "value");
 
+  auto taskDefR = registry.get_definition_by_type(kTypeVizTaskView);
+  ck_assert_msg(taskDefR, "get_definition_by_type failed: %s", result_message(taskDefR));
+  ck_assert_msg(taskDefR.value->has_value(), "expected TaskView definition");
+  ck_assert_int_eq((int)taskDefR.value->value().definition.fields.size(), 5);
+  ck_assert_str_eq(taskDefR.value->value().definition.fields[0].name.c_str(), "task_id");
+  ck_assert_str_eq(taskDefR.value->value().definition.fields[1].name.c_str(), "state");
+
   ck_assert_msg(store.close(), "close failed");
 }
 END_TEST
@@ -106,6 +141,7 @@ Suite* viz_artifact_suite(void) {
 
   tcase_add_test(tc, test_viz_artifact_create);
   tcase_add_test(tc, test_viz_metric_create);
+  tcase_add_test(tc, test_task_view_create);
   tcase_add_test(tc, test_viz_schema_definitions);
 
   suite_add_tcase(s, tc);

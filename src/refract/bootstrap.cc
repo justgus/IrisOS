@@ -60,6 +60,7 @@ constexpr referee::TypeID kTypeConchSession{0x434F4E4300000001ULL};
 constexpr referee::TypeID kTypeConchConcho{0x434F4E4300000002ULL};
 constexpr referee::TypeID kTypeConchAlias{0x434F4E4300000003ULL};
 constexpr referee::TypeID kTypeConchIoHandleAlias{0x434F4E4300000004ULL};
+constexpr referee::TypeID kTypeConchTaskConcho{0x434F4E4300000005ULL};
 
 constexpr referee::TypeID kTypeKernelIo{0x4B494F5000000001ULL};
 constexpr referee::TypeID kTypeKernelIoChannel{0x4B494F5000000002ULL};
@@ -70,6 +71,7 @@ constexpr referee::TypeID kTypeVizTextLog{0x56495A0000000002ULL};
 constexpr referee::TypeID kTypeVizMetric{0x56495A0000000003ULL};
 constexpr referee::TypeID kTypeVizTable{0x56495A0000000004ULL};
 constexpr referee::TypeID kTypeVizTree{0x56495A0000000005ULL};
+constexpr referee::TypeID kTypeVizTaskView{0x56495A0000000006ULL};
 
 constexpr referee::TypeID kTypeDemoPropulsionSynth{0x44454D4F00000001ULL};
 constexpr referee::TypeID kTypeDemoSummary{0x44454D4F00000002ULL};
@@ -654,6 +656,20 @@ TypeDefinition make_conch_concho() {
   return def;
 }
 
+TypeDefinition make_conch_task_concho() {
+  TypeDefinition def{};
+  def.type_id = kTypeConchTaskConcho;
+  def.name = "TaskConcho";
+  def.namespace_name = "Conch";
+  def.version = 1;
+
+  def.fields.push_back(FieldDefinition{ "title", kTypeString, false, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "task_id", kTypeU64, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "state", kTypeString, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "task_view_id", kTypeObjectID, true, std::nullopt });
+  return def;
+}
+
 TypeDefinition make_conch_alias() {
   TypeDefinition def{};
   def.type_id = kTypeConchAlias;
@@ -845,6 +861,21 @@ TypeDefinition make_viz_tree() {
   return def;
 }
 
+TypeDefinition make_viz_task_view() {
+  TypeDefinition def{};
+  def.type_id = kTypeVizTaskView;
+  def.name = "TaskView";
+  def.namespace_name = "Viz";
+  def.version = 1;
+  def.preferred_renderer = "Task";
+  def.fields.push_back(FieldDefinition{ "task_id", kTypeU64, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "state", kTypeString, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "task_object_id", kTypeObjectID, false, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "artifacts", kTypeBytes, false, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "diagnostics", kTypeBytes, false, std::nullopt });
+  return def;
+}
+
 TypeDefinition make_demo_propulsion_synth() {
   TypeDefinition def{};
   def.type_id = kTypeDemoPropulsionSynth;
@@ -901,7 +932,7 @@ TypeDefinition make_demo_detail() {
 
 std::vector<TypeDefinition> core_schema_definitions() {
   std::vector<TypeDefinition> defs;
-  defs.reserve(49);
+  defs.reserve(51);
   defs.push_back(make_primitive(kTypeString, "String"));
   defs.push_back(make_primitive(kTypeU64, "U64"));
   defs.push_back(make_primitive(kTypeBool, "Bool"));
@@ -941,6 +972,7 @@ std::vector<TypeDefinition> core_schema_definitions() {
   defs.push_back(make_referee_edge());
   defs.push_back(make_conch_session());
   defs.push_back(make_conch_concho());
+  defs.push_back(make_conch_task_concho());
   defs.push_back(make_conch_alias());
   defs.push_back(make_conch_io_handle_alias());
   defs.push_back(make_kernel_io());
@@ -951,6 +983,7 @@ std::vector<TypeDefinition> core_schema_definitions() {
   defs.push_back(make_viz_metric());
   defs.push_back(make_viz_table());
   defs.push_back(make_viz_tree());
+  defs.push_back(make_viz_task_view());
   defs.push_back(make_demo_propulsion_synth());
   defs.push_back(make_demo_summary());
   defs.push_back(make_demo_detail());
