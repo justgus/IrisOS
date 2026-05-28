@@ -1,7 +1,7 @@
 ---
 GitHub-Issue: N/A
 AR-Dependencies: AR-0011, AR-0012, AR-0013, AR-0025
-ER-Dependencies: ER-0008, ER-0009, ER-0010, ER-0063, ER-0064
+ER-Dependencies: ER-0008, ER-0009, ER-0010, ER-0063, ER-0064, ER-0065
 ---
 
 # ER-0066 — Observer-Driven Conch Session Growth
@@ -30,7 +30,7 @@ ER-Dependencies: ER-0008, ER-0009, ER-0010, ER-0063, ER-0064
 ## Context
 
 - Problem statement: Conch can display routed artifacts through explicit command/helper paths, but Conch sessions do not yet grow from observed graph changes as described by AR-0012 and AR-0025 Mode 2.
-- Background / constraints: ER-0063 added a pull-based Referee graph change feed, and ER-0064 added Vizier relationship-route decisions. Conch still needs a deterministic session update layer that consumes those decisions and creates Concho view objects without command handlers explicitly invoking artifact spawning.
+- Background / constraints: ER-0063 added a pull-based Referee graph change feed, ER-0064 added artifact relationship-route decisions, and ER-0065 defines task visualization route decisions. Conch still needs a deterministic session update layer that consumes those decisions and creates Concho view objects without command handlers explicitly invoking artifact spawning.
 
 ## Goals
 
@@ -46,14 +46,14 @@ ER-Dependencies: ER-0008, ER-0009, ER-0010, ER-0063, ER-0064
 - Multi-user collaborative session semantics.
 - Layout manager, compositor, focus, or tiling policy.
 - Renderer implementation or visual styling.
-- Task visualization object definitions and Task Conchos.
+- New task visualization object definitions beyond ER-0065.
 - Authorization, capability, or sandbox enforcement for session observation.
 
 ## Scope
 
 - In scope: a Conch session growth/update surface that advances from a graph cursor.
 - In scope: persisted or inspectable session state needed to remember the last consumed cursor.
-- In scope: deterministic Concho creation or session-to-Concho linkage from Vizier relationship-route decisions.
+- In scope: deterministic Concho creation or session-to-Concho linkage from Vizier relationship-route decisions, including task visualization routes defined by ER-0065.
 - In scope: duplicate suppression for repeated updates over the same graph changes.
 - In scope: tests that create graph relationships, run a session update, and verify resulting Concho/session graph state.
 - Out of scope: long-running watcher threads, blocking subscription APIs, remote event delivery, and UI layout behavior.
@@ -77,6 +77,7 @@ ER-Dependencies: ER-0008, ER-0009, ER-0010, ER-0063, ER-0064
 
 - Tests verify a Conch session update creates a Concho for a newly observed `produced` artifact relationship.
 - Tests verify `progress`, `diagnostic`, or `stream` routed relationships can drive the same session growth path.
+- Tests verify task visualization route decisions from ER-0065 can drive Task Concho session growth.
 - Tests verify repeated updates do not create duplicate Conchos for the same routed relationship.
 - Tests verify unrouted graph changes are ignored.
 - Tests verify update results expose consumed cursor and created/reused counts.
@@ -87,7 +88,7 @@ ER-Dependencies: ER-0008, ER-0009, ER-0010, ER-0063, ER-0064
 - Risk: the first duplicate-suppression key may need revision once layout/session identity semantics become richer.
 - Risk: session cursor persistence may need migration if graph cursors become distributed or durable across store compaction.
 - Question: should Conch session state be a first-class Refract type in this ER or use the existing `Conch::Concho` object model until a broader session schema is accepted?
-- Question: should task-specific session growth wait for ER-0065, or should ER-0066 accept pre-existing task route decisions if present?
+- Question: what duplicate-suppression key should Task Conchos use if a task has multiple routed artifacts and diagnostics?
 
 ## Dependencies
 
@@ -100,14 +101,14 @@ ER-Dependencies: ER-0008, ER-0009, ER-0010, ER-0063, ER-0064
 - Dependency 7: ER-0010 Phase3 Viz Artifacts.
 - Dependency 8: ER-0063 Referee Graph Watch and Change-Feed API.
 - Dependency 9: ER-0064 Vizier Relationship-Pattern Routing.
-- Related: ER-0065 Task Visualization Objects and Task Conchos.
+- Dependency 10: ER-0065 Task Visualization Objects and Task Conchos.
 
 ## Implementation Notes
 
 - Notes for implementer: keep the first session observer pull-based and deterministic.
 - Notes for implementer: do not introduce threads, async runtimes, or new dependencies for ER-0066.
 - Notes for implementer: keep Concho creation/linking separate from layout policy.
-- Notes for implementer: if task-specific routing is not implemented yet, ignore task changes rather than inventing task view semantics in this ER.
+- Notes for implementer: consume task visualization route decisions from ER-0065; do not invent new task view semantics in this ER.
 - Notes for implementer: if Autotools inputs change, regenerate only when necessary and document the command.
 
 ## Verification Plan

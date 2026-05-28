@@ -14,7 +14,7 @@ GitHub-Issue: N/A
 
 - ER ID: ER-0061
 - Title: Sandbox Identity and Service Isolation Hooks
-- Status: Complete
+- Status: Verified
 - Date: 2026-05-26
 - Owners: Mike
 - Type: Enhancement

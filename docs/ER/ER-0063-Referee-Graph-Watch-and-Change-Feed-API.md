@@ -15,7 +15,7 @@ AR-Dependencies: AR-0009, AR-0011, AR-0012, AR-0025
 
 - ER ID: ER-0063
 - Title: Referee Graph Watch and Change-Feed API
-- Status: Complete
+- Status: Verified
 - Date: 2026-05-27
 - Owners: Mike
 - Type: Enhancement

@@ -18,9 +18,9 @@ verified ERs, and the latest implementation planning report.
 
 - AR-0014 and AR-0018 through AR-0026 are accepted.
 - ER-0001 through ER-0054 are verified.
-- ER-0056 and ER-0057 are verified.
-- ER-0055 is verified.
-- The remaining AR-0023 reflection-profile scope is now mapped to ER-0078 through ER-0080.
+- ER-0055 through ER-0064 are verified.
+- ER-0078 is verified.
+- The AR-0023 reflection-profile follow-on scope is mapped to ER-0078 through ER-0080.
 - The earlier plan items that were listed as proposed in the older plan documents now under `docs/Plans/`
   (ER-0034 through ER-0053) have already been implemented and verified, so they are not repeated
   as future work in this document.
@@ -50,10 +50,10 @@ Objectives:
 Completed work:
 
 - ER-0055 is verified.
-- Review of the current Refract schema and dispatch surfaces confirms that authoritative inheritance
-  and interface metadata are implemented, while constraints, operation effects, and documentation
-  objects are still missing as persisted reflection features.
-- The still-missing AR-0023 scope is now mapped into concrete follow-on ERs:
+- Review of the Refract schema and dispatch surfaces confirmed that authoritative inheritance
+  and interface metadata were implemented, while constraints, operation effects, and documentation
+  objects needed follow-on persisted reflection work.
+- The remaining AR-0023 scope was mapped into concrete follow-on ERs:
   - ER-0078 - Refract constraints and validation metadata
   - ER-0079 - Refract operation effects metadata
   - ER-0080 - Refract documentation objects and richer introspection metadata
@@ -64,6 +64,9 @@ Exit criteria:
 - the remaining AR-0023 scope is either mapped to concrete ERs or explicitly deferred
 
 ## Phase 2 - Service Plane Stage C Through E
+
+- Status: Verified
+- Verified: 2026-05-28
 
 Related architecture:
 
@@ -76,25 +79,59 @@ Objectives:
 - move from persistent registry plus lifecycle into persistent capability context and service-aware
   policy boundaries
 
-Remaining work:
+Completed work:
 
-- define persistent capability context objects and task/service attachment
-- enforce capability checks at service boundaries instead of Conch-local state
-- add sandbox identity and service isolation hooks
-- plan later-stage service classes such as network, memory, and additional core services
+- ER-0058 defines persistent capability context objects and persistence.
+- ER-0059 attaches capability context to CEO tasks.
+- ER-0060 enforces service-boundary capability checks.
+- ER-0061 adds sandbox identity and service isolation hooks.
+- ER-0062 adds the memory service baseline.
 
-Suggested ER slices:
+Verified ER slices:
 
 - ER-0058 - capability context objects and persistence
 - ER-0059 - CEO task capability attachment
 - ER-0060 - service boundary capability enforcement
 - ER-0061 - sandbox identity and service isolation hooks
-- ER-0062 - additional staged service implementations after isolation is stable
+- ER-0062 - memory service baseline
 
 Exit criteria:
 
 - service calls and task execution evaluate against persistent capability context
 - later-stage service work is staged behind explicit ERs rather than implied by AR-0005 alone
+
+## Reflection Follow-On Phase - Remaining Profile Implementation
+
+- Status: Proposed
+
+Related architecture:
+
+- AR-0023 Refract Reflection Profiles
+
+Objectives:
+
+- finish the remaining persisted reflection-profile features after ER-0078
+- make operation effects and canonical documentation metadata queryable through Refract
+
+Remaining work:
+
+- add persisted operation-effects metadata for operation definitions
+- add persisted documentation objects or documentation metadata for reflected entities
+- keep schema migration behavior explicit for each new reflected metadata field
+
+Verified ER slices:
+
+- ER-0078 - Refract constraints and validation metadata
+
+Proposed ER slices:
+
+- ER-0079 - Refract operation effects metadata
+- ER-0080 - Refract documentation objects and richer introspection metadata
+
+Exit criteria:
+
+- operation effects are persisted and exposed through introspection
+- canonical Refract documentation metadata is persisted and exposed through introspection
 
 ## Phase 3 - Conch and Vizier Observer-Driven Interaction
 
@@ -109,19 +146,23 @@ Objectives:
 - preserve existing routed-artifact behavior while adding the missing observer-driven model
 - make task visualization and graph-driven Concho growth explicit, testable surfaces
 
+Completed work:
+
+- ER-0063 defines graph watch or change-feed APIs over Referee relationships.
+- ER-0064 adds relationship-pattern routing in Vizier.
+
 Remaining work:
 
-- define graph watch or change-feed APIs over Referee relationships
-- add relationship-pattern and task-state routing in Vizier
+- add task-state routing in Vizier
 - add task view models and Task Conchos
 - move Concho creation from helper-driven paths toward observer-driven session growth
 
-Suggested ER slices:
+ER slices:
 
-- ER-0063 - Referee graph watch and change-feed API
-- ER-0064 - Vizier relationship-pattern routing
-- ER-0065 - task visualization objects and Task Conchos
-- ER-0066 - observer-driven Conch session growth
+- ER-0063 - Referee graph watch and change-feed API - Verified
+- ER-0064 - Vizier relationship-pattern routing - Verified
+- ER-0065 - task visualization objects and Task Conchos - Proposed
+- ER-0066 - observer-driven Conch session growth - Proposed
 
 Exit criteria:
 
@@ -146,7 +187,7 @@ Remaining work:
 - document grammar boundaries for batch or scripted execution
 - add regression coverage for shared parser use across shell and tooling paths
 
-Suggested ER slices:
+Proposed ER slices:
 
 - ER-0067 - reusable Conch grammar API
 - ER-0068 - batch execution and non-interactive parser integration
@@ -176,7 +217,7 @@ Remaining work:
 - add machine handles and leases
 - expand Comms transport, session, and protocol objects above Machine
 
-Suggested ER slices:
+Proposed ER slices:
 
 - ER-0070 - Machine representation primitives
 - ER-0071 - Machine descriptors and resource facts
@@ -207,7 +248,7 @@ Remaining work:
 - persist the canonical catalog versioning model and extension precedence rules
 - expose unit listing, lookup, and conversion through Conch and runtime APIs
 
-Suggested ER slices:
+Proposed ER slices:
 
 - ER-0075 - full Caliper catalog expansion
 - ER-0076 - runtime conversion and compatibility engine
@@ -225,14 +266,15 @@ Exit criteria:
 
 ## Delivery Order
 
-1. Finish Service Plane staging work under AR-0022.
-2. Implement observer-driven Conch/Vizier behavior under AR-0025.
-3. Add reusable parser surfaces for AR-0026 Level 4.
-4. Implement Machine and Comms delivery tracks under AR-0024.
-5. Complete the Caliper catalog and runtime conversion work under AR-0019.
+1. Implement ER-0065 task visualization objects and Task Conchos under AR-0025.
+2. Recheck ER-0066 scope, then implement observer-driven Conch session growth under AR-0025.
+3. Implement ER-0079 and ER-0080 to close the remaining AR-0023 reflection-profile metadata.
+4. Add reusable parser surfaces for AR-0026 Level 4.
+5. Implement Machine and Comms delivery tracks under AR-0024.
+6. Complete the Caliper catalog and runtime conversion work under AR-0019.
 
 ## Validation
 
 - `grep -RIn "Status: Proposed" docs/AR`
-- `grep -nE "ER-0055|ER-0056|ER-0057|ER-0078|ER-0079|ER-0080" docs/ER/ER-Status.md`
+- `grep -nE "ER-0058|ER-0064|ER-0065|ER-0066|ER-0078|ER-0079|ER-0080" docs/ER/ER-Status.md`
 - review this plan against the source plans and [Implementation-Plan-2026-03-14.md](/home/justgus/Dev/irisOS/docs/Plans/Implementation-Plan-2026-03-14.md)
