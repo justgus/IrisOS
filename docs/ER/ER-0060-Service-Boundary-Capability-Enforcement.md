@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #267
 ---
 
 # ER-0060 — Service Boundary Capability Enforcement
