@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #266
 ---
 
 # ER-0059 — CEO Task Capability Attachment

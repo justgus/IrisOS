@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #264
 ---
 
 # ER-0057 — Service Host Lifecycle and Persistent Registry

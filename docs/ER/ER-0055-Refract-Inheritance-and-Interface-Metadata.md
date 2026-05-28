@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #262
 ---
 
 # ER-0055 — Refract Inheritance and Interface Metadata

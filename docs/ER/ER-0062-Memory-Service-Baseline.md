@@ -1,5 +1,5 @@
 ---
-GitHub-Issue: N/A
+GitHub-Issue: #269
 ---
 
 # ER-0062 — Memory Service Baseline
