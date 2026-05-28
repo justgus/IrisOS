@@ -14,7 +14,7 @@ GitHub-Issue: N/A
 
 - ER ID: ER-0060
 - Title: Service Boundary Capability Enforcement
-- Status: Complete
+- Status: Verified
 - Date: 2026-05-26
 - Owners: Mike
 - Type: Enhancement

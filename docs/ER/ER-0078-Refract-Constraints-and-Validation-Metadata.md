@@ -14,7 +14,7 @@ GitHub-Issue: N/A
 
 - ER ID: ER-0078
 - Title: Refract Constraints and Validation Metadata
-- Status: Complete
+- Status: Verified
 - Date: 2026-03-19
 - Owners: Mike
 - Type: Epic
