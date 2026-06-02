@@ -50,6 +50,8 @@ constexpr referee::TypeID kTypeSignatureDefinition{0x5246524346000003ULL};
 constexpr referee::TypeID kTypeRelationshipSpec{0x5246524346000004ULL};
 constexpr referee::TypeID kTypeFieldConstraint{0x5246524346000005ULL};
 constexpr referee::TypeID kTypeRelationshipConstraint{0x5246524346000006ULL};
+constexpr referee::TypeID kTypeOperationEffect{0x5246524346000007ULL};
+constexpr referee::TypeID kTypeDocumentationMetadata{0x5246524346000008ULL};
 constexpr referee::TypeID kTypeGenericInstance{0x5246524347000001ULL};
 constexpr referee::TypeID kTypeMigrationRecord{0x524652434D000001ULL};
 
@@ -88,6 +90,22 @@ referee::ObjectID definition_id_for(referee::TypeID type_id) {
     v >>= 8;
   }
   return id;
+}
+
+DocumentationMetadata doc(std::string_view summary) {
+  DocumentationMetadata metadata{};
+  metadata.summary = std::string(summary);
+  return metadata;
+}
+
+OperationEffect effect(OperationEffectKind kind,
+                       std::string_view target,
+                       std::string_view description) {
+  OperationEffect out{};
+  out.kind = kind;
+  out.target = std::string(target);
+  out.description = std::string(description);
+  return out;
 }
 
 void add_core_ops(TypeDefinition& def, referee::TypeID type_id);
@@ -211,6 +229,8 @@ TypeDefinition make_type_definition() {
   def.fields.push_back(FieldDefinition{ "name", kTypeString, true, std::nullopt });
   def.fields.push_back(FieldDefinition{ "namespace", kTypeString, true, std::nullopt });
   def.fields.push_back(FieldDefinition{ "version", kTypeU64, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "documentation", kTypeBytes, false, std::nullopt });
+  def.documentation = doc("Defines a reflected Refract type.");
   return def;
 }
 
@@ -462,6 +482,7 @@ TypeDefinition make_field_definition() {
   def.fields.push_back(FieldDefinition{ "type_id", kTypeU64, true, std::nullopt });
   def.fields.push_back(FieldDefinition{ "required", kTypeBool, false, std::nullopt });
   def.fields.push_back(FieldDefinition{ "constraints", kTypeBytes, false, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "documentation", kTypeBytes, false, std::nullopt });
   return def;
 }
 
@@ -485,6 +506,8 @@ TypeDefinition make_operation_definition() {
   def.fields.push_back(FieldDefinition{ "name", kTypeString, true, std::nullopt });
   def.fields.push_back(FieldDefinition{ "scope", kTypeString, false, std::nullopt });
   def.fields.push_back(FieldDefinition{ "signature", kTypeBytes, false, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "effects", kTypeBytes, false, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "documentation", kTypeBytes, false, std::nullopt });
   return def;
 }
 
@@ -498,6 +521,7 @@ TypeDefinition make_relationship_spec() {
   def.fields.push_back(FieldDefinition{ "cardinality", kTypeString, false, std::nullopt });
   def.fields.push_back(FieldDefinition{ "target", kTypeString, true, std::nullopt });
   def.fields.push_back(FieldDefinition{ "constraints", kTypeBytes, false, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "documentation", kTypeBytes, false, std::nullopt });
   return def;
 }
 
@@ -519,6 +543,31 @@ TypeDefinition make_relationship_constraint() {
   def.version = 1;
   def.fields.push_back(FieldDefinition{ "kind", kTypeString, true, std::nullopt });
   def.fields.push_back(FieldDefinition{ "value", kTypeU64, true, std::nullopt });
+  return def;
+}
+
+TypeDefinition make_operation_effect() {
+  TypeDefinition def{};
+  def.type_id = kTypeOperationEffect;
+  def.name = "OperationEffect";
+  def.namespace_name = "Refract";
+  def.version = 1;
+  def.fields.push_back(FieldDefinition{ "kind", kTypeString, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "target", kTypeString, false, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "description", kTypeString, false, std::nullopt });
+  def.documentation = doc("Describes declared side effects for a reflected operation.");
+  return def;
+}
+
+TypeDefinition make_documentation_metadata() {
+  TypeDefinition def{};
+  def.type_id = kTypeDocumentationMetadata;
+  def.name = "DocumentationMetadata";
+  def.namespace_name = "Refract";
+  def.version = 1;
+  def.fields.push_back(FieldDefinition{ "summary", kTypeString, false, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "examples", kTypeBytes, false, std::nullopt });
+  def.documentation = doc("Stores canonical human-facing metadata for reflected entities.");
   return def;
 }
 
@@ -710,6 +759,10 @@ TypeDefinition make_kernel_io() {
   open_channel.signature.params.push_back(ParameterDefinition{ "b", kTypeU64, false });
   open_channel.signature.outputs.push_back(ParameterDefinition{ "a", kTypeKernelIoChannel, false });
   open_channel.signature.outputs.push_back(ParameterDefinition{ "b", kTypeKernelIoChannel, false });
+  open_channel.effects.push_back(effect(OperationEffectKind::UsesIo,
+                                        "kernel.io.channel",
+                                        "allocates a paired IO channel"));
+  open_channel.documentation = doc("Open a paired bidirectional IO channel.");
   def.operations.push_back(std::move(open_channel));
 
   OperationDefinition open_datagram;
@@ -720,6 +773,10 @@ TypeDefinition make_kernel_io() {
   open_datagram.signature.params.push_back(ParameterDefinition{ "b", kTypeU64, false });
   open_datagram.signature.outputs.push_back(ParameterDefinition{ "a", kTypeKernelIoDatagram, false });
   open_datagram.signature.outputs.push_back(ParameterDefinition{ "b", kTypeKernelIoDatagram, false });
+  open_datagram.effects.push_back(effect(OperationEffectKind::UsesIo,
+                                         "kernel.io.datagram",
+                                         "allocates a paired datagram endpoint"));
+  open_datagram.documentation = doc("Open a paired datagram endpoint.");
   def.operations.push_back(std::move(open_datagram));
 
   return def;
@@ -738,6 +795,10 @@ TypeDefinition make_kernel_io_channel() {
   send_op.required_capabilities.push_back("kernel.io");
   send_op.signature.params.push_back(ParameterDefinition{ "data", kTypeBytes, false });
   send_op.signature.outputs.push_back(ParameterDefinition{ "ready", kTypeBool, false });
+  send_op.effects.push_back(effect(OperationEffectKind::UsesIo,
+                                   "kernel.io.channel",
+                                   "writes bytes to the channel"));
+  send_op.documentation = doc("Send bytes on an IO channel.");
   def.operations.push_back(std::move(send_op));
 
   OperationDefinition recv_op;
@@ -746,6 +807,10 @@ TypeDefinition make_kernel_io_channel() {
   recv_op.required_capabilities.push_back("kernel.io");
   recv_op.signature.params.push_back(ParameterDefinition{ "max_bytes", kTypeU64, false });
   recv_op.signature.outputs.push_back(ParameterDefinition{ "data", kTypeBytes, false });
+  recv_op.effects.push_back(effect(OperationEffectKind::UsesIo,
+                                   "kernel.io.channel",
+                                   "reads bytes from the channel"));
+  recv_op.documentation = doc("Receive bytes from an IO channel.");
   def.operations.push_back(std::move(recv_op));
 
   OperationDefinition await_op;
@@ -754,12 +819,20 @@ TypeDefinition make_kernel_io_channel() {
   await_op.required_capabilities.push_back("kernel.io");
   await_op.signature.params.push_back(ParameterDefinition{ "task_id", kTypeU64, false });
   await_op.signature.outputs.push_back(ParameterDefinition{ "ready", kTypeBool, false });
+  await_op.effects.push_back(effect(OperationEffectKind::Schedules,
+                                    "kernel.io.channel",
+                                    "waits for channel readability"));
+  await_op.documentation = doc("Wait for an IO channel to become readable.");
   def.operations.push_back(std::move(await_op));
 
   OperationDefinition close_op;
   close_op.name = "close";
   close_op.scope = OperationScope::Object;
   close_op.required_capabilities.push_back("kernel.io");
+  close_op.effects.push_back(effect(OperationEffectKind::UsesIo,
+                                    "kernel.io.channel",
+                                    "closes the channel handle"));
+  close_op.documentation = doc("Close an IO channel.");
   def.operations.push_back(std::move(close_op));
 
   return def;
@@ -778,6 +851,10 @@ TypeDefinition make_kernel_io_datagram() {
   send_op.required_capabilities.push_back("kernel.io");
   send_op.signature.params.push_back(ParameterDefinition{ "data", kTypeBytes, false });
   send_op.signature.outputs.push_back(ParameterDefinition{ "ready", kTypeBool, false });
+  send_op.effects.push_back(effect(OperationEffectKind::UsesIo,
+                                   "kernel.io.datagram",
+                                   "writes a datagram payload"));
+  send_op.documentation = doc("Send a datagram payload.");
   def.operations.push_back(std::move(send_op));
 
   OperationDefinition recv_op;
@@ -785,6 +862,10 @@ TypeDefinition make_kernel_io_datagram() {
   recv_op.scope = OperationScope::Object;
   recv_op.required_capabilities.push_back("kernel.io");
   recv_op.signature.outputs.push_back(ParameterDefinition{ "data", kTypeBytes, true });
+  recv_op.effects.push_back(effect(OperationEffectKind::UsesIo,
+                                   "kernel.io.datagram",
+                                   "reads a datagram payload"));
+  recv_op.documentation = doc("Receive a datagram payload if available.");
   def.operations.push_back(std::move(recv_op));
 
   OperationDefinition await_op;
@@ -793,12 +874,20 @@ TypeDefinition make_kernel_io_datagram() {
   await_op.required_capabilities.push_back("kernel.io");
   await_op.signature.params.push_back(ParameterDefinition{ "task_id", kTypeU64, false });
   await_op.signature.outputs.push_back(ParameterDefinition{ "ready", kTypeBool, false });
+  await_op.effects.push_back(effect(OperationEffectKind::Schedules,
+                                    "kernel.io.datagram",
+                                    "waits for datagram readability"));
+  await_op.documentation = doc("Wait for a datagram endpoint to become readable.");
   def.operations.push_back(std::move(await_op));
 
   OperationDefinition close_op;
   close_op.name = "close";
   close_op.scope = OperationScope::Object;
   close_op.required_capabilities.push_back("kernel.io");
+  close_op.effects.push_back(effect(OperationEffectKind::UsesIo,
+                                    "kernel.io.datagram",
+                                    "closes the datagram handle"));
+  close_op.documentation = doc("Close a datagram endpoint.");
   def.operations.push_back(std::move(close_op));
 
   return def;
@@ -932,7 +1021,7 @@ TypeDefinition make_demo_detail() {
 
 std::vector<TypeDefinition> core_schema_definitions() {
   std::vector<TypeDefinition> defs;
-  defs.reserve(51);
+  defs.reserve(53);
   defs.push_back(make_primitive(kTypeString, "String"));
   defs.push_back(make_primitive(kTypeU64, "U64"));
   defs.push_back(make_primitive(kTypeBool, "Bool"));
@@ -966,6 +1055,8 @@ std::vector<TypeDefinition> core_schema_definitions() {
   defs.push_back(make_relationship_spec());
   defs.push_back(make_field_constraint());
   defs.push_back(make_relationship_constraint());
+  defs.push_back(make_operation_effect());
+  defs.push_back(make_documentation_metadata());
   defs.push_back(make_generic_instance_definition());
   defs.push_back(make_migration_record());
   defs.push_back(make_referee_object());

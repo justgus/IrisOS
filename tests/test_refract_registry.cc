@@ -338,6 +338,88 @@ START_TEST(test_schema_registry_constraint_metadata_roundtrip)
 }
 END_TEST
 
+START_TEST(test_schema_registry_effects_and_documentation_roundtrip)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+
+  TypeDefinition def{};
+  def.type_id = TypeID{0xEFULL};
+  def.name = "DocumentedWidget";
+  def.namespace_name = "Demo";
+  def.version = 1;
+  def.documentation = DocumentationMetadata{ "A documented test type.", { "show_type Demo::DocumentedWidget" } };
+
+  FieldDefinition field{ "title", TypeID{0x1001ULL}, true, std::nullopt };
+  field.documentation = DocumentationMetadata{ "Human-facing title.", {} };
+  def.fields.push_back(field);
+
+  OperationDefinition op;
+  op.name = "publish";
+  op.scope = OperationScope::Object;
+  OperationEffect effect;
+  effect.kind = OperationEffectKind::Emits;
+  effect.target = "demo.events";
+  effect.description = "emits a demo event";
+  op.effects.push_back(effect);
+  op.documentation = DocumentationMetadata{ "Publish the widget state.", { "call publish" } };
+  def.operations.push_back(op);
+
+  RelationshipSpec rel{};
+  rel.role = "owner";
+  rel.cardinality = "one";
+  rel.target = "Demo::Owner";
+  rel.documentation = DocumentationMetadata{ "Owning object.", {} };
+  def.relationships.push_back(rel);
+
+  auto reg = registry.register_definition(def);
+  ck_assert_msg(reg, "register documented definition failed: %s", result_message(reg));
+
+  auto byType = registry.get_definition_by_type(def.type_id);
+  ck_assert_msg(byType, "get documented definition failed: %s", result_message(byType));
+  ck_assert_msg(byType.value->has_value(), "expected documented definition");
+
+  const auto& stored = byType.value->value().definition;
+  ck_assert_msg(stored.documentation.has_value(), "type documentation missing");
+  ck_assert_str_eq(stored.documentation->summary->c_str(), "A documented test type.");
+  ck_assert_int_eq((int)stored.documentation->examples.size(), 1);
+
+  ck_assert_msg(stored.fields[0].documentation.has_value(), "field documentation missing");
+  ck_assert_str_eq(stored.fields[0].documentation->summary->c_str(), "Human-facing title.");
+
+  ck_assert_int_eq((int)stored.operations[0].effects.size(), 1);
+  ck_assert_int_eq((int)stored.operations[0].effects[0].kind, (int)OperationEffectKind::Emits);
+  ck_assert_str_eq(stored.operations[0].effects[0].target.c_str(), "demo.events");
+  ck_assert_msg(stored.operations[0].documentation.has_value(), "operation documentation missing");
+  ck_assert_str_eq(stored.operations[0].documentation->summary->c_str(), "Publish the widget state.");
+
+  ck_assert_msg(stored.relationships[0].documentation.has_value(), "relationship documentation missing");
+  ck_assert_str_eq(stored.relationships[0].documentation->summary->c_str(), "Owning object.");
+
+  auto listR = registry.list_types();
+  ck_assert_msg(listR, "list_types failed: %s", result_message(listR));
+  bool found_summary = false;
+  for (const auto& summary : listR.value.value()) {
+    if (summary.type_id == def.type_id) {
+      ck_assert_msg(summary.documentation.has_value(), "summary documentation missing");
+      ck_assert_str_eq(summary.documentation->summary->c_str(), "A documented test type.");
+      found_summary = true;
+    }
+  }
+  ck_assert_msg(found_summary, "documented summary missing");
+
+  OperationRegistry op_registry(registry);
+  auto opsR = op_registry.list_operations(def.type_id, OperationScope::Object, false);
+  ck_assert_msg(opsR, "list operations failed: %s", result_message(opsR));
+  ck_assert_int_eq((int)opsR.value->size(), 1);
+  ck_assert_int_eq((int)opsR.value->at(0).effects.size(), 1);
+  ck_assert_msg(opsR.value->at(0).documentation.has_value(), "listed op documentation missing");
+}
+END_TEST
+
 START_TEST(test_schema_registry_rejects_invalid_relationship_constraint_bounds)
 {
   SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
@@ -668,6 +750,7 @@ Suite* refract_registry_suite(void) {
   tcase_add_test(tc, test_schema_registry_collection_metadata_roundtrip);
   tcase_add_test(tc, test_schema_registry_inheritance_metadata_roundtrip);
   tcase_add_test(tc, test_schema_registry_constraint_metadata_roundtrip);
+  tcase_add_test(tc, test_schema_registry_effects_and_documentation_roundtrip);
   tcase_add_test(tc, test_schema_registry_rejects_invalid_relationship_constraint_bounds);
   tcase_add_test(tc, test_schema_registry_legacy_relationship_inheritance_fallback);
   tcase_add_test(tc, test_generic_instance_type_id_deterministic);

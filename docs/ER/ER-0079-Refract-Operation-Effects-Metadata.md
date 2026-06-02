@@ -14,7 +14,7 @@ GitHub-Issue: #287
 
 - ER ID: ER-0079
 - Title: Refract Operation Effects Metadata
-- Status: Proposed
+- Status: Complete
 - Date: 2026-03-19
 - Owners: Mike
 - Type: Epic
