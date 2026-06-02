@@ -53,6 +53,47 @@ static referee::Result<RelationshipConstraintKind> relationship_constraint_kind_
   return referee::Result<RelationshipConstraintKind>::err("unknown relationship constraint kind");
 }
 
+static std::string operation_effect_kind_to_string(OperationEffectKind kind) {
+  switch (kind) {
+    case OperationEffectKind::Reads:
+      return "reads";
+    case OperationEffectKind::Writes:
+      return "writes";
+    case OperationEffectKind::Emits:
+      return "emits";
+    case OperationEffectKind::Schedules:
+      return "schedules";
+    case OperationEffectKind::UsesIo:
+      return "uses_io";
+    case OperationEffectKind::Custom:
+      return "custom";
+  }
+  return "custom";
+}
+
+static referee::Result<OperationEffectKind> operation_effect_kind_from_string(
+    std::string_view kind) {
+  if (kind == "reads") return referee::Result<OperationEffectKind>::ok(OperationEffectKind::Reads);
+  if (kind == "writes") return referee::Result<OperationEffectKind>::ok(OperationEffectKind::Writes);
+  if (kind == "emits") return referee::Result<OperationEffectKind>::ok(OperationEffectKind::Emits);
+  if (kind == "schedules") {
+    return referee::Result<OperationEffectKind>::ok(OperationEffectKind::Schedules);
+  }
+  if (kind == "uses_io") return referee::Result<OperationEffectKind>::ok(OperationEffectKind::UsesIo);
+  if (kind == "custom") return referee::Result<OperationEffectKind>::ok(OperationEffectKind::Custom);
+  return referee::Result<OperationEffectKind>::err("unknown operation effect kind");
+}
+
+static nlohmann::json to_json(const DocumentationMetadata& documentation) {
+  nlohmann::json j;
+  if (documentation.summary.has_value()) j["summary"] = documentation.summary.value();
+  if (!documentation.examples.empty()) {
+    j["examples"] = nlohmann::json::array();
+    for (const auto& example : documentation.examples) j["examples"].push_back(example);
+  }
+  return j;
+}
+
 static nlohmann::json to_json(const FieldConstraint& constraint) {
   nlohmann::json j;
   j["kind"] = field_constraint_kind_to_string(constraint.kind);
@@ -72,12 +113,21 @@ static nlohmann::json to_json(const FieldDefinition& field) {
   j["type_id"] = field.type.v;
   j["required"] = field.required;
   if (field.default_json.has_value()) j["default_json"] = field.default_json.value();
+  if (field.documentation.has_value()) j["documentation"] = to_json(field.documentation.value());
   if (!field.constraints.empty()) {
     j["constraints"] = nlohmann::json::array();
     for (const auto& constraint : field.constraints) {
       j["constraints"].push_back(to_json(constraint));
     }
   }
+  return j;
+}
+
+static nlohmann::json to_json(const OperationEffect& effect) {
+  nlohmann::json j;
+  j["kind"] = operation_effect_kind_to_string(effect.kind);
+  if (!effect.target.empty()) j["target"] = effect.target;
+  if (effect.description.has_value()) j["description"] = effect.description.value();
   return j;
 }
 
@@ -116,6 +166,11 @@ static nlohmann::json to_json(const OperationDefinition& op) {
     j["capabilities"] = nlohmann::json::array();
     for (const auto& cap : op.required_capabilities) j["capabilities"].push_back(cap);
   }
+  if (!op.effects.empty()) {
+    j["effects"] = nlohmann::json::array();
+    for (const auto& effect : op.effects) j["effects"].push_back(to_json(effect));
+  }
+  if (op.documentation.has_value()) j["documentation"] = to_json(op.documentation.value());
   return j;
 }
 
@@ -124,6 +179,7 @@ static nlohmann::json to_json(const RelationshipSpec& rel) {
   j["role"] = rel.role;
   j["cardinality"] = rel.cardinality;
   j["target"] = rel.target;
+  if (rel.documentation.has_value()) j["documentation"] = to_json(rel.documentation.value());
   if (!rel.constraints.empty()) {
     j["constraints"] = nlohmann::json::array();
     for (const auto& constraint : rel.constraints) {
@@ -196,6 +252,7 @@ static nlohmann::json to_json(const TypeDefinition& def) {
   j["version"] = def.version;
   if (def.kind.has_value()) j["kind"] = def.kind.value();
   if (def.preferred_renderer.has_value()) j["preferred_renderer"] = def.preferred_renderer.value();
+  if (def.documentation.has_value()) j["documentation"] = to_json(def.documentation.value());
   if (!def.base_types.empty()) {
     j["base_types"] = nlohmann::json::array();
     for (const auto& type : def.base_types) j["base_types"].push_back(type.v);
@@ -387,12 +444,42 @@ static referee::Result<RelationshipConstraint> relationship_constraint_from_json
   return referee::Result<RelationshipConstraint>::ok(std::move(constraint));
 }
 
+static DocumentationMetadata documentation_from_json(const nlohmann::json& j) {
+  DocumentationMetadata documentation{};
+  if (j.contains("summary")) documentation.summary = j.at("summary").get<std::string>();
+  if (j.contains("examples")) {
+    for (const auto& item : j.at("examples")) {
+      documentation.examples.push_back(item.get<std::string>());
+    }
+  }
+  return documentation;
+}
+
+static referee::Result<OperationEffect> operation_effect_from_json(const nlohmann::json& j) {
+  if (!j.is_object()) {
+    return referee::Result<OperationEffect>::err("operation effect must be an object");
+  }
+  auto kind_text = j.value("kind", "custom");
+  auto kindR = operation_effect_kind_from_string(kind_text);
+  if (!kindR) {
+    return referee::Result<OperationEffect>::err(
+        "invalid operation effect kind: " + kind_text);
+  }
+
+  OperationEffect effect{};
+  effect.kind = kindR.value.value();
+  effect.target = j.value("target", "");
+  if (j.contains("description")) effect.description = j.at("description").get<std::string>();
+  return referee::Result<OperationEffect>::ok(std::move(effect));
+}
+
 static referee::Result<FieldDefinition> field_from_json(const nlohmann::json& j) {
   FieldDefinition f{};
   f.name = j.value("name", "");
   f.type = referee::TypeID{j.value("type_id", 0ULL)};
   f.required = j.value("required", false);
   if (j.contains("default_json")) f.default_json = j.at("default_json").get<std::string>();
+  if (j.contains("documentation")) f.documentation = documentation_from_json(j.at("documentation"));
   if (j.contains("constraints")) {
     for (const auto& item : j.at("constraints")) {
       auto constraintR = field_constraint_from_json(item);
@@ -430,7 +517,7 @@ static SignatureDefinition signature_from_json(const nlohmann::json& j) {
   return sig;
 }
 
-static OperationDefinition operation_from_json(const nlohmann::json& j) {
+static referee::Result<OperationDefinition> operation_from_json(const nlohmann::json& j) {
   OperationDefinition op{};
   op.name = j.value("name", "");
   if (j.contains("scope")) op.scope = scope_from_string(j.at("scope").get<std::string>());
@@ -440,7 +527,15 @@ static OperationDefinition operation_from_json(const nlohmann::json& j) {
       op.required_capabilities.push_back(item.get<std::string>());
     }
   }
-  return op;
+  if (j.contains("effects")) {
+    for (const auto& item : j.at("effects")) {
+      auto effectR = operation_effect_from_json(item);
+      if (!effectR) return referee::Result<OperationDefinition>::err(effectR.error->message);
+      op.effects.push_back(effectR.value.value());
+    }
+  }
+  if (j.contains("documentation")) op.documentation = documentation_from_json(j.at("documentation"));
+  return referee::Result<OperationDefinition>::ok(std::move(op));
 }
 
 static referee::Result<RelationshipSpec> relationship_from_json(const nlohmann::json& j) {
@@ -448,6 +543,7 @@ static referee::Result<RelationshipSpec> relationship_from_json(const nlohmann::
   rel.role = j.value("role", "");
   rel.cardinality = j.value("cardinality", "");
   rel.target = j.value("target", "");
+  if (j.contains("documentation")) rel.documentation = documentation_from_json(j.at("documentation"));
   if (j.contains("constraints")) {
     for (const auto& item : j.at("constraints")) {
       auto constraintR = relationship_constraint_from_json(item);
@@ -532,6 +628,7 @@ static referee::Result<TypeDefinition> definition_from_json(const nlohmann::json
   if (j.contains("preferred_renderer")) {
     def.preferred_renderer = j.at("preferred_renderer").get<std::string>();
   }
+  if (j.contains("documentation")) def.documentation = documentation_from_json(j.at("documentation"));
   if (j.contains("base_types")) {
     for (const auto& item : j.at("base_types")) {
       def.base_types.push_back(referee::TypeID{item.get<std::uint64_t>()});
@@ -575,7 +672,11 @@ static referee::Result<TypeDefinition> definition_from_json(const nlohmann::json
     }
   }
   if (j.contains("operations")) {
-    for (const auto& item : j.at("operations")) def.operations.push_back(operation_from_json(item));
+    for (const auto& item : j.at("operations")) {
+      auto opR = operation_from_json(item);
+      if (!opR) return referee::Result<TypeDefinition>::err(opR.error->message);
+      def.operations.push_back(opR.value.value());
+    }
   }
   if (j.contains("relationships")) {
     for (const auto& item : j.at("relationships")) {
@@ -745,6 +846,7 @@ referee::Result<std::vector<TypeSummary>> latest_type_summaries(SchemaRegistry& 
     latest_summary.name = defR.value->value().definition.name;
     latest_summary.namespace_name = defR.value->value().definition.namespace_name;
     latest_summary.preferred_renderer = defR.value->value().definition.preferred_renderer;
+    latest_summary.documentation = defR.value->value().definition.documentation;
     latest[summary.type_id.v] = std::move(latest_summary);
   }
 
@@ -989,6 +1091,7 @@ referee::Result<std::vector<TypeSummary>> SchemaRegistry::list_types() {
     summary.name = defR.value->definition.name;
     summary.namespace_name = defR.value->definition.namespace_name;
     summary.preferred_renderer = defR.value->definition.preferred_renderer;
+    summary.documentation = defR.value->definition.documentation;
 
     out.push_back(std::move(summary));
   }

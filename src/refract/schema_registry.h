@@ -8,6 +8,7 @@
 #include <map>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace iris::refract {
@@ -21,12 +22,28 @@ struct FieldConstraint {
   FieldConstraintKind kind{FieldConstraintKind::Required};
 };
 
+struct DocumentationMetadata {
+  std::optional<std::string> summary;
+  std::vector<std::string> examples{};
+};
+
 struct FieldDefinition {
+  FieldDefinition() = default;
+  FieldDefinition(std::string name_,
+                  referee::TypeID type_,
+                  bool required_,
+                  std::optional<std::string> default_json_)
+      : name(std::move(name_)),
+        type(type_),
+        required(required_),
+        default_json(std::move(default_json_)) {}
+
   std::string name;
   referee::TypeID type{};
   bool required{false};
   std::optional<std::string> default_json;
   std::vector<FieldConstraint> constraints{};
+  std::optional<DocumentationMetadata> documentation;
 };
 
 struct ParameterDefinition {
@@ -40,6 +57,21 @@ struct SignatureDefinition {
   std::vector<ParameterDefinition> outputs;
 };
 
+enum class OperationEffectKind {
+  Reads,
+  Writes,
+  Emits,
+  Schedules,
+  UsesIo,
+  Custom
+};
+
+struct OperationEffect {
+  OperationEffectKind kind{OperationEffectKind::Custom};
+  std::string target;
+  std::optional<std::string> description;
+};
+
 enum class OperationScope {
   Class,
   Object
@@ -50,6 +82,8 @@ struct OperationDefinition {
   OperationScope scope{OperationScope::Object};
   SignatureDefinition signature;
   std::vector<std::string> required_capabilities{};
+  std::vector<OperationEffect> effects{};
+  std::optional<DocumentationMetadata> documentation;
 };
 
 enum class RelationshipConstraintKind {
@@ -63,10 +97,17 @@ struct RelationshipConstraint {
 };
 
 struct RelationshipSpec {
+  RelationshipSpec() = default;
+  RelationshipSpec(std::string role_, std::string cardinality_, std::string target_)
+      : role(std::move(role_)),
+        cardinality(std::move(cardinality_)),
+        target(std::move(target_)) {}
+
   std::string role;
   std::string cardinality;
   std::string target;
   std::vector<RelationshipConstraint> constraints{};
+  std::optional<DocumentationMetadata> documentation;
 };
 
 struct EnumValueDefinition {
@@ -128,14 +169,28 @@ struct TypeDefinition {
   std::vector<OperationDefinition> operations{};
   std::vector<RelationshipSpec> relationships{};
   std::optional<std::string> preferred_renderer{};
+  std::optional<DocumentationMetadata> documentation;
 };
 
 struct TypeSummary {
+  TypeSummary() = default;
+  TypeSummary(referee::TypeID type_id_,
+              referee::ObjectID definition_id_,
+              std::string name_,
+              std::string namespace_name_,
+              std::optional<std::string> preferred_renderer_)
+      : type_id(type_id_),
+        definition_id(definition_id_),
+        name(std::move(name_)),
+        namespace_name(std::move(namespace_name_)),
+        preferred_renderer(std::move(preferred_renderer_)) {}
+
   referee::TypeID type_id{};
   referee::ObjectID definition_id{};
   std::string name;
   std::string namespace_name;
   std::optional<std::string> preferred_renderer;
+  std::optional<DocumentationMetadata> documentation;
 };
 
 struct DefinitionRecord {

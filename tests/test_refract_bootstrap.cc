@@ -331,6 +331,17 @@ START_TEST(test_bootstrap_kernel_io_ops)
   ck_assert_int_eq((int)open_channel_op->scope, (int)OperationScope::Class);
   ck_assert_int_eq((int)open_channel_op->signature.params.size(), 2);
   ck_assert_int_eq((int)open_channel_op->signature.outputs.size(), 2);
+  ck_assert_int_eq((int)open_channel_op->effects.size(), 1);
+  ck_assert_int_eq((int)open_channel_op->effects[0].kind, (int)OperationEffectKind::UsesIo);
+  ck_assert_str_eq(open_channel_op->effects[0].target.c_str(), "kernel.io.channel");
+  ck_assert_msg(open_channel_op->documentation.has_value(), "open_channel documentation missing");
+
+  ck_assert_msg(find_type(types, "Refract", "OperationEffect").has_value(),
+                "Refract::OperationEffect missing");
+  auto documentation_type = find_type(types, "Refract", "DocumentationMetadata");
+  ck_assert_msg(documentation_type.has_value(), "Refract::DocumentationMetadata missing");
+  ck_assert_msg(documentation_type->documentation.has_value(),
+                "DocumentationMetadata summary missing");
 
   ck_assert_msg(store.close(), "close failed");
 }

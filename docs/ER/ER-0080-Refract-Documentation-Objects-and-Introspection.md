@@ -14,7 +14,7 @@ GitHub-Issue: #288
 
 - ER ID: ER-0080
 - Title: Refract Documentation Objects and Introspection
-- Status: Proposed
+- Status: Complete
 - Date: 2026-03-19
 - Owners: Mike
 - Type: Epic
