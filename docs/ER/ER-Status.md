@@ -88,5 +88,5 @@
 - ER-0076 — Proposed
 - ER-0077 — Proposed
 - ER-0078 — Verified
-- ER-0079 — Complete
-- ER-0080 — Complete
+- ER-0079 — Verified
+- ER-0080 — Verified
