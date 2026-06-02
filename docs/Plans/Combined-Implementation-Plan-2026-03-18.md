@@ -102,7 +102,7 @@ Exit criteria:
 
 ## Reflection Follow-On Phase - Remaining Profile Implementation
 
-- Status: Proposed
+- Status: Verified
 
 Related architecture:
 
@@ -113,18 +113,9 @@ Objectives:
 - finish the remaining persisted reflection-profile features after ER-0078
 - make operation effects and canonical documentation metadata queryable through Refract
 
-Remaining work:
-
-- add persisted operation-effects metadata for operation definitions
-- add persisted documentation objects or documentation metadata for reflected entities
-- keep schema migration behavior explicit for each new reflected metadata field
-
 Verified ER slices:
 
 - ER-0078 - Refract constraints and validation metadata
-
-Proposed ER slices:
-
 - ER-0079 - Refract operation effects metadata
 - ER-0080 - Refract documentation objects and richer introspection metadata
 
@@ -134,6 +125,8 @@ Exit criteria:
 - canonical Refract documentation metadata is persisted and exposed through introspection
 
 ## Phase 3 - Conch and Vizier Observer-Driven Interaction
+
+- Status: Verified
 
 Related architecture:
 
@@ -151,13 +144,7 @@ Completed work:
 - ER-0063 defines graph watch or change-feed APIs over Referee relationships.
 - ER-0064 adds relationship-pattern routing in Vizier.
 
-Remaining work:
-
-- add task-state routing in Vizier
-- add task view models and Task Conchos
-- move Concho creation from helper-driven paths toward observer-driven session growth
-
-ER slices:
+Verified ER slices:
 
 - ER-0063 - Referee graph watch and change-feed API - Verified
 - ER-0064 - Vizier relationship-pattern routing - Verified
@@ -171,6 +158,8 @@ Exit criteria:
 
 ## Phase 4 - Parser Reuse and Userland Grammar Surface
 
+- Status: Verified
+
 Related architecture:
 
 - AR-0015 Conch Parser and Syntax
@@ -181,17 +170,11 @@ Objectives:
 - build on ER-0056 so the parser is reusable outside the interactive shell loop
 - make the command grammar available to userland tools and batch execution
 
-Remaining work:
+Verified ER slices:
 
-- define reusable parser entry points for non-interactive consumers
-- document grammar boundaries for batch or scripted execution
-- add regression coverage for shared parser use across shell and tooling paths
-
-Proposed ER slices:
-
-- ER-0067 - reusable Conch grammar API - Complete
-- ER-0068 - batch execution and non-interactive parser integration - Complete
-- ER-0069 - shared parser regression harness - Complete
+- ER-0067 - reusable Conch grammar API
+- ER-0068 - batch execution and non-interactive parser integration
+- ER-0069 - shared parser regression harness
 
 Exit criteria:
 
@@ -264,14 +247,16 @@ Exit criteria:
 - keep schema migration behavior explicit for every new persisted metadata field
 - continue decomposing large subsystems into local modules instead of adding new monoliths
 
-## Delivery Order
+## Completed Delivery Items
 
-1. Implement ER-0065 task visualization objects and Task Conchos under AR-0025.
-2. Recheck ER-0066 scope, then implement observer-driven Conch session growth under AR-0025.
-3. Implement ER-0079 and ER-0080 to close the remaining AR-0023 reflection-profile metadata.
-4. Add reusable parser surfaces for AR-0026 Level 4.
-5. Implement Machine and Comms delivery tracks under AR-0024.
-6. Complete the Caliper catalog and runtime conversion work under AR-0019.
+- ER-0065 and ER-0066 completed the AR-0025 Conch and Vizier observer-driven interaction work.
+- ER-0067 through ER-0069 completed the AR-0026 Level 4 parser reuse work.
+- ER-0079 and ER-0080 completed the remaining AR-0023 reflection-profile metadata work.
+
+## Remaining Delivery Order
+
+1. Implement Machine and Comms delivery tracks under AR-0024.
+2. Complete the Caliper catalog and runtime conversion work under AR-0019.
 
 ## Validation
 
