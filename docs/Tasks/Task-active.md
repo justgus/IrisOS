@@ -128,7 +128,9 @@ ERs are the current IrisOS implementation work records and should become Airfram
 - Proposed ERs should migrate to backlog Tasks unless the System Engineer explicitly assigns them to SP-001 or another active Sprint.
 
 **Evidence:**
-- TBD
+- DR-to-Issue migration map recorded in `docs/Airframe-DR-Issue-Migration.md`.
+- The map covers the local DR record and assigns target Issue ID `I-0001`.
+- Full Issue body generation remains a follow-up migration step after mapping review.
 
 ## T-0085: Migrate DR records into Airframe Issues
 
