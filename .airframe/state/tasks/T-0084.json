@@ -1,0 +1,57 @@
+{
+  "acceptanceCriteria": [
+    "Every ER document has exactly one migrated Task record or an explicit migration diagnostic.",
+    "Task records preserve source ER ID, title, status, GitHub issue number, dependencies, requirements, acceptance criteria, implementation notes, and verification plan.",
+    "Verified ERs are not downgraded.",
+    "Proposed ERs remain proposed/backlog unless explicitly assigned to active work.",
+    "Task numbering continues from the ER range and does not collide with existing ER IDs."
+  ],
+  "component": "ER to Task migration",
+  "componentsAffected": [
+
+  ],
+  "epicID": {
+    "rawValue": "EP-001"
+  },
+  "evidenceIDs": [
+
+  ],
+  "metadata": {
+    "schemaVersion": {
+      "major": 1,
+      "minor": 0,
+      "patch": 0
+    },
+    "updatedAt": "2026-07-07T00:00:00Z",
+    "source": "docs/Tasks/Task-active.md"
+  },
+  "notes": [
+    "ER-derived Task records should include `Legacy ID: ER-XXXX`.",
+    "Existing GitHub issue numbers should be preserved even when later titles or labels are updated.",
+    "Verified ERs should migrate to verified Task records only as a representation of existing approved state, not as new verification action.",
+    "Proposed ERs should migrate to backlog Tasks unless the System Engineer explicitly assigns them to SP-001 or another active Sprint.",
+    "Evidence: ER-to-Task migration map recorded in `docs/Airframe-ER-Task-Migration.md`.",
+    "Evidence: The canonical Task files were generated under `docs/Tasks/Verified` and `docs/Tasks/Backlog`.",
+    "Evidence: The migration covers all 88 local ER records and assigns deterministic target Task IDs `T-0089` through `T-0176`.",
+    "Original IrisOS priority: critical"
+  ],
+  "priority": "high",
+  "rationale": "ERs are the current IrisOS implementation work records and should become Airframe Tasks while preserving their existing state.",
+  "requirementIDs": [
+
+  ],
+  "sprintID": {
+    "rawValue": "SP-001"
+  },
+  "testSteps": [
+
+  ],
+  "workItem": {
+    "id": {
+      "rawValue": "T-0084"
+    },
+    "kind": "task",
+    "status": "active",
+    "title": "Migrate ER records into Airframe Tasks"
+  }
+}

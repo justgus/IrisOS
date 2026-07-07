@@ -1,0 +1,55 @@
+{
+  "acceptanceCriteria": [
+    "A GitHub mutation plan identifies all proposed title, body, label, and state changes.",
+    "The plan preserves existing issue numbers.",
+    "The plan identifies mismatches that need System Engineer approval.",
+    "No GitHub mutation is executed as part of this Task without explicit approval.",
+    "The migration can be rerun or reviewed without hidden side effects."
+  ],
+  "component": "GitHub issue synchronization",
+  "componentsAffected": [
+
+  ],
+  "epicID": {
+    "rawValue": "EP-001"
+  },
+  "evidenceIDs": [
+
+  ],
+  "metadata": {
+    "schemaVersion": {
+      "major": 1,
+      "minor": 0,
+      "patch": 0
+    },
+    "updatedAt": "2026-07-07T00:00:00Z",
+    "source": "docs/Tasks/Task-active.md"
+  },
+  "notes": [
+    "Proposed GitHub changes should be generated as a reviewable command list or table before execution.",
+    "The plan should distinguish safe metadata additions from state-changing operations such as closing issues.",
+    "Legacy labels should remain until the System Engineer approves removing or replacing them.",
+    "Evidence: Local-only GitHub synchronization plan recorded in `docs/GitHub-Issue-Synchronization-Plan.md`.",
+    "Evidence: The plan identifies required review decisions and explicitly defers all GitHub mutation until a separate approved GitHub-backed audit.",
+    "Evidence: No GitHub commands were run."
+  ],
+  "priority": "high",
+  "rationale": "GitHub issue titles, bodies, and labels should only be changed after the local migration map is reviewed and approved.",
+  "requirementIDs": [
+
+  ],
+  "sprintID": {
+    "rawValue": "SP-001"
+  },
+  "testSteps": [
+
+  ],
+  "workItem": {
+    "id": {
+      "rawValue": "T-0087"
+    },
+    "kind": "task",
+    "status": "active",
+    "title": "Prepare approved GitHub issue synchronization migration"
+  }
+}

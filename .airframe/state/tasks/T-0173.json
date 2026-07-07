@@ -1,0 +1,46 @@
+{
+  "acceptanceCriteria": [
+
+  ],
+  "component": "Migrated legacy ER",
+  "componentsAffected": [
+
+  ],
+  "epicID": {
+    "rawValue": "EP-001"
+  },
+  "evidenceIDs": [
+
+  ],
+  "metadata": {
+    "schemaVersion": {
+      "major": 1,
+      "minor": 0,
+      "patch": 0
+    },
+    "updatedAt": "2026-07-07T00:00:00Z",
+    "source": "docs/ER/ER-0077-Conch-Conversion-and-Inspection-Commands.md"
+  },
+  "notes": [
+    "Legacy ID: ER-0077",
+    "Source Status: Proposed",
+    "Source Path: docs/ER/ER-0077-Conch-Conversion-and-Inspection-Commands.md"
+  ],
+  "priority": "medium",
+  "rationale": "Migrated from legacy IrisOS Engineering Request documentation.",
+  "requirementIDs": [
+
+  ],
+  "testSteps": [
+
+  ],
+  "workItem": {
+    "id": {
+      "rawValue": "T-0173"
+    },
+    "kind": "task",
+    "status": "backlog",
+    "title": "Conch Conversion and Inspection Commands",
+    "githubIssue": 285
+  }
+}

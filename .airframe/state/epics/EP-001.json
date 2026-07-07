@@ -1,0 +1,344 @@
+{
+  "acceptanceCriterionIDs": [
+
+  ],
+  "goal": "",
+  "issueIDs": [
+    {
+      "rawValue": "I-0001"
+    }
+  ],
+  "metadata": {
+    "schemaVersion": {
+      "major": 1,
+      "minor": 0,
+      "patch": 0
+    },
+    "updatedAt": "2026-07-07T00:00:00Z",
+    "source": "docs/Epics/Epic-active.md"
+  },
+  "notes": [
+
+  ],
+  "outOfScope": [
+
+  ],
+  "owner": "System Engineer",
+  "planningDocumentPaths": [
+    "docs/Airframe-Migration-Audit.md",
+    "docs/Airframe-Architecture-Record-Handling.md",
+    "docs/Airframe-ER-Task-Migration.md",
+    "docs/Airframe-DR-Issue-Migration.md",
+    "docs/GitHub-Issue-Mapping.md",
+    "docs/GitHub-Issue-Synchronization-Plan.md",
+    "docs/Airframe-Migration-Validation.md"
+  ],
+  "rationale": "",
+  "scope": [
+
+  ],
+  "sprintIDs": [
+    {
+      "rawValue": "SP-001"
+    }
+  ],
+  "startDate": "2026-07-06",
+  "taskIDs": [
+    {
+      "rawValue": "T-0081"
+    },
+    {
+      "rawValue": "T-0082"
+    },
+    {
+      "rawValue": "T-0083"
+    },
+    {
+      "rawValue": "T-0084"
+    },
+    {
+      "rawValue": "T-0085"
+    },
+    {
+      "rawValue": "T-0086"
+    },
+    {
+      "rawValue": "T-0087"
+    },
+    {
+      "rawValue": "T-0088"
+    },
+    {
+      "rawValue": "T-0089"
+    },
+    {
+      "rawValue": "T-0090"
+    },
+    {
+      "rawValue": "T-0091"
+    },
+    {
+      "rawValue": "T-0092"
+    },
+    {
+      "rawValue": "T-0093"
+    },
+    {
+      "rawValue": "T-0094"
+    },
+    {
+      "rawValue": "T-0095"
+    },
+    {
+      "rawValue": "T-0096"
+    },
+    {
+      "rawValue": "T-0097"
+    },
+    {
+      "rawValue": "T-0098"
+    },
+    {
+      "rawValue": "T-0099"
+    },
+    {
+      "rawValue": "T-0100"
+    },
+    {
+      "rawValue": "T-0101"
+    },
+    {
+      "rawValue": "T-0102"
+    },
+    {
+      "rawValue": "T-0103"
+    },
+    {
+      "rawValue": "T-0104"
+    },
+    {
+      "rawValue": "T-0105"
+    },
+    {
+      "rawValue": "T-0106"
+    },
+    {
+      "rawValue": "T-0107"
+    },
+    {
+      "rawValue": "T-0108"
+    },
+    {
+      "rawValue": "T-0109"
+    },
+    {
+      "rawValue": "T-0110"
+    },
+    {
+      "rawValue": "T-0111"
+    },
+    {
+      "rawValue": "T-0112"
+    },
+    {
+      "rawValue": "T-0113"
+    },
+    {
+      "rawValue": "T-0114"
+    },
+    {
+      "rawValue": "T-0115"
+    },
+    {
+      "rawValue": "T-0116"
+    },
+    {
+      "rawValue": "T-0117"
+    },
+    {
+      "rawValue": "T-0118"
+    },
+    {
+      "rawValue": "T-0119"
+    },
+    {
+      "rawValue": "T-0120"
+    },
+    {
+      "rawValue": "T-0121"
+    },
+    {
+      "rawValue": "T-0122"
+    },
+    {
+      "rawValue": "T-0123"
+    },
+    {
+      "rawValue": "T-0124"
+    },
+    {
+      "rawValue": "T-0125"
+    },
+    {
+      "rawValue": "T-0126"
+    },
+    {
+      "rawValue": "T-0127"
+    },
+    {
+      "rawValue": "T-0128"
+    },
+    {
+      "rawValue": "T-0129"
+    },
+    {
+      "rawValue": "T-0130"
+    },
+    {
+      "rawValue": "T-0131"
+    },
+    {
+      "rawValue": "T-0132"
+    },
+    {
+      "rawValue": "T-0133"
+    },
+    {
+      "rawValue": "T-0134"
+    },
+    {
+      "rawValue": "T-0135"
+    },
+    {
+      "rawValue": "T-0136"
+    },
+    {
+      "rawValue": "T-0137"
+    },
+    {
+      "rawValue": "T-0138"
+    },
+    {
+      "rawValue": "T-0139"
+    },
+    {
+      "rawValue": "T-0140"
+    },
+    {
+      "rawValue": "T-0141"
+    },
+    {
+      "rawValue": "T-0142"
+    },
+    {
+      "rawValue": "T-0143"
+    },
+    {
+      "rawValue": "T-0144"
+    },
+    {
+      "rawValue": "T-0145"
+    },
+    {
+      "rawValue": "T-0146"
+    },
+    {
+      "rawValue": "T-0147"
+    },
+    {
+      "rawValue": "T-0148"
+    },
+    {
+      "rawValue": "T-0149"
+    },
+    {
+      "rawValue": "T-0150"
+    },
+    {
+      "rawValue": "T-0151"
+    },
+    {
+      "rawValue": "T-0152"
+    },
+    {
+      "rawValue": "T-0153"
+    },
+    {
+      "rawValue": "T-0154"
+    },
+    {
+      "rawValue": "T-0155"
+    },
+    {
+      "rawValue": "T-0156"
+    },
+    {
+      "rawValue": "T-0157"
+    },
+    {
+      "rawValue": "T-0158"
+    },
+    {
+      "rawValue": "T-0159"
+    },
+    {
+      "rawValue": "T-0160"
+    },
+    {
+      "rawValue": "T-0161"
+    },
+    {
+      "rawValue": "T-0162"
+    },
+    {
+      "rawValue": "T-0163"
+    },
+    {
+      "rawValue": "T-0164"
+    },
+    {
+      "rawValue": "T-0165"
+    },
+    {
+      "rawValue": "T-0166"
+    },
+    {
+      "rawValue": "T-0167"
+    },
+    {
+      "rawValue": "T-0168"
+    },
+    {
+      "rawValue": "T-0169"
+    },
+    {
+      "rawValue": "T-0170"
+    },
+    {
+      "rawValue": "T-0171"
+    },
+    {
+      "rawValue": "T-0172"
+    },
+    {
+      "rawValue": "T-0173"
+    },
+    {
+      "rawValue": "T-0174"
+    },
+    {
+      "rawValue": "T-0175"
+    },
+    {
+      "rawValue": "T-0176"
+    }
+  ],
+  "workItem": {
+    "id": {
+      "rawValue": "EP-001"
+    },
+    "kind": "epic",
+    "status": "active",
+    "title": "Migrate IrisOS Workflow Documentation to Agile Airframe"
+  }
+}

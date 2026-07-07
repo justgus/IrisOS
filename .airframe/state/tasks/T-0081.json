@@ -1,0 +1,55 @@
+{
+  "acceptanceCriteria": [
+    "All current AR, ER, and DR documents are inventoried.",
+    "Current local status for each AR, ER, and DR is captured.",
+    "Current GitHub issue number, title, state, and labels are captured where available.",
+    "Local/GitHub mismatches are listed explicitly.",
+    "The audit does not mutate GitHub state."
+  ],
+  "component": "Workflow documentation audit",
+  "componentsAffected": [
+
+  ],
+  "epicID": {
+    "rawValue": "EP-001"
+  },
+  "evidenceIDs": [
+
+  ],
+  "metadata": {
+    "schemaVersion": {
+      "major": 1,
+      "minor": 0,
+      "patch": 0
+    },
+    "updatedAt": "2026-07-07T00:00:00Z",
+    "source": "docs/Tasks/Task-active.md"
+  },
+  "notes": [
+    "Capture source path, source ID, title, local status, GitHub issue number, GitHub issue state, GitHub labels, and target Airframe ID.",
+    "Treat local documentation as authoritative unless the System Engineer approves a GitHub-derived correction.",
+    "Record mismatches as migration diagnostics rather than silently normalizing them.",
+    "Evidence: Local-only audit recorded in `docs/Airframe-Migration-Audit.md`.",
+    "Evidence: Live GitHub issue state, titles, and labels were intentionally not queried in this pass.",
+    "Evidence: System Engineer approved the local audit on 2026-07-07."
+  ],
+  "priority": "high",
+  "rationale": "The migration must preserve the current manual documentation state and identify local/GitHub drift before any state is rewritten.",
+  "requirementIDs": [
+
+  ],
+  "sprintID": {
+    "rawValue": "SP-001"
+  },
+  "testSteps": [
+
+  ],
+  "workItem": {
+    "id": {
+      "rawValue": "T-0081"
+    },
+    "kind": "task",
+    "status": "active",
+    "title": "Audit current AR/ER/DR documentation and GitHub issue state"
+  }
+}
