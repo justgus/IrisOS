@@ -28,6 +28,11 @@ The migration must preserve the current manual documentation state and identify 
 4. Local/GitHub mismatches are listed explicitly.
 5. The audit does not mutate GitHub state.
 
+**Planning Notes:**
+- Capture source path, source ID, title, local status, GitHub issue number, GitHub issue state, GitHub labels, and target Airframe ID.
+- Treat local documentation as authoritative unless the System Engineer approves a GitHub-derived correction.
+- Record mismatches as migration diagnostics rather than silently normalizing them.
+
 **Evidence:**
 - TBD
 
@@ -52,6 +57,11 @@ IrisOS needs a repo-local Agile Airframe configuration and canonical planning fo
 3. The active project references `EP-001` and `SP-001`.
 4. Existing manual AR/ER/DR documents remain in place during this seed step.
 
+**Planning Notes:**
+- Keep generated build artifacts out of Airframe planning commits.
+- Do not move or archive legacy docs as part of the seed structure.
+- Any later legacy-doc relocation needs its own approved cutover Task.
+
 **Evidence:**
 - TBD
 
@@ -75,6 +85,11 @@ The System Engineer directed that ARs remain separate architecture records. The 
 2. Existing AR IDs, statuses, GitHub issue references, dependencies, and content are preserved.
 3. Airframe Epics are limited to delivery planning and do not replace ARs.
 4. The master index clearly distinguishes architecture records from Epics.
+
+**Planning Notes:**
+- Candidate target is an architecture-record area that preserves the current AR namespace.
+- AR GitHub issues remain architecture-tracking issues, not Airframe Task or Issue records.
+- ER and DR dependencies on ARs should remain trace links after migration.
 
 **Evidence:**
 - TBD
@@ -101,6 +116,12 @@ ERs are the current IrisOS implementation work records and should become Airfram
 4. Proposed ERs remain proposed/backlog unless explicitly assigned to active work.
 5. Task numbering continues from the ER range and does not collide with existing ER IDs.
 
+**Planning Notes:**
+- ER-derived Task records should include `Legacy ID: ER-XXXX`.
+- Existing GitHub issue numbers should be preserved even when later titles or labels are updated.
+- Verified ERs should migrate to verified Task records only as a representation of existing approved state, not as new verification action.
+- Proposed ERs should migrate to backlog Tasks unless the System Engineer explicitly assigns them to SP-001 or another active Sprint.
+
 **Evidence:**
 - TBD
 
@@ -124,6 +145,11 @@ DRs are defect records and should become Airframe Issues without losing diagnosi
 2. Issue records preserve source DR ID, title, status, GitHub issue number, severity, priority, environment, reproduction steps, expected behavior, actual behavior, impact, fix plan, and verification plan.
 3. Verified DRs are not downgraded.
 4. The migration distinguishes planned work Tasks from defect Issues.
+
+**Planning Notes:**
+- DR-derived Issue records should include `Legacy ID: DR-XXXX`.
+- Verified DRs should migrate as resolved and verified only when that status is already present in the source ledger.
+- New defects found during migration should become new Airframe Issues, not edits to the migrated historical DR.
 
 **Evidence:**
 - TBD
@@ -150,6 +176,11 @@ The migrated records need deterministic indexes and an auditable mapping to exis
 4. Known local/GitHub status drift is listed before any mutation.
 5. Index counts match the migrated record counts.
 
+**Planning Notes:**
+- Index generation should be deterministic and sorted by Airframe ID.
+- Counts should be derived from migrated records, not hand-maintained independently.
+- Mapping should preserve both Airframe ID and legacy ID until the migration is closed.
+
 **Evidence:**
 - TBD
 
@@ -174,6 +205,11 @@ GitHub issue titles, bodies, and labels should only be changed after the local m
 3. The plan identifies mismatches that need System Engineer approval.
 4. No GitHub mutation is executed as part of this Task without explicit approval.
 5. The migration can be rerun or reviewed without hidden side effects.
+
+**Planning Notes:**
+- Proposed GitHub changes should be generated as a reviewable command list or table before execution.
+- The plan should distinguish safe metadata additions from state-changing operations such as closing issues.
+- Legacy labels should remain until the System Engineer approves removing or replacing them.
 
 **Evidence:**
 - TBD
@@ -200,9 +236,14 @@ The migration should not be considered complete until the new canonical document
 4. Build and documentation validation commands are recorded.
 5. Residual risks and follow-up Tasks are documented before EP-001 closeout.
 
+**Planning Notes:**
+- Validation should include source coverage, status count comparison, GitHub mapping coverage, and deterministic index checks.
+- Product build/test commands should be recorded as migration evidence, but product behavior changes are out of scope.
+- Any unresolved mismatch should become a follow-up Task or Issue before EP-001 is proposed as Complete.
+
 **Evidence:**
 - TBD
 
 ---
 
-*Last Updated: 2026-07-06*
+*Last Updated: 2026-07-07 (SP-001 task planning notes added)*
