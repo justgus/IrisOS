@@ -159,7 +159,9 @@ DRs are defect records and should become Airframe Issues without losing diagnosi
 - New defects found during migration should become new Airframe Issues, not edits to the migrated historical DR.
 
 **Evidence:**
-- TBD
+- Local GitHub issue mapping recorded in `docs/GitHub-Issue-Mapping.md`.
+- The mapping covers 88 ER-derived Task mappings and 1 DR-derived Issue mapping.
+- Canonical Task and Issue index projection remains pending full migrated record body review.
 
 ## T-0086: Generate Airframe indexes and GitHub issue mapping
 
