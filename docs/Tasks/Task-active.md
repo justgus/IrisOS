@@ -223,7 +223,9 @@ GitHub issue titles, bodies, and labels should only be changed after the local m
 - Legacy labels should remain until the System Engineer approves removing or replacing them.
 
 **Evidence:**
-- TBD
+- Workspace configuration exists at `.airframe/airframe-workspace.json`.
+- Canonical Airframe planning indexes exist under `docs/Epics`, `docs/Sprints`, `docs/Tasks`, and `docs/Issues`.
+- Workspace seed checks are recorded in `docs/Airframe-Migration-Validation.md`.
 
 ## T-0088: Validate migration equivalence and document cutover
 
@@ -253,7 +255,9 @@ The migration should not be considered complete until the new canonical document
 - Any unresolved mismatch should become a follow-up Task or Issue before EP-001 is proposed as Complete.
 
 **Evidence:**
-- TBD
+- Local migration validation recorded in `docs/Airframe-Migration-Validation.md`.
+- Validation covers source coverage, status count comparison, mapping coverage, workspace seed checks, and residual follow-up work.
+- Product build/tests were not run because this pass changed documentation only.
 
 ---
 
