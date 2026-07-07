@@ -34,7 +34,8 @@ The migration must preserve the current manual documentation state and identify 
 - Record mismatches as migration diagnostics rather than silently normalizing them.
 
 **Evidence:**
-- TBD
+- Local-only audit recorded in `docs/Airframe-Migration-Audit.md`.
+- Live GitHub issue state, titles, and labels were intentionally not queried in this pass.
 
 ## T-0082: Install IrisOS Airframe workspace configuration and canonical planning structure
 
