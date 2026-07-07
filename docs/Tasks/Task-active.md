@@ -65,7 +65,9 @@ IrisOS needs a repo-local Agile Airframe configuration and canonical planning fo
 - Any later legacy-doc relocation needs its own approved cutover Task.
 
 **Evidence:**
-- TBD
+- ER-to-Task migration map recorded in `docs/Airframe-ER-Task-Migration.md`.
+- The map covers all 88 local ER records and assigns deterministic target Task IDs `T-0089` through `T-0176`.
+- Full Task body generation remains a follow-up migration step after mapping review.
 
 ## T-0083: Define separate architecture-record handling for ARs
 
