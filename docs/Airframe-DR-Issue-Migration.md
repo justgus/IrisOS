@@ -55,8 +55,15 @@ The migration map used these local read-only commands:
 rg -n "^# DR-|^- Status:|^GitHub-Issue:|^AR-Dependencies:|^- Severity:|^- Priority:" docs/DR
 ```
 
+## Generated Canonical Records
+
+Canonical Issue records were generated from this map:
+
+- Verified Issue records: `docs/Issues/Verified/`
+
+The generated Issue records preserve the complete legacy DR body in a `Preserved Legacy DR Content` section.
+
 ## Caveats
 
-- This map does not yet generate a full Issue body from every DR section.
 - The Verified target status represents existing System Engineer-approved DR source state; it is not a new verification action.
 - Live GitHub issue state, title, and labels are not included.

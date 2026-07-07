@@ -65,9 +65,9 @@ IrisOS needs a repo-local Agile Airframe configuration and canonical planning fo
 - Any later legacy-doc relocation needs its own approved cutover Task.
 
 **Evidence:**
-- ER-to-Task migration map recorded in `docs/Airframe-ER-Task-Migration.md`.
-- The map covers all 88 local ER records and assigns deterministic target Task IDs `T-0089` through `T-0176`.
-- Full Task body generation remains a follow-up migration step after mapping review.
+- Workspace configuration exists at `.airframe/airframe-workspace.json`.
+- Canonical Airframe planning indexes exist under `docs/Epics`, `docs/Sprints`, `docs/Tasks`, and `docs/Issues`.
+- Workspace seed checks are recorded in `docs/Airframe-Migration-Validation.md`.
 
 ## T-0083: Define separate architecture-record handling for ARs
 
@@ -128,9 +128,9 @@ ERs are the current IrisOS implementation work records and should become Airfram
 - Proposed ERs should migrate to backlog Tasks unless the System Engineer explicitly assigns them to SP-001 or another active Sprint.
 
 **Evidence:**
-- DR-to-Issue migration map recorded in `docs/Airframe-DR-Issue-Migration.md`.
-- The map covers the local DR record and assigns target Issue ID `I-0001`.
-- Full Issue body generation remains a follow-up migration step after mapping review.
+- ER-to-Task migration map recorded in `docs/Airframe-ER-Task-Migration.md`.
+- The canonical Task files were generated under `docs/Tasks/Verified` and `docs/Tasks/Backlog`.
+- The migration covers all 88 local ER records and assigns deterministic target Task IDs `T-0089` through `T-0176`.
 
 ## T-0085: Migrate DR records into Airframe Issues
 
@@ -159,9 +159,9 @@ DRs are defect records and should become Airframe Issues without losing diagnosi
 - New defects found during migration should become new Airframe Issues, not edits to the migrated historical DR.
 
 **Evidence:**
-- Local GitHub issue mapping recorded in `docs/GitHub-Issue-Mapping.md`.
-- The mapping covers 88 ER-derived Task mappings and 1 DR-derived Issue mapping.
-- Canonical Task and Issue index projection remains pending full migrated record body review.
+- DR-to-Issue migration map recorded in `docs/Airframe-DR-Issue-Migration.md`.
+- The canonical Issue file was generated under `docs/Issues/Verified`.
+- The migration covers the local DR record and assigns target Issue ID `I-0001`.
 
 ## T-0086: Generate Airframe indexes and GitHub issue mapping
 
@@ -191,9 +191,9 @@ The migrated records need deterministic indexes and an auditable mapping to exis
 - Mapping should preserve both Airframe ID and legacy ID until the migration is closed.
 
 **Evidence:**
-- Local-only GitHub synchronization plan recorded in `docs/GitHub-Issue-Synchronization-Plan.md`.
-- The plan identifies required review decisions and explicitly defers all GitHub mutation until a separate approved GitHub-backed audit.
-- No GitHub commands were run.
+- Local GitHub issue mapping recorded in `docs/GitHub-Issue-Mapping.md`.
+- Canonical Task and Issue indexes were regenerated from the migrated records.
+- The indexes cover 8 active Tasks, 8 backlog Tasks, 80 verified Tasks, and 1 verified Issue.
 
 ## T-0087: Prepare approved GitHub issue synchronization migration
 
@@ -223,9 +223,9 @@ GitHub issue titles, bodies, and labels should only be changed after the local m
 - Legacy labels should remain until the System Engineer approves removing or replacing them.
 
 **Evidence:**
-- Workspace configuration exists at `.airframe/airframe-workspace.json`.
-- Canonical Airframe planning indexes exist under `docs/Epics`, `docs/Sprints`, `docs/Tasks`, and `docs/Issues`.
-- Workspace seed checks are recorded in `docs/Airframe-Migration-Validation.md`.
+- Local-only GitHub synchronization plan recorded in `docs/GitHub-Issue-Synchronization-Plan.md`.
+- The plan identifies required review decisions and explicitly defers all GitHub mutation until a separate approved GitHub-backed audit.
+- No GitHub commands were run.
 
 ## T-0088: Validate migration equivalence and document cutover
 

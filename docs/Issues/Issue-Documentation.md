@@ -26,7 +26,11 @@ See: [Issue-backlog.md](Issue-backlog.md)
 
 ## Verified Issues
 
-Currently: **0 verified Issues** | Next available: **I-0001**
+Currently: **1 verified Issue** | Next available: **I-0002**
+
+| Issue | Legacy ID | Title | GitHub Issue | Source |
+| ----- | --------- | ----- | ------------ | ------ |
+| [I-0001](Verified/I-0001-conch-compare-alias-resolution.md) | DR-0001 | Conch Compare Alias Resolution | #116 | docs/DR/DR-0001-Conch-Compare-Alias-Resolution.md |
 
 ## Closed Issues
 
@@ -34,14 +38,14 @@ Currently: **0 closed Issues**
 
 ## Statistics
 
-- **Total Issues:** 0
+- **Total Issues:** 1
 - **Backlogged:** 0
 - **Active/In Progress:** 0
 - **Resolved - Not Verified:** 0
-- **Verified:** 0
+- **Verified:** 1
 - **Closed:** 0
-- **Next available:** I-0001
+- **Next available:** I-0002
 
 ---
 
-*Last Updated: 2026-07-06 (Issue structure created; DR migration not yet performed)*
+*Last Updated: 2026-07-07 (DR records migrated into canonical Airframe Issues)*

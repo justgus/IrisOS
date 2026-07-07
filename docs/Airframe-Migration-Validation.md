@@ -62,16 +62,15 @@ ruby -e '...local ER and DR mapping coverage checks...'
 | Live GitHub issue state, titles, and labels were not queried. | Run a separate approved GitHub-backed read-only audit before mutation. |
 | Shared local GitHub references may be intentional grouping or drift. | System Engineer review needed for `#181`, `#182`, and `#184` grouped ER mappings. |
 | Four ARs have local `GitHub-Issue: #TBD`. | Resolve or defer AR issue references during GitHub synchronization planning. |
-| Full Task and Issue bodies have not been generated from every ER/DR section. | Review migration maps before generating canonical record bodies. |
-| Airframe indexes still show only seed planning records. | Update canonical indexes after migrated Task and Issue body generation is approved. |
+| Live GitHub synchronization has not been performed. | Review and approve `docs/GitHub-Issue-Synchronization-Plan.md` before any GitHub mutation. |
 
 ## Cutover Position
 
-The local documentation migration is not ready for final cutover. The audit, AR boundary, ER mapping, DR mapping, local GitHub mapping, and local-only synchronization plan are ready for System Engineer review.
+The local canonical documentation migration is ready for System Engineer review. The audit, AR boundary, ER mapping, DR mapping, generated Task records, generated Issue records, local GitHub mapping, local-only synchronization plan, and regenerated indexes are present in the Airframe documentation state.
 
-Final cutover should wait until:
+Final GitHub synchronization should wait until:
 
-1. The ER and DR migration maps are approved.
-2. Canonical migrated Task and Issue bodies are generated or explicitly deferred.
-3. Airframe indexes are regenerated from the approved migrated records.
-4. GitHub synchronization is either approved and performed, or explicitly deferred.
+1. The generated Task and Issue records are reviewed.
+2. The local duplicate GitHub issue references are approved or corrected.
+3. A GitHub-backed read-only audit is approved and performed.
+4. GitHub synchronization is approved and performed, or explicitly deferred.

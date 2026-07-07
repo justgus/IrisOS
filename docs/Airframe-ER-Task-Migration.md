@@ -130,8 +130,16 @@ rg -n "^# ER-|^- Status:|^GitHub-Issue:|^AR-Dependencies:" docs/ER
 ruby -e '...local ER to Task mapping parser...'
 ```
 
+## Generated Canonical Records
+
+Canonical Task records were generated from this map:
+
+- Verified Task records: `docs/Tasks/Verified/`
+- Backlog Task records: `docs/Tasks/Backlog/`
+
+The generated Task records preserve the complete legacy ER body in a `Preserved Legacy ER Content` section.
+
 ## Caveats
 
-- This map does not yet generate full Task bodies from every ER section.
 - The Verified target status represents existing System Engineer-approved ER source state; it is not a new verification action.
 - Shared local GitHub issue references are preserved as-is for later mapping review.
