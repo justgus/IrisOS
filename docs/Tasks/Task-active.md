@@ -191,7 +191,9 @@ The migrated records need deterministic indexes and an auditable mapping to exis
 - Mapping should preserve both Airframe ID and legacy ID until the migration is closed.
 
 **Evidence:**
-- TBD
+- Local-only GitHub synchronization plan recorded in `docs/GitHub-Issue-Synchronization-Plan.md`.
+- The plan identifies required review decisions and explicitly defers all GitHub mutation until a separate approved GitHub-backed audit.
+- No GitHub commands were run.
 
 ## T-0087: Prepare approved GitHub issue synchronization migration
 
