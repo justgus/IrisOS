@@ -36,6 +36,7 @@ The migration must preserve the current manual documentation state and identify 
 **Evidence:**
 - Local-only audit recorded in `docs/Airframe-Migration-Audit.md`.
 - Live GitHub issue state, titles, and labels were intentionally not queried in this pass.
+- System Engineer approved the local audit on 2026-07-07.
 
 ## T-0082: Install IrisOS Airframe workspace configuration and canonical planning structure
 
@@ -93,7 +94,8 @@ The System Engineer directed that ARs remain separate architecture records. The 
 - ER and DR dependencies on ARs should remain trace links after migration.
 
 **Evidence:**
-- TBD
+- AR handling boundary recorded in `docs/Airframe-Architecture-Record-Handling.md`.
+- `docs/governance/Master-Index.md` now identifies ARs as the architecture record system of record and explicitly distinguishes them from Agile Airframe Epics.
 
 ## T-0084: Migrate ER records into Airframe Tasks
 

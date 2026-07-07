@@ -26,9 +26,11 @@ tracking.
 - Accepted ARs: `docs/AR/accepted/`
 - Authoring guidance: `docs/governance/AR-Guidelines.md`
 - GitHub issue template: `.github/ISSUE_TEMPLATE/ar.md`
+- Airframe migration handling: `docs/Airframe-Architecture-Record-Handling.md`
 
 Proposed ARs in `docs/AR/proposed/` are active recommendation drafts under review. Accepted ARs in
-`docs/AR/accepted/` are approved direction.
+`docs/AR/accepted/` are approved direction. ARs remain the architecture record system of record and
+are not converted into Agile Airframe Epics.
 
 ## ER Docs
 
