@@ -1,6 +1,9 @@
 extern "C" {
 #include <check.h>
 }
+#ifdef fail
+#undef fail
+#endif
 
 #include "referee/referee.h"
 #include "referee_sqlite/sqlite_store.h"

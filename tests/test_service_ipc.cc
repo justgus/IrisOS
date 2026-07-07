@@ -252,8 +252,10 @@ START_TEST(test_memory_service_registers_and_lists_regions)
   ck_assert_uint_eq(response.value->message_type.v, kMemoryRegionResponseType.v);
 
   auto registered = nlohmann::json::from_cbor(response.value->payload_cbor);
-  ck_assert_str_eq(registered.at("name").get<std::string>().c_str(), "main-ram");
-  ck_assert_str_eq(registered.at("kind").get<std::string>().c_str(), "ram");
+  auto registered_name = registered.at("name").get<std::string>();
+  auto registered_kind = registered.at("kind").get<std::string>();
+  ck_assert_str_eq(registered_name.c_str(), "main-ram");
+  ck_assert_str_eq(registered_kind.c_str(), "ram");
   ck_assert(registered.at("writable").get<bool>());
   ck_assert(!registered.at("persistent").get<bool>());
 
@@ -269,8 +271,9 @@ START_TEST(test_memory_service_registers_and_lists_regions)
 
   auto list_payload = nlohmann::json::from_cbor(list_response.value->payload_cbor);
   ck_assert_uint_eq(list_payload.at("regions").size(), 1);
-  ck_assert_str_eq(list_payload.at("regions").at(0).at("id").get<std::string>().c_str(),
-                   region_id.to_hex().c_str());
+  auto listed_region_id = list_payload.at("regions").at(0).at("id").get<std::string>();
+  auto expected_region_id = region_id.to_hex();
+  ck_assert_str_eq(listed_region_id.c_str(), expected_region_id.c_str());
 }
 END_TEST
 
@@ -356,7 +359,8 @@ START_TEST(test_memory_service_lookup_and_mutability_classification)
 
   auto lookup_payload = nlohmann::json::from_cbor(response.value->payload_cbor);
   ck_assert(lookup_payload.at("found").get<bool>());
-  ck_assert_str_eq(lookup_payload.at("region").at("kind").get<std::string>().c_str(), "read_only");
+  auto lookup_kind = lookup_payload.at("region").at("kind").get<std::string>();
+  ck_assert_str_eq(lookup_kind.c_str(), "read_only");
   ck_assert(!lookup_payload.at("region").at("writable").get<bool>());
   ck_assert(lookup_payload.at("region").at("persistent").get<bool>());
 }
