@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "workspace": {
+    "id": { "rawValue": "WS-IRISOS" },
+    "name": "IrisOS Airframe Workspace",
+    "rootPath": "."
+  },
+  "projects": [
+    {
+      "id": { "rawValue": "PRJ-IRISOS" },
+      "name": "IrisOS",
+      "repository": "justgus/IrisOS",
+      "activeSprintID": { "rawValue": "SP-001" },
+      "activeEpicID": { "rawValue": "EP-001" }
+    }
+  ],
+  "defaultProjectID": { "rawValue": "PRJ-IRISOS" },
+  "backend": {
+    "kind": "github-issues",
+    "location": "justgus/IrisOS"
+  }
+}
