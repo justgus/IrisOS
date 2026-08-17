@@ -9,6 +9,7 @@
   "componentsAffected": [
 
   ],
+  "dateVerified": "2026-08-17",
   "epicID": {
     "rawValue": "EP-001"
   },
@@ -21,8 +22,8 @@
       "minor": 0,
       "patch": 0
     },
-    "updatedAt": "2026-07-07T00:00:00Z",
-    "source": "docs/Tasks/Task-active.md"
+    "updatedAt": "2026-08-17T00:00:00Z",
+    "source": "docs/Tasks/Verified/T-0083-define-separate-architecture-record-handling-for-ars.md"
   },
   "notes": [
     "Candidate target is an architecture-record area that preserves the current AR namespace.",
@@ -47,7 +48,7 @@
       "rawValue": "T-0083"
     },
     "kind": "task",
-    "status": "active",
+    "status": "implementedVerified",
     "title": "Define separate architecture-record handling for ARs"
   }
 }

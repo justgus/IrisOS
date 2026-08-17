@@ -2,39 +2,9 @@
 
 Tasks listed here are assigned to a Sprint and actively being implemented.
 
-Currently: **5 active Tasks**
+Currently: **4 active Tasks**
 
 ---
-
-## T-0083: Define separate architecture-record handling for ARs
-
-**Status:** Active
-**GitHub Issue:** TBD
-**Component:** Architecture documentation migration
-**Priority:** High
-**Epic:** EP-001
-**Sprint Assigned:** SP-001
-**Date Requested:** 2026-07-06
-**Date Implemented:** TBD
-**Date Verified:** TBD
-
-**Rationale:**
-The System Engineer directed that ARs remain separate architecture records. The Airframe migration must not treat accepted ARs as delivery Epics.
-
-**Acceptance Criteria:**
-1. The migration defines where architecture records live after cutover.
-2. Existing AR IDs, statuses, GitHub issue references, dependencies, and content are preserved.
-3. Airframe Epics are limited to delivery planning and do not replace ARs.
-4. The master index clearly distinguishes architecture records from Epics.
-
-**Planning Notes:**
-- Candidate target is an architecture-record area that preserves the current AR namespace.
-- AR GitHub issues remain architecture-tracking issues, not Airframe Task or Issue records.
-- ER and DR dependencies on ARs should remain trace links after migration.
-
-**Evidence:**
-- AR handling boundary recorded in `docs/Airframe-Architecture-Record-Handling.md`.
-- `docs/governance/Master-Index.md` now identifies ARs as the architecture record system of record and explicitly distinguishes them from Agile Airframe Epics.
 
 ## T-0084: Migrate ER records into Airframe Tasks
 

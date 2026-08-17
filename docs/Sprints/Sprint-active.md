@@ -53,7 +53,7 @@ Produce the reviewed canonical migration plan and first migration-ready Airframe
 | ---- | ----- | -------- | ------ |
 | T-0081 | Audit current AR/ER/DR documentation and GitHub issue state | High | Verified |
 | T-0082 | Install IrisOS Airframe workspace configuration and canonical planning structure | High | Verified |
-| T-0083 | Define separate architecture-record handling for ARs | High | Active |
+| T-0083 | Define separate architecture-record handling for ARs | High | Verified |
 | T-0084 | Migrate ER records into Airframe Tasks | Critical | Active |
 | T-0085 | Migrate DR records into Airframe Issues | High | Active |
 | T-0086 | Generate Airframe indexes and GitHub issue mapping | Critical | Active |
