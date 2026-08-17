@@ -2,41 +2,9 @@
 
 Tasks listed here are assigned to a Sprint and actively being implemented.
 
-Currently: **2 active Tasks**
+Currently: **1 active Task**
 
 ---
-
-## T-0086: Generate Airframe indexes and GitHub issue mapping
-
-**Status:** Active
-**GitHub Issue:** TBD
-**Component:** Airframe indexes and issue mapping
-**Priority:** Critical
-**Epic:** EP-001
-**Sprint Assigned:** SP-001
-**Date Requested:** 2026-07-06
-**Date Implemented:** TBD
-**Date Verified:** TBD
-
-**Rationale:**
-The migrated records need deterministic indexes and an auditable mapping to existing GitHub issues before GitHub state can be synchronized.
-
-**Acceptance Criteria:**
-1. Task, Issue, Epic, and Sprint indexes reflect the migrated canonical state.
-2. `docs/GitHub-Issue-Mapping.md` maps each migrated Task and Issue to its GitHub issue number where available.
-3. Mapping entries identify source IDs such as `ER-0070` or `DR-0001`.
-4. Known local/GitHub status drift is listed before any mutation.
-5. Index counts match the migrated record counts.
-
-**Planning Notes:**
-- Index generation should be deterministic and sorted by Airframe ID.
-- Counts should be derived from migrated records, not hand-maintained independently.
-- Mapping should preserve both Airframe ID and legacy ID until the migration is closed.
-
-**Evidence:**
-- Local GitHub issue mapping recorded in `docs/GitHub-Issue-Mapping.md`.
-- Canonical Task and Issue indexes were regenerated from the migrated records.
-- The indexes cover 8 active Tasks, 8 backlog Tasks, 80 verified Tasks, and 1 verified Issue.
 
 ## T-0088: Validate migration equivalence and document cutover
 

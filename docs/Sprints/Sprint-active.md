@@ -56,7 +56,7 @@ Produce the reviewed canonical migration plan and first migration-ready Airframe
 | T-0083 | Define separate architecture-record handling for ARs | High | Verified |
 | T-0084 | Migrate ER records into Airframe Tasks | Critical | Verified |
 | T-0085 | Migrate DR records into Airframe Issues | High | Verified |
-| T-0086 | Generate Airframe indexes and GitHub issue mapping | Critical | Active |
+| T-0086 | Generate Airframe indexes and GitHub issue mapping | Critical | Verified |
 | T-0087 | Prepare approved GitHub issue synchronization migration | High | Verified |
 | T-0088 | Validate migration equivalence and document cutover | Critical | Active |
 
