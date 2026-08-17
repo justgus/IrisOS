@@ -2,40 +2,9 @@
 
 Tasks listed here are assigned to a Sprint and actively being implemented.
 
-Currently: **3 active Tasks**
+Currently: **2 active Tasks**
 
 ---
-
-## T-0085: Migrate DR records into Airframe Issues
-
-**Status:** Active
-**GitHub Issue:** TBD
-**Component:** DR to Issue migration
-**Priority:** High
-**Epic:** EP-001
-**Sprint Assigned:** SP-001
-**Date Requested:** 2026-07-06
-**Date Implemented:** TBD
-**Date Verified:** TBD
-
-**Rationale:**
-DRs are defect records and should become Airframe Issues without losing diagnosis or verification context.
-
-**Acceptance Criteria:**
-1. Every DR document has exactly one migrated Issue record or an explicit migration diagnostic.
-2. Issue records preserve source DR ID, title, status, GitHub issue number, severity, priority, environment, reproduction steps, expected behavior, actual behavior, impact, fix plan, and verification plan.
-3. Verified DRs are not downgraded.
-4. The migration distinguishes planned work Tasks from defect Issues.
-
-**Planning Notes:**
-- DR-derived Issue records should include `Legacy ID: DR-XXXX`.
-- Verified DRs should migrate as resolved and verified only when that status is already present in the source ledger.
-- New defects found during migration should become new Airframe Issues, not edits to the migrated historical DR.
-
-**Evidence:**
-- DR-to-Issue migration map recorded in `docs/Airframe-DR-Issue-Migration.md`.
-- The canonical Issue file was generated under `docs/Issues/Verified`.
-- The migration covers the local DR record and assigns target Issue ID `I-0001`.
 
 ## T-0086: Generate Airframe indexes and GitHub issue mapping
 

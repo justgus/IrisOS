@@ -9,6 +9,7 @@
   "componentsAffected": [
 
   ],
+  "dateVerified": "2026-08-17",
   "epicID": {
     "rawValue": "EP-001"
   },
@@ -21,8 +22,8 @@
       "minor": 0,
       "patch": 0
     },
-    "updatedAt": "2026-07-07T00:00:00Z",
-    "source": "docs/Tasks/Task-active.md"
+    "updatedAt": "2026-08-17T00:00:00Z",
+    "source": "docs/Tasks/Verified/T-0085-migrate-dr-records-into-airframe-issues.md"
   },
   "notes": [
     "DR-derived Issue records should include `Legacy ID: DR-XXXX`.",
@@ -48,7 +49,7 @@
       "rawValue": "T-0085"
     },
     "kind": "task",
-    "status": "active",
+    "status": "implementedVerified",
     "title": "Migrate DR records into Airframe Issues"
   }
 }
