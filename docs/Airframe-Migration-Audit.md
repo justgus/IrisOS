@@ -173,7 +173,7 @@ ruby -e '...local AR/ER/DR inventory parser...'
 
 ## Caveats
 
-- Live GitHub issue state, title, and labels are not included.
+- The original 2026-07-07 pass was local-only. The follow-up live, read-only comparison is recorded in `docs/Airframe-GitHub-Live-Audit.md`.
 - The AR inventory has no AR status ledger equivalent; statuses were read from each AR document.
 - ER and DR ledger checks validate local status consistency only.
 - Shared local GitHub issue references require System Engineer review before any mapping change.

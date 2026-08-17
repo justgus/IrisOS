@@ -37,6 +37,7 @@ The migration must preserve the current manual documentation state and identify 
 - Local-only audit recorded in `docs/Airframe-Migration-Audit.md`.
 - Live GitHub issue state, titles, and labels were intentionally not queried in this pass.
 - System Engineer approved the local audit on 2026-07-07.
+- A follow-up read-only GitHub audit was recorded in `docs/Airframe-GitHub-Live-Audit.md` on 2026-08-17; it captured all 102 unique numeric references and enumerated title, state, and label drift without mutating GitHub.
 
 ## T-0082: Install IrisOS Airframe workspace configuration and canonical planning structure
 
