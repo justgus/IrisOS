@@ -19,7 +19,7 @@ This audit compares the checked-in AR, ER, and DR inventory with live GitHub iss
 | Missing referenced issues | 0 |
 | Type-label mismatches | 0 |
 | Title mismatches after accepting the standard record-ID prefix | 1 (`#116`) |
-| Status-label mismatches | 46 unique issues |
+| Status-label mismatches | 44 unique issues after the approved shared-reference synchronization |
 | State mismatches for Verified ER/DR records | 2 (`#287`, `#288`) |
 | Shared references retained for review | `#181`, `#182`, `#184` |
 | AR records without numeric references | AR-0018, AR-0019, AR-0020, AR-0021 |
@@ -32,7 +32,7 @@ This audit compares the checked-in AR, ER, and DR inventory with live GitHub iss
 | #287 | ER-0079 | Verified | Open | `status:proposed` | State and status label drift; expected Closed and `status:done`. |
 | #288 | ER-0080 | Verified | Open | `status:proposed` | State and status label drift; expected Closed and `status:done`. |
 
-In addition, 43 closed issues have stale status labels relative to local source status: 12 Implemented AR issues and 31 Verified ER issues. They are enumerated in the snapshot below. The five Accepted AR issues `#290` through `#294` are open with `status:accepted`; that is consistent with the repository policy and is not classified as drift.
+In addition, 41 closed issues have stale status labels relative to local source status: 12 Implemented AR issues and 29 Verified ER issues. They are enumerated in the snapshot below. The five Accepted AR issues `#290` through `#294` are open with `status:accepted`; that is consistent with the repository policy and is not classified as drift.
 
 ## Shared Reference Review
 
@@ -42,7 +42,7 @@ In addition, 43 closed issues have stale status labels relative to local source 
 | #182 | ER-0046, ER-0047.1, ER-0047.2, ER-0047.3, ER-0047.4 | ER-0046 — v1 Kernel Demo Integration and Roadmap | Parent record controls the shared issue title. |
 | #184 | ER-0048, ER-0054 | ER-0054 — Conch Namespace Navigation | ER-0054 controls the title; ER-0048 is not represented by the live title. |
 
-No mapping was normalized in this audit.
+The System Engineer approved retaining all three mappings as historical shared references. On 2026-08-17, the issue bodies were updated to list every mapped document, `#181` and `#182` were relabeled `status:done`, and `#184` retained its existing `status:done` label. Issue numbers, titles, and closed states were preserved.
 
 ## Live Snapshot
 
@@ -109,10 +109,10 @@ No mapping was normalized in this audit.
 | [#178](https://github.com/justgus/IrisOS/issues/178) | ER-0042 | Verified | Closed | ER-0042 — Core Operations Metadata and Bindings | `er`, `status:done` | Aligned |
 | [#179](https://github.com/justgus/IrisOS/issues/179) | ER-0043 | Verified | Closed | ER-0043 — CEO Runtime Hardening | `er`, `status:proposed` | Expected `status:done` |
 | [#180](https://github.com/justgus/IrisOS/issues/180) | ER-0044 | Verified | Closed | ER-0044 — Capability Hooks and Policy Plumbing | `er`, `status:proposed` | Expected `status:done` |
-| [#181](https://github.com/justgus/IrisOS/issues/181) | ER-0045, ER-0045.1, ER-0045.2, ER-0045.3, ER-0045.4 | Verified | Closed | ER-0045 — Kernel I/O Primitives Integration | `er`, `status:proposed` | Expected `status:done`; Shared reference |
-| [#182](https://github.com/justgus/IrisOS/issues/182) | ER-0046, ER-0047.1, ER-0047.2, ER-0047.3, ER-0047.4 | Verified | Closed | ER-0046 — v1 Kernel Demo Integration and Roadmap | `er`, `status:proposed` | Expected `status:done`; Shared reference |
+| [#181](https://github.com/justgus/IrisOS/issues/181) | ER-0045, ER-0045.1, ER-0045.2, ER-0045.3, ER-0045.4 | Verified | Closed | ER-0045 — Kernel I/O Primitives Integration | `er`, `status:done` | Approved shared reference; synchronized 2026-08-17 |
+| [#182](https://github.com/justgus/IrisOS/issues/182) | ER-0046, ER-0047.1, ER-0047.2, ER-0047.3, ER-0047.4 | Verified | Closed | ER-0046 — v1 Kernel Demo Integration and Roadmap | `er`, `status:done` | Approved shared reference; synchronized 2026-08-17 |
 | [#183](https://github.com/justgus/IrisOS/issues/183) | ER-0047 | Verified | Closed | ER-0047 — Userland Core Utilities Suite | `er`, `status:proposed` | Expected `status:done` |
-| [#184](https://github.com/justgus/IrisOS/issues/184) | ER-0048, ER-0054 | Verified | Closed | ER-0054 — Conch Namespace Navigation | `er`, `status:done` | Shared reference |
+| [#184](https://github.com/justgus/IrisOS/issues/184) | ER-0048, ER-0054 | Verified | Closed | ER-0054 — Conch Namespace Navigation | `er`, `status:done` | Approved legacy mapping anomaly; body synchronized 2026-08-17 |
 | [#185](https://github.com/justgus/IrisOS/issues/185) | ER-0049 | Verified | Closed | ER-0049 — Object Graph Bundles and Packages | `er`, `status:proposed` | Expected `status:done` |
 | [#186](https://github.com/justgus/IrisOS/issues/186) | ER-0050 | Verified | Closed | ER-0050 — Schema Migration Tools | `er`, `status:proposed` | Expected `status:done` |
 | [#187](https://github.com/justgus/IrisOS/issues/187) | ER-0051 | Verified | Closed | ER-0051 — CEO Profiling and Trace Utilities | `er`, `status:proposed` | Expected `status:done` |
@@ -159,4 +159,3 @@ gh issue list --repo justgus/IrisOS --state all --limit 300 \
 ```
 
 The command was run read-only on 2026-08-17. Results were compared against the inventory in `docs/Airframe-Migration-Audit.md`.
-

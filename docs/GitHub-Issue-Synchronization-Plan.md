@@ -22,7 +22,7 @@ Because this migration pass is local-only, the plan cannot claim live GitHub dri
 
 | Decision | Reason |
 | -------- | ------ |
-| Confirm whether shared local GitHub refs remain grouped or split | Multiple ER records share `#181`, `#182`, and `#184`. |
+| Confirm whether shared local GitHub refs remain grouped or split | Approved 2026-08-17: retain `#181`, `#182`, and `#184` as historical shared references; list every mapped document in each issue body and require one issue per Airframe work item for new work. |
 | Resolve or defer AR records with local `#TBD` refs | AR-0018, AR-0019, AR-0020, and AR-0021 have no local issue number. |
 | Confirm whether verified ER/DR records should close GitHub issues | Local source status is Verified, but live GitHub state was not queried. |
 | Confirm label vocabulary for Airframe Tasks and Issues | Existing GitHub labels were not queried in this local-only pass. |
@@ -73,3 +73,15 @@ No GitHub mutation should be performed until the System Engineer approves:
 1. A live GitHub-backed read-only audit.
 2. A concrete mutation table derived from that audit.
 3. The exact commands or tool operation to apply the approved changes.
+
+## Approved Synchronization Evidence
+
+On 2026-08-17, the System Engineer approved preserving `#181`, `#182`, and `#184` as historical shared references. The following scoped mutations were applied and read back from GitHub:
+
+- Updated each issue body to list every mapped legacy ER document.
+- Replaced `status:proposed` with `status:done` on `#181` and `#182`.
+- Preserved `#184` with its existing `status:done` label and recorded it as an accepted legacy mapping anomaly.
+- Preserved all three issue numbers, titles, and closed states.
+- Established one GitHub issue per Airframe Task or Issue for new work.
+
+No other audit drift was changed as part of this approval.
