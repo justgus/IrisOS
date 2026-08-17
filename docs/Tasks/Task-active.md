@@ -2,7 +2,7 @@
 
 Tasks listed here are assigned to a Sprint and actively being implemented.
 
-Currently: **8 active Tasks**
+Currently: **7 active Tasks**
 
 ---
 
@@ -195,40 +195,6 @@ The migrated records need deterministic indexes and an auditable mapping to exis
 - Local GitHub issue mapping recorded in `docs/GitHub-Issue-Mapping.md`.
 - Canonical Task and Issue indexes were regenerated from the migrated records.
 - The indexes cover 8 active Tasks, 8 backlog Tasks, 80 verified Tasks, and 1 verified Issue.
-
-## T-0087: Prepare approved GitHub issue synchronization migration
-
-**Status:** Active
-**GitHub Issue:** TBD
-**Component:** GitHub issue synchronization
-**Priority:** High
-**Epic:** EP-001
-**Sprint Assigned:** SP-001
-**Date Requested:** 2026-07-06
-**Date Implemented:** TBD
-**Date Verified:** TBD
-
-**Rationale:**
-GitHub issue titles, bodies, and labels should only be changed after the local migration map is reviewed and approved.
-
-**Acceptance Criteria:**
-1. A GitHub mutation plan identifies all proposed title, body, label, and state changes.
-2. The plan preserves existing issue numbers.
-3. The plan identifies mismatches that need System Engineer approval.
-4. No GitHub mutation is executed as part of this Task without explicit approval.
-5. The migration can be rerun or reviewed without hidden side effects.
-
-**Planning Notes:**
-- Proposed GitHub changes should be generated as a reviewable command list or table before execution.
-- The plan should distinguish safe metadata additions from state-changing operations such as closing issues.
-- Legacy labels should remain until the System Engineer approves removing or replacing them.
-
-**Evidence:**
-- Local-only GitHub synchronization plan recorded in `docs/GitHub-Issue-Synchronization-Plan.md`.
-- The plan identifies required review decisions and explicitly defers all GitHub mutation until a separate approved GitHub-backed audit.
-- No GitHub commands were run.
-- The System Engineer approved synchronization on 2026-08-17. Shared mappings were preserved, 44 stale status labels were corrected, `#116` was retitled, and `#287` and `#288` were closed as completed.
-- Post-synchronization comparison of all 102 numeric references found no remaining title, status-label, or required-closure drift.
 
 ## T-0088: Validate migration equivalence and document cutover
 

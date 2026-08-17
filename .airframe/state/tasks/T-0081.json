@@ -32,7 +32,7 @@
     "Evidence: Local-only audit recorded in `docs/Airframe-Migration-Audit.md`.",
     "Evidence: Live GitHub issue state, titles, and labels were intentionally not queried in this pass.",
     "Evidence: System Engineer approved the local audit on 2026-07-07.",
-    "Evidence: Read-only live GitHub audit recorded in \`docs/Airframe-GitHub-Live-Audit.md\` on 2026-08-17; all 102 unique numeric references were found and title, state, and label drift was enumerated without mutation."
+    "Evidence: Read-only live GitHub audit recorded in `docs/Airframe-GitHub-Live-Audit.md` on 2026-08-17; all 102 unique numeric references were found and title, state, and label drift was enumerated without mutation."
   ],
   "priority": "high",
   "rationale": "The migration must preserve the current manual documentation state and identify local/GitHub drift before any state is rewritten.",

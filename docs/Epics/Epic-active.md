@@ -83,7 +83,7 @@ EP-001 may move to Complete only after:
 | T-0084 | Migrate ER records into Airframe Tasks | Active |
 | T-0085 | Migrate DR records into Airframe Issues | Active |
 | T-0086 | Generate Airframe indexes and GitHub issue mapping | Active |
-| T-0087 | Prepare approved GitHub issue synchronization migration | Active |
+| T-0087 | Prepare approved GitHub issue synchronization migration | Verified |
 | T-0088 | Validate migration equivalence and document cutover | Active |
 
 ### Related Issues

@@ -10,6 +10,7 @@
   "componentsAffected": [
 
   ],
+  "dateVerified": "2026-08-17",
   "epicID": {
     "rawValue": "EP-001"
   },
@@ -22,8 +23,8 @@
       "minor": 0,
       "patch": 0
     },
-    "updatedAt": "2026-07-07T00:00:00Z",
-    "source": "docs/Tasks/Task-active.md"
+    "updatedAt": "2026-08-17T00:00:00Z",
+    "source": "docs/Tasks/Verified/T-0087-prepare-approved-github-issue-synchronization-migration.md"
   },
   "notes": [
     "Proposed GitHub changes should be generated as a reviewable command list or table before execution.",
@@ -51,7 +52,7 @@
       "rawValue": "T-0087"
     },
     "kind": "task",
-    "status": "active",
+    "status": "implementedVerified",
     "title": "Prepare approved GitHub issue synchronization migration"
   }
 }
