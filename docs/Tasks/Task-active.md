@@ -2,40 +2,9 @@
 
 Tasks listed here are assigned to a Sprint and actively being implemented.
 
-Currently: **6 active Tasks**
+Currently: **5 active Tasks**
 
 ---
-
-## T-0082: Install IrisOS Airframe workspace configuration and canonical planning structure
-
-**Status:** Active
-**GitHub Issue:** TBD
-**Component:** Airframe workspace configuration
-**Priority:** High
-**Epic:** EP-001
-**Sprint Assigned:** SP-001
-**Date Requested:** 2026-07-06
-**Date Implemented:** TBD
-**Date Verified:** TBD
-
-**Rationale:**
-IrisOS needs a repo-local Agile Airframe configuration and canonical planning folders before detailed migration records can be introduced.
-
-**Acceptance Criteria:**
-1. `.airframe/airframe-workspace.json` identifies the IrisOS workspace and `justgus/IrisOS` backend.
-2. `docs/Epics`, `docs/Sprints`, `docs/Tasks`, and `docs/Issues` exist with initial index files.
-3. The active project references `EP-001` and `SP-001`.
-4. Existing manual AR/ER/DR documents remain in place during this seed step.
-
-**Planning Notes:**
-- Keep generated build artifacts out of Airframe planning commits.
-- Do not move or archive legacy docs as part of the seed structure.
-- Any later legacy-doc relocation needs its own approved cutover Task.
-
-**Evidence:**
-- Workspace configuration exists at `.airframe/airframe-workspace.json`.
-- Canonical Airframe planning indexes exist under `docs/Epics`, `docs/Sprints`, `docs/Tasks`, and `docs/Issues`.
-- Workspace seed checks are recorded in `docs/Airframe-Migration-Validation.md`.
 
 ## T-0083: Define separate architecture-record handling for ARs
 

@@ -9,6 +9,7 @@
   "componentsAffected": [
 
   ],
+  "dateVerified": "2026-08-17",
   "epicID": {
     "rawValue": "EP-001"
   },
@@ -21,8 +22,8 @@
       "minor": 0,
       "patch": 0
     },
-    "updatedAt": "2026-07-07T00:00:00Z",
-    "source": "docs/Tasks/Task-active.md"
+    "updatedAt": "2026-08-17T00:00:00Z",
+    "source": "docs/Tasks/Verified/T-0082-install-irisos-airframe-workspace-configuration-and-canonical-planning-structure.md"
   },
   "notes": [
     "Keep generated build artifacts out of Airframe planning commits.",
@@ -48,7 +49,7 @@
       "rawValue": "T-0082"
     },
     "kind": "task",
-    "status": "active",
+    "status": "implementedVerified",
     "title": "Install IrisOS Airframe workspace configuration and canonical planning structure"
   }
 }
