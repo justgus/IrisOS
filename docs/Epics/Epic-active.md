@@ -80,7 +80,7 @@ EP-001 may move to Complete only after:
 | T-0081 | Audit current AR/ER/DR documentation and GitHub issue state | Verified |
 | T-0082 | Install IrisOS Airframe workspace configuration and canonical planning structure | Verified |
 | T-0083 | Define separate architecture-record handling for ARs | Verified |
-| T-0084 | Migrate ER records into Airframe Tasks | Active |
+| T-0084 | Migrate ER records into Airframe Tasks | Verified |
 | T-0085 | Migrate DR records into Airframe Issues | Active |
 | T-0086 | Generate Airframe indexes and GitHub issue mapping | Active |
 | T-0087 | Prepare approved GitHub issue synchronization migration | Verified |

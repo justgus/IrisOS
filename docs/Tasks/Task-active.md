@@ -2,42 +2,9 @@
 
 Tasks listed here are assigned to a Sprint and actively being implemented.
 
-Currently: **4 active Tasks**
+Currently: **3 active Tasks**
 
 ---
-
-## T-0084: Migrate ER records into Airframe Tasks
-
-**Status:** Active
-**GitHub Issue:** TBD
-**Component:** ER to Task migration
-**Priority:** Critical
-**Epic:** EP-001
-**Sprint Assigned:** SP-001
-**Date Requested:** 2026-07-06
-**Date Implemented:** TBD
-**Date Verified:** TBD
-
-**Rationale:**
-ERs are the current IrisOS implementation work records and should become Airframe Tasks while preserving their existing state.
-
-**Acceptance Criteria:**
-1. Every ER document has exactly one migrated Task record or an explicit migration diagnostic.
-2. Task records preserve source ER ID, title, status, GitHub issue number, dependencies, requirements, acceptance criteria, implementation notes, and verification plan.
-3. Verified ERs are not downgraded.
-4. Proposed ERs remain proposed/backlog unless explicitly assigned to active work.
-5. Task numbering continues from the ER range and does not collide with existing ER IDs.
-
-**Planning Notes:**
-- ER-derived Task records should include `Legacy ID: ER-XXXX`.
-- Existing GitHub issue numbers should be preserved even when later titles or labels are updated.
-- Verified ERs should migrate to verified Task records only as a representation of existing approved state, not as new verification action.
-- Proposed ERs should migrate to backlog Tasks unless the System Engineer explicitly assigns them to SP-001 or another active Sprint.
-
-**Evidence:**
-- ER-to-Task migration map recorded in `docs/Airframe-ER-Task-Migration.md`.
-- The canonical Task files were generated under `docs/Tasks/Verified` and `docs/Tasks/Backlog`.
-- The migration covers all 88 local ER records and assigns deterministic target Task IDs `T-0089` through `T-0176`.
 
 ## T-0085: Migrate DR records into Airframe Issues
 
