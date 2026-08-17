@@ -2,42 +2,9 @@
 
 Tasks listed here are assigned to a Sprint and actively being implemented.
 
-Currently: **7 active Tasks**
+Currently: **6 active Tasks**
 
 ---
-
-## T-0081: Audit current AR/ER/DR documentation and GitHub issue state
-
-**Status:** Active
-**GitHub Issue:** TBD
-**Component:** Workflow documentation audit
-**Priority:** High
-**Epic:** EP-001
-**Sprint Assigned:** SP-001
-**Date Requested:** 2026-07-06
-**Date Implemented:** TBD
-**Date Verified:** TBD
-
-**Rationale:**
-The migration must preserve the current manual documentation state and identify local/GitHub drift before any state is rewritten.
-
-**Acceptance Criteria:**
-1. All current AR, ER, and DR documents are inventoried.
-2. Current local status for each AR, ER, and DR is captured.
-3. Current GitHub issue number, title, state, and labels are captured where available.
-4. Local/GitHub mismatches are listed explicitly.
-5. The audit does not mutate GitHub state.
-
-**Planning Notes:**
-- Capture source path, source ID, title, local status, GitHub issue number, GitHub issue state, GitHub labels, and target Airframe ID.
-- Treat local documentation as authoritative unless the System Engineer approves a GitHub-derived correction.
-- Record mismatches as migration diagnostics rather than silently normalizing them.
-
-**Evidence:**
-- Local-only audit recorded in `docs/Airframe-Migration-Audit.md`.
-- Live GitHub issue state, titles, and labels were intentionally not queried in this pass.
-- System Engineer approved the local audit on 2026-07-07.
-- A follow-up read-only GitHub audit was recorded in `docs/Airframe-GitHub-Live-Audit.md` on 2026-08-17; it captured all 102 unique numeric references and enumerated title, state, and label drift without mutating GitHub.
 
 ## T-0082: Install IrisOS Airframe workspace configuration and canonical planning structure
 

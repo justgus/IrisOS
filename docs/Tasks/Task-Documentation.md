@@ -15,7 +15,7 @@ This is the main index for IrisOS Agile Airframe Tasks. Tasks track planned impr
 
 ## Active Tasks
 
-Currently: **7 active Tasks**
+Currently: **6 active Tasks**
 
 See: [Task-active.md](Task-active.md)
 
@@ -33,13 +33,13 @@ See: [Task-unverified.md](Task-unverified.md)
 
 ## Verified Tasks
 
-Currently: **81 verified Tasks** | Next available: **T-0177**
+Currently: **82 verified Tasks** | Next available: **T-0177**
 
 ## All Tasks
 
 | Task | Title | Epic | Sprint | Priority | Status |
 | ---- | ----- | ---- | ------ | -------- | ------ |
-| [T-0081](Task-active.md) | Audit current AR/ER/DR documentation and GitHub issue state | EP-001 | SP-001 | High | Active |
+| [T-0081](Verified/T-0081-audit-current-ar-er-dr-documentation-and-github-issue-state.md) | Audit current AR/ER/DR documentation and GitHub issue state | EP-001 | SP-001 | High | Verified |
 | [T-0082](Task-active.md) | Install IrisOS Airframe workspace configuration and canonical planning structure | EP-001 | SP-001 | High | Active |
 | [T-0083](Task-active.md) | Define separate architecture-record handling for ARs | EP-001 | SP-001 | High | Active |
 | [T-0084](Task-active.md) | Migrate ER records into Airframe Tasks | EP-001 | SP-001 | Critical | Active |
