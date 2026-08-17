@@ -18,9 +18,9 @@ This audit compares the checked-in AR, ER, and DR inventory with live GitHub iss
 | Referenced issues found | 102 |
 | Missing referenced issues | 0 |
 | Type-label mismatches | 0 |
-| Title mismatches after accepting the standard record-ID prefix | 1 (`#116`) |
-| Status-label mismatches | 44 unique issues after the approved shared-reference synchronization |
-| State mismatches for Verified ER/DR records | 2 (`#287`, `#288`) |
+| Title mismatches after approved synchronization | 0 |
+| Status-label mismatches after approved synchronization | 0 |
+| State mismatches for Verified ER/DR records after approved synchronization | 0 |
 | Shared references retained for review | `#181`, `#182`, `#184` |
 | AR records without numeric references | AR-0018, AR-0019, AR-0020, AR-0021 |
 
@@ -28,11 +28,11 @@ This audit compares the checked-in AR, ER, and DR inventory with live GitHub iss
 
 | GitHub Issue | Local Record(s) | Local Status | Live State | Live Status Label | Diagnosis |
 | ------------ | --------------- | ------------ | ---------- | ----------------- | --------- |
-| #116 | DR-0001 | Verified | Closed | `status:in-progress` | Generic template title and stale status label; expected DR record title and `status:done`. |
-| #287 | ER-0079 | Verified | Open | `status:proposed` | State and status label drift; expected Closed and `status:done`. |
-| #288 | ER-0080 | Verified | Open | `status:proposed` | State and status label drift; expected Closed and `status:done`. |
+| #116 | DR-0001 | Verified | Closed | `status:done` | Resolved 2026-08-17: title aligned to DR-0001 and status label corrected. |
+| #287 | ER-0079 | Verified | Closed | `status:done` | Resolved 2026-08-17: status label corrected and issue closed as completed. |
+| #288 | ER-0080 | Verified | Closed | `status:done` | Resolved 2026-08-17: status label corrected and issue closed as completed. |
 
-In addition, 41 closed issues have stale status labels relative to local source status: 12 Implemented AR issues and 29 Verified ER issues. They are enumerated in the snapshot below. The five Accepted AR issues `#290` through `#294` are open with `status:accepted`; that is consistent with the repository policy and is not classified as drift.
+The other 41 stale status labels were aligned with the authoritative local statuses on 2026-08-17: 12 Implemented AR issues and 29 Verified ER issues now carry `status:done`. The five Accepted AR issues `#290` through `#294` remain open with `status:accepted`; that is consistent with the repository policy.
 
 ## Shared Reference Review
 
@@ -44,7 +44,9 @@ In addition, 41 closed issues have stale status labels relative to local source 
 
 The System Engineer approved retaining all three mappings as historical shared references. On 2026-08-17, the issue bodies were updated to list every mapped document, `#181` and `#182` were relabeled `status:done`, and `#184` retained its existing `status:done` label. Issue numbers, titles, and closed states were preserved.
 
-## Live Snapshot
+## Pre-Synchronization Live Snapshot
+
+The table below preserves the metadata captured before the approved mutations. It is historical evidence and is superseded by the post-synchronization verification.
 
 | Issue | Local Record(s) | Local Status | Live State | Live Title | Live Labels | Finding |
 | ----- | --------------- | ------------ | ---------- | ---------- | ----------- | ------- |
@@ -159,3 +161,16 @@ gh issue list --repo justgus/IrisOS --state all --limit 300 \
 ```
 
 The command was run read-only on 2026-08-17. Results were compared against the inventory in `docs/Airframe-Migration-Audit.md`.
+
+## Post-Synchronization Verification
+
+The same full comparison was repeated after the approved mutations:
+
+| Check | Result |
+| ----- | ------ |
+| Unique numeric GitHub references compared | 102 |
+| Expected status-label drift | 0 |
+| Required closed-state drift for Implemented/Verified records | 0 |
+| Title drift after accepting the standard record-ID prefix | 0 |
+
+All numeric mappings are synchronized. AR-0018, AR-0019, AR-0020, and AR-0021 still have local `#TBD` references and remain a separate closeout decision.
