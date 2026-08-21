@@ -1,0 +1,105 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXFileReference section */
+		010000000000000000000001 /* .gitignore */ = {isa = PBXFileReference; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
+		010000000000000000000002 /* AGENTS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = AGENTS.md; sourceTree = "<group>"; };
+		010000000000000000000003 /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
+		010000000000000000000004 /* Makefile.am */ = {isa = PBXFileReference; lastKnownFileType = text; path = Makefile.am; sourceTree = "<group>"; };
+		010000000000000000000005 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		010000000000000000000006 /* bootstrap.sh */ = {isa = PBXFileReference; lastKnownFileType = text.script.sh; path = bootstrap.sh; sourceTree = "<group>"; };
+		010000000000000000000007 /* configure.ac */ = {isa = PBXFileReference; lastKnownFileType = text; path = configure.ac; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		020000000000000000000001 /* .github */ = {isa = PBXFileSystemSynchronizedRootGroup; path = .github; sourceTree = "<group>"; };
+		020000000000000000000002 /* ci */ = {isa = PBXFileSystemSynchronizedRootGroup; path = ci; sourceTree = "<group>"; };
+		020000000000000000000003 /* docs */ = {isa = PBXFileSystemSynchronizedRootGroup; path = docs; sourceTree = "<group>"; };
+		020000000000000000000004 /* m4 */ = {isa = PBXFileSystemSynchronizedRootGroup; path = m4; sourceTree = "<group>"; };
+		020000000000000000000005 /* scripts */ = {isa = PBXFileSystemSynchronizedRootGroup; path = scripts; sourceTree = "<group>"; };
+		020000000000000000000006 /* src */ = {isa = PBXFileSystemSynchronizedRootGroup; path = src; sourceTree = "<group>"; };
+		020000000000000000000007 /* tests */ = {isa = PBXFileSystemSynchronizedRootGroup; path = tests; sourceTree = "<group>"; };
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXGroup section */
+		030000000000000000000001 = {
+			isa = PBXGroup;
+			children = (
+				010000000000000000000001 /* .gitignore */,
+				020000000000000000000001 /* .github */,
+				010000000000000000000002 /* AGENTS.md */,
+				020000000000000000000002 /* ci */,
+				010000000000000000000007 /* configure.ac */,
+				020000000000000000000003 /* docs */,
+				010000000000000000000003 /* LICENSE */,
+				020000000000000000000004 /* m4 */,
+				010000000000000000000004 /* Makefile.am */,
+				010000000000000000000005 /* README.md */,
+				020000000000000000000005 /* scripts */,
+				020000000000000000000006 /* src */,
+				020000000000000000000007 /* tests */,
+				010000000000000000000006 /* bootstrap.sh */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXProject section */
+		040000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastUpgradeCheck = 2700;
+			};
+			buildConfigurationList = 050000000000000000000001 /* Build configuration list for PBXProject "irisOS" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 030000000000000000000001;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 030000000000000000000001;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+			);
+		};
+/* End PBXProject section */
+
+/* Begin XCBuildConfiguration section */
+		060000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Debug;
+		};
+		060000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		050000000000000000000001 /* Build configuration list for PBXProject "irisOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				060000000000000000000001 /* Debug */,
+				060000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 040000000000000000000001 /* Project object */;
+}
