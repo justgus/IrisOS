@@ -3,7 +3,7 @@
 ## Task Metadata
 
 - Task ID: T-0179
-- Status: Backlog
+- Status: Active
 - Epic: EP-002
 - Parent Task: T-0166
 - Sprint Assigned: SP-003
@@ -13,6 +13,14 @@
 ## Goal
 
 Define and register processor architecture, core, register-definition, and register-file types while preserving the definition-versus-instance boundary.
+
+## Approved Scope
+
+- Architecture definitions carry stable IDs, names, byte order, address width, and ordered core and register definitions.
+- Register definitions carry stable IDs, names, bit widths, and roles.
+- Core descriptors reference architecture and core definitions and record logical index and enabled state.
+- Register-file descriptors identify which register definitions exist for a core.
+- Register definitions and files contain no live register values.
 
 ## Acceptance Criteria
 
