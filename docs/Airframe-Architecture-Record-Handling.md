@@ -51,7 +51,7 @@ The local audit found 26 AR records:
 | Accepted | 11 |
 | Implemented | 15 |
 
-Four ARs currently have local `GitHub-Issue: #TBD` references: AR-0018, AR-0019, AR-0020, and AR-0021.
+All ARs have numeric GitHub issue references. AR-0018 through AR-0021 were assigned issues #301 through #304 during SP-001 closeout.
 
 These are migration diagnostics for later mapping review, not blockers for preserving the AR namespace.
 

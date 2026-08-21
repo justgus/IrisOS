@@ -23,7 +23,7 @@ Because this migration pass is local-only, the plan cannot claim live GitHub dri
 | Decision | Reason |
 | -------- | ------ |
 | Confirm whether shared local GitHub refs remain grouped or split | Approved 2026-08-17: retain `#181`, `#182`, and `#184` as historical shared references; list every mapped document in each issue body and require one issue per Airframe work item for new work. |
-| Resolve or defer AR records with local `#TBD` refs | AR-0018, AR-0019, AR-0020, and AR-0021 have no local issue number. |
+| Resolve or defer AR records with local `#TBD` refs | Resolved 2026-08-21: AR-0018 through AR-0021 map to #301 through #304. |
 | Confirm whether verified ER/DR records should close GitHub issues | Local source status is Verified, but live GitHub state was not queried. |
 | Confirm label vocabulary for Airframe Tasks and Issues | Existing GitHub labels were not queried in this local-only pass. |
 | Confirm whether legacy AR/ER/DR labels remain during transition | Removing labels is a state-changing operation and needs explicit approval. |
@@ -46,7 +46,7 @@ Because this migration pass is local-only, the plan cannot claim live GitHub dri
 | Label additions | Defer until current label vocabulary and live labels are audited. |
 | Label removals | Defer until System Engineer explicitly approves transition away from legacy labels. |
 | State changes | Defer until live GitHub state is audited and verified source-state handling is approved. |
-| Issue creation | Defer for AR `#TBD` records; ARs are architecture records, not Airframe Tasks or Issues. |
+| Issue creation | Approved and completed for AR-0018 through AR-0021 as architecture-record issues #301 through #304. |
 
 ## Explicit Non-Actions In This Pass
 
@@ -61,7 +61,7 @@ Because this migration pass is local-only, the plan cannot claim live GitHub dri
 
 | Diagnostic | Records |
 | ---------- | ------- |
-| AR records with local `GitHub-Issue: #TBD` | AR-0018, AR-0019, AR-0020, AR-0021 |
+| AR records with local `GitHub-Issue: #TBD` | None; resolved as #301 through #304. |
 | Multiple ER records sharing one local GitHub issue reference | `#181`: ER-0045, ER-0045.1, ER-0045.2, ER-0045.3, ER-0045.4 |
 | Multiple ER records sharing one local GitHub issue reference | `#182`: ER-0046, ER-0047.1, ER-0047.2, ER-0047.3, ER-0047.4 |
 | Multiple ER records sharing one local GitHub issue reference | `#184`: ER-0048, ER-0054 |
@@ -91,6 +91,6 @@ The System Engineer subsequently approved the remaining synchronization without 
 - Corrected 44 stale status labels to `status:done`.
 - Corrected issue `#116` to the title `DR-0001 — Conch Compare Alias Resolution`.
 - Closed `#287` and `#288` as completed to match their locally Verified state.
-- Repeated the full 102-reference comparison and found no remaining title, status-label, or required-closure drift.
+- Repeated the full 106-reference comparison and found no remaining title, status-label, or required-closure drift after resolving the four AR references.
 
 No type labels, unrelated issue metadata, or Accepted AR open states were changed.

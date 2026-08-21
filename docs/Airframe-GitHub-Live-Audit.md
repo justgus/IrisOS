@@ -1,6 +1,6 @@
 # Airframe GitHub Live Audit
 
-**Date:** 2026-08-17
+**Date:** 2026-08-21
 **Scope:** Read-only GitHub comparison
 **Epic:** EP-001
 **Task:** T-0081
@@ -13,16 +13,16 @@ This audit compares the checked-in AR, ER, and DR inventory with live GitHub iss
 
 | Check | Result |
 | ----- | ------ |
-| Local records with numeric GitHub references | 111 |
-| Unique referenced GitHub issues | 102 |
-| Referenced issues found | 102 |
+| Local records with numeric GitHub references | 115 |
+| Unique referenced GitHub issues | 106 |
+| Referenced issues found | 106 |
 | Missing referenced issues | 0 |
 | Type-label mismatches | 0 |
 | Title mismatches after approved synchronization | 0 |
 | Status-label mismatches after approved synchronization | 0 |
 | State mismatches for Verified ER/DR records after approved synchronization | 0 |
 | Shared references retained for review | `#181`, `#182`, `#184` |
-| AR records without numeric references | AR-0018, AR-0019, AR-0020, AR-0021 |
+| AR records without numeric references | None |
 
 ## Actionable Drift
 
@@ -168,9 +168,9 @@ The same full comparison was repeated after the approved mutations:
 
 | Check | Result |
 | ----- | ------ |
-| Unique numeric GitHub references compared | 102 |
+| Unique numeric GitHub references compared | 106 |
 | Expected status-label drift | 0 |
 | Required closed-state drift for Implemented/Verified records | 0 |
 | Title drift after accepting the standard record-ID prefix | 0 |
 
-All numeric mappings are synchronized. AR-0018, AR-0019, AR-0020, and AR-0021 still have local `#TBD` references and remain a separate closeout decision.
+All mappings are synchronized. Issues #301 through #304 were created on 2026-08-21 for AR-0018 through AR-0021. The implemented records #301, #303, and #304 are closed with `status:done`; accepted record #302 remains open with `status:accepted`.

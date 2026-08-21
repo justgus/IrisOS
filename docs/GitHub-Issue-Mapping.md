@@ -15,13 +15,13 @@ This mapping preserves local `GitHub-Issue:` references from AR, ER, and DR docu
 | ------------ | ----- | ----- |
 | ER-derived Task mappings | 88 | Local refs preserved from ER front matter. |
 | DR-derived Issue mappings | 1 | Local ref preserved from DR front matter. |
-| AR records with `#TBD` local refs | 4 | ARs remain architecture records and are not Task/Issue mappings. |
+| AR records with `#TBD` local refs | 0 | ARs remain architecture records and are not Task/Issue mappings. |
 
 ## Local Mapping Diagnostics
 
 | Diagnostic | Records |
 | ---------- | ------- |
-| AR records with local `GitHub-Issue: #TBD` | AR-0018, AR-0019, AR-0020, AR-0021 |
+| AR records with local `GitHub-Issue: #TBD` | None; AR-0018 through AR-0021 map to #301 through #304. |
 | Multiple ER records sharing one local GitHub issue reference | `#181`: ER-0045, ER-0045.1, ER-0045.2, ER-0045.3, ER-0045.4 |
 | Multiple ER records sharing one local GitHub issue reference | `#182`: ER-0046, ER-0047.1, ER-0047.2, ER-0047.3, ER-0047.4 |
 | Multiple ER records sharing one local GitHub issue reference | `#184`: ER-0048, ER-0054 |

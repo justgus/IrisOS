@@ -1,13 +1,13 @@
 # Airframe Migration Validation
 
-**Date:** 2026-07-07
-**Scope:** Local documentation validation
+**Date:** 2026-08-21
+**Scope:** Documentation and GitHub mapping validation
 **Epic:** EP-001
 **Task:** T-0088
 
 ## Boundary
 
-This validation covers local documentation migration artifacts only. It does not build product code, run product tests, query GitHub, or mutate GitHub issue state.
+This validation covers the documentation migration artifacts and the approved GitHub synchronization recorded in `docs/Airframe-GitHub-Live-Audit.md`. It does not build or change product code.
 
 ## Source Coverage
 
@@ -59,18 +59,15 @@ ruby -e '...local ER and DR mapping coverage checks...'
 
 | Risk | Follow-Up |
 | ---- | --------- |
-| Live GitHub issue state, titles, and labels were not queried. | Run a separate approved GitHub-backed read-only audit before mutation. |
-| Shared local GitHub references may be intentional grouping or drift. | System Engineer review needed for `#181`, `#182`, and `#184` grouped ER mappings. |
-| Four ARs have local `GitHub-Issue: #TBD`. | Resolve or defer AR issue references during GitHub synchronization planning. |
-| Live GitHub synchronization has not been performed. | Review and approve `docs/GitHub-Issue-Synchronization-Plan.md` before any GitHub mutation. |
+| GitHub state can drift after validation. | Re-run the read-only comparison before future migration-related mutations. |
 
 ## Cutover Position
 
 The local canonical documentation migration is ready for System Engineer review. The audit, AR boundary, ER mapping, DR mapping, generated Task records, generated Issue records, local GitHub mapping, local-only synchronization plan, and regenerated indexes are present in the Airframe documentation state.
 
-Final GitHub synchronization should wait until:
+SP-001 migration closeout is ready for System Engineer review because:
 
 1. The generated Task and Issue records are reviewed.
-2. The local duplicate GitHub issue references are approved or corrected.
-3. A GitHub-backed read-only audit is approved and performed.
-4. GitHub synchronization is approved and performed, or explicitly deferred.
+2. The local duplicate GitHub issue references are approved.
+3. Every AR, ER, and DR record has a numeric GitHub issue reference.
+4. The post-synchronization audit reports no remaining title, status-label, or required-closure drift.

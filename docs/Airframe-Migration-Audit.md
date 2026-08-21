@@ -15,7 +15,7 @@ GitHub fields in this document are local references copied from document front m
 
 | Record Type | Count | Status Breakdown | Local GitHub Gaps |
 | ----------- | ----- | ---------------- | ----------------- |
-| AR | 26 | Accepted: 11; Implemented: 15 | 4 local `#TBD` refs |
+| AR | 26 | Accepted: 11; Implemented: 15 | All records have numeric GitHub refs |
 | ER | 88 | Proposed: 8; Verified: 80 | 0 |
 | DR | 1 | Verified: 1 | 0 |
 
@@ -34,7 +34,7 @@ GitHub fields in this document are local references copied from document front m
 
 | Diagnostic | Records |
 | ---------- | ------- |
-| AR records with local `GitHub-Issue: #TBD` | AR-0018, AR-0019, AR-0020, AR-0021 |
+| AR records with local `GitHub-Issue: #TBD` | None; AR-0018 through AR-0021 were assigned issues #301 through #304 on 2026-08-21. |
 | Multiple ER records sharing one local GitHub issue reference | `#181`: ER-0045, ER-0045.1, ER-0045.2, ER-0045.3, ER-0045.4 |
 | Multiple ER records sharing one local GitHub issue reference | `#182`: ER-0046, ER-0047.1, ER-0047.2, ER-0047.3, ER-0047.4 |
 | Multiple ER records sharing one local GitHub issue reference | `#184`: ER-0048, ER-0054 |
@@ -62,10 +62,10 @@ Shared local GitHub issue references are recorded as diagnostics, not errors. Th
 | AR-0015 | Accepted | #79 | - | Conch Parser and Syntax | Architecture record; preserve AR namespace | docs/AR/accepted/AR-0015-Conch-Parser-and-Syntax.md |
 | AR-0016 | Implemented | #80 | - | Operations and Dispatch Model | Architecture record; preserve AR namespace | docs/AR/accepted/AR-0016-Operations-Dispatch.md |
 | AR-0017 | Accepted | #81 | - | Collections, Math Types, and Units | Architecture record; preserve AR namespace | docs/AR/accepted/AR-0017-Collections-Math-Units.md |
-| AR-0018 | Implemented | #TBD | - | Generic Type System | Architecture record; preserve AR namespace | docs/AR/accepted/AR-0018-Generic-Type-System.md |
-| AR-0019 | Accepted | #TBD | - | Caliper Unit Catalog | Architecture record; preserve AR namespace | docs/AR/accepted/AR-0019-Caliper-Unit-Catalog.md |
-| AR-0020 | Implemented | #TBD | - | Core Type Operations and Rendering | Architecture record; preserve AR namespace | docs/AR/accepted/AR-0020-Core-Type-Ops-and-Rendering.md |
-| AR-0021 | Implemented | #TBD | - | Structured Types, Enums, and Packets | Architecture record; preserve AR namespace | docs/AR/accepted/AR-0021-Structured-Types-Enums-Packets.md |
+| AR-0018 | Implemented | #301 | - | Generic Type System | Architecture record; preserve AR namespace | docs/AR/accepted/AR-0018-Generic-Type-System.md |
+| AR-0019 | Accepted | #302 | - | Caliper Unit Catalog | Architecture record; preserve AR namespace | docs/AR/accepted/AR-0019-Caliper-Unit-Catalog.md |
+| AR-0020 | Implemented | #303 | - | Core Type Operations and Rendering | Architecture record; preserve AR namespace | docs/AR/accepted/AR-0020-Core-Type-Ops-and-Rendering.md |
+| AR-0021 | Implemented | #304 | - | Structured Types, Enums, and Packets | Architecture record; preserve AR namespace | docs/AR/accepted/AR-0021-Structured-Types-Enums-Packets.md |
 | AR-0022 | Accepted | #290 | - | Staged Service Plane Delivery | Architecture record; preserve AR namespace | docs/AR/accepted/AR-0022-Staged-Service-Plane-Delivery.md |
 | AR-0023 | Accepted | #291 | - | Refract Reflection Profiles | Architecture record; preserve AR namespace | docs/AR/accepted/AR-0023-Refract-Reflection-Profiles.md |
 | AR-0024 | Accepted | #292 | - | Erector Machine And Comms Delivery Tracks | Architecture record; preserve AR namespace | docs/AR/accepted/AR-0024-Erector-Machine-and-Comms-Delivery-Tracks.md |
