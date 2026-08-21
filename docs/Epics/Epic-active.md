@@ -162,7 +162,7 @@ Tasks above eight points are represented by Sprint-ready child Tasks. T-0166 thr
 
 | Sprint | Goal | Status |
 | ------ | ---- | ------ |
-| SP-002 | Registered Machine values and packets | Active |
+| SP-002 | Registered Machine values and packets | Review |
 | SP-003 | Queryable processor and memory inventory | Backlog |
 | SP-004 | Authorized Machine resource acquisition | Backlog |
 | SP-005 | Machine-backed communication with an executable protocol | Backlog |
@@ -172,8 +172,8 @@ Tasks above eight points are represented by Sprint-ready child Tasks. T-0166 thr
 | Task | Title | Sprint | Status |
 | ---- | ----- | ------ | ------ |
 | T-0166 - T-0170 | Legacy ER umbrella Tasks | N/A | Backlog |
-| T-0177 | Registered Machine Scalar Primitives | SP-002 | Active |
-| T-0178 | Registered Machine Buffers and Packets | SP-002 | Active |
+| T-0177 | Registered Machine Scalar Primitives | SP-002 | Implemented - Not Verified |
+| T-0178 | Registered Machine Buffers and Packets | SP-002 | Implemented - Not Verified |
 | T-0179 | Registered Processor Architecture Model | SP-003 | Backlog |
 | T-0180 | Registered Memory Topology Model | SP-003 | Backlog |
 | T-0181 | In-Memory Machine Descriptors and Queries | SP-003 | Backlog |

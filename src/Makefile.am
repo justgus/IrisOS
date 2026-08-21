@@ -33,6 +33,12 @@ libreferee_la_SOURCES = \
    parser/xml_parser.cc \
    comms/primitives.h \
    comms/primitives.cc \
+   machine/primitives.h \
+   machine/primitives.cc \
+   machine/buffers.h \
+   machine/buffers.cc \
+   machine/refract.h \
+   machine/refract.cc \
    conch/session_growth.h \
    conch/session_growth.cc \
    vizier/routing.h \
@@ -77,6 +83,9 @@ include_HEADERS = referee/referee.h \
    parser/cpp_parser.h \
    parser/xml_parser.h \
    comms/primitives.h \
+   machine/primitives.h \
+   machine/buffers.h \
+   machine/refract.h \
    conch/session_growth.h \
    vizier/routing.h \
    viz/artifacts.h \
