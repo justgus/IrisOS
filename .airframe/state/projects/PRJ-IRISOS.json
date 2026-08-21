@@ -2,15 +2,18 @@
   "activeEpicID": {
     "rawValue": "EP-001"
   },
-  "activeSprintID": {
-    "rawValue": "SP-001"
-  },
   "backendMappingIDs": [
 
   ],
   "epicIDs": [
     {
       "rawValue": "EP-001"
+    },
+    {
+      "rawValue": "EP-002"
+    },
+    {
+      "rawValue": "EP-003"
     }
   ],
   "id": {
@@ -27,7 +30,7 @@
       "minor": 0,
       "patch": 0
     },
-    "updatedAt": "2026-07-07T00:00:00Z"
+    "updatedAt": "2026-08-21T00:00:00Z"
   },
   "name": "IrisOS",
   "repository": "justgus/IrisOS",

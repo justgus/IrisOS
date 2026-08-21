@@ -12,7 +12,7 @@ Source-Path: docs/ER/ER-0073-Comms-Transport-and-Session-Objects.md
 - Legacy ID: ER-0073
 - Status: Backlog
 - Source Status: Proposed
-- Epic: EP-001
+- Epic: EP-002
 - Sprint Assigned: N/A - migrated historical record
 - GitHub Issue: #281
 - AR Dependencies: AR-0010, AR-0024

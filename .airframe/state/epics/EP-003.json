@@ -1,0 +1,32 @@
+{
+  "acceptanceCriterionIDs": [],
+  "goal": "Deliver the full Caliper catalog and the runtime and Conch conversion tooling required by AR-0019.",
+  "issueIDs": [],
+  "metadata": {
+    "schemaVersion": {
+      "major": 1,
+      "minor": 0,
+      "patch": 0
+    },
+    "updatedAt": "2026-08-21T00:00:00Z",
+    "source": "docs/Epics/Epic-backlog.md"
+  },
+  "notes": [],
+  "outOfScope": [],
+  "owner": "System Engineer",
+  "planningDocumentPaths": [],
+  "rationale": "The Caliper catalog, runtime conversion engine, and Conch commands form a cohesive delivery track under AR-0019.",
+  "scope": [],
+  "sprintIDs": [],
+  "taskIDs": [
+    { "rawValue": "T-0171" },
+    { "rawValue": "T-0172" },
+    { "rawValue": "T-0173" }
+  ],
+  "workItem": {
+    "id": { "rawValue": "EP-003" },
+    "kind": "epic",
+    "status": "backlog",
+    "title": "Caliper Catalog and Conversion Tooling"
+  }
+}

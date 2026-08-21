@@ -12,7 +12,7 @@ Source-Path: docs/ER/ER-0071-Machine-Descriptors-and-Resource-Facts.md
 - Legacy ID: ER-0071
 - Status: Backlog
 - Source Status: Proposed
-- Epic: EP-001
+- Epic: EP-002
 - Sprint Assigned: N/A - migrated historical record
 - GitHub Issue: #279
 - AR Dependencies: AR-0008, AR-0010, AR-0024

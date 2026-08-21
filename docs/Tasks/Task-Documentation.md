@@ -124,14 +124,14 @@ Currently: **88 verified Tasks** | Next available: **T-0177**
 | [T-0163](Verified/T-0163-reusable-conch-grammar-api.md) | Reusable Conch Grammar API | EP-001 | N/A | Migrated | Verified |
 | [T-0164](Verified/T-0164-batch-execution-and-non-interactive-parser-integration.md) | Batch Execution and Non-Interactive Parser Integration | EP-001 | N/A | Migrated | Verified |
 | [T-0165](Verified/T-0165-shared-parser-regression-harness.md) | Shared Parser Regression Harness | EP-001 | N/A | Migrated | Verified |
-| [T-0166](Backlog/T-0166-machine-representation-primitives.md) | Machine Representation Primitives | EP-001 | N/A | Migrated | Backlog |
-| [T-0167](Backlog/T-0167-machine-descriptors-and-resource-facts.md) | Machine Descriptors and Resource Facts | EP-001 | N/A | Migrated | Backlog |
-| [T-0168](Backlog/T-0168-machine-handles-and-leases.md) | Machine Handles and Leases | EP-001 | N/A | Migrated | Backlog |
-| [T-0169](Backlog/T-0169-comms-transport-and-session-objects.md) | Comms Transport and Session Objects | EP-001 | N/A | Migrated | Backlog |
-| [T-0170](Backlog/T-0170-comms-protocol-objects-and-hardware-mapping.md) | Comms Protocol Objects and Hardware Mapping | EP-001 | N/A | Migrated | Backlog |
-| [T-0171](Backlog/T-0171-full-caliper-catalog-expansion.md) | Full Caliper Catalog Expansion | EP-001 | N/A | Migrated | Backlog |
-| [T-0172](Backlog/T-0172-runtime-conversion-and-compatibility-engine.md) | Runtime Conversion and Compatibility Engine | EP-001 | N/A | Migrated | Backlog |
-| [T-0173](Backlog/T-0173-conch-conversion-and-inspection-commands.md) | Conch Conversion and Inspection Commands | EP-001 | N/A | Migrated | Backlog |
+| [T-0166](Backlog/T-0166-machine-representation-primitives.md) | Machine Representation Primitives | EP-002 | N/A | Migrated | Backlog |
+| [T-0167](Backlog/T-0167-machine-descriptors-and-resource-facts.md) | Machine Descriptors and Resource Facts | EP-002 | N/A | Migrated | Backlog |
+| [T-0168](Backlog/T-0168-machine-handles-and-leases.md) | Machine Handles and Leases | EP-002 | N/A | Migrated | Backlog |
+| [T-0169](Backlog/T-0169-comms-transport-and-session-objects.md) | Comms Transport and Session Objects | EP-002 | N/A | Migrated | Backlog |
+| [T-0170](Backlog/T-0170-comms-protocol-objects-and-hardware-mapping.md) | Comms Protocol Objects and Hardware Mapping | EP-002 | N/A | Migrated | Backlog |
+| [T-0171](Backlog/T-0171-full-caliper-catalog-expansion.md) | Full Caliper Catalog Expansion | EP-003 | N/A | Migrated | Backlog |
+| [T-0172](Backlog/T-0172-runtime-conversion-and-compatibility-engine.md) | Runtime Conversion and Compatibility Engine | EP-003 | N/A | Migrated | Backlog |
+| [T-0173](Backlog/T-0173-conch-conversion-and-inspection-commands.md) | Conch Conversion and Inspection Commands | EP-003 | N/A | Migrated | Backlog |
 | [T-0174](Verified/T-0174-refract-constraints-and-validation-metadata.md) | Refract Constraints and Validation Metadata | EP-001 | N/A | Migrated | Verified |
 | [T-0175](Verified/T-0175-refract-operation-effects-metadata.md) | Refract Operation Effects Metadata | EP-001 | N/A | Migrated | Verified |
 | [T-0176](Verified/T-0176-refract-documentation-objects-and-introspection.md) | Refract Documentation Objects and Introspection | EP-001 | N/A | Migrated | Verified |

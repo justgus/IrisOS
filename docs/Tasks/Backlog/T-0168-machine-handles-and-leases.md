@@ -12,7 +12,7 @@ Source-Path: docs/ER/ER-0072-Machine-Handles-and-Leases.md
 - Legacy ID: ER-0072
 - Status: Backlog
 - Source Status: Proposed
-- Epic: EP-001
+- Epic: EP-002
 - Sprint Assigned: N/A - migrated historical record
 - GitHub Issue: #280
 - AR Dependencies: AR-0008, AR-0010, AR-0024
