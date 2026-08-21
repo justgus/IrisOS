@@ -1,6 +1,6 @@
 {
   "activeEpicID": {
-    "rawValue": "EP-001"
+    "rawValue": "EP-002"
   },
   "backendMappingIDs": [
 
@@ -34,10 +34,15 @@
   },
   "name": "IrisOS",
   "repository": "justgus/IrisOS",
+  "activeSprintID": {
+    "rawValue": "SP-002"
+  },
   "sprintIDs": [
-    {
-      "rawValue": "SP-001"
-    }
+    { "rawValue": "SP-001" },
+    { "rawValue": "SP-002" },
+    { "rawValue": "SP-003" },
+    { "rawValue": "SP-004" },
+    { "rawValue": "SP-005" }
   ],
   "taskIDs": [
     {
@@ -325,8 +330,17 @@
     {
       "rawValue": "T-0175"
     },
-    {
-      "rawValue": "T-0176"
-    }
+    { "rawValue": "T-0176" },
+    { "rawValue": "T-0177" },
+    { "rawValue": "T-0178" },
+    { "rawValue": "T-0179" },
+    { "rawValue": "T-0180" },
+    { "rawValue": "T-0181" },
+    { "rawValue": "T-0182" },
+    { "rawValue": "T-0183" },
+    { "rawValue": "T-0184" },
+    { "rawValue": "T-0185" },
+    { "rawValue": "T-0186" },
+    { "rawValue": "T-0187" }
   ]
 }

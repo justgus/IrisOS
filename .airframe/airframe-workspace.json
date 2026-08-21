@@ -10,8 +10,8 @@
       "id": { "rawValue": "PRJ-IRISOS" },
       "name": "IrisOS",
       "repository": "justgus/IrisOS",
-      "activeSprintID": { "rawValue": "SP-001" },
-      "activeEpicID": { "rawValue": "EP-001" }
+      "activeSprintID": { "rawValue": "SP-002" },
+      "activeEpicID": { "rawValue": "EP-002" }
     }
   ],
   "defaultProjectID": { "rawValue": "PRJ-IRISOS" },

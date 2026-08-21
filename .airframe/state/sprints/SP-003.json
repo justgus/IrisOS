@@ -1,0 +1,9 @@
+{
+  "epicID": { "rawValue": "EP-002" },
+  "goal": "Deliver a registered, deterministic, in-memory processor and memory inventory.",
+  "issueIDs": [],
+  "metadata": { "schemaVersion": { "major": 1, "minor": 0, "patch": 0 }, "updatedAt": "2026-08-21T00:00:00Z", "source": "docs/Sprints/Sprint-backlog.md" },
+  "notes": ["Planned capacity: 18 points", "Descriptor persistence is out of scope."],
+  "taskIDs": [{ "rawValue": "T-0179" }, { "rawValue": "T-0180" }, { "rawValue": "T-0181" }],
+  "workItem": { "id": { "rawValue": "SP-003" }, "kind": "sprint", "status": "backlog", "title": "Queryable Processor and Memory Inventory" }
+}

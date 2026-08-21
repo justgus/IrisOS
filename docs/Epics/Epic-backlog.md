@@ -2,25 +2,9 @@
 
 Epics listed here are proposed and not currently active.
 
-Currently: **2 backlog Epics**
+Currently: **1 backlog Epic**
 
 ---
-
-## EP-002: Machine and Communications Foundations
-
-**Status:** Backlog
-**Owner:** System Engineer
-**Goal:** Establish the Machine representation, descriptor, handle, transport, and protocol foundations required by AR-0024.
-
-### Related Tasks
-
-| Task | Title | Status |
-| ---- | ----- | ------ |
-| T-0166 | Machine Representation Primitives | Backlog |
-| T-0167 | Machine Descriptors and Resource Facts | Backlog |
-| T-0168 | Machine Handles and Leases | Backlog |
-| T-0169 | Comms Transport and Session Objects | Backlog |
-| T-0170 | Comms Protocol Objects and Hardware Mapping | Backlog |
 
 ## EP-003: Caliper Catalog and Conversion Tooling
 
@@ -36,4 +20,4 @@ Currently: **2 backlog Epics**
 | T-0172 | Runtime Conversion and Compatibility Engine | Backlog |
 | T-0173 | Conch Conversion and Inspection Commands | Backlog |
 
-*Last Updated: 2026-08-21 (EP-002 and EP-003 added)*
+*Last Updated: 2026-08-21 (EP-002 activated)*
