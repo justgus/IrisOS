@@ -96,3 +96,92 @@ EP-001 may move to Complete only after:
 Task IDs begin at T-0081 to extend from the current highest IrisOS ER ID, ER-0080. GitHub issue fields remain TBD until the GitHub mutation plan is reviewed and approved.
 
 *Last Updated: 2026-08-21 (SP-001 closed)*
+
+---
+
+## EP-002: Machine and Communications Foundations
+
+**Status:** Active
+**Owner:** System Engineer
+**Start Date:** 2026-08-21
+**Target Close Date:** TBD
+**Close Date:** TBD
+
+**Goal:**
+Establish registered Machine representations, in-memory resource descriptors, capability-bearing handles and leases, and Machine-backed Comms protocol execution as required by AR-0024.
+
+**Rationale:**
+IrisOS has working loopback Comms primitives but no Machine layer on which hardware-grounded communication can be modeled. EP-002 supplies that layer in independently executable increments while keeping definitions, discovered instances, and authority distinct.
+
+**Approved Architecture Boundary:**
+- Registered Machine primitives define portable scalar values, buffers, packets, processor architectures, registers, address spaces, and memory-block types.
+- Runtime descriptors represent discovered or configured processor cores, register files, installed memory regions, buses, and devices.
+- Descriptors are in-memory and non-authoritative in this Epic; persistence is deferred.
+- Handles and leases carry authority separately from resource facts.
+- Initial leases use explicit `Active`, `Released`, and `Revoked` lifecycle states without wall-clock expiration.
+- Comms transports and sessions are layered above Machine resources and culminate in one executable protocol round trip.
+
+**Scope:**
+- Fully register Machine primitives with Refract.
+- Model processor architecture and memory topology.
+- Provide deterministic, in-memory Machine descriptors and queries.
+- Provide capability-aware handles and deterministic lease lifecycle behavior.
+- Add Machine-backed transport and session metadata while preserving existing loopback behavior.
+- Add inspectable protocol compatibility and one executable protocol example.
+
+**Out of Scope:**
+- Machine descriptor persistence.
+- Wall-clock lease expiration.
+- Hardware probing or device drivers.
+- A complete network stack or remote networking.
+- Dynamic protocol negotiation.
+
+**Acceptance Criteria:**
+1. Machine scalar, buffer, packet, processor-architecture, register, address-space, and memory-block types have stable Refract registrations.
+2. Runtime descriptors model concrete Machine resources without granting access or requiring persistence.
+3. Capability-bearing handles reference descriptors and reject unauthorized use.
+4. Leases support deterministic active, released, and revoked behavior without depending on a clock.
+5. Transports and sessions reference Machine resources without regressing existing loopback Comms behavior.
+6. Protocol metadata can determine transport compatibility deterministically.
+7. A registered Machine packet completes an executable encode, transport, decode, and verification round trip.
+8. Existing tests continue to pass.
+
+### Poker Estimates
+
+| Umbrella Task | Estimate |
+| ------------- | -------- |
+| T-0166 | 21 |
+| T-0167 | 8 |
+| T-0168 | 13 |
+| T-0169 | 8-13 |
+| T-0170 | 13 |
+
+Tasks above eight points are represented by Sprint-ready child Tasks. T-0166 through T-0170 remain backlog umbrella records to preserve legacy ER traceability.
+
+### Related Sprints
+
+| Sprint | Goal | Status |
+| ------ | ---- | ------ |
+| SP-002 | Registered Machine values and packets | Active |
+| SP-003 | Queryable processor and memory inventory | Backlog |
+| SP-004 | Authorized Machine resource acquisition | Backlog |
+| SP-005 | Machine-backed communication with an executable protocol | Backlog |
+
+### Related Tasks
+
+| Task | Title | Sprint | Status |
+| ---- | ----- | ------ | ------ |
+| T-0166 - T-0170 | Legacy ER umbrella Tasks | N/A | Backlog |
+| T-0177 | Registered Machine Scalar Primitives | SP-002 | Active |
+| T-0178 | Registered Machine Buffers and Packets | SP-002 | Active |
+| T-0179 | Registered Processor Architecture Model | SP-003 | Backlog |
+| T-0180 | Registered Memory Topology Model | SP-003 | Backlog |
+| T-0181 | In-Memory Machine Descriptors and Queries | SP-003 | Backlog |
+| T-0182 | Capability-Bearing Machine Handles | SP-004 | Backlog |
+| T-0183 | Deterministic Machine Lease Lifecycle | SP-004 | Backlog |
+| T-0184 | Machine-Backed Comms Transport | SP-005 | Backlog |
+| T-0185 | Comms Session Lifecycle | SP-005 | Backlog |
+| T-0186 | Protocol Metadata and Compatibility | SP-005 | Backlog |
+| T-0187 | Executable Registered-Packet Protocol | SP-005 | Backlog |
+
+*Last Updated: 2026-08-21 (EP-002 planning approved and activated)*

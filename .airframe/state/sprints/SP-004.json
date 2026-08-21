@@ -1,0 +1,9 @@
+{
+  "epicID": { "rawValue": "EP-002" },
+  "goal": "Deliver authorized acquisition and deterministic release or revocation of Machine resources.",
+  "issueIDs": [],
+  "metadata": { "schemaVersion": { "major": 1, "minor": 0, "patch": 0 }, "updatedAt": "2026-08-21T00:00:00Z", "source": "docs/Sprints/Sprint-backlog.md" },
+  "notes": ["Planned capacity: 10-13 points", "Wall-clock expiration is out of scope."],
+  "taskIDs": [{ "rawValue": "T-0182" }, { "rawValue": "T-0183" }],
+  "workItem": { "id": { "rawValue": "SP-004" }, "kind": "sprint", "status": "backlog", "title": "Authorized Machine Resource Acquisition" }
+}

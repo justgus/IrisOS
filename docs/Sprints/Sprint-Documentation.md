@@ -12,28 +12,32 @@ This is the main index for IrisOS Agile Airframe Sprints. Sprints are fixed exec
 
 ## Active Sprint
 
-Currently: **None**
+Currently: **SP-002**
 
 See: [Sprint-active.md](Sprint-active.md)
 
 ## All Sprints
 
-Currently: **1 Sprint** | Next available: **SP-002**
+Currently: **5 Sprints** | Next available: **SP-006**
 
 | Sprint | Title | Epic | Tasks | Status |
 | ------ | ----- | ---- | ----- | ------ |
 | SP-001 | Agile Airframe Migration Planning and Seed Implementation | EP-001 | T-0081 - T-0088 | Closed |
+| SP-002 | Registered Machine Values and Packets | EP-002 | T-0177 - T-0178 | Active |
+| SP-003 | Queryable Processor and Memory Inventory | EP-002 | T-0179 - T-0181 | Backlog |
+| SP-004 | Authorized Machine Resource Acquisition | EP-002 | T-0182 - T-0183 | Backlog |
+| SP-005 | Machine-Backed Executable Communication | EP-002 | T-0184 - T-0187 | Backlog |
 
 ## Statistics
 
-- **Total Sprints:** 1
+- **Total Sprints:** 5
 - **Closed:** 1
-- **Active:** 0
+- **Active:** 1
 - **Review:** 0
 - **Planning:** 0
-- **Backlog:** 0
-- **Next available:** SP-002
+- **Backlog:** 3
+- **Next available:** SP-006
 
 ---
 
-*Last Updated: 2026-08-21 (SP-001 closed)*
+*Last Updated: 2026-08-21 (EP-002 Sprints planned and SP-002 activated)*

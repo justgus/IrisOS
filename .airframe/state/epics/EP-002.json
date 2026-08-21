@@ -1,6 +1,6 @@
 {
   "acceptanceCriterionIDs": [],
-  "goal": "Establish the Machine representation, descriptor, handle, transport, and protocol foundations required by AR-0024.",
+  "goal": "Establish registered Machine representations, in-memory resource descriptors, capability-bearing handles and leases, and Machine-backed Comms protocol execution as required by AR-0024.",
   "issueIDs": [],
   "metadata": {
     "schemaVersion": {
@@ -9,26 +9,55 @@
       "patch": 0
     },
     "updatedAt": "2026-08-21T00:00:00Z",
-    "source": "docs/Epics/Epic-backlog.md"
+    "source": "docs/Epics/Epic-active.md"
   },
-  "notes": [],
-  "outOfScope": [],
+  "notes": [
+    "Approved poker estimates: T-0166 21, T-0167 8, T-0168 13, T-0169 8-13, T-0170 13.",
+    "T-0166 through T-0170 remain umbrella Tasks; T-0177 through T-0187 are Sprint-ready child Tasks."
+  ],
+  "outOfScope": [
+    "Machine descriptor persistence",
+    "Wall-clock lease expiration",
+    "Hardware probing and device drivers",
+    "Complete network stacks and remote networking"
+  ],
   "owner": "System Engineer",
-  "planningDocumentPaths": [],
+  "planningDocumentPaths": ["docs/Epics/Epic-active.md"],
   "rationale": "The migrated Machine and Comms Tasks form one dependency-ordered delivery track under AR-0024.",
-  "scope": [],
-  "sprintIDs": [],
+  "scope": [
+    "Refract-registered Machine representations",
+    "In-memory descriptors and queries",
+    "Capability-bearing handles and deterministic leases",
+    "Machine-backed Comms and one executable protocol example"
+  ],
+  "sprintIDs": [
+    { "rawValue": "SP-002" },
+    { "rawValue": "SP-003" },
+    { "rawValue": "SP-004" },
+    { "rawValue": "SP-005" }
+  ],
   "taskIDs": [
     { "rawValue": "T-0166" },
     { "rawValue": "T-0167" },
     { "rawValue": "T-0168" },
     { "rawValue": "T-0169" },
-    { "rawValue": "T-0170" }
+    { "rawValue": "T-0170" },
+    { "rawValue": "T-0177" },
+    { "rawValue": "T-0178" },
+    { "rawValue": "T-0179" },
+    { "rawValue": "T-0180" },
+    { "rawValue": "T-0181" },
+    { "rawValue": "T-0182" },
+    { "rawValue": "T-0183" },
+    { "rawValue": "T-0184" },
+    { "rawValue": "T-0185" },
+    { "rawValue": "T-0186" },
+    { "rawValue": "T-0187" }
   ],
   "workItem": {
     "id": { "rawValue": "EP-002" },
     "kind": "epic",
-    "status": "backlog",
+    "status": "active",
     "title": "Machine and Communications Foundations"
   }
 }

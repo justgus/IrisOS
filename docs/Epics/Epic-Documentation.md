@@ -12,13 +12,13 @@ This is the main index for IrisOS Agile Airframe Epics. Epics describe delivery 
 
 ## Active Epics
 
-Currently: **1 Active Epic**
+Currently: **2 Active Epics**
 
 See: [Epic-active.md](Epic-active.md)
 
 ## Backlog Epics
 
-Currently: **2 Backlog Epics**
+Currently: **1 Backlog Epic**
 
 See: [Epic-backlog.md](Epic-backlog.md)
 
@@ -29,20 +29,19 @@ Currently: **3 Epics** | Next available: **EP-004**
 | Epic | Title | Status | Start | Close |
 | ---- | ----- | ------ | ----- | ----- |
 | EP-001 | Migrate IrisOS Workflow Documentation to Agile Airframe | Active | 2026-07-06 | TBD |
-| EP-002 | Machine and Communications Foundations | Backlog | TBD | TBD |
+| EP-002 | Machine and Communications Foundations | Active | 2026-08-21 | TBD |
 | EP-003 | Caliper Catalog and Conversion Tooling | Backlog | TBD | TBD |
 
 ## Statistics
 
-- **Total Epics:** 1
+- **Total Epics:** 3
 - **Closed:** 0
-- **Active:** 1
+- **Active:** 2
 - **Complete:** 0
 - **Draft:** 0
-- **Proposed:** 0
-- **Proposed:** 2
+- **Backlog:** 1
 - **Next available:** EP-004
 
 ---
 
-*Last Updated: 2026-08-21 (EP-002 and EP-003 added to backlog)*
+*Last Updated: 2026-08-21 (EP-002 activated)*
