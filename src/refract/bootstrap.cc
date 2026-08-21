@@ -1,5 +1,7 @@
 #include "refract/bootstrap.h"
 
+#include "machine/refract.h"
+
 #include <array>
 #include <cstdint>
 #include <cstdlib>
@@ -1021,7 +1023,7 @@ TypeDefinition make_demo_detail() {
 
 std::vector<TypeDefinition> core_schema_definitions() {
   std::vector<TypeDefinition> defs;
-  defs.reserve(53);
+  defs.reserve(67);
   defs.push_back(make_primitive(kTypeString, "String"));
   defs.push_back(make_primitive(kTypeU64, "U64"));
   defs.push_back(make_primitive(kTypeBool, "Bool"));
@@ -1078,6 +1080,8 @@ std::vector<TypeDefinition> core_schema_definitions() {
   defs.push_back(make_demo_propulsion_synth());
   defs.push_back(make_demo_summary());
   defs.push_back(make_demo_detail());
+  auto machine_defs = machine::schema_definitions();
+  defs.insert(defs.end(), machine_defs.begin(), machine_defs.end());
   return defs;
 }
 

@@ -3,7 +3,7 @@
 ## Task Metadata
 
 - Task ID: T-0178
-- Status: Active
+- Status: Implemented - Not Verified
 - Epic: EP-002
 - Parent Task: T-0166
 - Sprint Assigned: SP-002
@@ -35,4 +35,9 @@ Build bounded, portable buffer and packet values on the registered Machine scala
 
 ## Validation
 
+- `./bootstrap.sh`
+- `CPPFLAGS="$(pkg-config --cflags nlohmann_json)" CXXFLAGS="-g -O2 -Wno-unused-const-variable -Wno-unused-private-field" ./configure`
+- `make -j`
 - `make check`
+
+Result: 26 tests passed, including 8 Machine primitive checks. The local configure flags supply Homebrew's nlohmann include path and suppress two pre-existing Apple-Clang warnings; they are not source changes.

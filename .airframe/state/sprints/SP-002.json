@@ -3,8 +3,8 @@
   "goal": "Deliver fully Refract-registered Machine scalar, buffer, and packet primitives.",
   "issueIDs": [],
   "metadata": { "schemaVersion": { "major": 1, "minor": 0, "patch": 0 }, "updatedAt": "2026-08-21T00:00:00Z", "source": "docs/Sprints/Sprint-active.md" },
-  "notes": ["Capacity: 10 points", "Planning approved by the System Engineer on 2026-08-21."],
+  "notes": ["Capacity: 10 points", "Planning approved by the System Engineer on 2026-08-21.", "Implementation validation passed 26 of 26 tests; awaiting System Engineer verification."],
   "startDate": "2026-08-21",
   "taskIDs": [{ "rawValue": "T-0177" }, { "rawValue": "T-0178" }],
-  "workItem": { "id": { "rawValue": "SP-002" }, "kind": "sprint", "status": "active", "title": "Registered Machine Values and Packets" }
+  "workItem": { "id": { "rawValue": "SP-002" }, "kind": "sprint", "status": "review", "title": "Registered Machine Values and Packets" }
 }

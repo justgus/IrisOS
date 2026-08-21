@@ -6,7 +6,7 @@ Sprints listed here are currently in Planning or Active status and are the curre
 
 ## SP-002: Registered Machine Values and Packets
 
-**Status:** Active
+**Status:** Review
 **Epic:** EP-002
 **Goal:** Deliver fully Refract-registered Machine scalar, buffer, and packet primitives that can construct, inspect, and validate packet data.
 **Start Date:** 2026-08-21
@@ -37,8 +37,8 @@ Establish the smallest independently executable Machine layer: registered portab
 
 | Task | Title | Points | Status |
 | ---- | ----- | -----: | ------ |
-| T-0177 | Registered Machine Scalar Primitives | 5 | Active |
-| T-0178 | Registered Machine Buffers and Packets | 5 | Active |
+| T-0177 | Registered Machine Scalar Primitives | 5 | Implemented - Not Verified |
+| T-0178 | Registered Machine Buffers and Packets | 5 | Implemented - Not Verified |
 
 ### Assigned Issues
 
@@ -48,5 +48,7 @@ None.
 - T-0166 remains the legacy ER umbrella Task for traceability.
 - Processor architecture, register, and memory topology work begins in SP-003.
 - This Sprint changes `Makefile.am` sources of truth if build integration is needed; generated Autotools files remain untouched.
+- Implementation validation passed all 26 tests, including 8 Machine primitive checks.
+- The Sprint remains in Review until the System Engineer verifies both Tasks.
 
-*Last Updated: 2026-08-21 (SP-002 planning approved and activated)*
+*Last Updated: 2026-08-21 (SP-002 implementation complete; awaiting verification)*
