@@ -3,7 +3,7 @@
 ## Task Metadata
 
 - Task ID: T-0177
-- Status: Implemented - Not Verified
+- Status: Verified
 - Epic: EP-002
 - Parent Task: T-0166
 - Sprint Assigned: SP-002
@@ -41,3 +41,7 @@ Define portable Machine scalar values and register their stable identities with 
 - `make check`
 
 Result: 26 tests passed, including 8 Machine primitive checks. The local configure flags supply Homebrew's nlohmann include path and suppress two pre-existing Apple-Clang warnings; they are not source changes.
+
+## Verification
+
+Accepted by the System Engineer on 2026-08-21 after review of the implementation and validation results.
