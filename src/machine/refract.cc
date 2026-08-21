@@ -1,7 +1,7 @@
 #include "machine/refract.h"
 
 #include "machine/buffers.h"
-#include "machine/primitives.h"
+#include "machine/scalars.h"
 
 #include <optional>
 #include <string>

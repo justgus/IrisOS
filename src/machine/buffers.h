@@ -1,6 +1,6 @@
 #pragma once
 
-#include "machine/primitives.h"
+#include "machine/scalars.h"
 
 #include <algorithm>
 #include <cstddef>

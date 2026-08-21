@@ -1,4 +1,4 @@
-#include "machine/primitives.h"
+#include "machine/scalars.h"
 
 #include <utility>
 

@@ -6,7 +6,7 @@ extern "C" {
 #endif
 
 #include "machine/buffers.h"
-#include "machine/primitives.h"
+#include "machine/scalars.h"
 #include "refract/bootstrap.h"
 #include "refract/schema_registry.h"
 #include "referee_sqlite/sqlite_store.h"
