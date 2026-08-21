@@ -41,3 +41,6 @@ tests/test_*
 config.status
 configure~
 config.h.in~
+.DS_Store
+*.xcodeproj/project.xcworkspace/
+*.xcodeproj/xcuserdata/
