@@ -27,13 +27,13 @@ See: [Task-backlog.md](Task-backlog.md)
 
 ## Unverified Tasks
 
-Currently: **2 unverified Tasks**
+Currently: **0 unverified Tasks**
 
 See: [Task-unverified.md](Task-unverified.md)
 
 ## Verified Tasks
 
-Currently: **88 verified Tasks** | Next available: **T-0188**
+Currently: **90 verified Tasks** | Next available: **T-0188**
 
 ## All Tasks
 
@@ -135,8 +135,8 @@ Currently: **88 verified Tasks** | Next available: **T-0188**
 | [T-0174](Verified/T-0174-refract-constraints-and-validation-metadata.md) | Refract Constraints and Validation Metadata | EP-001 | N/A | Migrated | Verified |
 | [T-0175](Verified/T-0175-refract-operation-effects-metadata.md) | Refract Operation Effects Metadata | EP-001 | N/A | Migrated | Verified |
 | [T-0176](Verified/T-0176-refract-documentation-objects-and-introspection.md) | Refract Documentation Objects and Introspection | EP-001 | N/A | Migrated | Verified |
-| [T-0177](T-0177-registered-machine-scalar-primitives.md) | Registered Machine Scalar Primitives | EP-002 | SP-002 | High | Implemented - Not Verified |
-| [T-0178](T-0178-registered-machine-buffers-and-packets.md) | Registered Machine Buffers and Packets | EP-002 | SP-002 | High | Implemented - Not Verified |
+| [T-0177](Verified/T-0177-registered-machine-scalar-primitives.md) | Registered Machine Scalar Primitives | EP-002 | SP-002 | High | Verified |
+| [T-0178](Verified/T-0178-registered-machine-buffers-and-packets.md) | Registered Machine Buffers and Packets | EP-002 | SP-002 | High | Verified |
 | [T-0179](Backlog/T-0179-registered-processor-architecture-model.md) | Registered Processor Architecture Model | EP-002 | SP-003 | High | Backlog |
 | [T-0180](Backlog/T-0180-registered-memory-topology-model.md) | Registered Memory Topology Model | EP-002 | SP-003 | High | Backlog |
 | [T-0181](Backlog/T-0181-in-memory-machine-descriptors-and-queries.md) | In-Memory Machine Descriptors and Queries | EP-002 | SP-003 | High | Backlog |
@@ -150,8 +150,8 @@ Currently: **88 verified Tasks** | Next available: **T-0188**
 ## Statistics
 
 - **Total Tasks:** 107
-- **Verified:** 88
-- **Unverified:** 2
+- **Verified:** 90
+- **Unverified:** 0
 - **Active:** 0
 - **Backlog:** 17
 - **Closed:** 0
@@ -159,4 +159,4 @@ Currently: **88 verified Tasks** | Next available: **T-0188**
 
 ---
 
-*Last Updated: 2026-08-21 (SP-002 implementation complete)*
+*Last Updated: 2026-08-21 (SP-002 Tasks verified)*
