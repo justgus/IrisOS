@@ -1,0 +1,47 @@
+{
+  "acceptanceCriteria": [
+
+  ],
+  "component": "Migrated legacy ER",
+  "componentsAffected": [
+
+  ],
+  "epicID": {
+    "rawValue": "EP-001"
+  },
+  "evidenceIDs": [
+
+  ],
+  "metadata": {
+    "schemaVersion": {
+      "major": 1,
+      "minor": 0,
+      "patch": 0
+    },
+    "updatedAt": "2026-07-07T00:00:00Z",
+    "source": "docs/ER/ER-0059-CEO-Task-Capability-Attachment.md"
+  },
+  "notes": [
+    "Legacy ID: ER-0059",
+    "Source Status: Verified",
+    "Source Path: docs/ER/ER-0059-CEO-Task-Capability-Attachment.md"
+  ],
+  "priority": "medium",
+  "rationale": "Migrated from legacy IrisOS Engineering Request documentation.",
+  "requirementIDs": [
+
+  ],
+  "testSteps": [
+
+  ],
+  "workItem": {
+    "id": {
+      "rawValue": "T-0155"
+    },
+    "kind": "task",
+    "status": "implementedVerified",
+    "title": "CEO Task Capability Attachment",
+    "githubIssue": 266
+  },
+  "dateVerified": "2026-07-07"
+}

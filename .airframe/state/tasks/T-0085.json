@@ -1,0 +1,55 @@
+{
+  "acceptanceCriteria": [
+    "Every DR document has exactly one migrated Issue record or an explicit migration diagnostic.",
+    "Issue records preserve source DR ID, title, status, GitHub issue number, severity, priority, environment, reproduction steps, expected behavior, actual behavior, impact, fix plan, and verification plan.",
+    "Verified DRs are not downgraded.",
+    "The migration distinguishes planned work Tasks from defect Issues."
+  ],
+  "component": "DR to Issue migration",
+  "componentsAffected": [
+
+  ],
+  "dateVerified": "2026-08-17",
+  "epicID": {
+    "rawValue": "EP-001"
+  },
+  "evidenceIDs": [
+
+  ],
+  "metadata": {
+    "schemaVersion": {
+      "major": 1,
+      "minor": 0,
+      "patch": 0
+    },
+    "updatedAt": "2026-08-17T00:00:00Z",
+    "source": "docs/Tasks/Verified/T-0085-migrate-dr-records-into-airframe-issues.md"
+  },
+  "notes": [
+    "DR-derived Issue records should include `Legacy ID: DR-XXXX`.",
+    "Verified DRs should migrate as resolved and verified only when that status is already present in the source ledger.",
+    "New defects found during migration should become new Airframe Issues, not edits to the migrated historical DR.",
+    "Evidence: DR-to-Issue migration map recorded in `docs/Airframe-DR-Issue-Migration.md`.",
+    "Evidence: The canonical Issue file was generated under `docs/Issues/Verified`.",
+    "Evidence: The migration covers the local DR record and assigns target Issue ID `I-0001`."
+  ],
+  "priority": "high",
+  "rationale": "DRs are defect records and should become Airframe Issues without losing diagnosis or verification context.",
+  "requirementIDs": [
+
+  ],
+  "sprintID": {
+    "rawValue": "SP-001"
+  },
+  "testSteps": [
+
+  ],
+  "workItem": {
+    "id": {
+      "rawValue": "T-0085"
+    },
+    "kind": "task",
+    "status": "implementedVerified",
+    "title": "Migrate DR records into Airframe Issues"
+  }
+}

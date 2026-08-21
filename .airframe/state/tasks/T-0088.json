@@ -1,0 +1,58 @@
+{
+  "acceptanceCriteria": [
+    "Every source AR, ER, and DR is accounted for in the migrated state or diagnostics.",
+    "Status counts match the approved source of truth.",
+    "Legacy manual docs are either preserved or marked legacy according to the approved cutover path.",
+    "Build and documentation validation commands are recorded.",
+    "Residual risks and follow-up Tasks are documented before EP-001 closeout."
+  ],
+  "component": "Migration validation and cutover",
+  "componentsAffected": [
+
+  ],
+  "dateVerified": "2026-08-21",
+  "epicID": {
+    "rawValue": "EP-001"
+  },
+  "evidenceIDs": [
+
+  ],
+  "metadata": {
+    "schemaVersion": {
+      "major": 1,
+      "minor": 0,
+      "patch": 0
+    },
+    "updatedAt": "2026-08-21T00:00:00Z",
+    "source": "docs/Tasks/Verified/T-0088-validate-migration-equivalence-and-document-cutover.md"
+  },
+  "notes": [
+    "Validation should include source coverage, status count comparison, GitHub mapping coverage, and deterministic index checks.",
+    "Product build/test commands should be recorded as migration evidence, but product behavior changes are out of scope.",
+    "Any unresolved mismatch should become a follow-up Task or Issue before EP-001 is proposed as Complete.",
+    "Evidence: Migration validation recorded in `docs/Airframe-Migration-Validation.md`.",
+    "Evidence: All 26 AR, 88 ER, and 1 DR source records are represented, and all have numeric GitHub issue references.",
+    "Evidence: Post-synchronization comparison covers 106 unique GitHub issues with no remaining title, status-label, or required-closure drift.",
+    "Evidence: Product build/tests were not run because the closeout changed documentation and GitHub metadata only.",
+    "Original IrisOS priority: critical"
+  ],
+  "priority": "high",
+  "rationale": "The migration should not be considered complete until the new canonical documentation is shown to represent the same state as the current manual documentation.",
+  "requirementIDs": [
+
+  ],
+  "sprintID": {
+    "rawValue": "SP-001"
+  },
+  "testSteps": [
+
+  ],
+  "workItem": {
+    "id": {
+      "rawValue": "T-0088"
+    },
+    "kind": "task",
+    "status": "implementedVerified",
+    "title": "Validate migration equivalence and document cutover"
+  }
+}

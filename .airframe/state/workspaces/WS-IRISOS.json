@@ -1,0 +1,22 @@
+{
+  "defaultProjectID": {
+    "rawValue": "PRJ-IRISOS"
+  },
+  "id": {
+    "rawValue": "WS-IRISOS"
+  },
+  "metadata": {
+    "schemaVersion": {
+      "major": 1,
+      "minor": 0,
+      "patch": 0
+    }
+  },
+  "name": "IrisOS Airframe Workspace",
+  "projectIDs": [
+    {
+      "rawValue": "PRJ-IRISOS"
+    }
+  ],
+  "rootPath": "."
+}

@@ -1,0 +1,42 @@
+{
+  "affectedComponents": [
+
+  ],
+  "dateVerified": "2026-07-07",
+  "epicID": {
+    "rawValue": "EP-001"
+  },
+  "evidenceIDs": [
+
+  ],
+  "expectedBehavior": "",
+  "metadata": {
+    "schemaVersion": {
+      "major": 1,
+      "minor": 0,
+      "patch": 0
+    },
+    "updatedAt": "2026-07-07T00:00:00Z",
+    "source": "docs/DR/DR-0001-Conch-Compare-Alias-Resolution.md"
+  },
+  "notes": [
+    "Legacy ID: DR-0001",
+    "Source Status: Verified",
+    "Priority: P1",
+    "Source Path: docs/DR/DR-0001-Conch-Compare-Alias-Resolution.md"
+  ],
+  "observedBehavior": "",
+  "reproductionSteps": [
+
+  ],
+  "severity": "medium",
+  "workItem": {
+    "id": {
+      "rawValue": "I-0001"
+    },
+    "kind": "issue",
+    "status": "implementedVerified",
+    "title": "Conch Compare Alias Resolution",
+    "githubIssue": 116
+  }
+}

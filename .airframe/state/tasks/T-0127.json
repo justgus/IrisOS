@@ -1,0 +1,47 @@
+{
+  "acceptanceCriteria": [
+
+  ],
+  "component": "Migrated legacy ER",
+  "componentsAffected": [
+
+  ],
+  "epicID": {
+    "rawValue": "EP-001"
+  },
+  "evidenceIDs": [
+
+  ],
+  "metadata": {
+    "schemaVersion": {
+      "major": 1,
+      "minor": 0,
+      "patch": 0
+    },
+    "updatedAt": "2026-07-07T00:00:00Z",
+    "source": "docs/ER/ER-0039-Structured-Arrays-and-Collection-Integration.md"
+  },
+  "notes": [
+    "Legacy ID: ER-0039",
+    "Source Status: Verified",
+    "Source Path: docs/ER/ER-0039-Structured-Arrays-and-Collection-Integration.md"
+  ],
+  "priority": "medium",
+  "rationale": "Migrated from legacy IrisOS Engineering Request documentation.",
+  "requirementIDs": [
+
+  ],
+  "testSteps": [
+
+  ],
+  "workItem": {
+    "id": {
+      "rawValue": "T-0127"
+    },
+    "kind": "task",
+    "status": "implementedVerified",
+    "title": "Structured Arrays and Collection Integration",
+    "githubIssue": 175
+  },
+  "dateVerified": "2026-07-07"
+}

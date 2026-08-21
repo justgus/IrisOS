@@ -1,0 +1,57 @@
+{
+  "acceptanceCriteria": [
+    "Task, Issue, Epic, and Sprint indexes reflect the migrated canonical state.",
+    "`docs/GitHub-Issue-Mapping.md` maps each migrated Task and Issue to its GitHub issue number where available.",
+    "Mapping entries identify source IDs such as `ER-0070` or `DR-0001`.",
+    "Known local/GitHub status drift is listed before any mutation.",
+    "Index counts match the migrated record counts."
+  ],
+  "component": "Airframe indexes and issue mapping",
+  "componentsAffected": [
+
+  ],
+  "dateVerified": "2026-08-17",
+  "epicID": {
+    "rawValue": "EP-001"
+  },
+  "evidenceIDs": [
+
+  ],
+  "metadata": {
+    "schemaVersion": {
+      "major": 1,
+      "minor": 0,
+      "patch": 0
+    },
+    "updatedAt": "2026-08-17T00:00:00Z",
+    "source": "docs/Tasks/Verified/T-0086-generate-airframe-indexes-and-github-issue-mapping.md"
+  },
+  "notes": [
+    "Index generation should be deterministic and sorted by Airframe ID.",
+    "Counts should be derived from migrated records, not hand-maintained independently.",
+    "Mapping should preserve both Airframe ID and legacy ID until the migration is closed.",
+    "Evidence: Local GitHub issue mapping recorded in `docs/GitHub-Issue-Mapping.md`.",
+    "Evidence: Canonical Task and Issue indexes were regenerated from the migrated records.",
+    "Evidence: The indexes cover 8 active Tasks, 8 backlog Tasks, 80 verified Tasks, and 1 verified Issue.",
+    "Original IrisOS priority: critical"
+  ],
+  "priority": "high",
+  "rationale": "The migrated records need deterministic indexes and an auditable mapping to existing GitHub issues before GitHub state can be synchronized.",
+  "requirementIDs": [
+
+  ],
+  "sprintID": {
+    "rawValue": "SP-001"
+  },
+  "testSteps": [
+
+  ],
+  "workItem": {
+    "id": {
+      "rawValue": "T-0086"
+    },
+    "kind": "task",
+    "status": "implementedVerified",
+    "title": "Generate Airframe indexes and GitHub issue mapping"
+  }
+}

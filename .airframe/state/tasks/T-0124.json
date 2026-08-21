@@ -1,0 +1,47 @@
+{
+  "acceptanceCriteria": [
+
+  ],
+  "component": "Migrated legacy ER",
+  "componentsAffected": [
+
+  ],
+  "epicID": {
+    "rawValue": "EP-001"
+  },
+  "evidenceIDs": [
+
+  ],
+  "metadata": {
+    "schemaVersion": {
+      "major": 1,
+      "minor": 0,
+      "patch": 0
+    },
+    "updatedAt": "2026-07-07T00:00:00Z",
+    "source": "docs/ER/ER-0036-Definition-Versioning-and-Migration-Hooks.md"
+  },
+  "notes": [
+    "Legacy ID: ER-0036",
+    "Source Status: Verified",
+    "Source Path: docs/ER/ER-0036-Definition-Versioning-and-Migration-Hooks.md"
+  ],
+  "priority": "medium",
+  "rationale": "Migrated from legacy IrisOS Engineering Request documentation.",
+  "requirementIDs": [
+
+  ],
+  "testSteps": [
+
+  ],
+  "workItem": {
+    "id": {
+      "rawValue": "T-0124"
+    },
+    "kind": "task",
+    "status": "implementedVerified",
+    "title": "Definition Versioning and Migration Hooks",
+    "githubIssue": 172
+  },
+  "dateVerified": "2026-07-07"
+}
