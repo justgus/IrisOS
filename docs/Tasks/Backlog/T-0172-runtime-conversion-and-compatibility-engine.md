@@ -12,7 +12,7 @@ Source-Path: docs/ER/ER-0076-Runtime-Conversion-and-Compatibility-Engine.md
 - Legacy ID: ER-0076
 - Status: Backlog
 - Source Status: Proposed
-- Epic: EP-001
+- Epic: EP-003
 - Sprint Assigned: N/A - migrated historical record
 - GitHub Issue: #284
 - AR Dependencies: AR-0019

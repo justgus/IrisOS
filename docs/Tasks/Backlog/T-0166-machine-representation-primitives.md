@@ -12,7 +12,7 @@ Source-Path: docs/ER/ER-0070-Machine-Representation-Primitives.md
 - Legacy ID: ER-0070
 - Status: Backlog
 - Source Status: Proposed
-- Epic: EP-001
+- Epic: EP-002
 - Sprint Assigned: N/A - migrated historical record
 - GitHub Issue: #278
 - AR Dependencies: AR-0008, AR-0010, AR-0024

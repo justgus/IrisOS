@@ -71,7 +71,7 @@ EP-001 may move to Complete only after:
 
 | Sprint | Goal | Status |
 | ------ | ---- | ------ |
-| SP-001 | Plan and implement the Agile Airframe documentation migration seed, audit, canonical conversion, GitHub mapping plan, and cutover validation. | Active |
+| SP-001 | Plan and implement the Agile Airframe documentation migration seed, audit, canonical conversion, GitHub mapping plan, and cutover validation. | Closed |
 
 ### Related Tasks
 
@@ -95,4 +95,4 @@ EP-001 may move to Complete only after:
 
 Task IDs begin at T-0081 to extend from the current highest IrisOS ER ID, ER-0080. GitHub issue fields remain TBD until the GitHub mutation plan is reviewed and approved.
 
-*Last Updated: 2026-07-07 (Epic planning decisions and closeout gate added)*
+*Last Updated: 2026-08-21 (SP-001 closed)*

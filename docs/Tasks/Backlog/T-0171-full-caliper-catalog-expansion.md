@@ -12,7 +12,7 @@ Source-Path: docs/ER/ER-0075-Full-Caliper-Catalog-Expansion.md
 - Legacy ID: ER-0075
 - Status: Backlog
 - Source Status: Proposed
-- Epic: EP-001
+- Epic: EP-003
 - Sprint Assigned: N/A - migrated historical record
 - GitHub Issue: #283
 - AR Dependencies: AR-0019

@@ -12,7 +12,7 @@ Source-Path: docs/ER/ER-0074-Comms-Protocol-Objects-and-Hardware-Mapping.md
 - Legacy ID: ER-0074
 - Status: Backlog
 - Source Status: Proposed
-- Epic: EP-001
+- Epic: EP-002
 - Sprint Assigned: N/A - migrated historical record
 - GitHub Issue: #282
 - AR Dependencies: AR-0010, AR-0024

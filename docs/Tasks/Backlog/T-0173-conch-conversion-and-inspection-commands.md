@@ -12,7 +12,7 @@ Source-Path: docs/ER/ER-0077-Conch-Conversion-and-Inspection-Commands.md
 - Legacy ID: ER-0077
 - Status: Backlog
 - Source Status: Proposed
-- Epic: EP-001
+- Epic: EP-003
 - Sprint Assigned: N/A - migrated historical record
 - GitHub Issue: #285
 - AR Dependencies: AR-0019

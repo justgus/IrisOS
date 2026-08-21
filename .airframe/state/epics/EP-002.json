@@ -1,0 +1,34 @@
+{
+  "acceptanceCriterionIDs": [],
+  "goal": "Establish the Machine representation, descriptor, handle, transport, and protocol foundations required by AR-0024.",
+  "issueIDs": [],
+  "metadata": {
+    "schemaVersion": {
+      "major": 1,
+      "minor": 0,
+      "patch": 0
+    },
+    "updatedAt": "2026-08-21T00:00:00Z",
+    "source": "docs/Epics/Epic-backlog.md"
+  },
+  "notes": [],
+  "outOfScope": [],
+  "owner": "System Engineer",
+  "planningDocumentPaths": [],
+  "rationale": "The migrated Machine and Comms Tasks form one dependency-ordered delivery track under AR-0024.",
+  "scope": [],
+  "sprintIDs": [],
+  "taskIDs": [
+    { "rawValue": "T-0166" },
+    { "rawValue": "T-0167" },
+    { "rawValue": "T-0168" },
+    { "rawValue": "T-0169" },
+    { "rawValue": "T-0170" }
+  ],
+  "workItem": {
+    "id": { "rawValue": "EP-002" },
+    "kind": "epic",
+    "status": "backlog",
+    "title": "Machine and Communications Foundations"
+  }
+}
