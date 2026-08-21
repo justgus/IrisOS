@@ -15,7 +15,7 @@ This is the main index for IrisOS Agile Airframe Tasks. Tasks track planned impr
 
 ## Active Tasks
 
-Currently: **1 active Task**
+Currently: **0 active Tasks**
 
 See: [Task-active.md](Task-active.md)
 
@@ -33,7 +33,7 @@ See: [Task-unverified.md](Task-unverified.md)
 
 ## Verified Tasks
 
-Currently: **87 verified Tasks** | Next available: **T-0177**
+Currently: **88 verified Tasks** | Next available: **T-0177**
 
 ## All Tasks
 
@@ -46,7 +46,7 @@ Currently: **87 verified Tasks** | Next available: **T-0177**
 | [T-0085](Verified/T-0085-migrate-dr-records-into-airframe-issues.md) | Migrate DR records into Airframe Issues | EP-001 | SP-001 | High | Verified |
 | [T-0086](Verified/T-0086-generate-airframe-indexes-and-github-issue-mapping.md) | Generate Airframe indexes and GitHub issue mapping | EP-001 | SP-001 | Critical | Verified |
 | [T-0087](Verified/T-0087-prepare-approved-github-issue-synchronization-migration.md) | Prepare approved GitHub issue synchronization migration | EP-001 | SP-001 | High | Verified |
-| [T-0088](Task-active.md) | Validate migration equivalence and document cutover | EP-001 | SP-001 | Critical | Active |
+| [T-0088](Verified/T-0088-validate-migration-equivalence-and-document-cutover.md) | Validate migration equivalence and document cutover | EP-001 | SP-001 | Critical | Verified |
 | [T-0089](Verified/T-0089-service-model-and-ipc-foundation.md) | Service Model and IPC Foundation | EP-001 | N/A | Migrated | Verified |
 | [T-0090](Verified/T-0090-phase-1-milestone-1-refract-schema-registry-v0.md) | Phase 1 Milestone 1: Refract Schema Registry v0 | EP-001 | N/A | Migrated | Verified |
 | [T-0091](Verified/T-0091-phase-1-milestone-2-referee-graph-enhancements-v0.md) | Phase 1 Milestone 2: Referee Graph Enhancements v0 | EP-001 | N/A | Migrated | Verified |
