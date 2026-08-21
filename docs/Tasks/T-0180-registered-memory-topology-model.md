@@ -3,7 +3,7 @@
 ## Task Metadata
 
 - Task ID: T-0180
-- Status: Backlog
+- Status: Active
 - Epic: EP-002
 - Parent Task: T-0166
 - Sprint Assigned: SP-003
@@ -13,6 +13,14 @@
 ## Goal
 
 Define and register address-space, memory-region, and available-memory-block types.
+
+## Approved Scope
+
+- Address spaces carry stable resource IDs, address widths, and ordered regions.
+- Memory regions carry start address, size, alignment, and kind.
+- Regions may overlap to represent firmware and memory-mapped views.
+- Available blocks must be contained within one region and must not overlap one another.
+- Availability is descriptive and grants no allocation or access authority.
 
 ## Acceptance Criteria
 

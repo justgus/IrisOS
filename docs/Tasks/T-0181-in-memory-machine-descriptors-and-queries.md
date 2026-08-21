@@ -3,7 +3,7 @@
 ## Task Metadata
 
 - Task ID: T-0181
-- Status: Backlog
+- Status: Active
 - Epic: EP-002
 - Parent Task: T-0167
 - Sprint Assigned: SP-003
@@ -13,6 +13,14 @@
 ## Goal
 
 Represent and query deterministic runtime facts for processors, memory, buses, and devices without persistence or authority.
+
+## Approved Scope
+
+- Bus and device descriptors carry stable resource IDs, type/name metadata, and parent relationships.
+- Machine inventory owns immutable descriptor values.
+- Construction rejects duplicate resource IDs and invalid references.
+- Lookup by resource ID and enumeration by category return deterministic results in resource-ID order.
+- Descriptors expose no drivers, operations, resource handles, or access authority.
 
 ## Acceptance Criteria
 
