@@ -37,6 +37,12 @@ libreferee_la_SOURCES = \
    machine/primitives.cc \
    machine/buffers.h \
    machine/buffers.cc \
+   machine/definitions.h \
+   machine/definitions.cc \
+   machine/topology.h \
+   machine/topology.cc \
+   machine/inventory.h \
+   machine/inventory.cc \
    machine/refract.h \
    machine/refract.cc \
    conch/session_growth.h \
@@ -60,7 +66,7 @@ libreferee_la_SOURCES = \
    referee_sqlite/sqlite_store.h \
    referee_sqlite/sqlite_store.cc
 
-libreferee_la_CPPFLAGS = $(SQLITE_CFLAGS)
+libreferee_la_CPPFLAGS = $(SQLITE_CFLAGS) $(NLOHMANN_JSON_CFLAGS)
 libreferee_la_LIBADD = $(SQLITE_LIBS)
 
 include_HEADERS = referee/referee.h \
@@ -85,6 +91,9 @@ include_HEADERS = referee/referee.h \
    comms/primitives.h \
    machine/scalars.h \
    machine/buffers.h \
+   machine/definitions.h \
+   machine/topology.h \
+   machine/inventory.h \
    machine/refract.h \
    conch/session_growth.h \
    vizier/routing.h \

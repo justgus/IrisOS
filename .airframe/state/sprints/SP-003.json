@@ -6,5 +6,5 @@
   "notes": ["Capacity: 18 points", "Planning, model boundary, and capacity approved by the System Engineer on 2026-08-21.", "Descriptor persistence, live register values, authority, hardware probing, drivers, and resource access are out of scope."],
   "startDate": "2026-08-21",
   "taskIDs": [{ "rawValue": "T-0179" }, { "rawValue": "T-0180" }, { "rawValue": "T-0181" }],
-  "workItem": { "id": { "rawValue": "SP-003" }, "kind": "sprint", "status": "active", "title": "Queryable Processor and Memory Inventory" }
+  "workItem": { "id": { "rawValue": "SP-003" }, "kind": "sprint", "status": "review", "title": "Queryable Processor and Memory Inventory" }
 }

@@ -137,9 +137,9 @@ Currently: **90 verified Tasks** | Next available: **T-0188**
 | [T-0176](Verified/T-0176-refract-documentation-objects-and-introspection.md) | Refract Documentation Objects and Introspection | EP-001 | N/A | Migrated | Verified |
 | [T-0177](Verified/T-0177-registered-machine-scalar-primitives.md) | Registered Machine Scalar Primitives | EP-002 | SP-002 | High | Verified |
 | [T-0178](Verified/T-0178-registered-machine-buffers-and-packets.md) | Registered Machine Buffers and Packets | EP-002 | SP-002 | High | Verified |
-| [T-0179](T-0179-registered-processor-architecture-model.md) | Registered Processor Architecture Model | EP-002 | SP-003 | High | Active |
-| [T-0180](T-0180-registered-memory-topology-model.md) | Registered Memory Topology Model | EP-002 | SP-003 | High | Active |
-| [T-0181](T-0181-in-memory-machine-descriptors-and-queries.md) | In-Memory Machine Descriptors and Queries | EP-002 | SP-003 | High | Active |
+| [T-0179](T-0179-registered-processor-architecture-model.md) | Registered Processor Architecture Model | EP-002 | SP-003 | High | Implemented - Not Verified |
+| [T-0180](T-0180-registered-memory-topology-model.md) | Registered Memory Topology Model | EP-002 | SP-003 | High | Implemented - Not Verified |
+| [T-0181](T-0181-in-memory-machine-descriptors-and-queries.md) | In-Memory Machine Descriptors and Queries | EP-002 | SP-003 | High | Implemented - Not Verified |
 | [T-0182](Backlog/T-0182-capability-bearing-machine-handles.md) | Capability-Bearing Machine Handles | EP-002 | SP-004 | High | Backlog |
 | [T-0183](Backlog/T-0183-deterministic-machine-lease-lifecycle.md) | Deterministic Machine Lease Lifecycle | EP-002 | SP-004 | High | Backlog |
 | [T-0184](Backlog/T-0184-machine-backed-comms-transport.md) | Machine-Backed Comms Transport | EP-002 | SP-005 | High | Backlog |
@@ -151,12 +151,12 @@ Currently: **90 verified Tasks** | Next available: **T-0188**
 
 - **Total Tasks:** 107
 - **Verified:** 90
-- **Unverified:** 0
-- **Active:** 3
+- **Unverified:** 3
+- **Active:** 0
 - **Backlog:** 14
 - **Closed:** 0
 - **Next available:** T-0188
 
 ---
 
-*Last Updated: 2026-08-21 (SP-003 activated)*
+*Last Updated: 2026-08-22 (SP-003 implementation complete)*

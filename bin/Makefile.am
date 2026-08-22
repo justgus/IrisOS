@@ -1,5 +1,5 @@
 AM_CXXFLAGS = -Wall -Wextra -Wpedantic -Werror
-AM_CPPFLAGS = -I$(top_srcdir)/src $(SQLITE_CFLAGS)
+AM_CPPFLAGS = -I$(top_srcdir)/src $(SQLITE_CFLAGS) $(NLOHMANN_JSON_CFLAGS)
 
 bin_PROGRAMS = conch
 

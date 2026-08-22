@@ -6,7 +6,7 @@ Sprints listed here are currently in Planning or Active status and are the curre
 
 ## SP-003: Queryable Processor and Memory Inventory
 
-**Status:** Active
+**Status:** Review
 **Epic:** EP-002
 **Goal:** Deliver a registered, deterministic, in-memory processor and memory inventory.
 **Start Date:** 2026-08-21
@@ -50,9 +50,9 @@ Construct and query a deterministic, fully registered in-memory description of a
 
 | Task | Title | Points | Status |
 | ---- | ----- | -----: | ------ |
-| T-0179 | Registered Processor Architecture Model | 8 | Active |
-| T-0180 | Registered Memory Topology Model | 5 | Active |
-| T-0181 | In-Memory Machine Descriptors and Queries | 5 | Active |
+| T-0179 | Registered Processor Architecture Model | 8 | Implemented - Not Verified |
+| T-0180 | Registered Memory Topology Model | 5 | Implemented - Not Verified |
+| T-0181 | In-Memory Machine Descriptors and Queries | 5 | Implemented - Not Verified |
 
 ### Assigned Issues
 
@@ -62,6 +62,8 @@ None.
 - The System Engineer approved the model boundary and 18-point capacity on 2026-08-21.
 - The three Tasks remain together because only the combined inventory is independently executable.
 - Descriptor persistence, live register values, authority, hardware probing, drivers, and resource access are out of scope.
-- `Makefile.am` remains the source of truth for build integration; generated Autotools files are not edited directly.
+- `Makefile.am` remains the source of truth for build integration; generated Libtool support files were refreshed with GNU Libtool 2.6.2 at the System Engineer's direction.
+- Implementation validation passed all 27 tests, including the new Machine inventory suite.
+- The Sprint remains in Review until the System Engineer verifies all three Tasks.
 
-*Last Updated: 2026-08-21 (SP-003 planning approved and Sprint activated)*
+*Last Updated: 2026-08-22 (SP-003 implementation complete; awaiting verification)*
