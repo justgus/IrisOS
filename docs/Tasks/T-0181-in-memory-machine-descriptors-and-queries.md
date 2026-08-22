@@ -3,7 +3,7 @@
 ## Task Metadata
 
 - Task ID: T-0181
-- Status: Active
+- Status: Implemented - Not Verified
 - Epic: EP-002
 - Parent Task: T-0167
 - Sprint Assigned: SP-003
@@ -31,4 +31,9 @@ Represent and query deterministic runtime facts for processors, memory, buses, a
 
 ## Validation
 
+- `./bootstrap.sh`
+- `./configure CXXFLAGS="-g -O2 -Wno-unused-const-variable -Wno-unused-private-field"`
+- `make -j4`
 - `make check`
+
+Result: 27 tests passed, including duplicate-ID, dangling-reference, parent-cycle, lookup, and deterministic-order checks.

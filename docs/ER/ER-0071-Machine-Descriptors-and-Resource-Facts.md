@@ -16,7 +16,7 @@ ER-Dependencies: ER-0070
 
 - ER ID: ER-0071
 - Title: Machine Descriptors and Resource Facts
-- Status: Proposed
+- Status: Complete
 - Date: 2026-05-28
 - Owners: Mike
 - Type: Enhancement
