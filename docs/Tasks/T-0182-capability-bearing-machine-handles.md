@@ -3,16 +3,30 @@
 ## Task Metadata
 
 - Task ID: T-0182
-- Status: Backlog
+- Status: Active
 - Epic: EP-002
 - Parent Task: T-0168
 - Sprint Assigned: SP-004
 - Estimate: 5 points
 - Priority: High
+- Owner: Implementation Engineer
 
 ## Goal
 
 Create descriptor-backed memory, device, and IO-region handles whose construction validates capability context.
+
+## Approved Scope
+
+- Handles reference immutable SP-003 descriptors by stable resource ID.
+- Handle construction requires a capability context that authorizes the requested resource and access mode.
+- Memory, device, and IO-region handle categories remain distinct.
+- Handles carry authority metadata only; they perform no hardware access.
+
+## Out of Scope
+
+- Hardware drivers, device operations, memory mapping, and direct IO.
+- Descriptor mutation or persistence.
+- Lease expiration and background cleanup.
 
 ## Acceptance Criteria
 

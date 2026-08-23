@@ -3,12 +3,13 @@
 ## Task Metadata
 
 - Task ID: T-0180
-- Status: Implemented - Not Verified
+- Status: Verified
 - Epic: EP-002
 - Parent Task: T-0166
 - Sprint Assigned: SP-003
 - Estimate: 5 points
 - Priority: High
+- Owner: Implementation Engineer
 
 ## Goal
 
@@ -37,3 +38,7 @@ Define and register address-space, memory-region, and available-memory-block typ
 - `make check`
 
 Result: 27 tests passed, including zero-size, optional-alignment, containment, overlap, address-width, and registration checks.
+
+## Verification
+
+Accepted by the System Engineer on 2026-08-23 after review of the implementation and validation results.
