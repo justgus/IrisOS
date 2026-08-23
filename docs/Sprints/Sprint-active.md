@@ -4,66 +4,61 @@ Sprints listed here are currently in Planning or Active status and are the curre
 
 ---
 
-## SP-003: Queryable Processor and Memory Inventory
+## SP-004: Authorized Machine Resource Acquisition
 
-**Status:** Review
+**Status:** Active
 **Epic:** EP-002
-**Goal:** Deliver a registered, deterministic, in-memory processor and memory inventory.
-**Start Date:** 2026-08-21
+**Goal:** Deliver authorized acquisition and deterministic release or revocation of Machine resources.
+**Start Date:** 2026-08-23
 **End Date:** TBD
-**Capacity:** 18 points
+**Capacity:** 13 points
 
 ### Sprint Planning
 
 **Sprint Objective:**
-Construct and query a deterministic, fully registered in-memory description of a Machine without reading hardware, storing live register values, granting resource access, or persisting descriptors.
+Add explicit authority and deterministic ownership lifecycle around the immutable Machine descriptors delivered by SP-003 without introducing hardware access, persistence, or clock policy.
 
 **Approved Model Boundary:**
-- `ArchitectureDefinition` has a stable definition ID, name, byte order, address width, and ordered register and core definitions.
-- `RegisterDefinition` has a stable definition ID, name, bit width, and role; it describes layout and contains no current register value.
-- `CoreDescriptor` has a stable resource ID, architecture and core-definition references, logical index, and enabled fact.
-- `RegisterFileDescriptor` identifies the register definitions present for a core and contains no mutable register contents.
-- `AddressSpace` has a stable resource ID, address width, and ordered memory regions.
-- `MemoryRegion` has a start address, size, alignment, and kind. Regions may overlap to represent firmware and memory-mapped views.
-- `AvailableMemoryBlock` is contained within one region, and available blocks do not overlap each other. Availability is a fact, not allocation authority.
-- `BusDescriptor` and `DeviceDescriptor` have stable resource IDs, type/name metadata, and parent relationships, with no driver handles or operations.
-- `MachineInventory` owns immutable descriptor values, rejects duplicate IDs and invalid references, returns results in stable resource-ID order, and supports lookup and category enumeration.
+- Handles reference immutable Machine descriptors by stable resource ID and do not duplicate resource facts.
+- Memory, device, and IO-region handles remain distinct resource categories.
+- Handle construction requires a capability context that authorizes the resource and requested access mode.
+- Handles carry authority metadata but expose no real hardware-access implementation.
+- A lease associates one owner and capability context with one handle.
+- Lease states are limited to `Active`, `Released`, and `Revoked`.
+- Release and revocation are terminal and deterministically invalidate subsequent authorized use.
+- Ownership mismatch and invalid lifecycle transitions fail without mutating the lease.
+- Wall-clock expiration, renewal, background cleanup, concurrent arbitration, descriptor mutation, persistence, drivers, and hardware access remain out of scope.
 
 **Execution Order:**
-1. Define architecture, core, and register definitions and their stable Refract registrations.
-2. Define address spaces, memory regions, and available blocks with deterministic topology validation.
-3. Define processor, register-file, memory, bus, and device descriptors.
-4. Build immutable inventory construction, reference validation, lookup, and ordered enumeration.
-5. Validate representative relationships, invalid topology, registration, and query behavior with the complete test suite.
+1. Define descriptor-backed handle categories and capability validation.
+2. Define lease identity, ownership, states, and valid transitions.
+3. Integrate lease validity with authorized handle use.
+4. Validate authorized and unauthorized construction, lifecycle transitions, ownership mismatch, and invalid use with the complete test suite.
 
 **Review Gates:**
 
 | Gate | Required Before Proceeding |
 | ---- | -------------------------- |
-| Definition gate | Architecture, core, and register definitions have stable identities and contain no live machine state. |
-| Topology gate | Address widths, containment, overlap policy, alignment, and zero-size behavior are explicit and deterministic. |
-| Descriptor gate | Resource descriptors reference definitions and parents without granting authority or exposing operations. |
-| Query gate | Duplicate and dangling identifiers fail construction; lookup and enumeration ordering are deterministic. |
-| Completion gate | New registration, topology, descriptor, and query tests pass with the existing `make check` suite. |
+| Planning gate | The System Engineer approved the model boundary and 13-point capacity on 2026-08-23. |
+| Handle gate | Handle identity, resource reference, access mode, and capability validation are explicit and grant no hardware operations. |
+| Lease gate | Ownership, terminal release/revocation, and invalid-transition behavior are deterministic and clock-free. |
+| Integration gate | Released or revoked leases cannot authorize subsequent handle use. |
+| Completion gate | New authorization and lifecycle tests pass with the existing `make check` suite. |
 
 ### Assigned Tasks
 
 | Task | Title | Points | Status |
 | ---- | ----- | -----: | ------ |
-| T-0179 | Registered Processor Architecture Model | 8 | Implemented - Not Verified |
-| T-0180 | Registered Memory Topology Model | 5 | Implemented - Not Verified |
-| T-0181 | In-Memory Machine Descriptors and Queries | 5 | Implemented - Not Verified |
+| T-0182 | Capability-Bearing Machine Handles | 5 | Active |
+| T-0183 | Deterministic Machine Lease Lifecycle | 8 | Active |
 
 ### Assigned Issues
 
 None.
 
 ### Sprint Notes
-- The System Engineer approved the model boundary and 18-point capacity on 2026-08-21.
-- The three Tasks remain together because only the combined inventory is independently executable.
-- Descriptor persistence, live register values, authority, hardware probing, drivers, and resource access are out of scope.
-- `Makefile.am` remains the source of truth for build integration; generated Libtool support files were refreshed with GNU Libtool 2.6.2 at the System Engineer's direction.
-- Implementation validation passed all 27 tests, including the new Machine inventory suite.
-- The Sprint remains in Review until the System Engineer verifies all three Tasks.
+- SP-003 descriptors remain immutable, in-memory facts; SP-004 adds authority through separate handles and leases.
+- The System Engineer approved the model boundary and 13-point capacity on 2026-08-23.
+- T-0183 is estimated at 8 points because it includes ownership semantics, terminal lifecycle transitions, capability integration, and negative-path testing.
 
-*Last Updated: 2026-08-22 (SP-003 implementation complete; awaiting verification)*
+*Last Updated: 2026-08-23 (SP-004 model boundary and 13-point capacity approved; Sprint activated)*

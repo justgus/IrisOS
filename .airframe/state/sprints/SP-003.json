@@ -2,9 +2,10 @@
   "epicID": { "rawValue": "EP-002" },
   "goal": "Deliver a registered, deterministic, in-memory processor and memory inventory.",
   "issueIDs": [],
-  "metadata": { "schemaVersion": { "major": 1, "minor": 0, "patch": 0 }, "updatedAt": "2026-08-21T00:00:00Z", "source": "docs/Sprints/Sprint-active.md" },
-  "notes": ["Capacity: 18 points", "Planning, model boundary, and capacity approved by the System Engineer on 2026-08-21.", "Descriptor persistence, live register values, authority, hardware probing, drivers, and resource access are out of scope."],
+  "endDate": "2026-08-23",
+  "metadata": { "schemaVersion": { "major": 1, "minor": 0, "patch": 0 }, "updatedAt": "2026-08-23T00:00:00Z", "source": "docs/Sprints/Closed/Sprint-SP-003.md" },
+  "notes": ["Capacity: 18 points", "Planning, model boundary, and capacity approved by the System Engineer on 2026-08-21.", "Implementation validation passed 27 of 27 tests.", "All assigned Tasks were accepted by the System Engineer on 2026-08-23."],
   "startDate": "2026-08-21",
   "taskIDs": [{ "rawValue": "T-0179" }, { "rawValue": "T-0180" }, { "rawValue": "T-0181" }],
-  "workItem": { "id": { "rawValue": "SP-003" }, "kind": "sprint", "status": "review", "title": "Queryable Processor and Memory Inventory" }
+  "workItem": { "id": { "rawValue": "SP-003" }, "kind": "sprint", "status": "closed", "title": "Queryable Processor and Memory Inventory" }
 }
