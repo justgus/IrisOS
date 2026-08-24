@@ -12,7 +12,7 @@ This is the main index for IrisOS Agile Airframe Sprints. Sprints are fixed exec
 
 ## Active Sprint
 
-Currently: **None**
+Currently: **SP-006**
 
 See: [Sprint-active.md](Sprint-active.md)
 
@@ -27,18 +27,18 @@ Currently: **6 Sprints** | Next available: **SP-007**
 | SP-003 | Queryable Processor and Memory Inventory | EP-002 | T-0179 - T-0181 | Closed |
 | SP-004 | Authorized Machine Resource Acquisition | EP-002 | T-0182 - T-0183 | Closed |
 | SP-005 | Machine-Backed Comms Transport and Sessions | EP-002 | T-0184 - T-0185 | Closed |
-| SP-006 | Protocol Compatibility and Executable Framing | EP-002 | T-0186 - T-0187 | Backlog |
+| SP-006 | Protocol Compatibility and Executable Framing | EP-002 | T-0186 - T-0187 | Active |
 
 ## Statistics
 
 - **Total Sprints:** 6
 - **Closed:** 5
-- **Active:** 0
+- **Active:** 1
 - **Review:** 0
 - **Planning:** 0
-- **Backlog:** 1
+- **Backlog:** 0
 - **Next available:** SP-007
 
 ---
 
-*Last Updated: 2026-08-24 (SP-005 verified and closed)*
+*Last Updated: 2026-08-24 (SP-006 activated at 13 points)*

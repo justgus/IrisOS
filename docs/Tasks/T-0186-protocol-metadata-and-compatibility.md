@@ -3,7 +3,7 @@
 ## Task Metadata
 
 - Task ID: T-0186
-- Status: Backlog
+- Status: Active
 - Epic: EP-002
 - Parent Task: T-0170
 - Sprint Assigned: SP-006
@@ -24,3 +24,13 @@ Define inspectable protocol requirements and deterministic compatibility checks 
 ## Validation
 
 - `make check`
+
+## Approved Scope
+
+- Protocol metadata records stable identity, required stream or datagram semantics, and a nonempty
+  set of allowed `MachineResourceKind` values.
+- Compatibility results expose accepted/rejected state and a deterministic reason.
+- Descriptor-backed transports use their recorded resource kind.
+- Lease-backed transports must remain active and matching; their resource kind is resolved from the
+  stored lease handle.
+- Compatibility performs no negotiation or IO.

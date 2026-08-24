@@ -2,8 +2,9 @@
   "epicID": { "rawValue": "EP-002" },
   "goal": "Deliver deterministic protocol compatibility and one bounded registered-packet round trip.",
   "issueIDs": [],
-  "metadata": { "schemaVersion": { "major": 1, "minor": 0, "patch": 0 }, "updatedAt": "2026-08-24T00:00:00Z", "source": "docs/Sprints/Sprint-backlog.md" },
-  "notes": ["Planned capacity: 10-13 points", "Split from SP-005 and framing boundary approved by the System Engineer on 2026-08-24.", "Framing is a bounded 32-bit unsigned big-endian length followed by the declared payload bytes."],
+  "metadata": { "schemaVersion": { "major": 1, "minor": 0, "patch": 0 }, "updatedAt": "2026-08-24T00:00:00Z", "source": "docs/Sprints/Sprint-active.md" },
+  "notes": ["Capacity: 13 points", "Planning, compatibility model, stream-loopback execution path, 1 MiB payload limit, and framing boundary approved by the System Engineer on 2026-08-24.", "Framing is a 4-byte unsigned big-endian length followed by exactly the declared payload bytes."],
+  "startDate": "2026-08-24",
   "taskIDs": [{ "rawValue": "T-0186" }, { "rawValue": "T-0187" }],
-  "workItem": { "id": { "rawValue": "SP-006" }, "kind": "sprint", "status": "backlog", "title": "Protocol Compatibility and Executable Framing" }
+  "workItem": { "id": { "rawValue": "SP-006" }, "kind": "sprint", "status": "active", "title": "Protocol Compatibility and Executable Framing" }
 }
