@@ -3,7 +3,7 @@
 ## Task Metadata
 
 - Task ID: T-0185
-- Status: Active
+- Status: Implemented - Not Verified
 - Epic: EP-002
 - Parent Task: T-0169
 - Sprint Assigned: SP-005
@@ -23,10 +23,24 @@ Add deterministic endpoint, transport, and lifecycle metadata for Comms sessions
 
 ## Validation
 
+- `autoreconf -fi`
+- `./configure CXXFLAGS="-g -O2 -Wno-unused-const-variable -Wno-unused-private-field"`
+- `make -j4`
 - `make check`
+
+Result: 29 tests passed, including 6 Comms transport and session checks. Validation ran in an
+isolated `/private/tmp` copy so Autotools regeneration did not alter generated files in the working
+tree.
 
 ## Planning Notes
 
 - Sessions are deterministic metadata and lifecycle objects above an SP-005 transport.
 - Lifecycle transitions perform no network access or background work.
 - Protocol compatibility and framing remain in SP-006.
+
+## Implementation Notes
+
+- Sessions record stable identity and references to two endpoint IDs and one transport ID.
+- The strict lifecycle is `Created` to `Open` to `Closing` to `Closed`.
+- Invalid transitions return `FailedPrecondition` without changing session state.
+- Session transitions perform no IO, negotiation, persistence, or background work.

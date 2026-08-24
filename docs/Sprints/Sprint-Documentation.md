@@ -26,19 +26,19 @@ Currently: **6 Sprints** | Next available: **SP-007**
 | SP-002 | Registered Machine Values and Packets | EP-002 | T-0177 - T-0178 | Closed |
 | SP-003 | Queryable Processor and Memory Inventory | EP-002 | T-0179 - T-0181 | Closed |
 | SP-004 | Authorized Machine Resource Acquisition | EP-002 | T-0182 - T-0183 | Closed |
-| SP-005 | Machine-Backed Comms Transport and Sessions | EP-002 | T-0184 - T-0185 | Active |
+| SP-005 | Machine-Backed Comms Transport and Sessions | EP-002 | T-0184 - T-0185 | Review |
 | SP-006 | Protocol Compatibility and Executable Framing | EP-002 | T-0186 - T-0187 | Backlog |
 
 ## Statistics
 
 - **Total Sprints:** 6
 - **Closed:** 4
-- **Active:** 1
-- **Review:** 0
+- **Active:** 0
+- **Review:** 1
 - **Planning:** 0
 - **Backlog:** 1
 - **Next available:** SP-007
 
 ---
 
-*Last Updated: 2026-08-24 (SP-004 closed; SP-005 activated at 10 points)*
+*Last Updated: 2026-08-24 (SP-005 moved to Review)*

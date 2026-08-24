@@ -2,13 +2,13 @@
 
 Sprints listed here are currently in Planning or Active status and are the current execution focus.
 
-Currently: **1 active Sprint**
+Currently: **1 review Sprint**
 
 ---
 
 ## SP-005: Machine-Backed Comms Transport and Sessions
 
-**Status:** Active
+**Status:** Review
 **Epic:** EP-002
 **Goal:** Deliver deterministic Machine-backed transport and session objects while preserving the existing loopback data path.
 **Start Date:** 2026-08-24
@@ -40,8 +40,8 @@ Connect Comms transport and session metadata to Machine descriptors and SP-004 a
 
 | Task | Title | Points | Status |
 | ---- | ----- | -----: | ------ |
-| T-0184 | Machine-Backed Comms Transport | 5 | Active |
-| T-0185 | Comms Session Lifecycle | 5 | Active |
+| T-0184 | Machine-Backed Comms Transport | 5 | Implemented - Not Verified |
+| T-0185 | Comms Session Lifecycle | 5 | Implemented - Not Verified |
 
 ### Assigned Issues
 
@@ -51,5 +51,8 @@ None.
 - The System Engineer approved the 10-point split and model direction on 2026-08-24.
 - T-0186 and T-0187 moved to SP-006 because protocol compatibility depends on the completed transport and session boundary.
 - Real hardware access, drivers, cross-host networking, dynamic negotiation, and protocol framing are out of scope.
+- The System Engineer selected metadata-only transports and the strict session lifecycle.
+- Implementation validation passed all 29 tests, including the new Comms transport/session suite.
+- The Sprint remains in Review until the System Engineer verifies both assigned Tasks.
 
-*Last Updated: 2026-08-24 (SP-005 planning approved and Sprint activated)*
+*Last Updated: 2026-08-24 (SP-005 implementation complete; awaiting verification)*

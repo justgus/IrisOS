@@ -33,6 +33,8 @@ libreferee_la_SOURCES = \
    parser/xml_parser.cc \
    comms/primitives.h \
    comms/primitives.cc \
+   comms/transport_session.h \
+   comms/transport_session.cc \
    machine/scalars.h \
    machine/primitives.cc \
    machine/buffers.h \
@@ -91,6 +93,7 @@ include_HEADERS = referee/referee.h \
    parser/cpp_parser.h \
    parser/xml_parser.h \
    comms/primitives.h \
+   comms/transport_session.h \
    machine/scalars.h \
    machine/buffers.h \
    machine/definitions.h \
