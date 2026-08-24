@@ -6,7 +6,7 @@
 - Status: Backlog
 - Epic: EP-002
 - Parent Task: T-0170
-- Sprint Assigned: SP-005
+- Sprint Assigned: SP-006
 - Estimate: 5 points
 - Priority: High
 
