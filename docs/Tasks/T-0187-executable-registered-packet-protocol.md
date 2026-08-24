@@ -3,11 +3,11 @@
 ## Task Metadata
 
 - Task ID: T-0187
-- Status: Backlog
+- Status: Active
 - Epic: EP-002
 - Parent Task: T-0170
 - Sprint Assigned: SP-006
-- Estimate: 5-8 points
+- Estimate: 8 points
 - Priority: High
 
 ## Goal
@@ -27,6 +27,10 @@ Use one bounded frame containing a 32-bit unsigned big-endian payload length fol
 that many payload bytes. Reject declared lengths above the implementation's explicit maximum,
 truncated payloads, and trailing bytes deterministically. This framing demonstrates execution
 without defining a broader protocol taxonomy.
+
+The explicit maximum payload is 1 MiB (1,048,576 bytes). The executable example requires an open
+session referencing a compatible stream transport and uses an existing `Channel::loopback()` pair.
+It processes exactly one frame and performs no network or hardware access.
 
 ## Validation
 

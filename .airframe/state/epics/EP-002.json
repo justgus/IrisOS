@@ -14,7 +14,8 @@
   "notes": [
     "Approved poker estimates: T-0166 21, T-0167 8, T-0168 13, T-0169 8-13, T-0170 13.",
     "T-0166 through T-0170 remain umbrella Tasks; T-0177 through T-0187 are Sprint-ready child Tasks.",
-    "SP-005 was split at the transport/session and protocol/compatibility boundary on 2026-08-24."
+    "SP-005 was split at the transport/session and protocol/compatibility boundary on 2026-08-24.",
+    "SP-006 planning and 13-point capacity were approved on 2026-08-24."
   ],
   "outOfScope": [
     "Machine descriptor persistence",

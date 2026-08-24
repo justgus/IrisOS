@@ -15,13 +15,13 @@ This is the main index for IrisOS Agile Airframe Tasks. Tasks track planned impr
 
 ## Active Tasks
 
-Currently: **0 active Tasks**
+Currently: **2 active Tasks**
 
 See: [Task-active.md](Task-active.md)
 
 ## Backlog Tasks
 
-Currently: **10 backlog Tasks**
+Currently: **8 backlog Tasks**
 
 See: [Task-backlog.md](Task-backlog.md)
 
@@ -144,19 +144,19 @@ Currently: **97 verified Tasks** | Next available: **T-0188**
 | [T-0183](Verified/T-0183-deterministic-machine-lease-lifecycle.md) | Deterministic Machine Lease Lifecycle | EP-002 | SP-004 | High | Verified |
 | [T-0184](Verified/T-0184-machine-backed-comms-transport.md) | Machine-Backed Comms Transport | EP-002 | SP-005 | High | Verified |
 | [T-0185](Verified/T-0185-comms-session-lifecycle.md) | Comms Session Lifecycle | EP-002 | SP-005 | High | Verified |
-| [T-0186](Backlog/T-0186-protocol-metadata-and-compatibility.md) | Protocol Metadata and Compatibility | EP-002 | SP-006 | High | Backlog |
-| [T-0187](Backlog/T-0187-executable-registered-packet-protocol.md) | Executable Registered-Packet Protocol | EP-002 | SP-006 | High | Backlog |
+| [T-0186](T-0186-protocol-metadata-and-compatibility.md) | Protocol Metadata and Compatibility | EP-002 | SP-006 | High | Active |
+| [T-0187](T-0187-executable-registered-packet-protocol.md) | Executable Registered-Packet Protocol | EP-002 | SP-006 | High | Active |
 
 ## Statistics
 
 - **Total Tasks:** 107
 - **Verified:** 97
 - **Unverified:** 0
-- **Active:** 0
-- **Backlog:** 10
+- **Active:** 2
+- **Backlog:** 8
 - **Closed:** 0
 - **Next available:** T-0188
 
 ---
 
-*Last Updated: 2026-08-24 (SP-005 Tasks verified)*
+*Last Updated: 2026-08-24 (SP-006 Tasks activated)*
