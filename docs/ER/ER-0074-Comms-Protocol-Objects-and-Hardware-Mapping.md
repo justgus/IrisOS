@@ -16,7 +16,7 @@ ER-Dependencies: ER-0073
 
 - ER ID: ER-0074
 - Title: Comms Protocol Objects and Hardware Mapping
-- Status: Proposed
+- Status: Complete
 - Date: 2026-05-28
 - Owners: Mike
 - Type: Enhancement

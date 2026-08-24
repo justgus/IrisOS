@@ -7,6 +7,7 @@ extern "C" {
 
 #include "comms/primitives.h"
 #include "comms/transport_session.h"
+#include "refract/bootstrap.h"
 
 #include <optional>
 #include <string>
@@ -222,6 +223,188 @@ START_TEST(test_existing_loopback_data_paths_remain_unchanged)
 }
 END_TEST
 
+START_TEST(test_protocol_metadata_is_validated_and_inspectable)
+{
+  auto protocol = Protocol::create(
+      id(60), "registered-packet", TransportSemantics::Stream,
+      {MachineResourceKind::Device, MachineResourceKind::Memory,
+       MachineResourceKind::Device});
+  ck_assert_msg(protocol, "valid protocol rejected");
+  ck_assert_msg(protocol.value->id() == id(60), "protocol ID changed");
+  ck_assert_str_eq(protocol.value->name().c_str(), "registered-packet");
+  ck_assert_int_eq(static_cast<int>(protocol.value->required_semantics()),
+                   static_cast<int>(TransportSemantics::Stream));
+  ck_assert_uint_eq(protocol.value->allowed_resource_kinds().size(), 2U);
+
+  ck_assert_msg(!Protocol::create(
+                    id(61), "", TransportSemantics::Stream,
+                    {MachineResourceKind::Memory}),
+                "empty protocol name accepted");
+  ck_assert_msg(!Protocol::create(id(62), "empty", TransportSemantics::Stream, {}),
+                "protocol without resource kinds accepted");
+}
+END_TEST
+
+START_TEST(test_protocol_compatibility_reports_deterministic_reasons)
+{
+  const auto machine = inventory();
+  CapabilityFixture fixture;
+  MachineLeaseRegistry leases(fixture.contexts);
+  TransportFactory factory(machine, leases);
+  auto protocol = Protocol::create(
+      id(60), "registered-packet", TransportSemantics::Stream,
+      {MachineResourceKind::Memory});
+  auto memory = factory.create_descriptor_transport(
+      id(61), TransportSemantics::Stream, MachineResourceKind::Memory, id(12));
+  auto datagram = factory.create_descriptor_transport(
+      id(62), TransportSemantics::Datagram, MachineResourceKind::Memory, id(12));
+  auto device = factory.create_descriptor_transport(
+      id(63), TransportSemantics::Stream, MachineResourceKind::Device, id(21));
+
+  auto accepted = check_compatibility(*protocol.value, *memory.value, leases);
+  ck_assert_msg(accepted.compatible, "compatible transport rejected");
+  ck_assert_int_eq(static_cast<int>(accepted.reason),
+                   static_cast<int>(CompatibilityReason::Compatible));
+  ck_assert_msg(accepted.resource_kind == MachineResourceKind::Memory,
+                "accepted resource kind not reported");
+
+  auto wrong_semantics = check_compatibility(*protocol.value, *datagram.value, leases);
+  ck_assert_msg(!wrong_semantics.compatible, "wrong transport semantics accepted");
+  ck_assert_int_eq(static_cast<int>(wrong_semantics.reason),
+                   static_cast<int>(CompatibilityReason::TransportSemanticsMismatch));
+
+  auto wrong_resource = check_compatibility(*protocol.value, *device.value, leases);
+  ck_assert_msg(!wrong_resource.compatible, "disallowed resource kind accepted");
+  ck_assert_int_eq(static_cast<int>(wrong_resource.reason),
+                   static_cast<int>(CompatibilityReason::ResourceKindNotAllowed));
+  ck_assert_msg(wrong_resource.resource_kind == MachineResourceKind::Device,
+                "rejected resource kind not reported");
+}
+END_TEST
+
+START_TEST(test_authorized_transport_compatibility_revalidates_lease)
+{
+  const auto machine = inventory();
+  CapabilityFixture fixture;
+  const auto grant = machine_capability_grant(
+      MachineResourceKind::Memory, MachineAccessMode::Read, id(12));
+  fixture.persist(context_with(id(70), id(71), {grant}));
+  MachineHandleFactory handles(machine, fixture.contexts);
+  auto handle = handles.create_memory_handle(id(12), MachineAccessMode::Read, id(70));
+  MachineLeaseRegistry leases(fixture.contexts);
+  ck_assert_msg(leases.create_lease(id(72), id(71), MachineHandle{*handle.value}),
+                "lease construction failed");
+  TransportFactory factory(machine, leases);
+  auto transport = factory.create_authorized_transport(
+      id(73), TransportSemantics::Stream, id(72), id(71), id(70));
+  auto protocol = Protocol::create(
+      id(74), "registered-packet", TransportSemantics::Stream,
+      {MachineResourceKind::Memory});
+
+  auto active = check_compatibility(*protocol.value, *transport.value, leases);
+  ck_assert_msg(active.compatible, "active lease rejected");
+  ck_assert_msg(leases.revoke(id(72)), "lease revocation failed");
+  auto revoked = check_compatibility(*protocol.value, *transport.value, leases);
+  ck_assert_msg(!revoked.compatible, "revoked lease accepted");
+  ck_assert_int_eq(static_cast<int>(revoked.reason),
+                   static_cast<int>(CompatibilityReason::LeaseAuthorizationFailed));
+}
+END_TEST
+
+START_TEST(test_single_frame_encoding_is_bounded_and_exact)
+{
+  Packet packet(Blob({Byte(0xaa), Byte(0xbb), Byte(0xcc)}));
+  auto frame = encode_frame(packet);
+  ck_assert_msg(frame, "valid packet framing failed");
+  const Bytes expected{0x00, 0x00, 0x00, 0x03, 0xaa, 0xbb, 0xcc};
+  ck_assert_msg(*frame.value == expected, "frame is not big-endian length-prefixed");
+  auto decoded = decode_frame(*frame.value);
+  ck_assert_msg(decoded, "valid frame rejected");
+  ck_assert_msg(*decoded.value == packet, "decoded packet changed");
+
+  ck_assert_msg(!decode_frame({0x00, 0x00, 0x00}), "truncated header accepted");
+  ck_assert_msg(!decode_frame({0x00, 0x00, 0x00, 0x02, 0xaa}),
+                "truncated payload accepted");
+  ck_assert_msg(!decode_frame({0x00, 0x00, 0x00, 0x01, 0xaa, 0xbb}),
+                "trailing bytes accepted");
+  ck_assert_msg(!decode_frame({0x00, 0x10, 0x00, 0x01}),
+                "oversized declaration accepted");
+
+  std::vector<Byte> oversized(kMaximumFramePayload + 1U, Byte(0));
+  ck_assert_msg(!encode_frame(Packet(Blob(std::move(oversized)))),
+                "oversized payload accepted");
+}
+END_TEST
+
+START_TEST(test_registered_packet_executes_over_open_compatible_loopback)
+{
+  const auto machine = inventory();
+  CapabilityFixture fixture;
+  iris::refract::SchemaRegistry schemas(fixture.store);
+  ck_assert_msg(iris::refract::bootstrap_core_schema(schemas), "schema bootstrap failed");
+  MachineLeaseRegistry leases(fixture.contexts);
+  TransportFactory factory(machine, leases);
+  auto transport = factory.create_descriptor_transport(
+      id(80), TransportSemantics::Stream, MachineResourceKind::Memory, id(12));
+  auto protocol = Protocol::create(
+      id(81), "registered-packet", TransportSemantics::Stream,
+      {MachineResourceKind::Memory});
+  Session session(id(82), Endpoint{id(83)}, Endpoint{id(84)}, transport.value->id());
+  ck_assert_msg(session.open(), "session open failed");
+  Packet packet(Blob({Byte(0x10), Byte(0x20), Byte(0x30)}));
+
+  auto round_trip = execute_registered_packet_round_trip(
+      schemas, leases, *protocol.value, *transport.value, session, packet);
+  ck_assert_msg(round_trip, "registered packet round trip failed");
+  ck_assert_msg(*round_trip.value == packet, "round-trip packet changed");
+}
+END_TEST
+
+START_TEST(test_packet_execution_rejects_unregistered_and_invalid_sessions)
+{
+  const auto machine = inventory();
+  CapabilityFixture fixture;
+  iris::refract::SchemaRegistry schemas(fixture.store);
+  MachineLeaseRegistry leases(fixture.contexts);
+  TransportFactory factory(machine, leases);
+  auto transport = factory.create_descriptor_transport(
+      id(90), TransportSemantics::Stream, MachineResourceKind::Memory, id(12));
+  auto protocol = Protocol::create(
+      id(91), "registered-packet", TransportSemantics::Stream,
+      {MachineResourceKind::Memory});
+  Session session(id(92), Endpoint{id(93)}, Endpoint{id(94)}, transport.value->id());
+  Packet packet(Blob({Byte(0x10)}));
+
+  ck_assert_msg(!execute_registered_packet_round_trip(
+                    schemas, leases, *protocol.value, *transport.value, session, packet),
+                "unregistered packet type accepted");
+  ck_assert_msg(iris::refract::bootstrap_core_schema(schemas), "schema bootstrap failed");
+  ck_assert_msg(!execute_registered_packet_round_trip(
+                    schemas, leases, *protocol.value, *transport.value, session, packet),
+                "created session accepted");
+
+  Session wrong_transport(id(95), Endpoint{id(96)}, Endpoint{id(97)}, id(98));
+  ck_assert_msg(wrong_transport.open(), "session open failed");
+  ck_assert_msg(!execute_registered_packet_round_trip(
+                    schemas, leases, *protocol.value, *transport.value,
+                    wrong_transport, packet),
+                "session with different transport accepted");
+
+  auto datagram_transport = factory.create_descriptor_transport(
+      id(99), TransportSemantics::Datagram, MachineResourceKind::Memory, id(12));
+  auto datagram_protocol = Protocol::create(
+      id(100), "datagram-packet", TransportSemantics::Datagram,
+      {MachineResourceKind::Memory});
+  Session datagram_session(
+      id(101), Endpoint{id(102)}, Endpoint{id(103)}, datagram_transport.value->id());
+  ck_assert_msg(datagram_session.open(), "datagram session open failed");
+  ck_assert_msg(!execute_registered_packet_round_trip(
+                    schemas, leases, *datagram_protocol.value,
+                    *datagram_transport.value, datagram_session, packet),
+                "datagram execution accepted");
+}
+END_TEST
+
 Suite* comms_transport_session_suite(void) {
   Suite* suite = suite_create("CommsTransportSession");
   TCase* tests = tcase_create("core");
@@ -231,6 +414,12 @@ Suite* comms_transport_session_suite(void) {
   tcase_add_test(tests, test_session_records_endpoint_and_transport_references);
   tcase_add_test(tests, test_session_uses_strict_terminal_lifecycle);
   tcase_add_test(tests, test_existing_loopback_data_paths_remain_unchanged);
+  tcase_add_test(tests, test_protocol_metadata_is_validated_and_inspectable);
+  tcase_add_test(tests, test_protocol_compatibility_reports_deterministic_reasons);
+  tcase_add_test(tests, test_authorized_transport_compatibility_revalidates_lease);
+  tcase_add_test(tests, test_single_frame_encoding_is_bounded_and_exact);
+  tcase_add_test(tests, test_registered_packet_executes_over_open_compatible_loopback);
+  tcase_add_test(tests, test_packet_execution_rejects_unregistered_and_invalid_sessions);
   suite_add_tcase(suite, tests);
   return suite;
 }
