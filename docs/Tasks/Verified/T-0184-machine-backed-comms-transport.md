@@ -3,7 +3,8 @@
 ## Task Metadata
 
 - Task ID: T-0184
-- Status: Implemented - Not Verified
+- Status: Verified
+- Date Verified: 2026-08-24
 - Epic: EP-002
 - Parent Task: T-0169
 - Sprint Assigned: SP-005
@@ -46,3 +47,7 @@ tree.
 - Lease-backed construction validates the lease ID, owner, and capability context against the
   current `MachineLeaseRegistry` state.
 - Existing `Channel` and `DatagramPort` implementations are unchanged.
+
+## Verification
+
+Accepted by the System Engineer on 2026-08-24.

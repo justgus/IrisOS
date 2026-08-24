@@ -34,9 +34,6 @@
   },
   "name": "IrisOS",
   "repository": "justgus/IrisOS",
-  "activeSprintID": {
-    "rawValue": "SP-005"
-  },
   "sprintIDs": [
     { "rawValue": "SP-001" },
     { "rawValue": "SP-002" },

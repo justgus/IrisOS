@@ -27,13 +27,13 @@ See: [Task-backlog.md](Task-backlog.md)
 
 ## Unverified Tasks
 
-Currently: **2 unverified Tasks**
+Currently: **0 unverified Tasks**
 
 See: [Task-unverified.md](Task-unverified.md)
 
 ## Verified Tasks
 
-Currently: **95 verified Tasks** | Next available: **T-0188**
+Currently: **97 verified Tasks** | Next available: **T-0188**
 
 ## All Tasks
 
@@ -142,16 +142,16 @@ Currently: **95 verified Tasks** | Next available: **T-0188**
 | [T-0181](Verified/T-0181-in-memory-machine-descriptors-and-queries.md) | In-Memory Machine Descriptors and Queries | EP-002 | SP-003 | High | Verified |
 | [T-0182](Verified/T-0182-capability-bearing-machine-handles.md) | Capability-Bearing Machine Handles | EP-002 | SP-004 | High | Verified |
 | [T-0183](Verified/T-0183-deterministic-machine-lease-lifecycle.md) | Deterministic Machine Lease Lifecycle | EP-002 | SP-004 | High | Verified |
-| [T-0184](T-0184-machine-backed-comms-transport.md) | Machine-Backed Comms Transport | EP-002 | SP-005 | High | Implemented - Not Verified |
-| [T-0185](T-0185-comms-session-lifecycle.md) | Comms Session Lifecycle | EP-002 | SP-005 | High | Implemented - Not Verified |
+| [T-0184](Verified/T-0184-machine-backed-comms-transport.md) | Machine-Backed Comms Transport | EP-002 | SP-005 | High | Verified |
+| [T-0185](Verified/T-0185-comms-session-lifecycle.md) | Comms Session Lifecycle | EP-002 | SP-005 | High | Verified |
 | [T-0186](Backlog/T-0186-protocol-metadata-and-compatibility.md) | Protocol Metadata and Compatibility | EP-002 | SP-006 | High | Backlog |
 | [T-0187](Backlog/T-0187-executable-registered-packet-protocol.md) | Executable Registered-Packet Protocol | EP-002 | SP-006 | High | Backlog |
 
 ## Statistics
 
 - **Total Tasks:** 107
-- **Verified:** 95
-- **Unverified:** 2
+- **Verified:** 97
+- **Unverified:** 0
 - **Active:** 0
 - **Backlog:** 10
 - **Closed:** 0
@@ -159,4 +159,4 @@ Currently: **95 verified Tasks** | Next available: **T-0188**
 
 ---
 
-*Last Updated: 2026-08-24 (SP-005 implementation complete)*
+*Last Updated: 2026-08-24 (SP-005 Tasks verified)*
