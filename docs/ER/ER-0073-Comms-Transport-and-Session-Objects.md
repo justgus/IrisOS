@@ -16,7 +16,7 @@ ER-Dependencies: ER-0070, ER-0071, ER-0072
 
 - ER ID: ER-0073
 - Title: Comms Transport and Session Objects
-- Status: Proposed
+- Status: Complete
 - Date: 2026-05-28
 - Owners: Mike
 - Type: Enhancement
