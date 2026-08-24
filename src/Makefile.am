@@ -43,6 +43,8 @@ libreferee_la_SOURCES = \
    machine/topology.cc \
    machine/inventory.h \
    machine/inventory.cc \
+   machine/authority.h \
+   machine/authority.cc \
    machine/refract.h \
    machine/refract.cc \
    conch/session_growth.h \
@@ -94,6 +96,7 @@ include_HEADERS = referee/referee.h \
    machine/definitions.h \
    machine/topology.h \
    machine/inventory.h \
+   machine/authority.h \
    machine/refract.h \
    conch/session_growth.h \
    vizier/routing.h \

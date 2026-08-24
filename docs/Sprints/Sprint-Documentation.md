@@ -25,19 +25,19 @@ Currently: **5 Sprints** | Next available: **SP-006**
 | SP-001 | Agile Airframe Migration Planning and Seed Implementation | EP-001 | T-0081 - T-0088 | Closed |
 | SP-002 | Registered Machine Values and Packets | EP-002 | T-0177 - T-0178 | Closed |
 | SP-003 | Queryable Processor and Memory Inventory | EP-002 | T-0179 - T-0181 | Closed |
-| SP-004 | Authorized Machine Resource Acquisition | EP-002 | T-0182 - T-0183 | Active |
+| SP-004 | Authorized Machine Resource Acquisition | EP-002 | T-0182 - T-0183 | Review |
 | SP-005 | Machine-Backed Executable Communication | EP-002 | T-0184 - T-0187 | Backlog |
 
 ## Statistics
 
 - **Total Sprints:** 5
 - **Closed:** 3
-- **Active:** 1
-- **Review:** 0
+- **Active:** 0
+- **Review:** 1
 - **Planning:** 0
 - **Backlog:** 1
 - **Next available:** SP-006
 
 ---
 
-*Last Updated: 2026-08-23 (SP-003 closed; SP-004 activated at 13 points)*
+*Last Updated: 2026-08-24 (SP-004 moved to Review)*

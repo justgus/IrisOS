@@ -16,7 +16,7 @@ ER-Dependencies: ER-0058, ER-0060, ER-0071
 
 - ER ID: ER-0072
 - Title: Machine Handles and Leases
-- Status: Proposed
+- Status: Complete
 - Date: 2026-05-28
 - Owners: Mike
 - Type: Enhancement
