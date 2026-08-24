@@ -2,7 +2,7 @@
 
 Tasks listed here are proposed and not assigned to an active Sprint.
 
-Currently: **12 backlog Tasks**
+Currently: **10 backlog Tasks**
 
 ---
 
@@ -16,11 +16,9 @@ Currently: **12 backlog Tasks**
 | [T-0171](Backlog/T-0171-full-caliper-catalog-expansion.md) | ER-0075 | Full Caliper Catalog Expansion | #283 | docs/ER/ER-0075-Full-Caliper-Catalog-Expansion.md |
 | [T-0172](Backlog/T-0172-runtime-conversion-and-compatibility-engine.md) | ER-0076 | Runtime Conversion and Compatibility Engine | #284 | docs/ER/ER-0076-Runtime-Conversion-and-Compatibility-Engine.md |
 | [T-0173](Backlog/T-0173-conch-conversion-and-inspection-commands.md) | ER-0077 | Conch Conversion and Inspection Commands | #285 | docs/ER/ER-0077-Conch-Conversion-and-Inspection-Commands.md |
-| [T-0184](Backlog/T-0184-machine-backed-comms-transport.md) | T-0169 | Machine-Backed Comms Transport | N/A | EP-002 planning |
-| [T-0185](Backlog/T-0185-comms-session-lifecycle.md) | T-0169 | Comms Session Lifecycle | N/A | EP-002 planning |
 | [T-0186](Backlog/T-0186-protocol-metadata-and-compatibility.md) | T-0170 | Protocol Metadata and Compatibility | N/A | EP-002 planning |
 | [T-0187](Backlog/T-0187-executable-registered-packet-protocol.md) | T-0170 | Executable Registered-Packet Protocol | N/A | EP-002 planning |
 
 ---
 
-*Last Updated: 2026-08-23 (SP-004 Tasks activated)*
+*Last Updated: 2026-08-24 (SP-005 Tasks moved to Planning)*

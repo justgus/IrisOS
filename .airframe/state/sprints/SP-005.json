@@ -1,9 +1,10 @@
 {
   "epicID": { "rawValue": "EP-002" },
-  "goal": "Deliver Machine-backed transport, session lifecycle, compatibility checks, and one executable protocol round trip.",
+  "goal": "Deliver deterministic Machine-backed transport and session objects while preserving the existing loopback data path.",
   "issueIDs": [],
-  "metadata": { "schemaVersion": { "major": 1, "minor": 0, "patch": 0 }, "updatedAt": "2026-08-21T00:00:00Z", "source": "docs/Sprints/Sprint-backlog.md" },
-  "notes": ["Planned capacity: 20-26 points", "Repoker after SP-004 and split before activation if the estimate remains above accepted capacity."],
-  "taskIDs": [{ "rawValue": "T-0184" }, { "rawValue": "T-0185" }, { "rawValue": "T-0186" }, { "rawValue": "T-0187" }],
-  "workItem": { "id": { "rawValue": "SP-005" }, "kind": "sprint", "status": "backlog", "title": "Machine-Backed Executable Communication" }
+  "metadata": { "schemaVersion": { "major": 1, "minor": 0, "patch": 0 }, "updatedAt": "2026-08-24T00:00:00Z", "source": "docs/Sprints/Sprint-active.md" },
+  "notes": ["Planned capacity: 10 points", "Planning boundary and split approved by the System Engineer on 2026-08-24.", "Protocol metadata, compatibility, and executable framing moved to SP-006."],
+  "startDate": "2026-08-24",
+  "taskIDs": [{ "rawValue": "T-0184" }, { "rawValue": "T-0185" }],
+  "workItem": { "id": { "rawValue": "SP-005" }, "kind": "sprint", "status": "active", "title": "Machine-Backed Comms Transport and Sessions" }
 }

@@ -8,8 +8,9 @@ Currently: **1 backlog Sprint**
 
 | Sprint | Epic | Goal | Planned Tasks | Capacity |
 | ------ | ---- | ---- | ------------- | --------: |
-| SP-005 | EP-002 | Deliver Machine-backed transport, session lifecycle, compatibility checks, and one executable protocol round trip. | T-0184 - T-0187 | 20-26 points |
+| SP-006 | EP-002 | Deliver deterministic protocol compatibility and one bounded registered-packet round trip. | T-0186 - T-0187 | 10-13 points |
 
-SP-005 is intentionally retained as a capability boundary during Epic planning. Its Tasks must be repokered after SP-004 establishes the handle API; split the Sprint before activation if the estimate remains above accepted capacity.
+SP-006 follows SP-005's transport and session boundary. Its approved example frame is a bounded
+32-bit unsigned big-endian payload length followed by exactly the declared payload bytes.
 
-*Last Updated: 2026-08-23 (SP-004 activated)*
+*Last Updated: 2026-08-24 (SP-005 split approved; SP-006 created)*

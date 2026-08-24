@@ -3,7 +3,7 @@
 ## Task Metadata
 
 - Task ID: T-0185
-- Status: Backlog
+- Status: Active
 - Epic: EP-002
 - Parent Task: T-0169
 - Sprint Assigned: SP-005
@@ -24,3 +24,9 @@ Add deterministic endpoint, transport, and lifecycle metadata for Comms sessions
 ## Validation
 
 - `make check`
+
+## Planning Notes
+
+- Sessions are deterministic metadata and lifecycle objects above an SP-005 transport.
+- Lifecycle transitions perform no network access or background work.
+- Protocol compatibility and framing remain in SP-006.

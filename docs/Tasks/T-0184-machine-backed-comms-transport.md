@@ -3,7 +3,7 @@
 ## Task Metadata
 
 - Task ID: T-0184
-- Status: Backlog
+- Status: Active
 - Epic: EP-002
 - Parent Task: T-0169
 - Sprint Assigned: SP-005
@@ -24,3 +24,9 @@ Represent a Comms transport over a Machine descriptor or authorized handle while
 ## Validation
 
 - `make check`
+
+## Planning Notes
+
+- The transport may reference a Machine descriptor or an SP-004 authorized handle and lease.
+- The first implementation remains in-memory and preserves the existing loopback data path.
+- Real hardware access, drivers, and remote networking are out of scope.

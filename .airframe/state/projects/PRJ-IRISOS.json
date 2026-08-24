@@ -30,19 +30,20 @@
       "minor": 0,
       "patch": 0
     },
-    "updatedAt": "2026-08-21T00:00:00Z"
+    "updatedAt": "2026-08-24T00:00:00Z"
   },
   "name": "IrisOS",
   "repository": "justgus/IrisOS",
   "activeSprintID": {
-    "rawValue": "SP-004"
+    "rawValue": "SP-005"
   },
   "sprintIDs": [
     { "rawValue": "SP-001" },
     { "rawValue": "SP-002" },
     { "rawValue": "SP-003" },
     { "rawValue": "SP-004" },
-    { "rawValue": "SP-005" }
+    { "rawValue": "SP-005" },
+    { "rawValue": "SP-006" }
   ],
   "taskIDs": [
     {
