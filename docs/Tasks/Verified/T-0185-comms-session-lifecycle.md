@@ -3,7 +3,8 @@
 ## Task Metadata
 
 - Task ID: T-0185
-- Status: Implemented - Not Verified
+- Status: Verified
+- Date Verified: 2026-08-24
 - Epic: EP-002
 - Parent Task: T-0169
 - Sprint Assigned: SP-005
@@ -44,3 +45,7 @@ tree.
 - The strict lifecycle is `Created` to `Open` to `Closing` to `Closed`.
 - Invalid transitions return `FailedPrecondition` without changing session state.
 - Session transitions perform no IO, negotiation, persistence, or background work.
+
+## Verification
+
+Accepted by the System Engineer on 2026-08-24.

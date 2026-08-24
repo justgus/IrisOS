@@ -165,7 +165,7 @@ Tasks above eight points are represented by Sprint-ready child Tasks. T-0166 thr
 | SP-002 | Registered Machine values and packets | Closed |
 | SP-003 | Queryable processor and memory inventory | Closed |
 | SP-004 | Authorized Machine resource acquisition | Closed |
-| SP-005 | Machine-backed Comms transport and sessions | Review |
+| SP-005 | Machine-backed Comms transport and sessions | Closed |
 | SP-006 | Protocol compatibility and executable framing | Backlog |
 
 ### Related Tasks
@@ -180,9 +180,9 @@ Tasks above eight points are represented by Sprint-ready child Tasks. T-0166 thr
 | T-0181 | In-Memory Machine Descriptors and Queries | SP-003 | Verified |
 | T-0182 | Capability-Bearing Machine Handles | SP-004 | Verified |
 | T-0183 | Deterministic Machine Lease Lifecycle | SP-004 | Verified |
-| T-0184 | Machine-Backed Comms Transport | SP-005 | Implemented - Not Verified |
-| T-0185 | Comms Session Lifecycle | SP-005 | Implemented - Not Verified |
+| T-0184 | Machine-Backed Comms Transport | SP-005 | Verified |
+| T-0185 | Comms Session Lifecycle | SP-005 | Verified |
 | T-0186 | Protocol Metadata and Compatibility | SP-006 | Backlog |
 | T-0187 | Executable Registered-Packet Protocol | SP-006 | Backlog |
 
-*Last Updated: 2026-08-24 (SP-005 implementation complete)*
+*Last Updated: 2026-08-24 (SP-005 verified and closed)*
