@@ -3,7 +3,7 @@
 ## Task Metadata
 
 - Task ID: T-0182
-- Status: Active
+- Status: Implemented - Not Verified
 - Epic: EP-002
 - Parent Task: T-0168
 - Sprint Assigned: SP-004
@@ -37,4 +37,20 @@ Create descriptor-backed memory, device, and IO-region handles whose constructio
 
 ## Validation
 
+- `autoreconf -fi`
+- `./configure CXXFLAGS="-g -O2 -Wno-unused-const-variable -Wno-unused-private-field"`
+- `make -j4`
 - `make check`
+
+Result: 28 tests passed, including 6 Machine authority checks. Validation ran in an isolated
+`/private/tmp` copy so Autotools regeneration did not alter generated files in the working tree.
+
+## Implementation Notes
+
+- Added typed memory, device, and IO-region handles with `Read`, `Write`, and `Control` modes.
+- Capability names use `machine.<resource-kind>.<access-mode>:<resource-id>`.
+- Handle acquisition loads the capability context from `CapabilityContextStore`; caller-created
+  context values are not trusted.
+- Memory handles target available-memory blocks, and IO-region handles target only memory-mapped
+  regions.
+- Handles contain no hardware operations.

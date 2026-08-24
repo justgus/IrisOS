@@ -3,7 +3,7 @@
 ## Task Metadata
 
 - Task ID: T-0183
-- Status: Active
+- Status: Implemented - Not Verified
 - Epic: EP-002
 - Parent Task: T-0168
 - Sprint Assigned: SP-004
@@ -38,4 +38,20 @@ Add deterministic ownership and lifecycle semantics to Machine handles without i
 
 ## Validation
 
+- `autoreconf -fi`
+- `./configure CXXFLAGS="-g -O2 -Wno-unused-const-variable -Wno-unused-private-field"`
+- `make -j4`
 - `make check`
+
+Result: 28 tests passed, including 6 Machine authority checks. Validation ran in an isolated
+`/private/tmp` copy so Autotools regeneration did not alter generated files in the working tree.
+
+## Implementation Notes
+
+- Added in-memory leases with explicit `Active`, `Released`, and `Revoked` states.
+- Lease creation loads the persisted capability context and requires the owner to match its subject.
+- Owner release and supervisor revocation are terminal; invalid transitions leave state unchanged.
+- Supervisors can revoke one lease or all active leases for a stored owner or context ID without
+  requiring the originating objects to remain available.
+- Automatic revocation on object disappearance, clocks, persistence, and background cleanup remain
+  out of scope.

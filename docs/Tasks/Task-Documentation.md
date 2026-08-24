@@ -15,7 +15,7 @@ This is the main index for IrisOS Agile Airframe Tasks. Tasks track planned impr
 
 ## Active Tasks
 
-Currently: **2 active Tasks**
+Currently: **0 active Tasks**
 
 See: [Task-active.md](Task-active.md)
 
@@ -27,7 +27,7 @@ See: [Task-backlog.md](Task-backlog.md)
 
 ## Unverified Tasks
 
-Currently: **0 unverified Tasks**
+Currently: **2 unverified Tasks**
 
 See: [Task-unverified.md](Task-unverified.md)
 
@@ -140,8 +140,8 @@ Currently: **93 verified Tasks** | Next available: **T-0188**
 | [T-0179](Verified/T-0179-registered-processor-architecture-model.md) | Registered Processor Architecture Model | EP-002 | SP-003 | High | Verified |
 | [T-0180](Verified/T-0180-registered-memory-topology-model.md) | Registered Memory Topology Model | EP-002 | SP-003 | High | Verified |
 | [T-0181](Verified/T-0181-in-memory-machine-descriptors-and-queries.md) | In-Memory Machine Descriptors and Queries | EP-002 | SP-003 | High | Verified |
-| [T-0182](T-0182-capability-bearing-machine-handles.md) | Capability-Bearing Machine Handles | EP-002 | SP-004 | High | Active |
-| [T-0183](T-0183-deterministic-machine-lease-lifecycle.md) | Deterministic Machine Lease Lifecycle | EP-002 | SP-004 | High | Active |
+| [T-0182](T-0182-capability-bearing-machine-handles.md) | Capability-Bearing Machine Handles | EP-002 | SP-004 | High | Implemented - Not Verified |
+| [T-0183](T-0183-deterministic-machine-lease-lifecycle.md) | Deterministic Machine Lease Lifecycle | EP-002 | SP-004 | High | Implemented - Not Verified |
 | [T-0184](Backlog/T-0184-machine-backed-comms-transport.md) | Machine-Backed Comms Transport | EP-002 | SP-005 | High | Backlog |
 | [T-0185](Backlog/T-0185-comms-session-lifecycle.md) | Comms Session Lifecycle | EP-002 | SP-005 | High | Backlog |
 | [T-0186](Backlog/T-0186-protocol-metadata-and-compatibility.md) | Protocol Metadata and Compatibility | EP-002 | SP-005 | High | Backlog |
@@ -151,12 +151,12 @@ Currently: **93 verified Tasks** | Next available: **T-0188**
 
 - **Total Tasks:** 107
 - **Verified:** 93
-- **Unverified:** 0
-- **Active:** 2
+- **Unverified:** 2
+- **Active:** 0
 - **Backlog:** 12
 - **Closed:** 0
 - **Next available:** T-0188
 
 ---
 
-*Last Updated: 2026-08-23 (SP-003 Tasks verified; SP-004 activated)*
+*Last Updated: 2026-08-24 (SP-004 implementation complete)*

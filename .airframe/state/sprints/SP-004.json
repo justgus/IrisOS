@@ -2,9 +2,9 @@
   "epicID": { "rawValue": "EP-002" },
   "goal": "Deliver authorized acquisition and deterministic release or revocation of Machine resources.",
   "issueIDs": [],
-  "metadata": { "schemaVersion": { "major": 1, "minor": 0, "patch": 0 }, "updatedAt": "2026-08-23T00:00:00Z", "source": "docs/Sprints/Sprint-active.md" },
-  "notes": ["Capacity: 13 points", "Planning, model boundary, and capacity approved by the System Engineer on 2026-08-23.", "Wall-clock expiration, hardware access, persistence, and background cleanup are out of scope."],
+  "metadata": { "schemaVersion": { "major": 1, "minor": 0, "patch": 0 }, "updatedAt": "2026-08-24T00:00:00Z", "source": "docs/Sprints/Sprint-active.md" },
+  "notes": ["Capacity: 13 points", "Planning, model boundary, and capacity approved by the System Engineer on 2026-08-23.", "Implementation complete; awaiting System Engineer verification.", "Validation: make check passed 28 of 28 tests on 2026-08-24.", "Wall-clock expiration, hardware access, persistence, and background cleanup are out of scope."],
   "startDate": "2026-08-23",
   "taskIDs": [{ "rawValue": "T-0182" }, { "rawValue": "T-0183" }],
-  "workItem": { "id": { "rawValue": "SP-004" }, "kind": "sprint", "status": "active", "title": "Authorized Machine Resource Acquisition" }
+  "workItem": { "id": { "rawValue": "SP-004" }, "kind": "sprint", "status": "review", "title": "Authorized Machine Resource Acquisition" }
 }

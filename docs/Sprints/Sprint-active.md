@@ -6,7 +6,7 @@ Sprints listed here are currently in Planning or Active status and are the curre
 
 ## SP-004: Authorized Machine Resource Acquisition
 
-**Status:** Active
+**Status:** Review
 **Epic:** EP-002
 **Goal:** Deliver authorized acquisition and deterministic release or revocation of Machine resources.
 **Start Date:** 2026-08-23
@@ -49,8 +49,8 @@ Add explicit authority and deterministic ownership lifecycle around the immutabl
 
 | Task | Title | Points | Status |
 | ---- | ----- | -----: | ------ |
-| T-0182 | Capability-Bearing Machine Handles | 5 | Active |
-| T-0183 | Deterministic Machine Lease Lifecycle | 8 | Active |
+| T-0182 | Capability-Bearing Machine Handles | 5 | Implemented - Not Verified |
+| T-0183 | Deterministic Machine Lease Lifecycle | 8 | Implemented - Not Verified |
 
 ### Assigned Issues
 
@@ -60,5 +60,8 @@ None.
 - SP-003 descriptors remain immutable, in-memory facts; SP-004 adds authority through separate handles and leases.
 - The System Engineer approved the model boundary and 13-point capacity on 2026-08-23.
 - T-0183 is estimated at 8 points because it includes ownership semantics, terminal lifecycle transitions, capability integration, and negative-path testing.
+- Capability validation loads trusted contexts from the existing Referee-backed capability store.
+- Implementation validation passed all 28 tests, including the new Machine authority suite.
+- The Sprint remains in Review until the System Engineer verifies both assigned Tasks.
 
-*Last Updated: 2026-08-23 (SP-004 model boundary and 13-point capacity approved; Sprint activated)*
+*Last Updated: 2026-08-24 (SP-004 implementation complete; awaiting verification)*
