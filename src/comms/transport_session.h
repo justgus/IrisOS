@@ -1,9 +1,16 @@
 #pragma once
 
+#include "comms/primitives.h"
 #include "machine/authority.h"
+#include "machine/buffers.h"
+#include "refract/schema_registry.h"
 
+#include <cstddef>
+#include <optional>
+#include <string>
 #include <utility>
 #include <variant>
+#include <vector>
 
 namespace iris::comms {
 
@@ -110,5 +117,67 @@ private:
   referee::ObjectID transport_id_{};
   SessionState state_{SessionState::Created};
 };
+
+class Protocol {
+public:
+  static referee::Result<Protocol> create(
+      referee::ObjectID id,
+      std::string name,
+      TransportSemantics required_semantics,
+      std::vector<machine::MachineResourceKind> allowed_resource_kinds);
+
+  const referee::ObjectID& id() const { return id_; }
+  const std::string& name() const { return name_; }
+  TransportSemantics required_semantics() const { return required_semantics_; }
+  const std::vector<machine::MachineResourceKind>& allowed_resource_kinds() const {
+    return allowed_resource_kinds_;
+  }
+
+private:
+  Protocol(referee::ObjectID id,
+           std::string name,
+           TransportSemantics required_semantics,
+           std::vector<machine::MachineResourceKind> allowed_resource_kinds)
+      : id_(id),
+        name_(std::move(name)),
+        required_semantics_(required_semantics),
+        allowed_resource_kinds_(std::move(allowed_resource_kinds)) {}
+
+  referee::ObjectID id_{};
+  std::string name_;
+  TransportSemantics required_semantics_{TransportSemantics::Stream};
+  std::vector<machine::MachineResourceKind> allowed_resource_kinds_;
+};
+
+enum class CompatibilityReason {
+  Compatible,
+  TransportSemanticsMismatch,
+  LeaseAuthorizationFailed,
+  ResourceKindNotAllowed
+};
+
+struct CompatibilityResult {
+  bool compatible{false};
+  CompatibilityReason reason{CompatibilityReason::TransportSemanticsMismatch};
+  std::optional<machine::MachineResourceKind> resource_kind;
+};
+
+CompatibilityResult check_compatibility(
+    const Protocol& protocol,
+    const Transport& transport,
+    const machine::MachineLeaseRegistry& leases);
+
+constexpr std::size_t kMaximumFramePayload = 1024U * 1024U;
+
+referee::Result<Bytes> encode_frame(const machine::Packet& packet);
+referee::Result<machine::Packet> decode_frame(const Bytes& frame);
+
+referee::Result<machine::Packet> execute_registered_packet_round_trip(
+    refract::SchemaRegistry& schemas,
+    const machine::MachineLeaseRegistry& leases,
+    const Protocol& protocol,
+    const Transport& transport,
+    const Session& session,
+    const machine::Packet& packet);
 
 } // namespace iris::comms

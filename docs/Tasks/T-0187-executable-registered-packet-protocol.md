@@ -3,7 +3,7 @@
 ## Task Metadata
 
 - Task ID: T-0187
-- Status: Active
+- Status: Implemented - Not Verified
 - Epic: EP-002
 - Parent Task: T-0170
 - Sprint Assigned: SP-006
@@ -35,3 +35,16 @@ It processes exactly one frame and performs no network or hardware access.
 ## Validation
 
 - `make check`
+
+Result: 29 test programs passed, including 12 Comms transport, session, compatibility, framing, and
+execution checks.
+
+## Implementation Notes
+
+- Execution rejects `Machine::Packet` unless `machine::kPacketType` is present in the supplied
+  `Refract::SchemaRegistry`, as approved by the System Engineer.
+- Frames use one 4-byte unsigned big-endian length and enforce the 1 MiB payload maximum.
+- Exact decoding rejects truncated headers, truncated payloads, trailing bytes, and oversized
+  declarations.
+- Execution requires an open session referencing the supplied compatible stream transport and uses
+  only `Channel::loopback()` for the round trip.

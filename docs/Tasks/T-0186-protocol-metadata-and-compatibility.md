@@ -3,7 +3,7 @@
 ## Task Metadata
 
 - Task ID: T-0186
-- Status: Active
+- Status: Implemented - Not Verified
 - Epic: EP-002
 - Parent Task: T-0170
 - Sprint Assigned: SP-006
@@ -25,6 +25,9 @@ Define inspectable protocol requirements and deterministic compatibility checks 
 
 - `make check`
 
+Result: 29 test programs passed, including 12 Comms transport, session, compatibility, framing, and
+execution checks.
+
 ## Approved Scope
 
 - Protocol metadata records stable identity, required stream or datagram semantics, and a nonempty
@@ -34,3 +37,11 @@ Define inspectable protocol requirements and deterministic compatibility checks 
 - Lease-backed transports must remain active and matching; their resource kind is resolved from the
   stored lease handle.
 - Compatibility performs no negotiation or IO.
+
+## Implementation Notes
+
+- Protocol metadata records stable identity, a nonempty name, required transport semantics, and a
+  normalized nonempty set of allowed Machine resource kinds.
+- Compatibility reports an explicit reason and resolved resource kind where applicable.
+- Authorized transports revalidate lease, owner, and capability-context bindings on every check.
+- Compatibility performs no transport IO or negotiation.

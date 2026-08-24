@@ -2,13 +2,13 @@
 
 Sprints listed here are currently in Planning, Active, or Review status and are the current execution focus.
 
-Currently: **1 active Sprint**
+Currently: **1 review Sprint**
 
 ---
 
 ## SP-006: Protocol Compatibility and Executable Framing
 
-**Status:** Active
+**Status:** Review
 **Epic:** EP-002
 **Goal:** Deliver deterministic protocol compatibility and one bounded registered-packet round trip.
 **Start Date:** 2026-08-24
@@ -60,8 +60,8 @@ one bounded registered `Machine::Packet` round trip over an in-memory stream loo
 
 | Task | Title | Points | Status |
 | ---- | ----- | -----: | ------ |
-| T-0186 | Protocol Metadata and Compatibility | 5 | Active |
-| T-0187 | Executable Registered-Packet Protocol | 8 | Active |
+| T-0186 | Protocol Metadata and Compatibility | 5 | Implemented - Not Verified |
+| T-0187 | Executable Registered-Packet Protocol | 8 | Implemented - Not Verified |
 
 ### Assigned Issues
 
@@ -74,5 +74,10 @@ None.
   revalidation, bounded execution, and malformed-input tests.
 - SP-005 transport and session types remain metadata-only; existing loopback primitives remain the
   data path.
+- The System Engineer approved rejecting packet execution unless `Machine::Packet` is registered
+  in Refract.
+- Implementation validation passed all 29 test programs, including 12 Comms transport, session,
+  compatibility, framing, and execution checks.
+- The Sprint remains in Review until the System Engineer verifies both assigned Tasks.
 
-*Last Updated: 2026-08-24 (SP-006 planning approved and Sprint activated)*
+*Last Updated: 2026-08-24 (SP-006 implementation complete; awaiting verification)*
