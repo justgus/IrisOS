@@ -3,7 +3,8 @@
 ## Task Metadata
 
 - Task ID: T-0187
-- Status: Implemented - Not Verified
+- Status: Verified
+- Date Verified: 2026-08-25
 - Epic: EP-002
 - Parent Task: T-0170
 - Sprint Assigned: SP-006
@@ -48,3 +49,7 @@ execution checks.
   declarations.
 - Execution requires an open session referencing the supplied compatible stream transport and uses
   only `Channel::loopback()` for the round trip.
+
+## Verification
+
+Accepted by the System Engineer on 2026-08-25.

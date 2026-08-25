@@ -3,7 +3,8 @@
 ## Task Metadata
 
 - Task ID: T-0186
-- Status: Implemented - Not Verified
+- Status: Verified
+- Date Verified: 2026-08-25
 - Epic: EP-002
 - Parent Task: T-0170
 - Sprint Assigned: SP-006
@@ -45,3 +46,7 @@ execution checks.
 - Compatibility reports an explicit reason and resolved resource kind where applicable.
 - Authorized transports revalidate lease, owner, and capability-context bindings on every check.
 - Compatibility performs no transport IO or negotiation.
+
+## Verification
+
+Accepted by the System Engineer on 2026-08-25.
