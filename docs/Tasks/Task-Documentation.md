@@ -27,13 +27,13 @@ See: [Task-backlog.md](Task-backlog.md)
 
 ## Unverified Tasks
 
-Currently: **2 unverified Tasks**
+Currently: **0 unverified Tasks**
 
 See: [Task-unverified.md](Task-unverified.md)
 
 ## Verified Tasks
 
-Currently: **97 verified Tasks** | Next available: **T-0188**
+Currently: **99 verified Tasks** | Next available: **T-0188**
 
 ## All Tasks
 
@@ -144,14 +144,14 @@ Currently: **97 verified Tasks** | Next available: **T-0188**
 | [T-0183](Verified/T-0183-deterministic-machine-lease-lifecycle.md) | Deterministic Machine Lease Lifecycle | EP-002 | SP-004 | High | Verified |
 | [T-0184](Verified/T-0184-machine-backed-comms-transport.md) | Machine-Backed Comms Transport | EP-002 | SP-005 | High | Verified |
 | [T-0185](Verified/T-0185-comms-session-lifecycle.md) | Comms Session Lifecycle | EP-002 | SP-005 | High | Verified |
-| [T-0186](T-0186-protocol-metadata-and-compatibility.md) | Protocol Metadata and Compatibility | EP-002 | SP-006 | High | Implemented - Not Verified |
-| [T-0187](T-0187-executable-registered-packet-protocol.md) | Executable Registered-Packet Protocol | EP-002 | SP-006 | High | Implemented - Not Verified |
+| [T-0186](Verified/T-0186-protocol-metadata-and-compatibility.md) | Protocol Metadata and Compatibility | EP-002 | SP-006 | High | Verified |
+| [T-0187](Verified/T-0187-executable-registered-packet-protocol.md) | Executable Registered-Packet Protocol | EP-002 | SP-006 | High | Verified |
 
 ## Statistics
 
 - **Total Tasks:** 107
-- **Verified:** 97
-- **Unverified:** 2
+- **Verified:** 99
+- **Unverified:** 0
 - **Active:** 0
 - **Backlog:** 8
 - **Closed:** 0
@@ -159,4 +159,4 @@ Currently: **97 verified Tasks** | Next available: **T-0188**
 
 ---
 
-*Last Updated: 2026-08-24 (SP-006 implementation complete)*
+*Last Updated: 2026-08-25 (SP-006 Tasks verified)*

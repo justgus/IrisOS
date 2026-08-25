@@ -2,9 +2,10 @@
   "epicID": { "rawValue": "EP-002" },
   "goal": "Deliver deterministic protocol compatibility and one bounded registered-packet round trip.",
   "issueIDs": [],
-  "metadata": { "schemaVersion": { "major": 1, "minor": 0, "patch": 0 }, "updatedAt": "2026-08-24T00:00:00Z", "source": "docs/Sprints/Sprint-active.md" },
-  "notes": ["Capacity: 13 points", "Planning, compatibility model, stream-loopback execution path, 1 MiB payload limit, and framing boundary approved by the System Engineer on 2026-08-24.", "The System Engineer approved rejecting execution unless Machine::Packet is registered in Refract.", "Implementation complete; awaiting System Engineer verification.", "Validation: make check passed 29 of 29 test programs on 2026-08-24.", "Framing is a 4-byte unsigned big-endian length followed by exactly the declared payload bytes."],
+  "endDate": "2026-08-25",
+  "metadata": { "schemaVersion": { "major": 1, "minor": 0, "patch": 0 }, "updatedAt": "2026-08-25T00:00:00Z", "source": "docs/Sprints/Closed/Sprint-SP-006.md" },
+  "notes": ["Capacity: 13 points", "Planning, compatibility model, stream-loopback execution path, 1 MiB payload limit, and framing boundary approved by the System Engineer on 2026-08-24.", "The System Engineer approved rejecting execution unless Machine::Packet is registered in Refract.", "Validation: make check passed 29 of 29 test programs on 2026-08-24.", "Framing is a 4-byte unsigned big-endian length followed by exactly the declared payload bytes.", "All assigned Tasks were accepted by the System Engineer on 2026-08-25."],
   "startDate": "2026-08-24",
   "taskIDs": [{ "rawValue": "T-0186" }, { "rawValue": "T-0187" }],
-  "workItem": { "id": { "rawValue": "SP-006" }, "kind": "sprint", "status": "review", "title": "Protocol Compatibility and Executable Framing" }
+  "workItem": { "id": { "rawValue": "SP-006" }, "kind": "sprint", "status": "closed", "title": "Protocol Compatibility and Executable Framing" }
 }
