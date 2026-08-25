@@ -17,13 +17,41 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		020000000000000000000001 /* .github */ = {isa = PBXFileSystemSynchronizedRootGroup; path = .github; sourceTree = "<group>"; };
-		020000000000000000000002 /* ci */ = {isa = PBXFileSystemSynchronizedRootGroup; path = ci; sourceTree = "<group>"; };
-		020000000000000000000003 /* docs */ = {isa = PBXFileSystemSynchronizedRootGroup; path = docs; sourceTree = "<group>"; };
-		020000000000000000000004 /* m4 */ = {isa = PBXFileSystemSynchronizedRootGroup; path = m4; sourceTree = "<group>"; };
-		020000000000000000000005 /* scripts */ = {isa = PBXFileSystemSynchronizedRootGroup; path = scripts; sourceTree = "<group>"; };
-		020000000000000000000006 /* src */ = {isa = PBXFileSystemSynchronizedRootGroup; path = src; sourceTree = "<group>"; };
-		020000000000000000000007 /* tests */ = {isa = PBXFileSystemSynchronizedRootGroup; path = tests; sourceTree = "<group>"; };
+		020000000000000000000001 /* .github */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = .github;
+			sourceTree = "<group>";
+		};
+		020000000000000000000002 /* ci */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ci;
+			sourceTree = "<group>";
+		};
+		020000000000000000000003 /* docs */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = docs;
+			sourceTree = "<group>";
+		};
+		020000000000000000000004 /* m4 */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = m4;
+			sourceTree = "<group>";
+		};
+		020000000000000000000005 /* scripts */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = scripts;
+			sourceTree = "<group>";
+		};
+		020000000000000000000006 /* src */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = src;
+			sourceTree = "<group>";
+		};
+		020000000000000000000007 /* tests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = tests;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXGroup section */
