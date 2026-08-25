@@ -39,8 +39,8 @@ bin/.dirstamp
 tests/test_*
 !tests/test_*.cc
 config.status
-configure~
-config.h.in~
+*~
 .DS_Store
 *.xcodeproj/project.xcworkspace/
 *.xcodeproj/xcuserdata/
+.airframe/agilecockpit-*-cache.json
