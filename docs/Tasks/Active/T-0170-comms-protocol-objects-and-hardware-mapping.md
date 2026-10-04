@@ -10,10 +10,11 @@ Source-Path: docs/ER/ER-0074-Comms-Protocol-Objects-and-Hardware-Mapping.md
 
 - Task ID: T-0170
 - Legacy ID: ER-0074
-- Status: Backlog
+- Status: Active
 - Source Status: Proposed
 - Epic: EP-002
-- Sprint Assigned: N/A - migrated historical record
+- Sprint Assigned: SP-007
+- Sprint Start Date: 2026-10-04
 - GitHub Issue: #282
 - AR Dependencies: AR-0010, AR-0024
 - Date Requested: 2026-05-28
@@ -36,7 +37,7 @@ This Airframe Task was generated from the legacy ER record during the local docu
 - Planned Verification: `make check`; inspect supported, unsupported, missing, and contradictory protocol mappings.
 - Acceptance Test: `TEST-0014` (Ready; not run as part of this planning change).
 - Scope split: protocol metadata compatibility and executable framing are covered by T-0186 and T-0187.
-- Decomposition: the implemented protocol compatibility and execution slices are represented by verified Tasks T-0186 and T-0187. Keep this legacy umbrella in Backlog for ER traceability and review it for residual scope before scheduling it independently.
+- Decomposition: the previously delivered protocol compatibility and execution slices are represented by verified Tasks T-0186 and T-0187. This umbrella is scheduled in SP-007 to complete and verify its recorded acceptance criteria.
 
 ## Preserved Legacy ER Content
 

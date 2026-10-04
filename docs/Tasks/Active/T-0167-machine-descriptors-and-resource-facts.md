@@ -10,10 +10,11 @@ Source-Path: docs/ER/ER-0071-Machine-Descriptors-and-Resource-Facts.md
 
 - Task ID: T-0167
 - Legacy ID: ER-0071
-- Status: Backlog
+- Status: Active
 - Source Status: Proposed
 - Epic: EP-002
-- Sprint Assigned: N/A - migrated historical record
+- Sprint Assigned: SP-007
+- Sprint Start Date: 2026-10-04
 - GitHub Issue: #279
 - AR Dependencies: AR-0008, AR-0010, AR-0024
 - Date Requested: 2026-05-28
@@ -36,7 +37,7 @@ This Airframe Task was generated from the legacy ER record during the local docu
 - Planned Verification: `make check`; construct and query representative descriptors and inspect their exposed operations.
 - Acceptance Test: `TEST-0011` (Ready; not run as part of this planning change).
 - Scope split: the implemented in-memory descriptor and query slice is covered by T-0181.
-- Decomposition: the implemented descriptor slice is represented by verified Task T-0181. Keep this legacy umbrella in Backlog for ER traceability and review it for residual scope before scheduling it independently.
+- Decomposition: the previously delivered descriptor slice is represented by verified Task T-0181. This umbrella is scheduled in SP-007 to complete and verify its recorded acceptance criteria.
 
 ## Preserved Legacy ER Content
 

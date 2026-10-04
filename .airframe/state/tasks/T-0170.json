@@ -5,20 +5,21 @@
     "Protocol metadata and mapping decisions are inspectable without performing I/O or negotiation."
   ],
   "component": "Comms",
-  "componentsAffected": ["Comms", "Machine"],
+  "componentsAffected": [
+    "Comms",
+    "Machine"
+  ],
   "epicID": {
     "rawValue": "EP-002"
   },
-  "evidenceIDs": [
-
-  ],
+  "evidenceIDs": [],
   "metadata": {
     "schemaVersion": {
       "major": 1,
       "minor": 0,
       "patch": 0
     },
-    "updatedAt": "2026-10-04T15:13:08Z",
+    "updatedAt": "2026-10-04T15:52:29Z",
     "source": "docs/ER/ER-0074-Comms-Protocol-Objects-and-Hardware-Mapping.md"
   },
   "notes": [
@@ -28,13 +29,11 @@
     "Estimate: 13 points (approved umbrella estimate).",
     "Dependency: T-0169 (legacy ER-0073).",
     "Planned acceptance test: TEST-0014 (Ready; not executed in this planning change).",
-    "Implemented child Tasks: T-0186 and T-0187. Keep this legacy umbrella in Backlog for traceability and review for residual scope before separate scheduling."
+    "Previously delivered increments are represented by verified child Tasks T-0186 and T-0187. Scheduled in SP-007 to complete the umbrella scope and verify its acceptance criteria."
   ],
   "priority": "medium",
   "rationale": "Make protocol-to-resource compatibility explicit and deterministic before adding protocol execution behavior.",
-  "requirementIDs": [
-
-  ],
+  "requirementIDs": [],
   "testSteps": [
     "make check",
     "Inspect compatible, incompatible, missing, and contradictory protocol-to-transport metadata mappings."
@@ -44,8 +43,11 @@
       "rawValue": "T-0170"
     },
     "kind": "task",
-    "status": "backlog",
+    "status": "active",
     "title": "Comms Protocol Objects and Hardware Mapping",
     "githubIssue": 282
+  },
+  "sprintID": {
+    "rawValue": "SP-007"
   }
 }

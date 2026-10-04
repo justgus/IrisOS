@@ -5,20 +5,21 @@
     "Missing or insufficient capability context is rejected; no hardware access is introduced."
   ],
   "component": "Machine",
-  "componentsAffected": ["Machine", "Services"],
+  "componentsAffected": [
+    "Machine",
+    "Services"
+  ],
   "epicID": {
     "rawValue": "EP-002"
   },
-  "evidenceIDs": [
-
-  ],
+  "evidenceIDs": [],
   "metadata": {
     "schemaVersion": {
       "major": 1,
       "minor": 0,
       "patch": 0
     },
-    "updatedAt": "2026-10-04T15:13:08Z",
+    "updatedAt": "2026-10-04T15:52:29Z",
     "source": "docs/ER/ER-0072-Machine-Handles-and-Leases.md"
   },
   "notes": [
@@ -28,13 +29,11 @@
     "Estimate: 13 points (approved umbrella estimate).",
     "Dependencies: T-0154 (ER-0058), T-0156 (ER-0060), and T-0167 (ER-0071).",
     "Planned acceptance test: TEST-0012 (Ready; not executed in this planning change).",
-    "Implemented child Tasks: T-0182 and T-0183. Keep this legacy umbrella in Backlog for traceability and review for residual scope before separate scheduling."
+    "Previously delivered increments are represented by verified child Tasks T-0182 and T-0183. Scheduled in SP-007 to complete the umbrella scope and verify its acceptance criteria."
   ],
   "priority": "medium",
   "rationale": "Keep Machine resource facts separate from access authority while grounding handles and leases in service capability context.",
-  "requirementIDs": [
-
-  ],
+  "requirementIDs": [],
   "testSteps": [
     "make check",
     "Create descriptor-backed handles and verify authorized use succeeds while insufficient capability context is rejected."
@@ -44,8 +43,11 @@
       "rawValue": "T-0168"
     },
     "kind": "task",
-    "status": "backlog",
+    "status": "active",
     "title": "Machine Handles and Leases",
     "githubIssue": 280
+  },
+  "sprintID": {
+    "rawValue": "SP-007"
   }
 }

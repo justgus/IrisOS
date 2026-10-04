@@ -10,10 +10,11 @@ Source-Path: docs/ER/ER-0072-Machine-Handles-and-Leases.md
 
 - Task ID: T-0168
 - Legacy ID: ER-0072
-- Status: Backlog
+- Status: Active
 - Source Status: Proposed
 - Epic: EP-002
-- Sprint Assigned: N/A - migrated historical record
+- Sprint Assigned: SP-007
+- Sprint Start Date: 2026-10-04
 - GitHub Issue: #280
 - AR Dependencies: AR-0008, AR-0010, AR-0024
 - Date Requested: 2026-05-28
@@ -36,7 +37,7 @@ This Airframe Task was generated from the legacy ER record during the local docu
 - Planned Verification: `make check`; create descriptor-backed handles and exercise authorized and unauthorized capability contexts.
 - Acceptance Test: `TEST-0012` (Ready; not run as part of this planning change).
 - Scope split: handle capability enforcement and lease lifecycle are covered by T-0182 and T-0183.
-- Decomposition: the implemented handle and lease slices are represented by verified Tasks T-0182 and T-0183. Keep this legacy umbrella in Backlog for ER traceability and review it for residual scope before scheduling it independently.
+- Decomposition: the previously delivered handle and lease slices are represented by verified Tasks T-0182 and T-0183. This umbrella is scheduled in SP-007 to complete and verify its recorded acceptance criteria.
 
 ## Preserved Legacy ER Content
 

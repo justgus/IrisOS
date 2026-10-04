@@ -10,10 +10,11 @@ Source-Path: docs/ER/ER-0070-Machine-Representation-Primitives.md
 
 - Task ID: T-0166
 - Legacy ID: ER-0070
-- Status: Backlog
+- Status: Active
 - Source Status: Proposed
 - Epic: EP-002
-- Sprint Assigned: N/A - migrated historical record
+- Sprint Assigned: SP-007
+- Sprint Start Date: 2026-10-04
 - GitHub Issue: #278
 - AR Dependencies: AR-0008, AR-0010, AR-0024
 - Date Requested: 2026-05-28
@@ -36,7 +37,7 @@ This Airframe Task was generated from the legacy ER record during the local docu
 - Planned Verification: `make check`; inspect canonical registrations and representative boundary behavior.
 - Acceptance Test: `TEST-0010` (Ready; not run as part of this planning change).
 - Scope split: portable scalar values and registered buffers/packets are covered by T-0177 and T-0178; processor and memory definitions are covered by T-0179 and T-0180.
-- Decomposition: delivered increments are represented by verified Tasks T-0177 through T-0180. Keep this legacy umbrella in Backlog for ER traceability and review it for residual scope before scheduling it independently.
+- Decomposition: previously delivered increments are represented by verified Tasks T-0177 through T-0180. This umbrella is scheduled in SP-007 to complete and verify its recorded acceptance criteria.
 
 ## Preserved Legacy ER Content
 

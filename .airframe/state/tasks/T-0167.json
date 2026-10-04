@@ -5,20 +5,21 @@
     "Descriptors expose no operations that grant resource access."
   ],
   "component": "Machine",
-  "componentsAffected": ["Machine", "Refract"],
+  "componentsAffected": [
+    "Machine",
+    "Refract"
+  ],
   "epicID": {
     "rawValue": "EP-002"
   },
-  "evidenceIDs": [
-
-  ],
+  "evidenceIDs": [],
   "metadata": {
     "schemaVersion": {
       "major": 1,
       "minor": 0,
       "patch": 0
     },
-    "updatedAt": "2026-10-04T15:13:08Z",
+    "updatedAt": "2026-10-04T15:52:29Z",
     "source": "docs/ER/ER-0071-Machine-Descriptors-and-Resource-Facts.md"
   },
   "notes": [
@@ -28,13 +29,11 @@
     "Estimate: 8 points (approved umbrella estimate).",
     "Dependency: T-0166 (legacy ER-0070).",
     "Planned acceptance test: TEST-0011 (Ready; not executed in this planning change).",
-    "Implemented child Task: T-0181. Keep this legacy umbrella in Backlog for traceability and review for residual scope before separate scheduling."
+    "Previously delivered increments are represented by verified child Tasks T-0181. Scheduled in SP-007 to complete the umbrella scope and verify its acceptance criteria."
   ],
   "priority": "medium",
   "rationale": "Model deterministic Machine resource facts separately from authority-bearing handles and leases.",
-  "requirementIDs": [
-
-  ],
+  "requirementIDs": [],
   "testSteps": [
     "make check",
     "Construct and query representative processor, memory, bus, and device descriptors; inspect that no access operations are exposed."
@@ -44,8 +43,11 @@
       "rawValue": "T-0167"
     },
     "kind": "task",
-    "status": "backlog",
+    "status": "active",
     "title": "Machine Descriptors and Resource Facts",
     "githubIssue": 279
+  },
+  "sprintID": {
+    "rawValue": "SP-007"
   }
 }

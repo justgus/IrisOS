@@ -5,20 +5,21 @@
     "Existing loopback behavior remains stable without network access."
   ],
   "component": "Comms",
-  "componentsAffected": ["Comms", "Machine"],
+  "componentsAffected": [
+    "Comms",
+    "Machine"
+  ],
   "epicID": {
     "rawValue": "EP-002"
   },
-  "evidenceIDs": [
-
-  ],
+  "evidenceIDs": [],
   "metadata": {
     "schemaVersion": {
       "major": 1,
       "minor": 0,
       "patch": 0
     },
-    "updatedAt": "2026-10-04T15:13:08Z",
+    "updatedAt": "2026-10-04T15:52:29Z",
     "source": "docs/ER/ER-0073-Comms-Transport-and-Session-Objects.md"
   },
   "notes": [
@@ -28,13 +29,11 @@
     "Estimate: 8-13 points (approved umbrella estimate).",
     "Dependencies: T-0166, T-0167, and T-0168 (legacy ER-0070 through ER-0072).",
     "Planned acceptance test: TEST-0013 (Ready; not executed in this planning change).",
-    "Implemented child Tasks: T-0184 and T-0185. Keep this legacy umbrella in Backlog for traceability and review for residual scope before separate scheduling."
+    "Previously delivered increments are represented by verified child Tasks T-0184 and T-0185. Scheduled in SP-007 to complete the umbrella scope and verify its acceptance criteria."
   ],
   "priority": "medium",
   "rationale": "Layer deterministic transport and session metadata above Machine resources while preserving the existing local Comms substrate.",
-  "requirementIDs": [
-
-  ],
+  "requirementIDs": [],
   "testSteps": [
     "make check",
     "Create and inspect a Machine-backed transport and session; exercise valid and invalid session transitions over loopback."
@@ -44,8 +43,11 @@
       "rawValue": "T-0169"
     },
     "kind": "task",
-    "status": "backlog",
+    "status": "active",
     "title": "Comms Transport and Session Objects",
     "githubIssue": 281
+  },
+  "sprintID": {
+    "rawValue": "SP-007"
   }
 }

@@ -83,7 +83,7 @@ These tests are planned and linked in Airframe; they have not been run as part o
 | T-0169 | 8-13 |
 | T-0170 | 13 |
 
-T-0166 through T-0170 remain backlog umbrella records for legacy ER traceability. Their implementation criteria and test plans are recorded in the Task records. The verified child Tasks listed below capture the delivered increments.
+T-0166 through T-0170 are assigned to active Sprint SP-007 to complete and verify their recorded acceptance criteria. The verified child Tasks listed below capture previously delivered increments.
 
 ### Related Sprints
 
@@ -94,16 +94,17 @@ T-0166 through T-0170 remain backlog umbrella records for legacy ER traceability
 | SP-004 | Authorized Machine resource acquisition | Closed |
 | SP-005 | Machine-backed Comms transport and sessions | Closed |
 | SP-006 | Protocol compatibility and executable framing | Closed |
+| SP-007 | EP-002 umbrella scope completion | Active |
 
 ### Related Tasks
 
 | Task | Title | Sprint | Status | Test Plan |
 | ---- | ----- | ------ | ------ | --------- |
-| T-0166 | Machine Representation Primitives | N/A | Backlog - planned | TEST-0010 |
-| T-0167 | Machine Descriptors and Resource Facts | N/A | Backlog - planned | TEST-0011 |
-| T-0168 | Machine Handles and Leases | N/A | Backlog - planned | TEST-0012 |
-| T-0169 | Comms Transport and Session Objects | N/A | Backlog - planned | TEST-0013 |
-| T-0170 | Comms Protocol Objects and Hardware Mapping | N/A | Backlog - planned | TEST-0014 |
+| T-0166 | Machine Representation Primitives | SP-007 | Active | TEST-0010 |
+| T-0167 | Machine Descriptors and Resource Facts | SP-007 | Active | TEST-0011 |
+| T-0168 | Machine Handles and Leases | SP-007 | Active | TEST-0012 |
+| T-0169 | Comms Transport and Session Objects | SP-007 | Active | TEST-0013 |
+| T-0170 | Comms Protocol Objects and Hardware Mapping | SP-007 | Active | TEST-0014 |
 | T-0177 | Registered Machine Scalar Primitives | SP-002 | Verified |  |
 | T-0178 | Registered Machine Buffers and Packets | SP-002 | Verified |  |
 | T-0179 | Registered Processor Architecture Model | SP-003 | Verified |  |

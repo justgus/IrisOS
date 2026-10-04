@@ -10,10 +10,11 @@ Source-Path: docs/ER/ER-0073-Comms-Transport-and-Session-Objects.md
 
 - Task ID: T-0169
 - Legacy ID: ER-0073
-- Status: Backlog
+- Status: Active
 - Source Status: Proposed
 - Epic: EP-002
-- Sprint Assigned: N/A - migrated historical record
+- Sprint Assigned: SP-007
+- Sprint Start Date: 2026-10-04
 - GitHub Issue: #281
 - AR Dependencies: AR-0010, AR-0024
 - Date Requested: 2026-05-28
@@ -36,7 +37,7 @@ This Airframe Task was generated from the legacy ER record during the local docu
 - Planned Verification: `make check`; create and inspect a Machine-backed transport and session, including invalid lifecycle transitions.
 - Acceptance Test: `TEST-0013` (Ready; not run as part of this planning change).
 - Scope split: Machine-backed transport and session lifecycle are covered by T-0184 and T-0185.
-- Decomposition: the implemented transport and session slices are represented by verified Tasks T-0184 and T-0185. Keep this legacy umbrella in Backlog for ER traceability and review it for residual scope before scheduling it independently.
+- Decomposition: the previously delivered transport and session slices are represented by verified Tasks T-0184 and T-0185. This umbrella is scheduled in SP-007 to complete and verify its recorded acceptance criteria.
 
 ## Preserved Legacy ER Content
 
