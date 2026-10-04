@@ -1,0 +1,22 @@
+{
+  "disposition" : "verified",
+  "evidenceIDs" : [
+
+  ],
+  "id" : {
+    "rawValue" : "AC-0014"
+  },
+  "isVerified" : true,
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    },
+    "updatedAt" : "2026-10-04T14:20:56Z"
+  },
+  "ownerID" : {
+    "rawValue" : "EP-002"
+  },
+  "text" : "A lease has explicit Active, Released, or Revoked state. Release and revocation produce deterministic state and access results without wall-clock expiry."
+}

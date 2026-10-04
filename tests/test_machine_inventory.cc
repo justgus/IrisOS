@@ -219,7 +219,32 @@ START_TEST(test_machine_inventory_types_are_registered)
     auto definition = registry.get_definition_by_type(type);
     ck_assert_msg(definition && definition.value->has_value(),
                   "Machine inventory schema type missing");
+    ck_assert_msg(definition.value->value().definition.operations.empty(),
+                  "descriptive Machine schema exposes resource operations");
   }
+
+  auto core = registry.get_definition_by_type(kCoreDescriptorType);
+  ck_assert_msg(core.value->value().definition.fields.size() == 5U,
+                "CoreDescriptor fields were not preserved by the registry round trip");
+  ck_assert_str_eq(core.value->value().definition.fields[1].name.c_str(),
+                   "architecture_definition_id");
+
+  auto memory = registry.get_definition_by_type(kMemoryRegionType);
+  ck_assert_msg(memory.value->value().definition.fields.size() == 6U,
+                "MemoryRegion fields were not preserved by the registry round trip");
+  ck_assert_str_eq(memory.value->value().definition.fields[1].name.c_str(), "start");
+  ck_assert_str_eq(memory.value->value().definition.fields[2].name.c_str(), "size");
+
+  auto bus = registry.get_definition_by_type(kBusDescriptorType);
+  ck_assert_msg(bus.value->value().definition.fields.size() == 4U,
+                "BusDescriptor fields were not preserved by the registry round trip");
+  ck_assert_str_eq(bus.value->value().definition.fields[1].name.c_str(), "type");
+  ck_assert_str_eq(bus.value->value().definition.fields[2].name.c_str(), "name");
+
+  auto device = registry.get_definition_by_type(kDeviceDescriptorType);
+  ck_assert_msg(device.value->value().definition.fields.size() == 4U,
+                "DeviceDescriptor fields were not preserved by the registry round trip");
+  ck_assert_str_eq(device.value->value().definition.fields[3].name.c_str(), "parent_bus_id");
   ck_assert_msg(store.close(), "store close failed");
 }
 END_TEST

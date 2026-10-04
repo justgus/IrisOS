@@ -10,10 +10,11 @@ Source-Path: docs/ER/ER-0071-Machine-Descriptors-and-Resource-Facts.md
 
 - Task ID: T-0167
 - Legacy ID: ER-0071
-- Status: Backlog
+- Status: Implemented - Verification Pending
 - Source Status: Proposed
 - Epic: EP-002
-- Sprint Assigned: N/A - migrated historical record
+- Sprint Assigned: SP-007
+- Sprint Start Date: 2026-10-04
 - GitHub Issue: #279
 - AR Dependencies: AR-0008, AR-0010, AR-0024
 - Date Requested: 2026-05-28
@@ -24,6 +25,19 @@ Source-Path: docs/ER/ER-0071-Machine-Descriptors-and-Resource-Facts.md
 ## Migration Notes
 
 This Airframe Task was generated from the legacy ER record during the local documentation migration. The target status represents the approved source documentation state and is not a new verification action.
+
+## Airframe Planning
+
+- Estimate: 8 points (approved umbrella estimate)
+- Dependencies: T-0166 (legacy ER dependency ER-0070).
+- Planned Acceptance Criteria:
+  - Processor, memory, bus, and device descriptors can be constructed and queried.
+  - Descriptor identities and query ordering are deterministic; registered descriptor schemas round-trip with their fields intact.
+  - Descriptors expose no operations that grant resource access.
+- Planned Verification: `make check`; construct and query representative descriptors and inspect their exposed operations.
+- Acceptance Test: `TEST-0011` (`make check` passed 29 of 29 test programs on 2026-10-04; System Engineer acceptance pending).
+- Scope split: the implemented in-memory descriptor and query slice is covered by T-0181.
+- Decomposition: the previously delivered descriptor slice is represented by verified Task T-0181. This umbrella is scheduled in SP-007 to complete and verify its recorded acceptance criteria.
 
 ## Preserved Legacy ER Content
 

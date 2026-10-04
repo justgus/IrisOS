@@ -1,0 +1,46 @@
+{
+  "acceptanceCriterionIDs" : [
+    {
+      "rawValue" : "AC-0012"
+    }
+  ],
+  "artifactReferences" : [
+
+  ],
+  "automationCommand" : "make check",
+  "evidenceIDs" : [
+
+  ],
+  "expectedResults" : [
+    "Queries return deterministic resource facts; descriptors grant no authority and require no persistence."
+  ],
+  "id" : {
+    "rawValue" : "TEST-0002"
+  },
+  "kind" : "acceptance",
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    }
+  },
+  "notes" : [
+
+  ],
+  "objective" : "Verify AC-0012 using in-memory descriptor construction and query behavior.",
+  "requirementIDs" : [
+
+  ],
+  "status" : "ready",
+  "steps" : [
+    "Construct processor, register-file, memory-region, bus, and device descriptors.",
+    "Query descriptors repeatedly and inspect ordering, facts, and exposed operations."
+  ],
+  "title" : "Machine descriptor construction and queries",
+  "workItemIDs" : [
+    {
+      "rawValue" : "T-0181"
+    }
+  ]
+}

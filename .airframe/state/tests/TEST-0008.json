@@ -1,0 +1,46 @@
+{
+  "acceptanceCriterionIDs" : [
+    {
+      "rawValue" : "AC-0018"
+    }
+  ],
+  "artifactReferences" : [
+
+  ],
+  "automationCommand" : "make check",
+  "evidenceIDs" : [
+
+  ],
+  "expectedResults" : [
+    "Each invalid case fails deterministically; no network or hardware driver is used."
+  ],
+  "id" : {
+    "rawValue" : "TEST-0008"
+  },
+  "kind" : "acceptance",
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    }
+  },
+  "notes" : [
+
+  ],
+  "objective" : "Verify AC-0018 for malformed framing and incompatible transports.",
+  "requirementIDs" : [
+
+  ],
+  "status" : "ready",
+  "steps" : [
+    "Try truncated headers, oversized declarations, truncated payloads, and trailing bytes.",
+    "Execute using an incompatible transport and inspect required resources."
+  ],
+  "title" : "Protocol framing and transport rejection",
+  "workItemIDs" : [
+    {
+      "rawValue" : "T-0187"
+    }
+  ]
+}

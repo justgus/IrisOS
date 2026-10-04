@@ -37,6 +37,12 @@ machine::MachineResourceKind handle_resource_kind(const machine::MachineHandle& 
   }, handle);
 }
 
+machine::MachineAccessMode handle_access_mode(const machine::MachineHandle& handle) {
+  return std::visit([](const auto& typed_handle) {
+    return typed_handle.access_mode;
+  }, handle);
+}
+
 } // namespace
 
 referee::Result<Transport> TransportFactory::create_descriptor_transport(
@@ -93,7 +99,8 @@ referee::Result<Protocol> Protocol::create(
     referee::ObjectID id,
     std::string name,
     TransportSemantics required_semantics,
-    std::vector<machine::MachineResourceKind> allowed_resource_kinds) {
+    std::vector<machine::MachineResourceKind> allowed_resource_kinds,
+    std::vector<RequiredMachineCapability> required_capabilities) {
   if (name.empty()) {
     return referee::Result<Protocol>::err(referee::ErrorCode::InvalidArgument,
                                           "protocol name must not be empty");
@@ -107,9 +114,37 @@ referee::Result<Protocol> Protocol::create(
   allowed_resource_kinds.erase(
       std::unique(allowed_resource_kinds.begin(), allowed_resource_kinds.end()),
       allowed_resource_kinds.end());
+  std::sort(required_capabilities.begin(), required_capabilities.end(),
+      [](const auto& left, const auto& right) {
+        if (left.resource_kind != right.resource_kind) {
+          return left.resource_kind < right.resource_kind;
+        }
+        return left.access_mode < right.access_mode;
+      });
+  for (std::size_t index = 0; index < required_capabilities.size(); ++index) {
+    const auto& requirement = required_capabilities[index];
+    if (!std::binary_search(allowed_resource_kinds.begin(), allowed_resource_kinds.end(),
+                            requirement.resource_kind)) {
+      return referee::Result<Protocol>::err(
+          referee::ErrorCode::InvalidArgument,
+          "required Machine capability resource kind is not allowed by the protocol");
+    }
+    if (index > 0
+        && required_capabilities[index - 1].resource_kind == requirement.resource_kind) {
+      if (required_capabilities[index - 1].access_mode != requirement.access_mode) {
+        return referee::Result<Protocol>::err(
+            referee::ErrorCode::InvalidArgument,
+            "protocol has conflicting access requirements for a Machine resource kind");
+      }
+      continue;
+    }
+  }
+  required_capabilities.erase(
+      std::unique(required_capabilities.begin(), required_capabilities.end()),
+      required_capabilities.end());
   return referee::Result<Protocol>::ok(
       Protocol(id, std::move(name), required_semantics,
-               std::move(allowed_resource_kinds)));
+               std::move(allowed_resource_kinds), std::move(required_capabilities)));
 }
 
 CompatibilityResult check_compatibility(
@@ -121,6 +156,7 @@ CompatibilityResult check_compatibility(
   }
 
   std::optional<machine::MachineResourceKind> resource_kind;
+  std::optional<machine::MachineAccessMode> access_mode;
   if (const auto* descriptor = std::get_if<DescriptorTransportResource>(
           &transport.resource())) {
     resource_kind = descriptor->resource_kind;
@@ -136,13 +172,25 @@ CompatibilityResult check_compatibility(
       return {false, CompatibilityReason::LeaseAuthorizationFailed, std::nullopt};
     }
     resource_kind = handle_resource_kind(lease->handle());
+    access_mode = handle_access_mode(lease->handle());
   }
 
+  const auto selected_resource_kind = resource_kind.value();
   const auto& allowed = protocol.allowed_resource_kinds();
-  if (std::find(allowed.begin(), allowed.end(), *resource_kind) == allowed.end()) {
-    return {false, CompatibilityReason::ResourceKindNotAllowed, resource_kind};
+  if (std::find(allowed.begin(), allowed.end(), selected_resource_kind) == allowed.end()) {
+    return {false, CompatibilityReason::ResourceKindNotAllowed, selected_resource_kind};
   }
-  return {true, CompatibilityReason::Compatible, resource_kind};
+  const auto required = std::find_if(
+      protocol.required_capabilities().begin(), protocol.required_capabilities().end(),
+      [selected_resource_kind](const RequiredMachineCapability& candidate) {
+        return candidate.resource_kind == selected_resource_kind;
+      });
+  if (required != protocol.required_capabilities().end()
+      && (!access_mode.has_value() || access_mode.value() != required->access_mode)) {
+    return {false, CompatibilityReason::RequiredCapabilityUnavailable,
+            selected_resource_kind};
+  }
+  return {true, CompatibilityReason::Compatible, selected_resource_kind};
 }
 
 referee::Result<Bytes> encode_frame(const machine::Packet& packet) {

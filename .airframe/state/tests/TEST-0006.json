@@ -1,0 +1,46 @@
+{
+  "acceptanceCriterionIDs" : [
+    {
+      "rawValue" : "AC-0016"
+    }
+  ],
+  "artifactReferences" : [
+
+  ],
+  "automationCommand" : "make check",
+  "evidenceIDs" : [
+
+  ],
+  "expectedResults" : [
+    "Compatibility outcomes are inspectable and deterministic without I\/O or negotiation."
+  ],
+  "id" : {
+    "rawValue" : "TEST-0006"
+  },
+  "kind" : "acceptance",
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    }
+  },
+  "notes" : [
+
+  ],
+  "objective" : "Verify AC-0016 for compatible, incompatible, missing, and contradictory metadata.",
+  "requirementIDs" : [
+
+  ],
+  "status" : "ready",
+  "steps" : [
+    "Query compatibility for a supported protocol\/transport mapping.",
+    "Query incompatible, missing, and contradictory metadata cases repeatedly."
+  ],
+  "title" : "Protocol transport compatibility",
+  "workItemIDs" : [
+    {
+      "rawValue" : "T-0186"
+    }
+  ]
+}

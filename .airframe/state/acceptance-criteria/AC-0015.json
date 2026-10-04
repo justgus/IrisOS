@@ -1,0 +1,22 @@
+{
+  "disposition" : "verified",
+  "evidenceIDs" : [
+
+  ],
+  "id" : {
+    "rawValue" : "AC-0015"
+  },
+  "isVerified" : true,
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    },
+    "updatedAt" : "2026-10-04T14:21:00Z"
+  },
+  "ownerID" : {
+    "rawValue" : "EP-002"
+  },
+  "text" : "A Comms transport and session can reference Machine resources, and the existing loopback path continues to work with its prior behavior."
+}

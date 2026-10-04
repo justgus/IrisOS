@@ -10,10 +10,11 @@ Source-Path: docs/ER/ER-0073-Comms-Transport-and-Session-Objects.md
 
 - Task ID: T-0169
 - Legacy ID: ER-0073
-- Status: Backlog
+- Status: Implemented - Verification Pending
 - Source Status: Proposed
 - Epic: EP-002
-- Sprint Assigned: N/A - migrated historical record
+- Sprint Assigned: SP-007
+- Sprint Start Date: 2026-10-04
 - GitHub Issue: #281
 - AR Dependencies: AR-0010, AR-0024
 - Date Requested: 2026-05-28
@@ -24,6 +25,19 @@ Source-Path: docs/ER/ER-0073-Comms-Transport-and-Session-Objects.md
 ## Migration Notes
 
 This Airframe Task was generated from the legacy ER record during the local documentation migration. The target status represents the approved source documentation state and is not a new verification action.
+
+## Airframe Planning
+
+- Estimate: 8-13 points (approved umbrella estimate)
+- Dependencies: T-0166, T-0167, and T-0168 (legacy ER dependencies ER-0070 through ER-0072).
+- Planned Acceptance Criteria:
+  - Transports reference Machine descriptors or capability-bearing handles deterministically.
+  - Sessions record endpoints, transport identity, and lifecycle state with invalid transitions rejected.
+  - Existing loopback behavior remains stable without network access.
+- Planned Verification: `make check`; create and inspect a Machine-backed transport and session, including invalid lifecycle transitions.
+- Acceptance Test: `TEST-0013` (`make check` passed 29 of 29 test programs on 2026-10-04; System Engineer acceptance pending).
+- Scope split: Machine-backed transport and session lifecycle are covered by T-0184 and T-0185.
+- Decomposition: the previously delivered transport and session slices are represented by verified Tasks T-0184 and T-0185. This umbrella is scheduled in SP-007 to complete and verify its recorded acceptance criteria.
 
 ## Preserved Legacy ER Content
 

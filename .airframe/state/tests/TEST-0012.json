@@ -1,0 +1,45 @@
+{
+  "acceptanceCriterionIDs" : [
+
+  ],
+  "artifactReferences" : [
+
+  ],
+  "automationCommand" : "make check",
+  "evidenceIDs" : [
+
+  ],
+  "expectedResults" : [
+    "Valid capability contexts are retained and unauthorized use is rejected without hardware access."
+  ],
+  "id" : {
+    "rawValue" : "TEST-0012"
+  },
+  "kind" : "acceptance",
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    }
+  },
+  "notes" : [
+
+  ],
+  "objective" : "Define the planned checks for T-0168's capability-bearing handles and leases.",
+  "requirementIDs" : [
+
+  ],
+  "status" : "ready",
+  "steps" : [
+    "Create handles backed by known descriptors and capability contexts.",
+    "Check lease ownership and capability metadata round trips.",
+    "Verify insufficient capability context is rejected."
+  ],
+  "title" : "Machine handle and lease umbrella acceptance",
+  "workItemIDs" : [
+    {
+      "rawValue" : "T-0168"
+    }
+  ]
+}

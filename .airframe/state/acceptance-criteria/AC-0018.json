@@ -1,0 +1,22 @@
+{
+  "disposition" : "verified",
+  "evidenceIDs" : [
+
+  ],
+  "id" : {
+    "rawValue" : "AC-0018"
+  },
+  "isVerified" : true,
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    },
+    "updatedAt" : "2026-10-04T14:21:12Z"
+  },
+  "ownerID" : {
+    "rawValue" : "EP-002"
+  },
+  "text" : "The protocol example rejects malformed framing and incompatible transports deterministically and requires neither network access nor a hardware driver."
+}

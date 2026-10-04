@@ -1,0 +1,22 @@
+{
+  "disposition" : "verified",
+  "evidenceIDs" : [
+
+  ],
+  "id" : {
+    "rawValue" : "AC-0011"
+  },
+  "isVerified" : true,
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    },
+    "updatedAt" : "2026-10-04T14:20:43Z"
+  },
+  "ownerID" : {
+    "rawValue" : "EP-002"
+  },
+  "text" : "Machine scalar, buffer, and packet primitives, plus processor architecture, register, address-space, and memory-block types, have stable Refract registrations retrievable by canonical identifiers."
+}

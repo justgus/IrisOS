@@ -1,0 +1,22 @@
+{
+  "disposition" : "verified",
+  "evidenceIDs" : [
+
+  ],
+  "id" : {
+    "rawValue" : "AC-0007"
+  },
+  "isVerified" : true,
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    },
+    "updatedAt" : "2026-10-04T14:23:56Z"
+  },
+  "ownerID" : {
+    "rawValue" : "EP-001"
+  },
+  "text" : "A dated audit records local\/GitHub state differences before GitHub mutation; any unresolved difference is explicitly deferred with rationale or follow-up work."
+}

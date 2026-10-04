@@ -1,0 +1,22 @@
+{
+  "disposition" : "verified",
+  "evidenceIDs" : [
+
+  ],
+  "id" : {
+    "rawValue" : "AC-0003"
+  },
+  "isVerified" : true,
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    },
+    "updatedAt" : "2026-10-04T14:23:44Z"
+  },
+  "ownerID" : {
+    "rawValue" : "EP-001"
+  },
+  "text" : "All 26 ARs remain architecture records; none is reclassified as an Epic."
+}

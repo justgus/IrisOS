@@ -1,0 +1,22 @@
+{
+  "disposition" : "verified",
+  "evidenceIDs" : [
+
+  ],
+  "id" : {
+    "rawValue" : "AC-0002"
+  },
+  "isVerified" : true,
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    },
+    "updatedAt" : "2026-10-04T14:23:42Z"
+  },
+  "ownerID" : {
+    "rawValue" : "EP-001"
+  },
+  "text" : "The migration artifacts account for all 26 ARs, 88 ERs, and 1 DR from the audited source set; source IDs, titles, and statuses are traceable in target records or documented diagnostics."
+}

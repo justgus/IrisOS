@@ -1,0 +1,22 @@
+{
+  "disposition" : "verified",
+  "evidenceIDs" : [
+
+  ],
+  "id" : {
+    "rawValue" : "AC-0012"
+  },
+  "isVerified" : true,
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    },
+    "updatedAt" : "2026-10-04T14:20:45Z"
+  },
+  "ownerID" : {
+    "rawValue" : "EP-002"
+  },
+  "text" : "In-memory descriptors represent configured or discovered processor, register-file, memory-region, bus, and device facts; creating or querying a descriptor does not itself grant authority or persist it."
+}

@@ -1,0 +1,45 @@
+{
+  "acceptanceCriterionIDs" : [
+
+  ],
+  "artifactReferences" : [
+
+  ],
+  "automationCommand" : "make check",
+  "evidenceIDs" : [
+
+  ],
+  "expectedResults" : [
+    "Descriptor facts are deterministic and queryable without granting authority."
+  ],
+  "id" : {
+    "rawValue" : "TEST-0011"
+  },
+  "kind" : "acceptance",
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    }
+  },
+  "notes" : [
+
+  ],
+  "objective" : "Define the planned checks for T-0167's descriptive Machine resource model.",
+  "requirementIDs" : [
+
+  ],
+  "status" : "ready",
+  "steps" : [
+    "Create and query representative processor, memory, bus, and device descriptors.",
+    "Check deterministic identity and ordering, and round-trip the registered Refract descriptor schemas with their fields intact.",
+    "Confirm descriptors expose no resource-access operations."
+  ],
+  "title" : "Machine descriptor umbrella acceptance",
+  "workItemIDs" : [
+    {
+      "rawValue" : "T-0167"
+    }
+  ]
+}

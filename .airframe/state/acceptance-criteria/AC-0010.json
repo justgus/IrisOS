@@ -1,0 +1,22 @@
+{
+  "disposition" : "verified",
+  "evidenceIDs" : [
+
+  ],
+  "id" : {
+    "rawValue" : "AC-0010"
+  },
+  "isVerified" : true,
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    },
+    "updatedAt" : "2026-10-04T14:24:07Z"
+  },
+  "ownerID" : {
+    "rawValue" : "EP-001"
+  },
+  "text" : "Local validation commands and results are recorded, including source coverage, status counts, mappings, and workspace configuration checks."
+}

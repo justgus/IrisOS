@@ -9,19 +9,20 @@ This is the main index for IrisOS Agile Airframe Tasks. Tasks track planned impr
 
 - **Task-backlog.md** - Index of proposed Tasks not assigned to an active Sprint.
 - **Backlog/** - Canonical backlog Task records.
+- **Active/** - Canonical Task records assigned to an active Sprint.
 - **Task-active.md** - Active Tasks assigned to a Sprint.
 - **Task-unverified.md** - Implemented Tasks awaiting System Engineer verification.
 - **Verified/** - Canonical verified Task records.
 
 ## Active Tasks
 
-Currently: **0 active Tasks**
+Currently: **5 active Tasks**
 
 See: [Task-active.md](Task-active.md)
 
 ## Backlog Tasks
 
-Currently: **8 backlog Tasks**
+Currently: **3 backlog Tasks**
 
 See: [Task-backlog.md](Task-backlog.md)
 
@@ -124,11 +125,11 @@ Currently: **99 verified Tasks** | Next available: **T-0188**
 | [T-0163](Verified/T-0163-reusable-conch-grammar-api.md) | Reusable Conch Grammar API | EP-001 | N/A | Migrated | Verified |
 | [T-0164](Verified/T-0164-batch-execution-and-non-interactive-parser-integration.md) | Batch Execution and Non-Interactive Parser Integration | EP-001 | N/A | Migrated | Verified |
 | [T-0165](Verified/T-0165-shared-parser-regression-harness.md) | Shared Parser Regression Harness | EP-001 | N/A | Migrated | Verified |
-| [T-0166](Backlog/T-0166-machine-representation-primitives.md) | Machine Representation Primitives | EP-002 | N/A | Migrated | Backlog |
-| [T-0167](Backlog/T-0167-machine-descriptors-and-resource-facts.md) | Machine Descriptors and Resource Facts | EP-002 | N/A | Migrated | Backlog |
-| [T-0168](Backlog/T-0168-machine-handles-and-leases.md) | Machine Handles and Leases | EP-002 | N/A | Migrated | Backlog |
-| [T-0169](Backlog/T-0169-comms-transport-and-session-objects.md) | Comms Transport and Session Objects | EP-002 | N/A | Migrated | Backlog |
-| [T-0170](Backlog/T-0170-comms-protocol-objects-and-hardware-mapping.md) | Comms Protocol Objects and Hardware Mapping | EP-002 | N/A | Migrated | Backlog |
+| [T-0166](Active/T-0166-machine-representation-primitives.md) | Machine Representation Primitives | EP-002 | SP-007 | Migrated | Active |
+| [T-0167](Active/T-0167-machine-descriptors-and-resource-facts.md) | Machine Descriptors and Resource Facts | EP-002 | SP-007 | Migrated | Active |
+| [T-0168](Active/T-0168-machine-handles-and-leases.md) | Machine Handles and Leases | EP-002 | SP-007 | Migrated | Active |
+| [T-0169](Active/T-0169-comms-transport-and-session-objects.md) | Comms Transport and Session Objects | EP-002 | SP-007 | Migrated | Active |
+| [T-0170](Active/T-0170-comms-protocol-objects-and-hardware-mapping.md) | Comms Protocol Objects and Hardware Mapping | EP-002 | SP-007 | Migrated | Active |
 | [T-0171](Backlog/T-0171-full-caliper-catalog-expansion.md) | Full Caliper Catalog Expansion | EP-003 | N/A | Migrated | Backlog |
 | [T-0172](Backlog/T-0172-runtime-conversion-and-compatibility-engine.md) | Runtime Conversion and Compatibility Engine | EP-003 | N/A | Migrated | Backlog |
 | [T-0173](Backlog/T-0173-conch-conversion-and-inspection-commands.md) | Conch Conversion and Inspection Commands | EP-003 | N/A | Migrated | Backlog |
@@ -152,11 +153,11 @@ Currently: **99 verified Tasks** | Next available: **T-0188**
 - **Total Tasks:** 107
 - **Verified:** 99
 - **Unverified:** 0
-- **Active:** 0
-- **Backlog:** 8
+- **Active:** 5
+- **Backlog:** 3
 - **Closed:** 0
 - **Next available:** T-0188
 
 ---
 
-*Last Updated: 2026-08-25 (SP-006 Tasks verified)*
+*Last Updated: 2026-10-04 (SP-007 activated)*

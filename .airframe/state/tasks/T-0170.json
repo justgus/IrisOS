@@ -1,46 +1,59 @@
 {
-  "acceptanceCriteria": [
-
+  "acceptanceCriteria" : [
+    "Protocol metadata declares required transport semantics and Machine capabilities.",
+    "Compatibility checks accept supported mappings and reject incompatible mappings deterministically.",
+    "Protocol metadata and mapping decisions are inspectable without performing I\/O or negotiation."
   ],
-  "component": "Migrated legacy ER",
-  "componentsAffected": [
-
+  "component" : "Comms",
+  "componentsAffected" : [
+    "Comms",
+    "Machine"
   ],
-  "epicID": {
-    "rawValue": "EP-002"
+  "dateImplemented" : "2026-10-04",
+  "epicID" : {
+    "rawValue" : "EP-002"
   },
-  "evidenceIDs": [
+  "evidenceIDs" : [
 
   ],
-  "metadata": {
-    "schemaVersion": {
-      "major": 1,
-      "minor": 0,
-      "patch": 0
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
     },
-    "updatedAt": "2026-07-07T00:00:00Z",
-    "source": "docs/ER/ER-0074-Comms-Protocol-Objects-and-Hardware-Mapping.md"
+    "source" : "docs\/ER\/ER-0074-Comms-Protocol-Objects-and-Hardware-Mapping.md",
+    "updatedAt" : "2026-10-04T21:04:08Z"
   },
-  "notes": [
+  "notes" : [
     "Legacy ID: ER-0074",
     "Source Status: Proposed",
-    "Source Path: docs/ER/ER-0074-Comms-Protocol-Objects-and-Hardware-Mapping.md"
+    "Source Path: docs\/ER\/ER-0074-Comms-Protocol-Objects-and-Hardware-Mapping.md",
+    "Estimate: 13 points (approved umbrella estimate).",
+    "Dependency: T-0169 (legacy ER-0073).",
+    "Acceptance test: TEST-0014 (Ready in Airframe; make check passed 29 of 29 test programs on 2026-10-04; System Engineer acceptance pending).",
+    "Previously delivered increments are represented by verified child Tasks T-0186 and T-0187. Scheduled in SP-007 to complete the umbrella scope and verify its acceptance criteria.",
+    "SP-007 implementation validation: make check passed 29 of 29 test programs on 2026-10-04. System Engineer acceptance pending."
   ],
-  "priority": "medium",
-  "rationale": "Migrated from legacy IrisOS Engineering Request documentation.",
-  "requirementIDs": [
+  "priority" : "medium",
+  "rationale" : "Make protocol-to-resource compatibility explicit and deterministic before adding protocol execution behavior.",
+  "requirementIDs" : [
 
   ],
-  "testSteps": [
-
+  "sprintID" : {
+    "rawValue" : "SP-007"
+  },
+  "testSteps" : [
+    "make check",
+    "Inspect compatible, incompatible, missing, and contradictory protocol-to-transport metadata mappings."
   ],
-  "workItem": {
-    "id": {
-      "rawValue": "T-0170"
+  "workItem" : {
+    "githubIssue" : 282,
+    "id" : {
+      "rawValue" : "T-0170"
     },
-    "kind": "task",
-    "status": "backlog",
-    "title": "Comms Protocol Objects and Hardware Mapping",
-    "githubIssue": 282
+    "kind" : "task",
+    "status" : "implementedNotVerified",
+    "title" : "Comms Protocol Objects and Hardware Mapping"
   }
 }

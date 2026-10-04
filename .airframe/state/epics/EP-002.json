@@ -1,66 +1,151 @@
 {
-  "acceptanceCriterionIDs": [],
-  "goal": "Establish registered Machine representations, in-memory resource descriptors, capability-bearing handles and leases, and Machine-backed Comms protocol execution as required by AR-0024.",
-  "issueIDs": [],
-  "metadata": {
-    "schemaVersion": {
-      "major": 1,
-      "minor": 0,
-      "patch": 0
+  "acceptanceCriterionIDs" : [
+    {
+      "rawValue" : "AC-0011"
     },
-    "updatedAt": "2026-08-24T00:00:00Z",
-    "source": "docs/Epics/Epic-active.md"
-  },
-  "notes": [
-    "Approved poker estimates: T-0166 21, T-0167 8, T-0168 13, T-0169 8-13, T-0170 13.",
-    "T-0166 through T-0170 remain umbrella Tasks; T-0177 through T-0187 are Sprint-ready child Tasks.",
-    "SP-005 was split at the transport/session and protocol/compatibility boundary on 2026-08-24.",
-    "SP-006 planning and 13-point capacity were approved on 2026-08-24."
+    {
+      "rawValue" : "AC-0012"
+    },
+    {
+      "rawValue" : "AC-0013"
+    },
+    {
+      "rawValue" : "AC-0014"
+    },
+    {
+      "rawValue" : "AC-0015"
+    },
+    {
+      "rawValue" : "AC-0016"
+    },
+    {
+      "rawValue" : "AC-0017"
+    },
+    {
+      "rawValue" : "AC-0018"
+    },
+    {
+      "rawValue" : "AC-0019"
+    }
   ],
-  "outOfScope": [
+  "goal" : "Establish registered Machine representations, in-memory resource descriptors, capability-bearing handles and leases, and Machine-backed Comms protocol execution as required by AR-0024.",
+  "issueIDs" : [
+
+  ],
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    },
+    "source" : "docs\/Epics\/Epic-active.md",
+    "updatedAt" : "2026-10-04T21:04:08Z"
+  },
+  "notes" : [
+    "Approved poker estimates: T-0166 21, T-0167 8, T-0168 13, T-0169 8-13, T-0170 13.",
+    "T-0166 through T-0170 are scheduled in SP-007; T-0177 through T-0187 record previously delivered increments.",
+    "SP-005 was split at the transport\/session and protocol\/compatibility boundary on 2026-08-24.",
+    "SP-006 planning and 13-point capacity were approved on 2026-08-24.",
+    "EP-002 reactivated on 2026-10-04; SP-007 activated for the five umbrella Tasks with acceptance tests TEST-0010 through TEST-0014."
+  ],
+  "outOfScope" : [
     "Machine descriptor persistence",
     "Wall-clock lease expiration",
     "Hardware probing and device drivers",
     "Complete network stacks and remote networking"
   ],
-  "owner": "System Engineer",
-  "planningDocumentPaths": ["docs/Epics/Epic-active.md"],
-  "rationale": "The migrated Machine and Comms Tasks form one dependency-ordered delivery track under AR-0024.",
-  "scope": [
+  "owner" : "System Engineer",
+  "planningDocumentPaths" : [
+    "docs\/Epics\/Epic-active.md",
+    "docs\/Tasks\/Active\/T-0166-machine-representation-primitives.md",
+    "docs\/Tasks\/Active\/T-0167-machine-descriptors-and-resource-facts.md",
+    "docs\/Tasks\/Active\/T-0168-machine-handles-and-leases.md",
+    "docs\/Tasks\/Active\/T-0169-comms-transport-and-session-objects.md",
+    "docs\/Tasks\/Active\/T-0170-comms-protocol-objects-and-hardware-mapping.md"
+  ],
+  "rationale" : "The migrated Machine and Comms Tasks form one dependency-ordered delivery track under AR-0024.",
+  "scope" : [
     "Refract-registered Machine representations",
     "In-memory descriptors and queries",
     "Capability-bearing handles and deterministic leases",
     "Machine-backed Comms and one executable protocol example"
   ],
-  "sprintIDs": [
-    { "rawValue": "SP-002" },
-    { "rawValue": "SP-003" },
-    { "rawValue": "SP-004" },
-    { "rawValue": "SP-005" },
-    { "rawValue": "SP-006" }
+  "sprintIDs" : [
+    {
+      "rawValue" : "SP-002"
+    },
+    {
+      "rawValue" : "SP-003"
+    },
+    {
+      "rawValue" : "SP-004"
+    },
+    {
+      "rawValue" : "SP-005"
+    },
+    {
+      "rawValue" : "SP-006"
+    },
+    {
+      "rawValue" : "SP-007"
+    }
   ],
-  "taskIDs": [
-    { "rawValue": "T-0166" },
-    { "rawValue": "T-0167" },
-    { "rawValue": "T-0168" },
-    { "rawValue": "T-0169" },
-    { "rawValue": "T-0170" },
-    { "rawValue": "T-0177" },
-    { "rawValue": "T-0178" },
-    { "rawValue": "T-0179" },
-    { "rawValue": "T-0180" },
-    { "rawValue": "T-0181" },
-    { "rawValue": "T-0182" },
-    { "rawValue": "T-0183" },
-    { "rawValue": "T-0184" },
-    { "rawValue": "T-0185" },
-    { "rawValue": "T-0186" },
-    { "rawValue": "T-0187" }
+  "taskIDs" : [
+    {
+      "rawValue" : "T-0177"
+    },
+    {
+      "rawValue" : "T-0178"
+    },
+    {
+      "rawValue" : "T-0179"
+    },
+    {
+      "rawValue" : "T-0180"
+    },
+    {
+      "rawValue" : "T-0181"
+    },
+    {
+      "rawValue" : "T-0182"
+    },
+    {
+      "rawValue" : "T-0183"
+    },
+    {
+      "rawValue" : "T-0184"
+    },
+    {
+      "rawValue" : "T-0185"
+    },
+    {
+      "rawValue" : "T-0186"
+    },
+    {
+      "rawValue" : "T-0187"
+    },
+    {
+      "rawValue" : "T-0166"
+    },
+    {
+      "rawValue" : "T-0167"
+    },
+    {
+      "rawValue" : "T-0168"
+    },
+    {
+      "rawValue" : "T-0169"
+    },
+    {
+      "rawValue" : "T-0170"
+    }
   ],
-  "workItem": {
-    "id": { "rawValue": "EP-002" },
-    "kind": "epic",
-    "status": "active",
-    "title": "Machine and Communications Foundations"
+  "workItem" : {
+    "id" : {
+      "rawValue" : "EP-002"
+    },
+    "kind" : "epic",
+    "status" : "active",
+    "title" : "Machine and Communications Foundations"
   }
 }

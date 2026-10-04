@@ -1,0 +1,22 @@
+{
+  "disposition" : "verified",
+  "evidenceIDs" : [
+
+  ],
+  "id" : {
+    "rawValue" : "AC-0004"
+  },
+  "isVerified" : true,
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    },
+    "updatedAt" : "2026-10-04T14:23:46Z"
+  },
+  "ownerID" : {
+    "rawValue" : "EP-001"
+  },
+  "text" : "SP-001 is the first Airframe Sprint, and no Sprint history predating SP-001 is represented as fact."
+}

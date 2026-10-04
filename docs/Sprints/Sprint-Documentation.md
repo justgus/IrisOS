@@ -1,44 +1,33 @@
 # Sprints - Index
 
-This is the main index for IrisOS Agile Airframe Sprints. Sprints are fixed execution windows that group Tasks and Issues into focused units of work.
+This is the main index for Agile Airframe Sprints. Sprints group Tasks and Issues into focused execution windows.
 
-> **Related:** [Tasks](../Tasks/Task-Documentation.md) | [Issues](../Issues/Issue-Documentation.md) | [Epics](../Epics/Epic-Documentation.md)
+## Current Sprint Record
 
-## Organization
-
-- **Sprint-active.md** - The currently active or planning Sprint.
-- **Sprint-backlog.md** - Sprints attached to an Epic but not yet in Planning.
-- **Closed/** - Archived closed Sprints.
-
-## Active Sprint
-
-Currently: **None**
-
-See: [Sprint-active.md](Sprint-active.md)
+Currently: [**SP-007 - EP-002 Umbrella Scope Completion**](Sprint-active.md)
 
 ## All Sprints
 
-Currently: **6 Sprints** | Next available: **SP-007**
+Currently: **7 Sprints** | Next available: **SP-008**
 
-| Sprint | Title | Epic | Tasks | Status |
-| ------ | ----- | ---- | ----- | ------ |
-| SP-001 | Agile Airframe Migration Planning and Seed Implementation | EP-001 | T-0081 - T-0088 | Closed |
-| SP-002 | Registered Machine Values and Packets | EP-002 | T-0177 - T-0178 | Closed |
-| SP-003 | Queryable Processor and Memory Inventory | EP-002 | T-0179 - T-0181 | Closed |
-| SP-004 | Authorized Machine Resource Acquisition | EP-002 | T-0182 - T-0183 | Closed |
-| SP-005 | Machine-Backed Comms Transport and Sessions | EP-002 | T-0184 - T-0185 | Closed |
-| SP-006 | Protocol Compatibility and Executable Framing | EP-002 | T-0186 - T-0187 | Closed |
+| Sprint | Title | Epic | Tasks | Issues | Status |
+| ------ | ----- | ---- | ----- | ------ | ------ |
+| SP-001 | Agile Airframe Migration Planning and Seed Implementation | EP-001 | T-0081, T-0082, T-0083, T-0084, T-0085, T-0086, T-0087, T-0088 | None | Closed |
+| SP-002 | Registered Machine Values and Packets | EP-002 | T-0177, T-0178 | None | Closed |
+| SP-003 | Queryable Processor and Memory Inventory | EP-002 | T-0179, T-0180, T-0181 | None | Closed |
+| SP-004 | Authorized Machine Resource Acquisition | EP-002 | T-0182, T-0183 | None | Closed |
+| SP-005 | Machine-Backed Comms Transport and Sessions | EP-002 | T-0184, T-0185 | None | Closed |
+| SP-006 | Protocol Compatibility and Executable Framing | EP-002 | T-0186, T-0187 | None | Closed |
+| SP-007 | EP-002 Umbrella Scope Completion | EP-002 | T-0166, T-0167, T-0168, T-0169, T-0170 | None | Active |
 
 ## Statistics
 
-- **Total Sprints:** 6
-- **Closed:** 6
-- **Active:** 0
-- **Review:** 0
-- **Planning:** 0
+- **Total Sprints:** 7
 - **Backlog:** 0
-- **Next available:** SP-007
+- **Planning:** 0
+- **Active:** 1
+- **Review:** 0
+- **Closed:** 6
+- **Next available:** SP-008
 
----
-
-*Last Updated: 2026-08-25 (SP-006 verified and closed)*
+*Last Updated: 2026-10-04*

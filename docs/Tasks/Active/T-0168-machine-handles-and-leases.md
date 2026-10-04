@@ -10,10 +10,11 @@ Source-Path: docs/ER/ER-0072-Machine-Handles-and-Leases.md
 
 - Task ID: T-0168
 - Legacy ID: ER-0072
-- Status: Backlog
+- Status: Implemented - Verification Pending
 - Source Status: Proposed
 - Epic: EP-002
-- Sprint Assigned: N/A - migrated historical record
+- Sprint Assigned: SP-007
+- Sprint Start Date: 2026-10-04
 - GitHub Issue: #280
 - AR Dependencies: AR-0008, AR-0010, AR-0024
 - Date Requested: 2026-05-28
@@ -24,6 +25,19 @@ Source-Path: docs/ER/ER-0072-Machine-Handles-and-Leases.md
 ## Migration Notes
 
 This Airframe Task was generated from the legacy ER record during the local documentation migration. The target status represents the approved source documentation state and is not a new verification action.
+
+## Airframe Planning
+
+- Estimate: 13 points (approved umbrella estimate)
+- Dependencies: T-0154 (ER-0058), T-0156 (ER-0060), and T-0167 (ER-0071).
+- Planned Acceptance Criteria:
+  - Handles reference known Machine descriptors and required capabilities.
+  - Lease ownership and capability metadata round-trip deterministically.
+  - Missing or insufficient capability context is rejected; no hardware access is introduced.
+- Planned Verification: `make check`; create descriptor-backed handles and exercise authorized and unauthorized capability contexts.
+- Acceptance Test: `TEST-0012` (`make check` passed 29 of 29 test programs on 2026-10-04; System Engineer acceptance pending).
+- Scope split: handle capability enforcement and lease lifecycle are covered by T-0182 and T-0183.
+- Decomposition: the previously delivered handle and lease slices are represented by verified Tasks T-0182 and T-0183. This umbrella is scheduled in SP-007 to complete and verify its recorded acceptance criteria.
 
 ## Preserved Legacy ER Content
 
