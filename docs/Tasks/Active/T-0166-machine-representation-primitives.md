@@ -35,7 +35,7 @@ This Airframe Task was generated from the legacy ER record during the local docu
   - Packet and slice bounds are validated at operation boundaries.
   - Existing Comms tests continue to pass without behavior changes.
 - Planned Verification: `make check`; inspect canonical registrations and representative boundary behavior.
-- Acceptance Test: `TEST-0010` (Ready; not run as part of this planning change).
+- Acceptance Test: `TEST-0010` (`make check` passed 29 of 29 test programs on 2026-10-04; System Engineer acceptance pending).
 - Scope split: portable scalar values and registered buffers/packets are covered by T-0177 and T-0178; processor and memory definitions are covered by T-0179 and T-0180.
 - Decomposition: previously delivered increments are represented by verified Tasks T-0177 through T-0180. This umbrella is scheduled in SP-007 to complete and verify its recorded acceptance criteria.
 

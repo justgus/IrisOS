@@ -26,6 +26,6 @@ The estimate range totals 63-68 points: T-0166 (21), T-0167 (8), T-0168 (13), T-
 | 4 | [T-0169](../Tasks/Active/T-0169-comms-transport-and-session-objects.md) | Comms transport and session objects | 8-13 | T-0166, T-0167, T-0168 | TEST-0013 |
 | 5 | [T-0170](../Tasks/Active/T-0170-comms-protocol-objects-and-hardware-mapping.md) | Comms protocol objects and hardware mapping | 13 | T-0169 | TEST-0014 |
 
-All five acceptance tests are Ready and remain unexecuted.
+The SP-007 implementation was exercised with `make check`; all 29 test programs passed on 2026-10-04. The five Tasks remain Active pending System Engineer acceptance.
 
 *Last Updated: 2026-10-04*

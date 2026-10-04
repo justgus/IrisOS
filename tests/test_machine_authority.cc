@@ -172,6 +172,19 @@ START_TEST(test_lease_creation_validates_owner_context_and_grant)
   ck_assert_msg(lease, "valid lease rejected");
   ck_assert_int_eq(static_cast<int>(lease.value->state()),
                    static_cast<int>(MachineLeaseState::Active));
+  const MachineLease* stored = leases.find(id(40));
+  ck_assert_ptr_nonnull(stored);
+  ck_assert_msg(stored->lease_id() == id(40), "lease registry changed the lease ID");
+  ck_assert_msg(stored->owner_id() == id(31), "lease registry changed the owner ID");
+  ck_assert_msg(stored->capability_context_id() == id(30),
+                "lease registry changed the capability context ID");
+  const auto* stored_handle = std::get_if<MemoryHandle>(&stored->handle());
+  ck_assert_ptr_nonnull(stored_handle);
+  ck_assert_msg(stored_handle->resource_id == id(12), "lease registry changed the resource ID");
+  ck_assert_int_eq(static_cast<int>(stored_handle->access_mode),
+                   static_cast<int>(MachineAccessMode::Read));
+  ck_assert_msg(stored_handle->capability_context_id == id(30),
+                "lease registry changed the handle capability context");
   ck_assert_msg(leases.authorize_use(id(40), id(31), id(30)), "active lease denied use");
 
   auto wrong_owner = leases.create_lease(id(41), id(32), MachineHandle{*handle.value});

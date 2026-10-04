@@ -35,7 +35,7 @@ This Airframe Task was generated from the legacy ER record during the local docu
   - Lease ownership and capability metadata round-trip deterministically.
   - Missing or insufficient capability context is rejected; no hardware access is introduced.
 - Planned Verification: `make check`; create descriptor-backed handles and exercise authorized and unauthorized capability contexts.
-- Acceptance Test: `TEST-0012` (Ready; not run as part of this planning change).
+- Acceptance Test: `TEST-0012` (`make check` passed 29 of 29 test programs on 2026-10-04; System Engineer acceptance pending).
 - Scope split: handle capability enforcement and lease lifecycle are covered by T-0182 and T-0183.
 - Decomposition: the previously delivered handle and lease slices are represented by verified Tasks T-0182 and T-0183. This umbrella is scheduled in SP-007 to complete and verify its recorded acceptance criteria.
 

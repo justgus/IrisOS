@@ -19,7 +19,7 @@
       "minor": 0,
       "patch": 0
     },
-    "updatedAt": "2026-10-04T15:52:29Z",
+    "updatedAt": "2026-10-04T16:50:40Z",
     "source": "docs/ER/ER-0074-Comms-Protocol-Objects-and-Hardware-Mapping.md"
   },
   "notes": [
@@ -28,8 +28,9 @@
     "Source Path: docs/ER/ER-0074-Comms-Protocol-Objects-and-Hardware-Mapping.md",
     "Estimate: 13 points (approved umbrella estimate).",
     "Dependency: T-0169 (legacy ER-0073).",
-    "Planned acceptance test: TEST-0014 (Ready; not executed in this planning change).",
-    "Previously delivered increments are represented by verified child Tasks T-0186 and T-0187. Scheduled in SP-007 to complete the umbrella scope and verify its acceptance criteria."
+    "Acceptance test: TEST-0014 (Ready in Airframe; make check passed 29 of 29 test programs on 2026-10-04; System Engineer acceptance pending).",
+    "Previously delivered increments are represented by verified child Tasks T-0186 and T-0187. Scheduled in SP-007 to complete the umbrella scope and verify its acceptance criteria.",
+    "SP-007 implementation validation: make check passed 29 of 29 test programs on 2026-10-04. System Engineer acceptance pending."
   ],
   "priority": "medium",
   "rationale": "Make protocol-to-resource compatibility explicit and deterministic before adding protocol execution behavior.",

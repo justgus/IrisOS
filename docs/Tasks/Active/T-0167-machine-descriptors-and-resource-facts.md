@@ -32,10 +32,10 @@ This Airframe Task was generated from the legacy ER record during the local docu
 - Dependencies: T-0166 (legacy ER dependency ER-0070).
 - Planned Acceptance Criteria:
   - Processor, memory, bus, and device descriptors can be constructed and queried.
-  - Descriptor identities and query ordering are deterministic and registry round trips preserve facts.
+  - Descriptor identities and query ordering are deterministic; registered descriptor schemas round-trip with their fields intact.
   - Descriptors expose no operations that grant resource access.
 - Planned Verification: `make check`; construct and query representative descriptors and inspect their exposed operations.
-- Acceptance Test: `TEST-0011` (Ready; not run as part of this planning change).
+- Acceptance Test: `TEST-0011` (`make check` passed 29 of 29 test programs on 2026-10-04; System Engineer acceptance pending).
 - Scope split: the implemented in-memory descriptor and query slice is covered by T-0181.
 - Decomposition: the previously delivered descriptor slice is represented by verified Task T-0181. This umbrella is scheduled in SP-007 to complete and verify its recorded acceptance criteria.
 

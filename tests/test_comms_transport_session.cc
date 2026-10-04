@@ -282,6 +282,85 @@ START_TEST(test_protocol_compatibility_reports_deterministic_reasons)
 }
 END_TEST
 
+START_TEST(test_protocol_required_machine_capability_is_checked)
+{
+  const auto machine = inventory();
+  CapabilityFixture fixture;
+  const auto read_grant = machine_capability_grant(
+      MachineResourceKind::Memory, MachineAccessMode::Read, id(12));
+  const auto write_grant = machine_capability_grant(
+      MachineResourceKind::Memory, MachineAccessMode::Write, id(12));
+  fixture.persist(context_with(id(70), id(71), {read_grant, write_grant}));
+
+  MachineHandleFactory handles(machine, fixture.contexts);
+  auto read_handle = handles.create_memory_handle(id(12), MachineAccessMode::Read, id(70));
+  auto write_handle = handles.create_memory_handle(id(12), MachineAccessMode::Write, id(70));
+  ck_assert_msg(read_handle && write_handle, "authorized memory handles rejected");
+
+  MachineLeaseRegistry leases(fixture.contexts);
+  ck_assert_msg(leases.create_lease(id(72), id(71), MachineHandle{*read_handle.value}),
+                "read lease construction failed");
+  ck_assert_msg(leases.create_lease(id(73), id(71), MachineHandle{*write_handle.value}),
+                "write lease construction failed");
+
+  TransportFactory transports(machine, leases);
+  auto read_transport = transports.create_authorized_transport(
+      id(74), TransportSemantics::Stream, id(72), id(71), id(70));
+  auto write_transport = transports.create_authorized_transport(
+      id(75), TransportSemantics::Stream, id(73), id(71), id(70));
+  auto descriptor_transport = transports.create_descriptor_transport(
+      id(76), TransportSemantics::Stream, MachineResourceKind::Memory, id(12));
+  ck_assert_msg(read_transport && write_transport && descriptor_transport,
+                "transport construction failed");
+
+  auto protocol = Protocol::create(
+      id(77), "read-only-packet", TransportSemantics::Stream,
+      {MachineResourceKind::Memory},
+      {{MachineResourceKind::Memory, MachineAccessMode::Read}});
+  ck_assert_msg(protocol, "capability-requiring protocol rejected");
+  ck_assert_uint_eq(protocol.value->required_capabilities().size(), 1U);
+  ck_assert_msg(protocol.value->required_capabilities()[0].resource_kind
+                    == MachineResourceKind::Memory,
+                "required resource kind was not preserved");
+  ck_assert_int_eq(static_cast<int>(protocol.value->required_capabilities()[0].access_mode),
+                   static_cast<int>(MachineAccessMode::Read));
+
+  auto misplaced_requirement = Protocol::create(
+      id(78), "invalid-packet", TransportSemantics::Stream,
+      {MachineResourceKind::Memory},
+      {{MachineResourceKind::Device, MachineAccessMode::Read}});
+  ck_assert_msg(!misplaced_requirement,
+                "protocol accepted a required capability for a disallowed resource kind");
+
+  auto canonical_requirements = Protocol::create(
+      id(79), "canonical-packet", TransportSemantics::Stream,
+      {MachineResourceKind::Device, MachineResourceKind::Memory},
+      {{MachineResourceKind::Device, MachineAccessMode::Read},
+       {MachineResourceKind::Memory, MachineAccessMode::Write},
+       {MachineResourceKind::Memory, MachineAccessMode::Write}});
+  ck_assert_msg(canonical_requirements, "valid capability requirements rejected");
+  ck_assert_uint_eq(canonical_requirements.value->required_capabilities().size(), 2U);
+  ck_assert_msg(canonical_requirements.value->required_capabilities()[0].resource_kind
+                    == MachineResourceKind::Memory,
+                "capability requirements are not sorted by resource kind");
+
+  const auto read_result = check_compatibility(*protocol.value, *read_transport.value, leases);
+  ck_assert_msg(read_result.compatible, "required read capability rejected");
+
+  const auto write_result = check_compatibility(*protocol.value, *write_transport.value, leases);
+  ck_assert_msg(!write_result.compatible, "write lease satisfied a read capability");
+  ck_assert_int_eq(static_cast<int>(write_result.reason),
+                   static_cast<int>(CompatibilityReason::RequiredCapabilityUnavailable));
+
+  const auto descriptor_result = check_compatibility(
+      *protocol.value, *descriptor_transport.value, leases);
+  ck_assert_msg(!descriptor_result.compatible,
+                "descriptor-only transport satisfied an access capability");
+  ck_assert_int_eq(static_cast<int>(descriptor_result.reason),
+                   static_cast<int>(CompatibilityReason::RequiredCapabilityUnavailable));
+}
+END_TEST
+
 START_TEST(test_authorized_transport_compatibility_revalidates_lease)
 {
   const auto machine = inventory();
@@ -416,6 +495,7 @@ Suite* comms_transport_session_suite(void) {
   tcase_add_test(tests, test_existing_loopback_data_paths_remain_unchanged);
   tcase_add_test(tests, test_protocol_metadata_is_validated_and_inspectable);
   tcase_add_test(tests, test_protocol_compatibility_reports_deterministic_reasons);
+  tcase_add_test(tests, test_protocol_required_machine_capability_is_checked);
   tcase_add_test(tests, test_authorized_transport_compatibility_revalidates_lease);
   tcase_add_test(tests, test_single_frame_encoding_is_bounded_and_exact);
   tcase_add_test(tests, test_registered_packet_executes_over_open_compatible_loopback);

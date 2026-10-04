@@ -33,7 +33,7 @@
   "status" : "ready",
   "steps" : [
     "Create and query representative processor, memory, bus, and device descriptors.",
-    "Check deterministic identity, ordering, and registry round-trip behavior.",
+    "Check deterministic identity and ordering, and round-trip the registered Refract descriptor schemas with their fields intact.",
     "Confirm descriptors expose no resource-access operations."
   ],
   "title" : "Machine descriptor umbrella acceptance",

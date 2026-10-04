@@ -35,7 +35,7 @@ This Airframe Task was generated from the legacy ER record during the local docu
   - Sessions record endpoints, transport identity, and lifecycle state with invalid transitions rejected.
   - Existing loopback behavior remains stable without network access.
 - Planned Verification: `make check`; create and inspect a Machine-backed transport and session, including invalid lifecycle transitions.
-- Acceptance Test: `TEST-0013` (Ready; not run as part of this planning change).
+- Acceptance Test: `TEST-0013` (`make check` passed 29 of 29 test programs on 2026-10-04; System Engineer acceptance pending).
 - Scope split: Machine-backed transport and session lifecycle are covered by T-0184 and T-0185.
 - Decomposition: the previously delivered transport and session slices are represented by verified Tasks T-0184 and T-0185. This umbrella is scheduled in SP-007 to complete and verify its recorded acceptance criteria.
 

@@ -35,7 +35,7 @@ This Airframe Task was generated from the legacy ER record during the local docu
   - Compatibility checks accept supported mappings and reject incompatible mappings deterministically.
   - Protocol metadata and mapping decisions are inspectable without performing I/O or negotiation.
 - Planned Verification: `make check`; inspect supported, unsupported, missing, and contradictory protocol mappings.
-- Acceptance Test: `TEST-0014` (Ready; not run as part of this planning change).
+- Acceptance Test: `TEST-0014` (`make check` passed 29 of 29 test programs on 2026-10-04; System Engineer acceptance pending).
 - Scope split: protocol metadata compatibility and executable framing are covered by T-0186 and T-0187.
 - Decomposition: the previously delivered protocol compatibility and execution slices are represented by verified Tasks T-0186 and T-0187. This umbrella is scheduled in SP-007 to complete and verify its recorded acceptance criteria.
 

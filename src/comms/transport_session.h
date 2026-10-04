@@ -118,17 +118,29 @@ private:
   SessionState state_{SessionState::Created};
 };
 
+struct RequiredMachineCapability {
+  machine::MachineResourceKind resource_kind{machine::MachineResourceKind::Device};
+  machine::MachineAccessMode access_mode{machine::MachineAccessMode::Read};
+
+  friend bool operator==(const RequiredMachineCapability&,
+                         const RequiredMachineCapability&) = default;
+};
+
 class Protocol {
 public:
   static referee::Result<Protocol> create(
       referee::ObjectID id,
       std::string name,
       TransportSemantics required_semantics,
-      std::vector<machine::MachineResourceKind> allowed_resource_kinds);
+      std::vector<machine::MachineResourceKind> allowed_resource_kinds,
+      std::vector<RequiredMachineCapability> required_capabilities = {});
 
   const referee::ObjectID& id() const { return id_; }
   const std::string& name() const { return name_; }
   TransportSemantics required_semantics() const { return required_semantics_; }
+  const std::vector<RequiredMachineCapability>& required_capabilities() const {
+    return required_capabilities_;
+  }
   const std::vector<machine::MachineResourceKind>& allowed_resource_kinds() const {
     return allowed_resource_kinds_;
   }
@@ -137,23 +149,27 @@ private:
   Protocol(referee::ObjectID id,
            std::string name,
            TransportSemantics required_semantics,
-           std::vector<machine::MachineResourceKind> allowed_resource_kinds)
+           std::vector<machine::MachineResourceKind> allowed_resource_kinds,
+           std::vector<RequiredMachineCapability> required_capabilities)
       : id_(id),
         name_(std::move(name)),
         required_semantics_(required_semantics),
-        allowed_resource_kinds_(std::move(allowed_resource_kinds)) {}
+        allowed_resource_kinds_(std::move(allowed_resource_kinds)),
+        required_capabilities_(std::move(required_capabilities)) {}
 
   referee::ObjectID id_{};
   std::string name_;
   TransportSemantics required_semantics_{TransportSemantics::Stream};
   std::vector<machine::MachineResourceKind> allowed_resource_kinds_;
+  std::vector<RequiredMachineCapability> required_capabilities_;
 };
 
 enum class CompatibilityReason {
   Compatible,
   TransportSemanticsMismatch,
   LeaseAuthorizationFailed,
-  ResourceKindNotAllowed
+  ResourceKindNotAllowed,
+  RequiredCapabilityUnavailable
 };
 
 struct CompatibilityResult {

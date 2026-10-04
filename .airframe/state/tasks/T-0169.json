@@ -19,7 +19,7 @@
       "minor": 0,
       "patch": 0
     },
-    "updatedAt": "2026-10-04T15:52:29Z",
+    "updatedAt": "2026-10-04T16:50:40Z",
     "source": "docs/ER/ER-0073-Comms-Transport-and-Session-Objects.md"
   },
   "notes": [
@@ -28,8 +28,9 @@
     "Source Path: docs/ER/ER-0073-Comms-Transport-and-Session-Objects.md",
     "Estimate: 8-13 points (approved umbrella estimate).",
     "Dependencies: T-0166, T-0167, and T-0168 (legacy ER-0070 through ER-0072).",
-    "Planned acceptance test: TEST-0013 (Ready; not executed in this planning change).",
-    "Previously delivered increments are represented by verified child Tasks T-0184 and T-0185. Scheduled in SP-007 to complete the umbrella scope and verify its acceptance criteria."
+    "Acceptance test: TEST-0013 (Ready in Airframe; make check passed 29 of 29 test programs on 2026-10-04; System Engineer acceptance pending).",
+    "Previously delivered increments are represented by verified child Tasks T-0184 and T-0185. Scheduled in SP-007 to complete the umbrella scope and verify its acceptance criteria.",
+    "SP-007 implementation validation: make check passed 29 of 29 test programs on 2026-10-04. System Engineer acceptance pending."
   ],
   "priority": "medium",
   "rationale": "Layer deterministic transport and session metadata above Machine resources while preserving the existing local Comms substrate.",
