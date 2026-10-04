@@ -44,7 +44,7 @@
       "rawValue": "T-0169"
     },
     "kind": "task",
-    "status": "active",
+    "status": "implemented",
     "title": "Comms Transport and Session Objects",
     "githubIssue": 281
   },

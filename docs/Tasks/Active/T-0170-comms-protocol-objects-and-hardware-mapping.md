@@ -10,7 +10,7 @@ Source-Path: docs/ER/ER-0074-Comms-Protocol-Objects-and-Hardware-Mapping.md
 
 - Task ID: T-0170
 - Legacy ID: ER-0074
-- Status: Active
+- Status: Implemented - Verification Pending
 - Source Status: Proposed
 - Epic: EP-002
 - Sprint Assigned: SP-007

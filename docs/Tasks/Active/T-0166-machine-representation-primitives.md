@@ -10,7 +10,7 @@ Source-Path: docs/ER/ER-0070-Machine-Representation-Primitives.md
 
 - Task ID: T-0166
 - Legacy ID: ER-0070
-- Status: Active
+- Status: Implemented - Verification Pending
 - Source Status: Proposed
 - Epic: EP-002
 - Sprint Assigned: SP-007

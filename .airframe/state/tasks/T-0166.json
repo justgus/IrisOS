@@ -45,7 +45,7 @@
       "rawValue": "T-0166"
     },
     "kind": "task",
-    "status": "active",
+    "status": "implemented",
     "title": "Machine Representation Primitives",
     "githubIssue": 278
   },

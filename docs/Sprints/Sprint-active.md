@@ -26,6 +26,6 @@ The estimate range totals 63-68 points: T-0166 (21), T-0167 (8), T-0168 (13), T-
 | 4 | [T-0169](../Tasks/Active/T-0169-comms-transport-and-session-objects.md) | Comms transport and session objects | 8-13 | T-0166, T-0167, T-0168 | TEST-0013 |
 | 5 | [T-0170](../Tasks/Active/T-0170-comms-protocol-objects-and-hardware-mapping.md) | Comms protocol objects and hardware mapping | 13 | T-0169 | TEST-0014 |
 
-The SP-007 implementation was exercised with `make check`; all 29 test programs passed on 2026-10-04. The five Tasks remain Active pending System Engineer acceptance.
+The implementation tests passed 29 of 29 programs on 2026-10-04 before the packaging fix. After the packaging fix, the focused Comms suite passed all 13 checks. A current full `make check` run passes 28 of 29 programs; the pre-existing `test_referee_core` binary cannot load `/usr/local/lib/libreferee.0.dylib` on this macOS host. Local `make distcheck` stops earlier on pre-existing `-Werror` diagnostics in `src/ceo/io_reactor.cc`, before reaching installation. The five Tasks are Implemented and pending System Engineer verification.
 
 *Last Updated: 2026-10-04*

@@ -100,11 +100,11 @@ T-0166 through T-0170 are assigned to active Sprint SP-007 to complete and verif
 
 | Task | Title | Sprint | Status | Test Plan |
 | ---- | ----- | ------ | ------ | --------- |
-| T-0166 | Machine Representation Primitives | SP-007 | Active | TEST-0010 |
-| T-0167 | Machine Descriptors and Resource Facts | SP-007 | Active | TEST-0011 |
-| T-0168 | Machine Handles and Leases | SP-007 | Active | TEST-0012 |
-| T-0169 | Comms Transport and Session Objects | SP-007 | Active | TEST-0013 |
-| T-0170 | Comms Protocol Objects and Hardware Mapping | SP-007 | Active | TEST-0014 |
+| T-0166 | Machine Representation Primitives | SP-007 | Implemented - Verification Pending | TEST-0010 |
+| T-0167 | Machine Descriptors and Resource Facts | SP-007 | Implemented - Verification Pending | TEST-0011 |
+| T-0168 | Machine Handles and Leases | SP-007 | Implemented - Verification Pending | TEST-0012 |
+| T-0169 | Comms Transport and Session Objects | SP-007 | Implemented - Verification Pending | TEST-0013 |
+| T-0170 | Comms Protocol Objects and Hardware Mapping | SP-007 | Implemented - Verification Pending | TEST-0014 |
 | T-0177 | Registered Machine Scalar Primitives | SP-002 | Verified |  |
 | T-0178 | Registered Machine Buffers and Packets | SP-002 | Verified |  |
 | T-0179 | Registered Processor Architecture Model | SP-003 | Verified |  |

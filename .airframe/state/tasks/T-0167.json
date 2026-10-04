@@ -44,7 +44,7 @@
       "rawValue": "T-0167"
     },
     "kind": "task",
-    "status": "active",
+    "status": "implemented",
     "title": "Machine Descriptors and Resource Facts",
     "githubIssue": 279
   },

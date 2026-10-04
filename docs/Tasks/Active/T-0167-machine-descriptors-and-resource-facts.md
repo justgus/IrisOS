@@ -10,7 +10,7 @@ Source-Path: docs/ER/ER-0071-Machine-Descriptors-and-Resource-Facts.md
 
 - Task ID: T-0167
 - Legacy ID: ER-0071
-- Status: Active
+- Status: Implemented - Verification Pending
 - Source Status: Proposed
 - Epic: EP-002
 - Sprint Assigned: SP-007

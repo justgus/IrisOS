@@ -10,7 +10,7 @@ Source-Path: docs/ER/ER-0073-Comms-Transport-and-Session-Objects.md
 
 - Task ID: T-0169
 - Legacy ID: ER-0073
-- Status: Active
+- Status: Implemented - Verification Pending
 - Source Status: Proposed
 - Epic: EP-002
 - Sprint Assigned: SP-007

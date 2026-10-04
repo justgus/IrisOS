@@ -73,7 +73,7 @@ libreferee_la_SOURCES = \
 libreferee_la_CPPFLAGS = $(SQLITE_CFLAGS) $(NLOHMANN_JSON_CFLAGS)
 libreferee_la_LIBADD = $(SQLITE_LIBS)
 
-include_HEADERS = referee/referee.h \
+nobase_include_HEADERS = referee/referee.h \
    services/service.h \
    refract/dispatch.h \
    refract/operation_registry.h \

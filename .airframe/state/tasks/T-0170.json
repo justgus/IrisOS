@@ -44,7 +44,7 @@
       "rawValue": "T-0170"
     },
     "kind": "task",
-    "status": "active",
+    "status": "implemented",
     "title": "Comms Protocol Objects and Hardware Mapping",
     "githubIssue": 282
   },

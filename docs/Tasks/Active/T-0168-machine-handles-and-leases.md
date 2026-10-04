@@ -10,7 +10,7 @@ Source-Path: docs/ER/ER-0072-Machine-Handles-and-Leases.md
 
 - Task ID: T-0168
 - Legacy ID: ER-0072
-- Status: Active
+- Status: Implemented - Verification Pending
 - Source Status: Proposed
 - Epic: EP-002
 - Sprint Assigned: SP-007
