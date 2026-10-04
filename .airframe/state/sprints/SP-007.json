@@ -1,48 +1,50 @@
 {
-  "epicID": {
-    "rawValue": "EP-002"
+  "epicID" : {
+    "rawValue" : "EP-002"
   },
-  "goal": "Complete and verify the five EP-002 umbrella Tasks for Machine representations, resource descriptors, capability handles and leases, Comms transports and sessions, and protocol mapping.",
-  "issueIDs": [],
-  "metadata": {
-    "schemaVersion": {
-      "major": 1,
-      "minor": 0,
-      "patch": 0
+  "goal" : "Complete and verify the five EP-002 umbrella Tasks for Machine representations, resource descriptors, capability handles and leases, Comms transports and sessions, and protocol mapping.",
+  "issueIDs" : [
+
+  ],
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
     },
-    "updatedAt": "2026-10-04T16:50:40Z",
-    "source": "docs/Sprints/Sprint-active.md"
+    "source" : "docs\/Sprints\/Sprint-active.md",
+    "updatedAt" : "2026-10-04T21:04:08Z"
   },
-  "notes": [
+  "notes" : [
     "Capacity is not set. Estimated Task scope totals 63-68 points: T-0166 21, T-0167 8, T-0168 13, T-0169 8-13, T-0170 13.",
     "Execute in dependency order: T-0166, T-0167, T-0168, T-0169, T-0170. T-0168 also depends on verified T-0154 and T-0156.",
     "Previously delivered increments are represented by verified child Tasks; this Sprint schedules the umbrella Tasks to complete and verify their recorded acceptance criteria.",
     "Validation: make check passed 29 of 29 test programs on 2026-10-04. System Engineer acceptance is pending."
   ],
-  "startDate": "2026-10-04",
-  "taskIDs": [
+  "startDate" : "2026-10-04",
+  "taskIDs" : [
     {
-      "rawValue": "T-0166"
+      "rawValue" : "T-0166"
     },
     {
-      "rawValue": "T-0167"
+      "rawValue" : "T-0167"
     },
     {
-      "rawValue": "T-0168"
+      "rawValue" : "T-0168"
     },
     {
-      "rawValue": "T-0169"
+      "rawValue" : "T-0169"
     },
     {
-      "rawValue": "T-0170"
+      "rawValue" : "T-0170"
     }
   ],
-  "workItem": {
-    "id": {
-      "rawValue": "SP-007"
+  "workItem" : {
+    "id" : {
+      "rawValue" : "SP-007"
     },
-    "kind": "sprint",
-    "status": "active",
-    "title": "EP-002 Umbrella Scope Completion"
+    "kind" : "sprint",
+    "status" : "active",
+    "title" : "EP-002 Umbrella Scope Completion"
   }
 }
