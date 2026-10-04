@@ -1,55 +1,60 @@
 {
-  "acceptanceCriteria": [
+  "acceptanceCriteria" : [
     "Portable Machine primitives have deterministic construction and equality behavior.",
     "Packet and slice bounds are validated at operation boundaries.",
     "Existing Comms tests continue to pass without behavior changes."
   ],
-  "component": "Machine",
-  "componentsAffected": [
+  "component" : "Machine",
+  "componentsAffected" : [
     "Machine",
     "Refract",
     "Comms"
   ],
-  "epicID": {
-    "rawValue": "EP-002"
+  "dateImplemented" : "2026-10-04",
+  "epicID" : {
+    "rawValue" : "EP-002"
   },
-  "evidenceIDs": [],
-  "metadata": {
-    "schemaVersion": {
-      "major": 1,
-      "minor": 0,
-      "patch": 0
+  "evidenceIDs" : [
+
+  ],
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
     },
-    "updatedAt": "2026-10-04T16:50:40Z",
-    "source": "docs/ER/ER-0070-Machine-Representation-Primitives.md"
+    "source" : "docs\/ER\/ER-0070-Machine-Representation-Primitives.md",
+    "updatedAt" : "2026-10-04T21:04:04Z"
   },
-  "notes": [
+  "notes" : [
     "Legacy ID: ER-0070",
     "Source Status: Proposed",
-    "Source Path: docs/ER/ER-0070-Machine-Representation-Primitives.md",
+    "Source Path: docs\/ER\/ER-0070-Machine-Representation-Primitives.md",
     "Estimate: 21 points (approved umbrella estimate).",
     "Dependencies: AR-0008, AR-0010, and AR-0024; no prerequisite Task.",
     "Acceptance test: TEST-0010 (Ready in Airframe; make check passed 29 of 29 test programs on 2026-10-04; System Engineer acceptance pending).",
     "Previously delivered increments are represented by verified child Tasks T-0177 through T-0180. Scheduled in SP-007 to complete the umbrella scope and verify its acceptance criteria.",
     "SP-007 implementation validation: make check passed 29 of 29 test programs on 2026-10-04. System Engineer acceptance pending."
   ],
-  "priority": "medium",
-  "rationale": "Define portable Machine values with stable identities and deterministic bounds behavior before descriptor or policy layers depend on them.",
-  "requirementIDs": [],
-  "testSteps": [
+  "priority" : "medium",
+  "rationale" : "Define portable Machine values with stable identities and deterministic bounds behavior before descriptor or policy layers depend on them.",
+  "requirementIDs" : [
+
+  ],
+  "sprintID" : {
+    "rawValue" : "SP-007"
+  },
+  "testSteps" : [
     "make check",
     "Inspect registered primitive identities and boundary behavior for representative values."
   ],
-  "workItem": {
-    "id": {
-      "rawValue": "T-0166"
+  "workItem" : {
+    "githubIssue" : 278,
+    "id" : {
+      "rawValue" : "T-0166"
     },
-    "kind": "task",
-    "status": "implemented",
-    "title": "Machine Representation Primitives",
-    "githubIssue": 278
-  },
-  "sprintID": {
-    "rawValue": "SP-007"
+    "kind" : "task",
+    "status" : "implementedNotVerified",
+    "title" : "Machine Representation Primitives"
   }
 }

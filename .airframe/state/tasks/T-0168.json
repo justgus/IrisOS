@@ -1,54 +1,59 @@
 {
-  "acceptanceCriteria": [
+  "acceptanceCriteria" : [
     "Handles reference known Machine descriptors and required capabilities.",
     "Lease ownership and capability metadata round-trip deterministically.",
     "Missing or insufficient capability context is rejected; no hardware access is introduced."
   ],
-  "component": "Machine",
-  "componentsAffected": [
+  "component" : "Machine",
+  "componentsAffected" : [
     "Machine",
     "Services"
   ],
-  "epicID": {
-    "rawValue": "EP-002"
+  "dateImplemented" : "2026-10-04",
+  "epicID" : {
+    "rawValue" : "EP-002"
   },
-  "evidenceIDs": [],
-  "metadata": {
-    "schemaVersion": {
-      "major": 1,
-      "minor": 0,
-      "patch": 0
+  "evidenceIDs" : [
+
+  ],
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
     },
-    "updatedAt": "2026-10-04T16:50:40Z",
-    "source": "docs/ER/ER-0072-Machine-Handles-and-Leases.md"
+    "source" : "docs\/ER\/ER-0072-Machine-Handles-and-Leases.md",
+    "updatedAt" : "2026-10-04T21:04:08Z"
   },
-  "notes": [
+  "notes" : [
     "Legacy ID: ER-0072",
     "Source Status: Proposed",
-    "Source Path: docs/ER/ER-0072-Machine-Handles-and-Leases.md",
+    "Source Path: docs\/ER\/ER-0072-Machine-Handles-and-Leases.md",
     "Estimate: 13 points (approved umbrella estimate).",
     "Dependencies: T-0154 (ER-0058), T-0156 (ER-0060), and T-0167 (ER-0071).",
     "Acceptance test: TEST-0012 (Ready in Airframe; make check passed 29 of 29 test programs on 2026-10-04; System Engineer acceptance pending).",
     "Previously delivered increments are represented by verified child Tasks T-0182 and T-0183. Scheduled in SP-007 to complete the umbrella scope and verify its acceptance criteria.",
     "SP-007 implementation validation: make check passed 29 of 29 test programs on 2026-10-04. System Engineer acceptance pending."
   ],
-  "priority": "medium",
-  "rationale": "Keep Machine resource facts separate from access authority while grounding handles and leases in service capability context.",
-  "requirementIDs": [],
-  "testSteps": [
+  "priority" : "medium",
+  "rationale" : "Keep Machine resource facts separate from access authority while grounding handles and leases in service capability context.",
+  "requirementIDs" : [
+
+  ],
+  "sprintID" : {
+    "rawValue" : "SP-007"
+  },
+  "testSteps" : [
     "make check",
     "Create descriptor-backed handles and verify authorized use succeeds while insufficient capability context is rejected."
   ],
-  "workItem": {
-    "id": {
-      "rawValue": "T-0168"
+  "workItem" : {
+    "githubIssue" : 280,
+    "id" : {
+      "rawValue" : "T-0168"
     },
-    "kind": "task",
-    "status": "implemented",
-    "title": "Machine Handles and Leases",
-    "githubIssue": 280
-  },
-  "sprintID": {
-    "rawValue": "SP-007"
+    "kind" : "task",
+    "status" : "implementedNotVerified",
+    "title" : "Machine Handles and Leases"
   }
 }

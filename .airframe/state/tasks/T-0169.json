@@ -1,54 +1,59 @@
 {
-  "acceptanceCriteria": [
+  "acceptanceCriteria" : [
     "Transports reference Machine descriptors or capability-bearing handles deterministically.",
     "Sessions record endpoints, transport identity, and lifecycle state with invalid transitions rejected.",
     "Existing loopback behavior remains stable without network access."
   ],
-  "component": "Comms",
-  "componentsAffected": [
+  "component" : "Comms",
+  "componentsAffected" : [
     "Comms",
     "Machine"
   ],
-  "epicID": {
-    "rawValue": "EP-002"
+  "dateImplemented" : "2026-10-04",
+  "epicID" : {
+    "rawValue" : "EP-002"
   },
-  "evidenceIDs": [],
-  "metadata": {
-    "schemaVersion": {
-      "major": 1,
-      "minor": 0,
-      "patch": 0
+  "evidenceIDs" : [
+
+  ],
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
     },
-    "updatedAt": "2026-10-04T16:50:40Z",
-    "source": "docs/ER/ER-0073-Comms-Transport-and-Session-Objects.md"
+    "source" : "docs\/ER\/ER-0073-Comms-Transport-and-Session-Objects.md",
+    "updatedAt" : "2026-10-04T21:04:08Z"
   },
-  "notes": [
+  "notes" : [
     "Legacy ID: ER-0073",
     "Source Status: Proposed",
-    "Source Path: docs/ER/ER-0073-Comms-Transport-and-Session-Objects.md",
+    "Source Path: docs\/ER\/ER-0073-Comms-Transport-and-Session-Objects.md",
     "Estimate: 8-13 points (approved umbrella estimate).",
     "Dependencies: T-0166, T-0167, and T-0168 (legacy ER-0070 through ER-0072).",
     "Acceptance test: TEST-0013 (Ready in Airframe; make check passed 29 of 29 test programs on 2026-10-04; System Engineer acceptance pending).",
     "Previously delivered increments are represented by verified child Tasks T-0184 and T-0185. Scheduled in SP-007 to complete the umbrella scope and verify its acceptance criteria.",
     "SP-007 implementation validation: make check passed 29 of 29 test programs on 2026-10-04. System Engineer acceptance pending."
   ],
-  "priority": "medium",
-  "rationale": "Layer deterministic transport and session metadata above Machine resources while preserving the existing local Comms substrate.",
-  "requirementIDs": [],
-  "testSteps": [
+  "priority" : "medium",
+  "rationale" : "Layer deterministic transport and session metadata above Machine resources while preserving the existing local Comms substrate.",
+  "requirementIDs" : [
+
+  ],
+  "sprintID" : {
+    "rawValue" : "SP-007"
+  },
+  "testSteps" : [
     "make check",
     "Create and inspect a Machine-backed transport and session; exercise valid and invalid session transitions over loopback."
   ],
-  "workItem": {
-    "id": {
-      "rawValue": "T-0169"
+  "workItem" : {
+    "githubIssue" : 281,
+    "id" : {
+      "rawValue" : "T-0169"
     },
-    "kind": "task",
-    "status": "implemented",
-    "title": "Comms Transport and Session Objects",
-    "githubIssue": 281
-  },
-  "sprintID": {
-    "rawValue": "SP-007"
+    "kind" : "task",
+    "status" : "implementedNotVerified",
+    "title" : "Comms Transport and Session Objects"
   }
 }
