@@ -28,6 +28,7 @@
       "rawValue" : "AC-0019"
     }
   ],
+  "closeDate" : "2026-10-04",
   "goal" : "Establish registered Machine representations, in-memory resource descriptors, capability-bearing handles and leases, and Machine-backed Comms protocol execution as required by AR-0024.",
   "issueIDs" : [
 
@@ -39,7 +40,7 @@
       "patch" : 0
     },
     "source" : "docs\/Epics\/Epic-active.md",
-    "updatedAt" : "2026-10-04T21:04:08Z"
+    "updatedAt" : "2026-10-04T22:21:02Z"
   },
   "notes" : [
     "Approved poker estimates: T-0166 21, T-0167 8, T-0168 13, T-0169 8-13, T-0170 13.",
@@ -145,7 +146,7 @@
       "rawValue" : "EP-002"
     },
     "kind" : "epic",
-    "status" : "active",
+    "status" : "closed",
     "title" : "Machine and Communications Foundations"
   }
 }
