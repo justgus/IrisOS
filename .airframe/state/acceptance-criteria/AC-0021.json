@@ -1,0 +1,21 @@
+{
+  "disposition" : "unverified",
+  "evidenceIDs" : [
+
+  ],
+  "id" : {
+    "rawValue" : "AC-0021"
+  },
+  "isVerified" : false,
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    }
+  },
+  "ownerID" : {
+    "rawValue" : "EP-003"
+  },
+  "text" : "The shipped base Caliper catalog is versioned and stored as a durable Referee object. User extensions layer over an immutable base catalog, and any override follows documented explicit precedence rules with deterministic conflict handling."
+}

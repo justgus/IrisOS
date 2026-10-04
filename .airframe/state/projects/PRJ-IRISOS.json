@@ -1,4 +1,7 @@
 {
+  "activeEpicID" : {
+    "rawValue" : "EP-003"
+  },
   "backendMappingIDs" : [
 
   ],
@@ -27,7 +30,7 @@
       "minor" : 0,
       "patch" : 0
     },
-    "updatedAt" : "2026-10-04T22:21:02Z"
+    "updatedAt" : "2026-10-04T22:59:52Z"
   },
   "name" : "IrisOS",
   "repository" : "justgus\/IrisOS",
@@ -52,6 +55,12 @@
     },
     {
       "rawValue" : "SP-007"
+    },
+    {
+      "rawValue" : "SP-008"
+    },
+    {
+      "rawValue" : "SP-009"
     }
   ],
   "taskIDs" : [
@@ -375,6 +384,9 @@
     },
     {
       "rawValue" : "T-0187"
+    },
+    {
+      "rawValue" : "T-0188"
     }
   ]
 }

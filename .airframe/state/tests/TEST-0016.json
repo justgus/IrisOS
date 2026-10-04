@@ -1,0 +1,48 @@
+{
+  "acceptanceCriterionIDs" : [
+    {
+      "rawValue" : "AC-0021"
+    }
+  ],
+  "artifactReferences" : [
+
+  ],
+  "evidenceIDs" : [
+
+  ],
+  "expectedResults" : [
+    "Catalog version and contents survive persistence and reload deterministically.",
+    "Extensions do not mutate the shipped base catalog.",
+    "Override precedence is documented and conflicts are handled deterministically."
+  ],
+  "id" : {
+    "rawValue" : "TEST-0016"
+  },
+  "kind" : "integration",
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    }
+  },
+  "notes" : [
+
+  ],
+  "objective" : "Verify the catalog is versioned and durable in Referee, and user extensions preserve base immutability with explicit deterministic precedence.",
+  "requirementIDs" : [
+
+  ],
+  "status" : "draft",
+  "steps" : [
+    "Persist and reload a versioned base catalog and compare its version and content.",
+    "Layer a user extension over the base catalog and verify the base remains unchanged.",
+    "Exercise explicit overrides, duplicate symbols, and conflicting definitions."
+  ],
+  "title" : "Caliper catalog persistence and extension precedence",
+  "workItemIDs" : [
+    {
+      "rawValue" : "T-0188"
+    }
+  ]
+}

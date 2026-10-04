@@ -1,0 +1,49 @@
+{
+  "acceptanceCriterionIDs" : [
+    {
+      "rawValue" : "AC-0023"
+    }
+  ],
+  "artifactReferences" : [
+
+  ],
+  "evidenceIDs" : [
+
+  ],
+  "expectedResults" : [
+    "List and inspect commands expose the planned catalog information.",
+    "Successful conversions return the converted value and relevant output.",
+    "Unknown and incompatible conversions produce clear deterministic errors."
+  ],
+  "id" : {
+    "rawValue" : "TEST-0018"
+  },
+  "kind" : "integration",
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    }
+  },
+  "notes" : [
+
+  ],
+  "objective" : "Verify Conch unit listing, metadata inspection, and conversion commands use Caliper APIs and follow existing command conventions.",
+  "requirementIDs" : [
+
+  ],
+  "status" : "draft",
+  "steps" : [
+    "List available units and inspect a representative unit.",
+    "Convert values between compatible units.",
+    "Attempt conversion with an unknown unit and incompatible dimensions.",
+    "Check command output and errors against existing Conch conventions."
+  ],
+  "title" : "Conch Caliper inspection and conversion commands",
+  "workItemIDs" : [
+    {
+      "rawValue" : "T-0173"
+    }
+  ]
+}
