@@ -1,0 +1,45 @@
+{
+  "acceptanceCriterionIDs" : [
+
+  ],
+  "artifactReferences" : [
+
+  ],
+  "automationCommand" : "make check",
+  "evidenceIDs" : [
+
+  ],
+  "expectedResults" : [
+    "Transport\/session metadata is deterministic and existing loopback behavior remains stable."
+  ],
+  "id" : {
+    "rawValue" : "TEST-0013"
+  },
+  "kind" : "acceptance",
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    }
+  },
+  "notes" : [
+
+  ],
+  "objective" : "Define the planned checks for T-0169's Machine-backed transport and session metadata.",
+  "requirementIDs" : [
+
+  ],
+  "status" : "ready",
+  "steps" : [
+    "Construct transports from representative Machine facts or handles.",
+    "Create sessions and inspect endpoints, transport references, and lifecycle metadata.",
+    "Run loopback regressions without network access."
+  ],
+  "title" : "Comms transport and session umbrella acceptance",
+  "workItemIDs" : [
+    {
+      "rawValue" : "T-0169"
+    }
+  ]
+}

@@ -25,6 +25,19 @@ Source-Path: docs/ER/ER-0073-Comms-Transport-and-Session-Objects.md
 
 This Airframe Task was generated from the legacy ER record during the local documentation migration. The target status represents the approved source documentation state and is not a new verification action.
 
+## Airframe Planning
+
+- Estimate: 8-13 points (approved umbrella estimate)
+- Dependencies: T-0166, T-0167, and T-0168 (legacy ER dependencies ER-0070 through ER-0072).
+- Planned Acceptance Criteria:
+  - Transports reference Machine descriptors or capability-bearing handles deterministically.
+  - Sessions record endpoints, transport identity, and lifecycle state with invalid transitions rejected.
+  - Existing loopback behavior remains stable without network access.
+- Planned Verification: `make check`; create and inspect a Machine-backed transport and session, including invalid lifecycle transitions.
+- Acceptance Test: `TEST-0013` (Ready; not run as part of this planning change).
+- Scope split: Machine-backed transport and session lifecycle are covered by T-0184 and T-0185.
+- Decomposition: the implemented transport and session slices are represented by verified Tasks T-0184 and T-0185. Keep this legacy umbrella in Backlog for ER traceability and review it for residual scope before scheduling it independently.
+
 ## Preserved Legacy ER Content
 
 ```md

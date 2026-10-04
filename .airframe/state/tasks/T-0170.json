@@ -1,11 +1,11 @@
 {
   "acceptanceCriteria": [
-
+    "Protocol metadata declares required transport semantics and Machine capabilities.",
+    "Compatibility checks accept supported mappings and reject incompatible mappings deterministically.",
+    "Protocol metadata and mapping decisions are inspectable without performing I/O or negotiation."
   ],
-  "component": "Migrated legacy ER",
-  "componentsAffected": [
-
-  ],
+  "component": "Comms",
+  "componentsAffected": ["Comms", "Machine"],
   "epicID": {
     "rawValue": "EP-002"
   },
@@ -18,21 +18,26 @@
       "minor": 0,
       "patch": 0
     },
-    "updatedAt": "2026-07-07T00:00:00Z",
+    "updatedAt": "2026-10-04T15:13:08Z",
     "source": "docs/ER/ER-0074-Comms-Protocol-Objects-and-Hardware-Mapping.md"
   },
   "notes": [
     "Legacy ID: ER-0074",
     "Source Status: Proposed",
-    "Source Path: docs/ER/ER-0074-Comms-Protocol-Objects-and-Hardware-Mapping.md"
+    "Source Path: docs/ER/ER-0074-Comms-Protocol-Objects-and-Hardware-Mapping.md",
+    "Estimate: 13 points (approved umbrella estimate).",
+    "Dependency: T-0169 (legacy ER-0073).",
+    "Planned acceptance test: TEST-0014 (Ready; not executed in this planning change).",
+    "Implemented child Tasks: T-0186 and T-0187. Keep this legacy umbrella in Backlog for traceability and review for residual scope before separate scheduling."
   ],
   "priority": "medium",
-  "rationale": "Migrated from legacy IrisOS Engineering Request documentation.",
+  "rationale": "Make protocol-to-resource compatibility explicit and deterministic before adding protocol execution behavior.",
   "requirementIDs": [
 
   ],
   "testSteps": [
-
+    "make check",
+    "Inspect compatible, incompatible, missing, and contradictory protocol-to-transport metadata mappings."
   ],
   "workItem": {
     "id": {

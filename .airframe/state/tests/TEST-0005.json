@@ -1,0 +1,49 @@
+{
+  "acceptanceCriterionIDs" : [
+    {
+      "rawValue" : "AC-0015"
+    }
+  ],
+  "artifactReferences" : [
+
+  ],
+  "automationCommand" : "make check",
+  "evidenceIDs" : [
+
+  ],
+  "expectedResults" : [
+    "Transport and session reference Machine resources and preserve loopback behavior."
+  ],
+  "id" : {
+    "rawValue" : "TEST-0005"
+  },
+  "kind" : "acceptance",
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    }
+  },
+  "notes" : [
+
+  ],
+  "objective" : "Verify AC-0015 and loopback compatibility for transport and session objects.",
+  "requirementIDs" : [
+
+  ],
+  "status" : "ready",
+  "steps" : [
+    "Construct a Machine-backed transport and session over the loopback channel.",
+    "Exercise valid and invalid session lifecycle transitions and existing loopback regressions."
+  ],
+  "title" : "Machine-backed Comms transport and session",
+  "workItemIDs" : [
+    {
+      "rawValue" : "T-0184"
+    },
+    {
+      "rawValue" : "T-0185"
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "acceptanceCriterionIDs" : [
+    {
+      "rawValue" : "AC-0011"
+    }
+  ],
+  "artifactReferences" : [
+
+  ],
+  "automationCommand" : "make check",
+  "evidenceIDs" : [
+
+  ],
+  "expectedResults" : [
+    "All required definitions resolve consistently and value\/bounds tests pass."
+  ],
+  "id" : {
+    "rawValue" : "TEST-0001"
+  },
+  "kind" : "acceptance",
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    }
+  },
+  "notes" : [
+
+  ],
+  "objective" : "Verify AC-0011 by exercising registered scalar, buffer, packet, processor, register, address-space, and memory-block definitions.",
+  "requirementIDs" : [
+
+  ],
+  "status" : "ready",
+  "steps" : [
+    "Run the Machine primitive and registration tests.",
+    "Resolve each public Machine definition by its canonical Refract identifier."
+  ],
+  "title" : "Machine primitives and stable registration",
+  "workItemIDs" : [
+    {
+      "rawValue" : "T-0177"
+    },
+    {
+      "rawValue" : "T-0178"
+    },
+    {
+      "rawValue" : "T-0179"
+    },
+    {
+      "rawValue" : "T-0180"
+    }
+  ]
+}

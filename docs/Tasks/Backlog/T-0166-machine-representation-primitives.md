@@ -25,6 +25,19 @@ Source-Path: docs/ER/ER-0070-Machine-Representation-Primitives.md
 
 This Airframe Task was generated from the legacy ER record during the local documentation migration. The target status represents the approved source documentation state and is not a new verification action.
 
+## Airframe Planning
+
+- Estimate: 21 points (approved umbrella estimate)
+- Dependencies: AR-0008, AR-0010, AR-0024; no prerequisite Task.
+- Planned Acceptance Criteria:
+  - Portable Machine primitives have deterministic construction and equality behavior.
+  - Packet and slice bounds are validated at operation boundaries.
+  - Existing Comms tests continue to pass without behavior changes.
+- Planned Verification: `make check`; inspect canonical registrations and representative boundary behavior.
+- Acceptance Test: `TEST-0010` (Ready; not run as part of this planning change).
+- Scope split: portable scalar values and registered buffers/packets are covered by T-0177 and T-0178; processor and memory definitions are covered by T-0179 and T-0180.
+- Decomposition: delivered increments are represented by verified Tasks T-0177 through T-0180. Keep this legacy umbrella in Backlog for ER traceability and review it for residual scope before scheduling it independently.
+
 ## Preserved Legacy ER Content
 
 ```md

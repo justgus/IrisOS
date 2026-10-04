@@ -1,0 +1,46 @@
+{
+  "acceptanceCriterionIDs" : [
+    {
+      "rawValue" : "AC-0017"
+    }
+  ],
+  "artifactReferences" : [
+
+  ],
+  "automationCommand" : "make check",
+  "evidenceIDs" : [
+
+  ],
+  "expectedResults" : [
+    "The registered packet completes the round trip and decodes equal to its original value."
+  ],
+  "id" : {
+    "rawValue" : "TEST-0007"
+  },
+  "kind" : "acceptance",
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    }
+  },
+  "notes" : [
+
+  ],
+  "objective" : "Verify AC-0017 by encoding, transporting, decoding, and comparing a registered Machine packet.",
+  "requirementIDs" : [
+
+  ],
+  "status" : "ready",
+  "steps" : [
+    "Execute the packet example over a compatible Machine-backed loopback session.",
+    "Compare the decoded packet with the original packet."
+  ],
+  "title" : "Registered packet protocol round trip",
+  "workItemIDs" : [
+    {
+      "rawValue" : "T-0187"
+    }
+  ]
+}

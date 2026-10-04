@@ -1,0 +1,45 @@
+{
+  "acceptanceCriterionIDs" : [
+
+  ],
+  "artifactReferences" : [
+
+  ],
+  "automationCommand" : "make check",
+  "evidenceIDs" : [
+
+  ],
+  "expectedResults" : [
+    "Portable values are deterministic, invalid bounds are rejected, and existing Comms behavior remains stable."
+  ],
+  "id" : {
+    "rawValue" : "TEST-0010"
+  },
+  "kind" : "acceptance",
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    }
+  },
+  "notes" : [
+
+  ],
+  "objective" : "Define the planned checks for T-0166's portable Machine representation scope.",
+  "requirementIDs" : [
+
+  ],
+  "status" : "ready",
+  "steps" : [
+    "Check construction and equality for representative portable Machine values.",
+    "Check packet and slice boundary handling.",
+    "Run existing Comms regression tests."
+  ],
+  "title" : "Machine primitive umbrella acceptance",
+  "workItemIDs" : [
+    {
+      "rawValue" : "T-0166"
+    }
+  ]
+}

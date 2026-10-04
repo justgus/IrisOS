@@ -1,11 +1,11 @@
 {
   "acceptanceCriteria": [
-
+    "Portable Machine primitives have deterministic construction and equality behavior.",
+    "Packet and slice bounds are validated at operation boundaries.",
+    "Existing Comms tests continue to pass without behavior changes."
   ],
-  "component": "Migrated legacy ER",
-  "componentsAffected": [
-
-  ],
+  "component": "Machine",
+  "componentsAffected": ["Machine", "Refract", "Comms"],
   "epicID": {
     "rawValue": "EP-002"
   },
@@ -18,21 +18,26 @@
       "minor": 0,
       "patch": 0
     },
-    "updatedAt": "2026-07-07T00:00:00Z",
+    "updatedAt": "2026-10-04T15:13:08Z",
     "source": "docs/ER/ER-0070-Machine-Representation-Primitives.md"
   },
   "notes": [
     "Legacy ID: ER-0070",
     "Source Status: Proposed",
-    "Source Path: docs/ER/ER-0070-Machine-Representation-Primitives.md"
+    "Source Path: docs/ER/ER-0070-Machine-Representation-Primitives.md",
+    "Estimate: 21 points (approved umbrella estimate).",
+    "Dependencies: AR-0008, AR-0010, and AR-0024; no prerequisite Task.",
+    "Planned acceptance test: TEST-0010 (Ready; not executed in this planning change).",
+    "Implemented child Tasks: T-0177 through T-0180. Keep this legacy umbrella in Backlog for traceability and review for residual scope before separate scheduling."
   ],
   "priority": "medium",
-  "rationale": "Migrated from legacy IrisOS Engineering Request documentation.",
+  "rationale": "Define portable Machine values with stable identities and deterministic bounds behavior before descriptor or policy layers depend on them.",
   "requirementIDs": [
 
   ],
   "testSteps": [
-
+    "make check",
+    "Inspect registered primitive identities and boundary behavior for representative values."
   ],
   "workItem": {
     "id": {

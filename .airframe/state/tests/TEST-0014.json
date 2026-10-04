@@ -1,0 +1,45 @@
+{
+  "acceptanceCriterionIDs" : [
+
+  ],
+  "artifactReferences" : [
+
+  ],
+  "automationCommand" : "make check",
+  "evidenceIDs" : [
+
+  ],
+  "expectedResults" : [
+    "Supported mappings are explicit and incompatible mappings fail deterministically."
+  ],
+  "id" : {
+    "rawValue" : "TEST-0014"
+  },
+  "kind" : "acceptance",
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    }
+  },
+  "notes" : [
+
+  ],
+  "objective" : "Define the planned checks for T-0170's inspectable protocol compatibility model.",
+  "requirementIDs" : [
+
+  ],
+  "status" : "ready",
+  "steps" : [
+    "Inspect protocol transport and Machine capability requirements.",
+    "Check supported and unsupported mappings, including missing metadata.",
+    "Confirm mapping checks perform no I\/O or dynamic negotiation."
+  ],
+  "title" : "Comms protocol mapping umbrella acceptance",
+  "workItemIDs" : [
+    {
+      "rawValue" : "T-0170"
+    }
+  ]
+}

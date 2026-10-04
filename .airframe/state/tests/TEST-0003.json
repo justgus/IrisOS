@@ -1,0 +1,46 @@
+{
+  "acceptanceCriterionIDs" : [
+    {
+      "rawValue" : "AC-0013"
+    }
+  ],
+  "artifactReferences" : [
+
+  ],
+  "automationCommand" : "make check",
+  "evidenceIDs" : [
+
+  ],
+  "expectedResults" : [
+    "Authorized use succeeds and unauthorized use is rejected deterministically."
+  ],
+  "id" : {
+    "rawValue" : "TEST-0003"
+  },
+  "kind" : "acceptance",
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    }
+  },
+  "notes" : [
+
+  ],
+  "objective" : "Verify AC-0013 with authorized and unauthorized descriptor-backed operations.",
+  "requirementIDs" : [
+
+  ],
+  "status" : "ready",
+  "steps" : [
+    "Create a handle for a known descriptor with a limited capability set.",
+    "Attempt operations both inside and outside the granted capabilities."
+  ],
+  "title" : "Machine handle capability enforcement",
+  "workItemIDs" : [
+    {
+      "rawValue" : "T-0182"
+    }
+  ]
+}

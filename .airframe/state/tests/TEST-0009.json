@@ -1,0 +1,75 @@
+{
+  "acceptanceCriterionIDs" : [
+    {
+      "rawValue" : "AC-0019"
+    }
+  ],
+  "artifactReferences" : [
+
+  ],
+  "automationCommand" : "make check",
+  "evidenceIDs" : [
+
+  ],
+  "expectedResults" : [
+    "The repository validation suite passes with Machine and Comms changes enabled."
+  ],
+  "id" : {
+    "rawValue" : "TEST-0009"
+  },
+  "kind" : "acceptance",
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    }
+  },
+  "notes" : [
+
+  ],
+  "objective" : "Verify AC-0019 by running the repository validation suite.",
+  "requirementIDs" : [
+
+  ],
+  "status" : "ready",
+  "steps" : [
+    "Run make check."
+  ],
+  "title" : "EP-002 regression suite",
+  "workItemIDs" : [
+    {
+      "rawValue" : "T-0177"
+    },
+    {
+      "rawValue" : "T-0178"
+    },
+    {
+      "rawValue" : "T-0179"
+    },
+    {
+      "rawValue" : "T-0180"
+    },
+    {
+      "rawValue" : "T-0181"
+    },
+    {
+      "rawValue" : "T-0182"
+    },
+    {
+      "rawValue" : "T-0183"
+    },
+    {
+      "rawValue" : "T-0184"
+    },
+    {
+      "rawValue" : "T-0185"
+    },
+    {
+      "rawValue" : "T-0186"
+    },
+    {
+      "rawValue" : "T-0187"
+    }
+  ]
+}

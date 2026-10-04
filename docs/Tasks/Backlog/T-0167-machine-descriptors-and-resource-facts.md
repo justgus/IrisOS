@@ -25,6 +25,19 @@ Source-Path: docs/ER/ER-0071-Machine-Descriptors-and-Resource-Facts.md
 
 This Airframe Task was generated from the legacy ER record during the local documentation migration. The target status represents the approved source documentation state and is not a new verification action.
 
+## Airframe Planning
+
+- Estimate: 8 points (approved umbrella estimate)
+- Dependencies: T-0166 (legacy ER dependency ER-0070).
+- Planned Acceptance Criteria:
+  - Processor, memory, bus, and device descriptors can be constructed and queried.
+  - Descriptor identities and query ordering are deterministic and registry round trips preserve facts.
+  - Descriptors expose no operations that grant resource access.
+- Planned Verification: `make check`; construct and query representative descriptors and inspect their exposed operations.
+- Acceptance Test: `TEST-0011` (Ready; not run as part of this planning change).
+- Scope split: the implemented in-memory descriptor and query slice is covered by T-0181.
+- Decomposition: the implemented descriptor slice is represented by verified Task T-0181. Keep this legacy umbrella in Backlog for ER traceability and review it for residual scope before scheduling it independently.
+
 ## Preserved Legacy ER Content
 
 ```md

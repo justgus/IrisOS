@@ -1,0 +1,46 @@
+{
+  "acceptanceCriterionIDs" : [
+    {
+      "rawValue" : "AC-0014"
+    }
+  ],
+  "artifactReferences" : [
+
+  ],
+  "automationCommand" : "make check",
+  "evidenceIDs" : [
+
+  ],
+  "expectedResults" : [
+    "Release and revocation invalidate access deterministically without wall-clock expiry."
+  ],
+  "id" : {
+    "rawValue" : "TEST-0004"
+  },
+  "kind" : "acceptance",
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    }
+  },
+  "notes" : [
+
+  ],
+  "objective" : "Verify AC-0014 across active, released, and revoked lease states.",
+  "requirementIDs" : [
+
+  ],
+  "status" : "ready",
+  "steps" : [
+    "Exercise lease use while Active.",
+    "Release and revoke leases, then retry access and inspect resulting state."
+  ],
+  "title" : "Machine lease lifecycle",
+  "workItemIDs" : [
+    {
+      "rawValue" : "T-0183"
+    }
+  ]
+}
