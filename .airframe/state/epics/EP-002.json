@@ -1,5 +1,15 @@
 {
-  "acceptanceCriterionIDs": [],
+  "acceptanceCriterionIDs": [
+    { "rawValue": "AC-0011" },
+    { "rawValue": "AC-0012" },
+    { "rawValue": "AC-0013" },
+    { "rawValue": "AC-0014" },
+    { "rawValue": "AC-0015" },
+    { "rawValue": "AC-0016" },
+    { "rawValue": "AC-0017" },
+    { "rawValue": "AC-0018" },
+    { "rawValue": "AC-0019" }
+  ],
   "goal": "Establish registered Machine representations, in-memory resource descriptors, capability-bearing handles and leases, and Machine-backed Comms protocol execution as required by AR-0024.",
   "issueIDs": [],
   "metadata": {
@@ -8,7 +18,7 @@
       "minor": 0,
       "patch": 0
     },
-    "updatedAt": "2026-08-24T00:00:00Z",
+    "updatedAt": "2026-10-04T14:27:53Z",
     "source": "docs/Epics/Epic-active.md"
   },
   "notes": [
@@ -60,7 +70,7 @@
   "workItem": {
     "id": { "rawValue": "EP-002" },
     "kind": "epic",
-    "status": "active",
+    "status": "backlog",
     "title": "Machine and Communications Foundations"
   }
 }

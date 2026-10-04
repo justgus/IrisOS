@@ -1,9 +1,9 @@
 # Active Sprint
 
-Sprints listed here are currently in Planning, Active, or Review status and are the current execution focus.
-
-Currently: **0 active Sprints**
+Sprints listed here are currently in Planning or Active status and are the current execution focus.
 
 ---
 
-*Last Updated: 2026-08-25 (SP-006 verified and closed)*
+No Sprints are currently in Planning or Active.
+
+*Last Updated: 2026-10-04*
