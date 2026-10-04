@@ -4,7 +4,7 @@ This is the main index for Agile Airframe Sprints. Sprints group Tasks and Issue
 
 ## Current Sprint Record
 
-Currently: [**SP-007 - EP-002 Umbrella Scope Completion**](Sprint-active.md)
+Currently: **None**
 
 ## All Sprints
 
@@ -18,16 +18,16 @@ Currently: **7 Sprints** | Next available: **SP-008**
 | SP-004 | Authorized Machine Resource Acquisition | EP-002 | T-0182, T-0183 | None | Closed |
 | SP-005 | Machine-Backed Comms Transport and Sessions | EP-002 | T-0184, T-0185 | None | Closed |
 | SP-006 | Protocol Compatibility and Executable Framing | EP-002 | T-0186, T-0187 | None | Closed |
-| SP-007 | EP-002 Umbrella Scope Completion | EP-002 | T-0166, T-0167, T-0168, T-0169, T-0170 | None | Active |
+| SP-007 | EP-002 Umbrella Scope Completion | EP-002 | T-0166, T-0167, T-0168, T-0169, T-0170 | None | Closed |
 
 ## Statistics
 
 - **Total Sprints:** 7
 - **Backlog:** 0
 - **Planning:** 0
-- **Active:** 1
+- **Active:** 0
 - **Review:** 0
-- **Closed:** 6
+- **Closed:** 7
 - **Next available:** SP-008
 
 *Last Updated: 2026-10-04*

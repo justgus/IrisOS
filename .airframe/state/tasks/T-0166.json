@@ -11,6 +11,7 @@
     "Comms"
   ],
   "dateImplemented" : "2026-10-04",
+  "dateVerified" : "2026-10-04",
   "epicID" : {
     "rawValue" : "EP-002"
   },
@@ -24,7 +25,7 @@
       "patch" : 0
     },
     "source" : "docs\/ER\/ER-0070-Machine-Representation-Primitives.md",
-    "updatedAt" : "2026-10-04T21:04:04Z"
+    "updatedAt" : "2026-10-04T22:20:07Z"
   },
   "notes" : [
     "Legacy ID: ER-0070",
@@ -54,7 +55,7 @@
       "rawValue" : "T-0166"
     },
     "kind" : "task",
-    "status" : "implementedNotVerified",
+    "status" : "implementedVerified",
     "title" : "Machine Representation Primitives"
   }
 }

@@ -9,15 +9,15 @@ Currently: **3 Epics** | Next available: **EP-004**
 | Epic | Title | Status | Start Date | Close Date |
 | ---- | ----- | ------ | ---------- | ---------- |
 | EP-001 | Migrate IrisOS Workflow Documentation to Agile Airframe | Closed | 2026-07-06 | 2026-10-04 |
-| EP-002 | Machine and Communications Foundations | Active | 2026-08-21 | TBD |
+| EP-002 | Machine and Communications Foundations | Closed | TBD | 2026-10-04 |
 | EP-003 | Caliper Catalog and Conversion Tooling | Backlog | TBD | TBD |
 
 ## Statistics
 
 - **Total Epics:** 3
 - **Backlog:** 1
-- **Active:** 1
-- **Closed:** 1
+- **Active:** 0
+- **Closed:** 2
 - **Next available:** EP-004
 
-*Last Updated: 2026-10-04 (EP-002 reactivated)*
+*Last Updated: 2026-10-04*

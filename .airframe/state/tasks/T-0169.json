@@ -10,6 +10,7 @@
     "Machine"
   ],
   "dateImplemented" : "2026-10-04",
+  "dateVerified" : "2026-10-04",
   "epicID" : {
     "rawValue" : "EP-002"
   },
@@ -23,7 +24,7 @@
       "patch" : 0
     },
     "source" : "docs\/ER\/ER-0073-Comms-Transport-and-Session-Objects.md",
-    "updatedAt" : "2026-10-04T21:04:08Z"
+    "updatedAt" : "2026-10-04T22:20:18Z"
   },
   "notes" : [
     "Legacy ID: ER-0073",
@@ -53,7 +54,7 @@
       "rawValue" : "T-0169"
     },
     "kind" : "task",
-    "status" : "implementedNotVerified",
+    "status" : "implementedVerified",
     "title" : "Comms Transport and Session Objects"
   }
 }

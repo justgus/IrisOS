@@ -1,4 +1,5 @@
 {
+  "endDate" : "2026-10-04",
   "epicID" : {
     "rawValue" : "EP-002"
   },
@@ -13,7 +14,7 @@
       "patch" : 0
     },
     "source" : "docs\/Sprints\/Sprint-active.md",
-    "updatedAt" : "2026-10-04T21:04:08Z"
+    "updatedAt" : "2026-10-04T22:20:57Z"
   },
   "notes" : [
     "Capacity is not set. Estimated Task scope totals 63-68 points: T-0166 21, T-0167 8, T-0168 13, T-0169 8-13, T-0170 13.",
@@ -44,7 +45,7 @@
       "rawValue" : "SP-007"
     },
     "kind" : "sprint",
-    "status" : "active",
+    "status" : "closed",
     "title" : "EP-002 Umbrella Scope Completion"
   }
 }
