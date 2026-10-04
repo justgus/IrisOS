@@ -332,6 +332,16 @@ START_TEST(test_protocol_required_machine_capability_is_checked)
   ck_assert_msg(!misplaced_requirement,
                 "protocol accepted a required capability for a disallowed resource kind");
 
+  auto contradictory_requirements = Protocol::create(
+      id(80), "contradictory-packet", TransportSemantics::Stream,
+      {MachineResourceKind::Memory},
+      {{MachineResourceKind::Memory, MachineAccessMode::Read},
+       {MachineResourceKind::Memory, MachineAccessMode::Write}});
+  ck_assert_msg(!contradictory_requirements,
+                "protocol accepted contradictory access requirements");
+  ck_assert_int_eq(static_cast<int>(contradictory_requirements.error->code),
+                   static_cast<int>(referee::ErrorCode::InvalidArgument));
+
   auto canonical_requirements = Protocol::create(
       id(79), "canonical-packet", TransportSemantics::Stream,
       {MachineResourceKind::Device, MachineResourceKind::Memory},
