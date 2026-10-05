@@ -1,46 +1,51 @@
 {
-  "acceptanceCriteria": [
-
+  "acceptanceCriteria" : [
+    "Tests verify listing, lookup\/inspection, and successful conversion command behavior.",
+    "Tests verify clear errors for unknown units and incompatible dimensions; commands follow existing Conch conventions."
   ],
-  "component": "Migrated legacy ER",
-  "componentsAffected": [
-
+  "component" : "Migrated legacy ER",
+  "componentsAffected" : [
+    "Add Conch commands to list units, inspect unit metadata, and convert values using the Caliper catalog and runtime APIs.",
+    "Cover command parsing, execution, output formatting, and deterministic errors."
   ],
-  "epicID": {
-    "rawValue": "EP-003"
+  "epicID" : {
+    "rawValue" : "EP-003"
   },
-  "evidenceIDs": [
+  "evidenceIDs" : [
 
   ],
-  "metadata": {
-    "schemaVersion": {
-      "major": 1,
-      "minor": 0,
-      "patch": 0
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
     },
-    "updatedAt": "2026-07-07T00:00:00Z",
-    "source": "docs/ER/ER-0077-Conch-Conversion-and-Inspection-Commands.md"
+    "source" : "docs\/ER\/ER-0077-Conch-Conversion-and-Inspection-Commands.md",
+    "updatedAt" : "2026-10-04T22:59:38Z"
   },
-  "notes": [
-    "Legacy ID: ER-0077",
-    "Source Status: Proposed",
-    "Source Path: docs/ER/ER-0077-Conch-Conversion-and-Inspection-Commands.md"
+  "notes" : [
+    "Legacy requirement ER-0077; depends on AR-0019, ER-0075, and ER-0076.",
+    "Full scripting integration, catalog authoring UI, and rich table rendering are out of scope."
   ],
-  "priority": "medium",
-  "rationale": "Migrated from legacy IrisOS Engineering Request documentation.",
-  "requirementIDs": [
+  "priority" : "medium",
+  "rationale" : "Migrated from legacy IrisOS Engineering Request documentation.",
+  "requirementIDs" : [
 
   ],
-  "testSteps": [
-
+  "sprintID" : {
+    "rawValue" : "SP-009"
+  },
+  "testSteps" : [
+    "Automated command parser and execution tests for success and failure paths.",
+    "Manual checks list and inspect units, convert compatible units, and attempt an incompatible conversion."
   ],
-  "workItem": {
-    "id": {
-      "rawValue": "T-0173"
+  "workItem" : {
+    "githubIssue" : 285,
+    "id" : {
+      "rawValue" : "T-0173"
     },
-    "kind": "task",
-    "status": "backlog",
-    "title": "Conch Conversion and Inspection Commands",
-    "githubIssue": 285
+    "kind" : "task",
+    "status" : "active",
+    "title" : "Conch Conversion and Inspection Commands"
   }
 }

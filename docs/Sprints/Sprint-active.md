@@ -4,6 +4,8 @@ Sprints listed here are currently in Planning or Active status and are the curre
 
 ---
 
-No Sprints are currently in Planning or Active.
+| Sprint | Epic | Goal |
+| ------ | ---- | ---- |
+| [SP-008](../generated/Sprints/SP-008.md) | EP-003 | Complete the canonical Caliper catalog and persist its immutable, versioned base in Referee, with deterministic extension precedence. |
 
-*Last Updated: 2026-10-04*
+*Last Updated: 2026-10-05*

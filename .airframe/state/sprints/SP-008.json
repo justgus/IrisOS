@@ -1,0 +1,36 @@
+{
+  "epicID" : {
+    "rawValue" : "EP-003"
+  },
+  "goal" : "",
+  "issueIDs" : [
+
+  ],
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    },
+    "updatedAt" : "2026-10-05T13:58:08Z"
+  },
+  "notes" : [
+
+  ],
+  "taskIDs" : [
+    {
+      "rawValue" : "T-0171"
+    },
+    {
+      "rawValue" : "T-0188"
+    }
+  ],
+  "workItem" : {
+    "id" : {
+      "rawValue" : "SP-008"
+    },
+    "kind" : "sprint",
+    "status" : "active",
+    "title" : "Caliper Catalog and Persistence"
+  }
+}

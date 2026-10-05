@@ -1,0 +1,47 @@
+{
+  "acceptanceCriteria" : [
+    "Catalog versions can be persisted, loaded, and identified deterministically; the shipped base catalog is not mutated by user extensions.",
+    "Extension and override precedence is documented and tested, including duplicate-symbol and conflict cases."
+  ],
+  "component" : "Store the canonical Caliper catalog as a versioned durable Referee object.",
+  "componentsAffected" : [
+    "Store the canonical Caliper catalog as a versioned durable Referee object.",
+    "Support user-defined extensions layered over an immutable base catalog, with documented explicit override precedence and deterministic conflict handling."
+  ],
+  "epicID" : {
+    "rawValue" : "EP-003"
+  },
+  "evidenceIDs" : [
+
+  ],
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    },
+    "updatedAt" : "2026-10-04T22:59:38Z"
+  },
+  "notes" : [
+    "Depends on T-0171 for the expanded catalog model. Runtime conversion behavior and Conch commands remain in T-0172 and T-0173."
+  ],
+  "priority" : "medium",
+  "rationale" : "Depends on T-0171 for the expanded catalog model. Runtime conversion behavior and Conch commands remain in T-0172 and T-0173.",
+  "requirementIDs" : [
+
+  ],
+  "sprintID" : {
+    "rawValue" : "SP-008"
+  },
+  "testSteps" : [
+    "Automated Referee persistence, versioning, extension layering, override precedence, and conflict tests."
+  ],
+  "workItem" : {
+    "id" : {
+      "rawValue" : "T-0188"
+    },
+    "kind" : "task",
+    "status" : "active",
+    "title" : "Versioned Caliper Catalog Storage and Extensions"
+  }
+}

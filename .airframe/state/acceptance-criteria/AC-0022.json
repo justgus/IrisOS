@@ -1,0 +1,21 @@
+{
+  "disposition" : "unverified",
+  "evidenceIDs" : [
+
+  ],
+  "id" : {
+    "rawValue" : "AC-0022"
+  },
+  "isVerified" : false,
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    }
+  },
+  "ownerID" : {
+    "rawValue" : "EP-003"
+  },
+  "text" : "The Caliper runtime API checks compatibility by dimension and converts compatible values through deterministic direct or chained conversions, including scale and offset units. It rejects unknown units and incompatible dimensions, documents numeric precision and rounding behavior, and returns stable results across catalog reloads."
+}

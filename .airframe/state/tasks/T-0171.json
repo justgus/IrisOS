@@ -1,46 +1,51 @@
 {
-  "acceptanceCriteria": [
-
+  "acceptanceCriteria" : [
+    "Coverage tests verify the planned SI base\/derived, metric-prefix, and common imperial\/US customary entries.",
+    "Validation rejects duplicate symbols and ambiguous definitions; catalog ordering and serialization are deterministic."
   ],
-  "component": "Migrated legacy ER",
-  "componentsAffected": [
-
+  "component" : "Migrated legacy ER",
+  "componentsAffected" : [
+    "Expand the Caliper catalog with SI base and derived units, common metric prefixes, and common imperial\/US customary units.",
+    "Record canonical names, symbols, dimensions, system tags, and conversion metadata; preserve source references for non-obvious definitions."
   ],
-  "epicID": {
-    "rawValue": "EP-003"
+  "epicID" : {
+    "rawValue" : "EP-003"
   },
-  "evidenceIDs": [
+  "evidenceIDs" : [
 
   ],
-  "metadata": {
-    "schemaVersion": {
-      "major": 1,
-      "minor": 0,
-      "patch": 0
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
     },
-    "updatedAt": "2026-07-07T00:00:00Z",
-    "source": "docs/ER/ER-0075-Full-Caliper-Catalog-Expansion.md"
+    "source" : "docs\/ER\/ER-0075-Full-Caliper-Catalog-Expansion.md",
+    "updatedAt" : "2026-10-04T22:59:38Z"
   },
-  "notes": [
-    "Legacy ID: ER-0075",
-    "Source Status: Proposed",
-    "Source Path: docs/ER/ER-0075-Full-Caliper-Catalog-Expansion.md"
+  "notes" : [
+    "Legacy requirement ER-0075; depends on AR-0019 and ER-0033.",
+    "Runtime conversion execution and Conch commands are out of scope."
   ],
-  "priority": "medium",
-  "rationale": "Migrated from legacy IrisOS Engineering Request documentation.",
-  "requirementIDs": [
+  "priority" : "medium",
+  "rationale" : "Migrated from legacy IrisOS Engineering Request documentation.",
+  "requirementIDs" : [
 
   ],
-  "testSteps": [
-
+  "sprintID" : {
+    "rawValue" : "SP-008"
+  },
+  "testSteps" : [
+    "Automated catalog coverage, duplicate\/ambiguity rejection, deterministic serialization, and regression test results.",
+    "Record authoritative references for catalog definitions and conversion constants."
   ],
-  "workItem": {
-    "id": {
-      "rawValue": "T-0171"
+  "workItem" : {
+    "githubIssue" : 283,
+    "id" : {
+      "rawValue" : "T-0171"
     },
-    "kind": "task",
-    "status": "backlog",
-    "title": "Full Caliper Catalog Expansion",
-    "githubIssue": 283
+    "kind" : "task",
+    "status" : "active",
+    "title" : "Full Caliper Catalog Expansion"
   }
 }

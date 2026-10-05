@@ -1,0 +1,36 @@
+{
+  "epicID" : {
+    "rawValue" : "EP-003"
+  },
+  "goal" : "",
+  "issueIDs" : [
+
+  ],
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    },
+    "updatedAt" : "2026-10-04T23:00:14Z"
+  },
+  "notes" : [
+
+  ],
+  "taskIDs" : [
+    {
+      "rawValue" : "T-0172"
+    },
+    {
+      "rawValue" : "T-0173"
+    }
+  ],
+  "workItem" : {
+    "id" : {
+      "rawValue" : "SP-009"
+    },
+    "kind" : "sprint",
+    "status" : "planning",
+    "title" : "Caliper Conversion and Conch Tooling"
+  }
+}

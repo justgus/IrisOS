@@ -1,0 +1,48 @@
+{
+  "acceptanceCriterionIDs" : [
+    {
+      "rawValue" : "AC-0020"
+    }
+  ],
+  "artifactReferences" : [
+
+  ],
+  "evidenceIDs" : [
+
+  ],
+  "expectedResults" : [
+    "Required catalog coverage is present and each entry exposes the planned metadata.",
+    "Catalog ordering and serialization are deterministic.",
+    "Duplicate or ambiguous definitions are rejected with deterministic errors."
+  ],
+  "id" : {
+    "rawValue" : "TEST-0015"
+  },
+  "kind" : "dataValidation",
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    }
+  },
+  "notes" : [
+
+  ],
+  "objective" : "Verify the expanded canonical unit catalog covers required SI and common imperial entries, and rejects ambiguous definitions deterministically.",
+  "requirementIDs" : [
+
+  ],
+  "status" : "draft",
+  "steps" : [
+    "Inspect catalog entries for SI base and derived units, common metric prefixes, and common imperial\/US customary units.",
+    "Validate canonical names, symbols, dimensions, tags, conversion metadata, ordering, and serialization.",
+    "Attempt to register duplicate-symbol and ambiguous definitions."
+  ],
+  "title" : "Caliper catalog coverage and validation",
+  "workItemIDs" : [
+    {
+      "rawValue" : "T-0171"
+    }
+  ]
+}

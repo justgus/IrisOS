@@ -1,46 +1,51 @@
 {
-  "acceptanceCriteria": [
-
+  "acceptanceCriteria" : [
+    "Tests cover direct and chained conversions, including scale and offset cases.",
+    "Unknown units and incompatible dimensions fail deterministically; conversion results remain stable across catalog reloads."
   ],
-  "component": "Migrated legacy ER",
-  "componentsAffected": [
-
+  "component" : "Migrated legacy ER",
+  "componentsAffected" : [
+    "Implement Caliper runtime compatibility checks based on dimensions and deterministic conversion between compatible units.",
+    "Support explicit conversion chains plus scale and offset conversions; define stable numeric precision and rounding behavior."
   ],
-  "epicID": {
-    "rawValue": "EP-003"
+  "epicID" : {
+    "rawValue" : "EP-003"
   },
-  "evidenceIDs": [
+  "evidenceIDs" : [
 
   ],
-  "metadata": {
-    "schemaVersion": {
-      "major": 1,
-      "minor": 0,
-      "patch": 0
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
     },
-    "updatedAt": "2026-07-07T00:00:00Z",
-    "source": "docs/ER/ER-0076-Runtime-Conversion-and-Compatibility-Engine.md"
+    "source" : "docs\/ER\/ER-0076-Runtime-Conversion-and-Compatibility-Engine.md",
+    "updatedAt" : "2026-10-04T22:59:38Z"
   },
-  "notes": [
-    "Legacy ID: ER-0076",
-    "Source Status: Proposed",
-    "Source Path: docs/ER/ER-0076-Runtime-Conversion-and-Compatibility-Engine.md"
+  "notes" : [
+    "Legacy requirement ER-0076; depends on AR-0019 and ER-0075.",
+    "Automatic symbolic simplification, domain-specific catalogs, and Conch command surfaces are out of scope."
   ],
-  "priority": "medium",
-  "rationale": "Migrated from legacy IrisOS Engineering Request documentation.",
-  "requirementIDs": [
+  "priority" : "medium",
+  "rationale" : "Migrated from legacy IrisOS Engineering Request documentation.",
+  "requirementIDs" : [
 
   ],
-  "testSteps": [
-
+  "sprintID" : {
+    "rawValue" : "SP-009"
+  },
+  "testSteps" : [
+    "Automated conversion and compatibility tests, including failure behavior and precision\/rounding expectations.",
+    "Run make check and record results."
   ],
-  "workItem": {
-    "id": {
-      "rawValue": "T-0172"
+  "workItem" : {
+    "githubIssue" : 284,
+    "id" : {
+      "rawValue" : "T-0172"
     },
-    "kind": "task",
-    "status": "backlog",
-    "title": "Runtime Conversion and Compatibility Engine",
-    "githubIssue": 284
+    "kind" : "task",
+    "status" : "active",
+    "title" : "Runtime Conversion and Compatibility Engine"
   }
 }

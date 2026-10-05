@@ -1,0 +1,21 @@
+{
+  "disposition" : "unverified",
+  "evidenceIDs" : [
+
+  ],
+  "id" : {
+    "rawValue" : "AC-0020"
+  },
+  "isVerified" : false,
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    }
+  },
+  "ownerID" : {
+    "rawValue" : "EP-003"
+  },
+  "text" : "The canonical Caliper catalog covers SI base and derived units, common metric prefixes, and common imperial\/US customary units. Each entry has a canonical name, symbol, dimension, system tags, and explicit conversion metadata; duplicate symbols and ambiguous definitions are rejected, and catalog serialization is deterministic."
+}

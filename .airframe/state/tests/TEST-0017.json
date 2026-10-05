@@ -1,0 +1,49 @@
+{
+  "acceptanceCriterionIDs" : [
+    {
+      "rawValue" : "AC-0022"
+    }
+  ],
+  "artifactReferences" : [
+
+  ],
+  "evidenceIDs" : [
+
+  ],
+  "expectedResults" : [
+    "Compatible conversions return expected deterministic results under documented precision and rounding rules.",
+    "Unknown units and incompatible dimensions fail deterministically.",
+    "Results remain stable across catalog reloads."
+  ],
+  "id" : {
+    "rawValue" : "TEST-0017"
+  },
+  "kind" : "unit",
+  "metadata" : {
+    "schemaVersion" : {
+      "major" : 1,
+      "minor" : 0,
+      "patch" : 0
+    }
+  },
+  "notes" : [
+
+  ],
+  "objective" : "Verify dimension-based compatibility and deterministic direct, chained, scale, and offset conversions, including invalid input behavior.",
+  "requirementIDs" : [
+
+  ],
+  "status" : "draft",
+  "steps" : [
+    "Convert representative compatible units directly and through a conversion chain.",
+    "Exercise scale and offset conversions, including temperature.",
+    "Attempt conversion for an unknown unit and for incompatible dimensions.",
+    "Repeat conversions after catalog reload and compare results."
+  ],
+  "title" : "Caliper runtime conversion and compatibility",
+  "workItemIDs" : [
+    {
+      "rawValue" : "T-0172"
+    }
+  ]
+}

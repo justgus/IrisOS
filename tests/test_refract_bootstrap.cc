@@ -11,8 +11,12 @@ extern "C" {
 #include "referee_sqlite/sqlite_store.h"
 
 #include <nlohmann/json.hpp>
+#include <cstdio>
+#include <cstdlib>
 #include <optional>
+#include <set>
 #include <string>
+#include <unistd.h>
 #include <vector>
 
 using namespace referee;
@@ -59,6 +63,32 @@ bool payload_has_symbol(const referee::ObjectRecord& rec, const std::string& sym
   } catch (const std::exception&) {
     return false;
   }
+}
+
+std::string make_temp_db_path() {
+  char path[] = "/tmp/iris_caliper_catalog_XXXXXX";
+  const int fd = mkstemp(path);
+  if (fd >= 0) close(fd);
+  std::string result(path);
+  std::remove(result.c_str());
+  return result;
+}
+
+void cleanup_temp_db(const std::string& path) {
+  std::remove(path.c_str());
+  std::remove((path + "-shm").c_str());
+  std::remove((path + "-wal").c_str());
+  const std::string segments = path + ".segments";
+  std::remove((segments + "/segments/objects.seg").c_str());
+  std::remove((segments + "/segments/edges.seg").c_str());
+  std::remove((segments + "/segments/graph_changes.seg").c_str());
+  std::remove((segments + "/indexes/objects_by_id.idx").c_str());
+  std::remove((segments + "/indexes/objects_by_type.idx").c_str());
+  std::remove((segments + "/indexes/edges_from.idx").c_str());
+  std::remove((segments + "/indexes/edges_to.idx").c_str());
+  rmdir((segments + "/segments").c_str());
+  rmdir((segments + "/indexes").c_str());
+  rmdir(segments.c_str());
 }
 
 } // namespace
@@ -267,6 +297,26 @@ START_TEST(test_bootstrap_caliper_units)
   ck_assert_msg(unitsR, "list_by_type failed: %s", result_message(unitsR));
   ck_assert_msg(!unitsR.value->empty(), "no units registered");
 
+  std::set<std::string> symbols;
+  const std::vector<std::string> expected_symbols = {
+    "m", "kg", "s", "K", "A", "mol", "cd", "°C", "C", "Hz", "N", "Pa", "J", "W",
+    "mm", "um", "nm", "ms", "us", "gal", "fl_oz", "cup", "pt", "qt", "nmi", "kn"
+  };
+  for (const auto& rec : unitsR.value.value()) {
+    auto payload = nlohmann::json::from_cbor(rec.payload_cbor);
+    const auto symbol = payload.value("symbol", "");
+    ck_assert_msg(!symbol.empty(), "Caliper unit has no symbol");
+    ck_assert_msg(symbols.insert(symbol).second, "duplicate Caliper unit symbol: %s", symbol.c_str());
+    if (payload.contains("system")) {
+      ck_assert_msg(payload.contains("systems"), "Caliper unit is missing system tags: %s", symbol.c_str());
+      ck_assert_msg(payload.at("systems").is_array(), "Caliper systems must be an array: %s", symbol.c_str());
+      ck_assert_msg(!payload.at("systems").empty(), "Caliper systems must not be empty: %s", symbol.c_str());
+    }
+  }
+  for (const auto& symbol : expected_symbols) {
+    ck_assert_msg(symbols.count(symbol) == 1, "expected Caliper unit missing: %s", symbol.c_str());
+  }
+
   bool found_meter = false;
   for (const auto& rec : unitsR.value.value()) {
     if (payload_has_symbol(rec, "m")) {
@@ -276,7 +326,116 @@ START_TEST(test_bootstrap_caliper_units)
   }
   ck_assert_msg(found_meter, "meter unit missing");
 
+  auto catalog_type = find_type(types, "Caliper", "Catalog");
+  ck_assert_msg(catalog_type.has_value(), "Caliper::Catalog missing");
+  auto catalogsR = store.list_by_type(catalog_type->type_id);
+  ck_assert_msg(catalogsR, "list catalog objects failed: %s", result_message(catalogsR));
+  ck_assert_int_eq((int)catalogsR.value->size(), 1);
+  auto saved_catalog = nlohmann::json::from_cbor(catalogsR.value->front().payload_cbor);
+  ck_assert_int_eq(saved_catalog.value("catalog_version", 0), 1);
+  ck_assert_int_eq((int)saved_catalog.at("units").size(), (int)symbols.size());
+  const auto saved_catalog_payload = catalogsR.value->front().payload_cbor;
+  auto repeat = bootstrap_core_catalog(registry, store);
+  ck_assert_msg(repeat, "repeated catalog bootstrap failed: %s", result_message(repeat));
+  auto catalogsAfterRepeatR = store.list_by_type(catalog_type->type_id);
+  ck_assert_msg(catalogsAfterRepeatR, "list repeated catalog objects failed: %s",
+                result_message(catalogsAfterRepeatR));
+  ck_assert_int_eq((int)catalogsAfterRepeatR.value->size(), 1);
+  ck_assert_msg(catalogsAfterRepeatR.value->front().payload_cbor == saved_catalog_payload,
+                "Caliper base catalog serialization changed after reload");
+
   ck_assert_msg(store.close(), "close failed");
+}
+END_TEST
+
+START_TEST(test_compose_caliper_catalog_extension_precedence)
+{
+  const std::vector<CaliperCatalogUnit> base = {
+    { "meter", "m", "Length", { "SI" }, std::nullopt, std::nullopt, std::nullopt, false },
+    { "second", "s", "Time", { "SI" }, std::nullopt, std::nullopt, std::nullopt, false },
+  };
+  const std::vector<CaliperCatalogUnit> extension = {
+    { "custom_meter", "m", "Length", { "user" }, std::string("m"), 1.0, 0.0, true },
+    { "furlong", "fur", "Length", { "user" }, std::string("m"), 201.168, 0.0, false },
+  };
+
+  auto composed = compose_caliper_catalog(base, extension);
+  ck_assert_msg(composed, "valid extension composition failed: %s", result_message(composed));
+  ck_assert_int_eq((int)composed.value->size(), 3);
+  ck_assert_str_eq(composed.value->at(0).symbol.c_str(), "fur");
+  ck_assert_str_eq(composed.value->at(1).name.c_str(), "custom_meter");
+  ck_assert(composed.value->at(1).override_base);
+  ck_assert_str_eq(composed.value->at(2).symbol.c_str(), "s");
+
+  auto implicit_override = extension;
+  implicit_override.front().override_base = false;
+  auto rejected_implicit = compose_caliper_catalog(base, implicit_override);
+  ck_assert(!rejected_implicit);
+
+  auto dimension_change = extension;
+  dimension_change.front().dimension = "Time";
+  auto rejected_dimension_change = compose_caliper_catalog(base, dimension_change);
+  ck_assert(!rejected_dimension_change);
+
+  auto duplicate_symbol = extension;
+  duplicate_symbol.push_back(extension.back());
+  auto rejected_duplicate = compose_caliper_catalog(base, duplicate_symbol);
+  ck_assert(!rejected_duplicate);
+
+  auto duplicate_base = base;
+  duplicate_base.push_back(base.front());
+  auto rejected_base = compose_caliper_catalog(duplicate_base, {});
+  ck_assert(!rejected_base);
+}
+END_TEST
+
+START_TEST(test_caliper_base_catalog_persists_across_store_reopen)
+{
+  const auto path = make_temp_db_path();
+  referee::Bytes initial_payload;
+  referee::TypeID catalog_type{};
+
+  {
+    SqliteStore store(SqliteConfig{ .filename=path, .enable_wal=false });
+    ck_assert_msg(store.open(), "open initial store failed");
+    ck_assert_msg(store.ensure_schema(), "initial ensure_schema failed");
+    SchemaRegistry registry(store);
+    auto schema = bootstrap_core_schema(registry);
+    ck_assert_msg(schema, "initial schema bootstrap failed: %s", result_message(schema));
+    auto catalog = bootstrap_core_catalog(registry, store);
+    ck_assert_msg(catalog, "initial catalog bootstrap failed: %s", result_message(catalog));
+
+    auto types = registry.list_types();
+    ck_assert_msg(types, "initial type listing failed: %s", result_message(types));
+    auto catalog_type_summary = find_type(types.value.value(), "Caliper", "Catalog");
+    ck_assert_msg(catalog_type_summary.has_value(), "Caliper::Catalog type missing");
+    catalog_type = catalog_type_summary->type_id;
+    auto records = store.list_by_type(catalog_type);
+    ck_assert_msg(records, "initial catalog lookup failed: %s", result_message(records));
+    ck_assert_int_eq((int)records.value->size(), 1);
+    initial_payload = records.value->front().payload_cbor;
+    ck_assert_msg(store.close(), "close initial store failed");
+  }
+
+  {
+    SqliteStore store(SqliteConfig{ .filename=path, .enable_wal=false });
+    ck_assert_msg(store.open(), "reopen store failed");
+    ck_assert_msg(store.ensure_schema(), "reopened ensure_schema failed");
+    SchemaRegistry registry(store);
+    auto schema = bootstrap_core_schema(registry);
+    ck_assert_msg(schema, "reopened schema bootstrap failed: %s", result_message(schema));
+    auto catalog = bootstrap_core_catalog(registry, store);
+    ck_assert_msg(catalog, "reloaded catalog failed: %s", result_message(catalog));
+
+    auto records = store.list_by_type(catalog_type);
+    ck_assert_msg(records, "reloaded catalog lookup failed: %s", result_message(records));
+    ck_assert_int_eq((int)records.value->size(), 1);
+    ck_assert_msg(records.value->front().payload_cbor == initial_payload,
+                  "persisted Caliper base catalog changed after store reopen");
+    ck_assert_msg(store.close(), "close reopened store failed");
+  }
+
+  cleanup_temp_db(path);
 }
 END_TEST
 
@@ -357,6 +516,8 @@ Suite* refract_bootstrap_suite(void) {
   tcase_add_test(tc, test_bootstrap_conch_types);
   tcase_add_test(tc, test_bootstrap_astra_math_types);
   tcase_add_test(tc, test_bootstrap_caliper_units);
+  tcase_add_test(tc, test_compose_caliper_catalog_extension_precedence);
+  tcase_add_test(tc, test_caliper_base_catalog_persists_across_store_reopen);
   tcase_add_test(tc, test_bootstrap_kernel_io_ops);
 
   suite_add_tcase(s, tc);
