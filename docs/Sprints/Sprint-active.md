@@ -6,7 +6,7 @@ Sprints listed here are currently in Planning or Active status and are the curre
 
 ## SP-009: Caliper Conversion and Conch Tooling
 
-**Status:** Planning
+**Status:** Active
 **Epic:** EP-003
 **Goal:** Deliver deterministic Caliper runtime compatibility and conversion, plus Conch commands for listing, inspecting, and converting catalog units.
 **Start Date:** TBD
@@ -17,8 +17,8 @@ Sprints listed here are currently in Planning or Active status and are the curre
 
 | Task | Title | Priority | Status |
 | ---- | ----- | -------- | ------ |
-| T-0172 | Runtime Conversion and Compatibility Engine | Medium | Active |
-| T-0173 | Conch Conversion and Inspection Commands | Medium | Active |
+| T-0172 | Runtime Conversion and Compatibility Engine | Medium | Implemented - Not Verified |
+| T-0173 | Conch Conversion and Inspection Commands | Medium | Implemented - Not Verified |
 
 ### Assigned Issues
 
@@ -30,6 +30,6 @@ None.
 - T-0173 scope: add Conch commands to list units, inspect one unit's metadata, and convert values through the Caliper APIs. Keep converted value and target unit as default output; provide an explicit option to include dimension metadata. Follow existing Conch parsing, output, and error conventions. Cover invalid options and deterministic unknown-unit/incompatible-dimension errors.
 - Dependencies: use the persisted Caliper catalog from SP-008/T-0188. Complete T-0172 before integrating T-0173; T-0173 depends on T-0172. Catalog authoring, domain-specific catalogs, rich table rendering, and full scripting integration are out of scope.
 - Validation: extend TEST-0017 for direct/chained conversions, exact rational intermediate behavior where supported, scale/offset cases, dimension mismatch, unknown units, overflow or unsupported rational limits, and stable results after catalog reload. Extend TEST-0018 for list/inspect/convert success, default output, opt-in dimension metadata, invalid options, and deterministic errors. Run `make check`; manually exercise representative length, mass, time, and temperature conversions plus incompatible units.
-- Dates and capacity remain unset pending scheduling and task estimation. Keep SP-009 in Planning until separately activated.
+- Dates and capacity remain unset pending scheduling and task estimation. SP-009 is Active.
 
 *Last Updated: 2026-10-05*

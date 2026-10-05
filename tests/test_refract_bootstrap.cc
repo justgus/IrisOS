@@ -11,6 +11,7 @@ extern "C" {
 #include "referee_sqlite/sqlite_store.h"
 
 #include <nlohmann/json.hpp>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <optional>
@@ -389,6 +390,71 @@ START_TEST(test_compose_caliper_catalog_extension_precedence)
 }
 END_TEST
 
+START_TEST(test_caliper_runtime_conversion_and_catalog_loading)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+  SchemaRegistry registry(store);
+  auto schema = bootstrap_core_schema(registry);
+  ck_assert_msg(schema, "schema bootstrap failed: %s", result_message(schema));
+  auto bootstrap = bootstrap_core_catalog(registry, store);
+  ck_assert_msg(bootstrap, "catalog bootstrap failed: %s", result_message(bootstrap));
+
+  auto catalog = load_caliper_catalog(registry, store);
+  ck_assert_msg(catalog, "catalog load failed: %s", result_message(catalog));
+  ck_assert_msg(!catalog.value->empty(), "loaded Caliper catalog is empty");
+
+  auto inch = convert_caliper_value(*catalog.value, "1", "in", "m");
+  ck_assert_msg(inch, "inch conversion failed: %s", result_message(inch));
+  ck_assert(std::abs(inch.value->value - 0.0254) < 1e-15);
+
+  auto chain = convert_caliper_value(*catalog.value, "1.5", "ft", "cm");
+  ck_assert_msg(chain, "chained conversion failed: %s", result_message(chain));
+  ck_assert(std::abs(chain.value->value - 45.72) < 1e-12);
+
+  const std::vector<CaliperCatalogUnit> decimal_chain = {
+    { "meter", "m", "Length", { "si" }, std::nullopt, std::nullopt, std::nullopt, false },
+    { "decimeter", "dm", "Length", { "si" }, std::string("m"), 0.1, 0.0, false },
+    { "centimeter", "cm", "Length", { "si" }, std::string("dm"), 0.1, 0.0, false },
+  };
+  auto exact_chain = convert_caliper_value(decimal_chain, "3", "cm", "m");
+  ck_assert_msg(exact_chain, "exact rational chain failed: %s", result_message(exact_chain));
+  ck_assert(std::abs(exact_chain.value->value - 0.03) < 1e-15);
+
+  auto freeze = convert_caliper_value(*catalog.value, "32", "°F", "°C");
+  ck_assert_msg(freeze, "offset conversion failed: %s", result_message(freeze));
+  ck_assert(std::abs(freeze.value->value) < 1e-12);
+  ck_assert_str_eq(freeze.value->dimension.c_str(), "Temperature");
+
+  auto speed = convert_caliper_value(*catalog.value, "60", "mph", "km/h");
+  ck_assert_msg(speed, "velocity conversion failed: %s", result_message(speed));
+  ck_assert(std::abs(speed.value->value - 96.56064) < 1e-10);
+
+  auto unknown = convert_caliper_value(*catalog.value, "1", "unknown", "m");
+  ck_assert(!unknown);
+  auto incompatible = convert_caliper_value(*catalog.value, "1", "m", "kg");
+  ck_assert(!incompatible);
+
+  auto reloaded_catalog = load_caliper_catalog(registry, store);
+  ck_assert_msg(reloaded_catalog, "reloaded catalog lookup failed: %s", result_message(reloaded_catalog));
+  auto reloaded_freeze = convert_caliper_value(*reloaded_catalog.value, "32", "°F", "°C");
+  ck_assert_msg(reloaded_freeze, "reloaded offset conversion failed: %s", result_message(reloaded_freeze));
+  ck_assert_msg(reloaded_freeze.value->value == freeze.value->value,
+                "Caliper conversion changed after catalog reload");
+
+  const std::vector<CaliperCatalogUnit> bounded_chain = {
+    { "meter", "m", "Length", { "si" }, std::nullopt, std::nullopt, std::nullopt, false },
+    { "large_a", "a", "Length", { "test" }, std::string("m"), 1e18, 0.0, false },
+    { "large_b", "b", "Length", { "test" }, std::string("a"), 1e18, 0.0, false },
+  };
+  auto overflow = convert_caliper_value(bounded_chain, "1", "b", "m");
+  ck_assert(!overflow);
+
+  ck_assert_msg(store.close(), "close failed");
+}
+END_TEST
+
 START_TEST(test_caliper_base_catalog_persists_across_store_reopen)
 {
   const auto path = make_temp_db_path();
@@ -517,6 +583,7 @@ Suite* refract_bootstrap_suite(void) {
   tcase_add_test(tc, test_bootstrap_astra_math_types);
   tcase_add_test(tc, test_bootstrap_caliper_units);
   tcase_add_test(tc, test_compose_caliper_catalog_extension_precedence);
+  tcase_add_test(tc, test_caliper_runtime_conversion_and_catalog_loading);
   tcase_add_test(tc, test_caliper_base_catalog_persists_across_store_reopen);
   tcase_add_test(tc, test_bootstrap_kernel_io_ops);
 

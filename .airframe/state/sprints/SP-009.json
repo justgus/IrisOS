@@ -12,7 +12,7 @@
       "minor" : 0,
       "patch" : 0
     },
-    "updatedAt" : "2026-10-05T20:34:33Z"
+    "updatedAt" : "2026-10-05T21:11:11Z"
   },
   "notes" : [
 
@@ -30,7 +30,7 @@
       "rawValue" : "SP-009"
     },
     "kind" : "sprint",
-    "status" : "planning",
+    "status" : "active",
     "title" : "Caliper Conversion and Conch Tooling"
   }
 }

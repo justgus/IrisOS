@@ -21,7 +21,7 @@
       "patch" : 0
     },
     "source" : "docs\/ER\/ER-0077-Conch-Conversion-and-Inspection-Commands.md",
-    "updatedAt" : "2026-10-04T22:59:38Z"
+    "updatedAt" : "2026-10-05T21:20:43Z"
   },
   "notes" : [
     "Legacy requirement ER-0077; depends on AR-0019, ER-0075, and ER-0076.",
@@ -45,7 +45,7 @@
       "rawValue" : "T-0173"
     },
     "kind" : "task",
-    "status" : "active",
+    "status" : "implementedNotVerified",
     "title" : "Conch Conversion and Inspection Commands"
   }
 }

@@ -77,6 +77,10 @@ struct CapsCommand {
   std::vector<std::string> args;
 };
 
+struct CaliperCommand {
+  std::vector<std::string> args;
+};
+
 using CommandNode = std::variant<std::monostate,
                                  AliasAssignmentCommand,
                                  TypesListCommand,
@@ -86,7 +90,8 @@ using CommandNode = std::variant<std::monostate,
                                  CallCommand,
                                  TaskCommand,
                                  IoCommand,
-                                 CapsCommand>;
+                                 CapsCommand,
+                                 CaliperCommand>;
 
 struct CommandAst {
   std::string raw_input;

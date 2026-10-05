@@ -61,6 +61,7 @@ libreferee_la_SOURCES = \
    services/service.cc \
    refract/bootstrap.h \
    refract/bootstrap.cc \
+   refract/caliper_conversion.cc \
    refract/dispatch.h \
    refract/dispatch.cc \
    refract/operation_registry.h \
