@@ -11,9 +11,10 @@
 
   ],
   "expectedResults" : [
-    "List and inspect commands expose the planned catalog information.",
-    "Successful conversions return the converted value and relevant output.",
-    "Unknown and incompatible conversions produce clear deterministic errors."
+    "List and inspect commands expose planned catalog information using existing Conch conventions.",
+    "Default conversion output contains the converted value and target unit without dimension metadata.",
+    "The explicit metadata option adds the converted value's dimension to output.",
+    "Unknown units, incompatible dimensions, and invalid options produce clear deterministic errors."
   ],
   "id" : {
     "rawValue" : "TEST-0018"
@@ -27,21 +28,24 @@
     }
   },
   "notes" : [
-
+    "System Engineer planning decision: dimension metadata is opt-in for conversion output and is omitted by default."
   ],
   "objective" : "Verify Conch unit listing, metadata inspection, and conversion commands use Caliper APIs and follow existing command conventions.",
   "requirementIDs" : [
 
   ],
-  "status" : "draft",
+  "status" : "ready",
   "steps" : [
     "List available units and inspect a representative unit.",
-    "Convert values between compatible units.",
-    "Attempt conversion with an unknown unit and incompatible dimensions.",
-    "Check command output and errors against existing Conch conventions."
+    "Convert values between compatible units with default output.",
+    "Repeat a conversion with the explicit option that adds dimension metadata to output.",
+    "Attempt conversion with an unknown unit, incompatible dimensions, and an invalid option."
   ],
   "title" : "Conch Caliper inspection and conversion commands",
   "workItemIDs" : [
+    {
+      "rawValue" : "SP-009"
+    },
     {
       "rawValue" : "T-0173"
     }

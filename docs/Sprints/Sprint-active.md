@@ -4,8 +4,32 @@ Sprints listed here are currently in Planning or Active status and are the curre
 
 ---
 
-| Sprint | Epic | Goal |
-| ------ | ---- | ---- |
-| [SP-008](../generated/Sprints/SP-008.md) | EP-003 | Complete the canonical Caliper catalog and persist its immutable, versioned base in Referee, with deterministic extension precedence. |
+## SP-009: Caliper Conversion and Conch Tooling
+
+**Status:** Planning
+**Epic:** EP-003
+**Goal:** Deliver deterministic Caliper runtime compatibility and conversion, plus Conch commands for listing, inspecting, and converting catalog units.
+**Start Date:** TBD
+**End Date:** TBD
+**Capacity:** TBD
+
+### Assigned Tasks
+
+| Task | Title | Priority | Status |
+| ---- | ----- | -------- | ------ |
+| T-0172 | Runtime Conversion and Compatibility Engine | Medium | Active |
+| T-0173 | Conch Conversion and Inspection Commands | Medium | Active |
+
+### Assigned Issues
+
+None.
+
+**Plan:**
+- Implement T-0172 first, then T-0173. T-0172 owns the runtime API and direct/chained conversion; T-0173 adds thin Conch wrappers over the catalog and runtime API.
+- T-0172 scope: check compatibility by dimension; resolve direct and chained conversions including scale and offset units; preserve exact rational conversion factors through the chain where possible and convert to the API numeric type only for the final result. First check portable, dependency-free rational arithmetic and overflow bounds against the catalog. If exact handling is infeasible for a factor or safe range, stop and report the specific limitation for System Engineer direction rather than silently rounding intermediate values. Define final numeric precision, tolerance, and rounding in tests. Unknown units and incompatible dimensions fail deterministically.
+- T-0173 scope: add Conch commands to list units, inspect one unit's metadata, and convert values through the Caliper APIs. Keep converted value and target unit as default output; provide an explicit option to include dimension metadata. Follow existing Conch parsing, output, and error conventions. Cover invalid options and deterministic unknown-unit/incompatible-dimension errors.
+- Dependencies: use the persisted Caliper catalog from SP-008/T-0188. Complete T-0172 before integrating T-0173; T-0173 depends on T-0172. Catalog authoring, domain-specific catalogs, rich table rendering, and full scripting integration are out of scope.
+- Validation: extend TEST-0017 for direct/chained conversions, exact rational intermediate behavior where supported, scale/offset cases, dimension mismatch, unknown units, overflow or unsupported rational limits, and stable results after catalog reload. Extend TEST-0018 for list/inspect/convert success, default output, opt-in dimension metadata, invalid options, and deterministic errors. Run `make check`; manually exercise representative length, mass, time, and temperature conversions plus incompatible units.
+- Dates and capacity remain unset pending scheduling and task estimation. Keep SP-009 in Planning until separately activated.
 
 *Last Updated: 2026-10-05*
