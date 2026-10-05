@@ -2,16 +2,10 @@
 
 Epics listed here are proposed and queued for future planning.
 
-Currently: **1 backlog Epic**
+Currently: **0 backlog Epics**
 
 ---
 
-## EP-003: Caliper Catalog and Conversion Tooling
+No Epics are currently in Backlog.
 
-**Status:** Backlog
-**Owner:** System Engineer
-
-**Goal:**
-Deliver the full Caliper catalog and the runtime and Conch conversion tooling required by AR-0019.
-
-*Last Updated: 2026-10-04*
+*Last Updated: 2026-10-05*

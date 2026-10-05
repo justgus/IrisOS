@@ -5,9 +5,9 @@ Currently: **108 total Tasks**
 | Status | Count |
 | ------ | ----- |
 | Backlog | 0 |
-| Active | 2 |
+| Active | 0 |
 | Implemented - Not Verified | 2 |
-| Implemented - Verified | 104 |
+| Implemented - Verified | 106 |
 | Closed | 0 |
 
 | Task | GitHub Issue | Title | Status |
@@ -102,9 +102,9 @@ Currently: **108 total Tasks**
 | T-0168 | #280 | Machine Handles and Leases | Implemented - Verified |
 | T-0169 | #281 | Comms Transport and Session Objects | Implemented - Verified |
 | T-0170 | #282 | Comms Protocol Objects and Hardware Mapping | Implemented - Verified |
-| T-0171 | #283 | Full Caliper Catalog Expansion | Implemented - Not Verified |
-| T-0172 | #284 | Runtime Conversion and Compatibility Engine | Active |
-| T-0173 | #285 | Conch Conversion and Inspection Commands | Active |
+| T-0171 | #283 | Full Caliper Catalog Expansion | Implemented - Verified |
+| T-0172 | #284 | Runtime Conversion and Compatibility Engine | Implemented - Not Verified |
+| T-0173 | #285 | Conch Conversion and Inspection Commands | Implemented - Not Verified |
 | T-0174 | #286 | Refract Constraints and Validation Metadata | Implemented - Verified |
 | T-0175 | #287 | Refract Operation Effects Metadata | Implemented - Verified |
 | T-0176 | #288 | Refract Documentation Objects and Introspection | Implemented - Verified |
@@ -119,4 +119,4 @@ Currently: **108 total Tasks**
 | T-0185 | TBD | Comms Session Lifecycle | Implemented - Verified |
 | T-0186 | TBD | Protocol Metadata and Compatibility | Implemented - Verified |
 | T-0187 | TBD | Executable Registered-Packet Protocol | Implemented - Verified |
-| T-0188 | TBD | Versioned Caliper Catalog Storage and Extensions | Implemented - Not Verified |
+| T-0188 | TBD | Versioned Caliper Catalog Storage and Extensions | Implemented - Verified |

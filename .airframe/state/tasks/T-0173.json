@@ -8,6 +8,7 @@
     "Add Conch commands to list units, inspect unit metadata, and convert values using the Caliper catalog and runtime APIs.",
     "Cover command parsing, execution, output formatting, and deterministic errors."
   ],
+  "dateVerified" : "2026-10-05",
   "epicID" : {
     "rawValue" : "EP-003"
   },
@@ -21,7 +22,7 @@
       "patch" : 0
     },
     "source" : "docs\/ER\/ER-0077-Conch-Conversion-and-Inspection-Commands.md",
-    "updatedAt" : "2026-10-05T21:20:43Z"
+    "updatedAt" : "2026-10-05T21:50:02Z"
   },
   "notes" : [
     "Legacy requirement ER-0077; depends on AR-0019, ER-0075, and ER-0076.",
@@ -45,7 +46,7 @@
       "rawValue" : "T-0173"
     },
     "kind" : "task",
-    "status" : "implementedNotVerified",
+    "status" : "implementedVerified",
     "title" : "Conch Conversion and Inspection Commands"
   }
 }

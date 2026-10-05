@@ -8,6 +8,7 @@
     "Expand the Caliper catalog with SI base and derived units, common metric prefixes, and common imperial\/US customary units.",
     "Record canonical names, symbols, dimensions, system tags, and conversion metadata; preserve source references for non-obvious definitions."
   ],
+  "dateVerified" : "2026-10-05",
   "epicID" : {
     "rawValue" : "EP-003"
   },
@@ -21,7 +22,7 @@
       "patch" : 0
     },
     "source" : "docs\/ER\/ER-0075-Full-Caliper-Catalog-Expansion.md",
-    "updatedAt" : "2026-10-05T18:41:33Z"
+    "updatedAt" : "2026-10-05T19:42:32Z"
   },
   "notes" : [
     "Legacy requirement ER-0075; depends on AR-0019 and ER-0033.",
@@ -45,7 +46,7 @@
       "rawValue" : "T-0171"
     },
     "kind" : "task",
-    "status" : "implementedNotVerified",
+    "status" : "implementedVerified",
     "title" : "Full Caliper Catalog Expansion"
   }
 }

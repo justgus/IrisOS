@@ -1,4 +1,5 @@
 {
+  "endDate" : "2026-10-05",
   "epicID" : {
     "rawValue" : "EP-003"
   },
@@ -12,7 +13,7 @@
       "minor" : 0,
       "patch" : 0
     },
-    "updatedAt" : "2026-10-05T13:58:08Z"
+    "updatedAt" : "2026-10-05T19:49:35Z"
   },
   "notes" : [
 
@@ -30,7 +31,7 @@
       "rawValue" : "SP-008"
     },
     "kind" : "sprint",
-    "status" : "active",
+    "status" : "closed",
     "title" : "Caliper Catalog and Persistence"
   }
 }

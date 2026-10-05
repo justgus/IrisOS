@@ -1,18 +1,19 @@
 {
-  "disposition" : "unverified",
+  "disposition" : "verified",
   "evidenceIDs" : [
 
   ],
   "id" : {
     "rawValue" : "AC-0020"
   },
-  "isVerified" : false,
+  "isVerified" : true,
   "metadata" : {
     "schemaVersion" : {
       "major" : 1,
       "minor" : 0,
       "patch" : 0
-    }
+    },
+    "updatedAt" : "2026-10-05T19:43:23Z"
   },
   "ownerID" : {
     "rawValue" : "EP-003"
