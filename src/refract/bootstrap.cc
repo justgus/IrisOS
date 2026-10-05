@@ -2,12 +2,14 @@
 
 #include "machine/refract.h"
 
+#include <algorithm>
 #include <array>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
 #include <map>
 #include <optional>
+#include <set>
 #include <string_view>
 
 #include <nlohmann/json.hpp>
@@ -45,6 +47,7 @@ constexpr referee::TypeID kTypeCaliperSpan{0x43414C5000000005ULL};
 constexpr referee::TypeID kTypeCaliperRange{0x43414C5000000006ULL};
 constexpr referee::TypeID kTypeCaliperPercentage{0x43414C5000000007ULL};
 constexpr referee::TypeID kTypeCaliperRatio{0x43414C5000000008ULL};
+constexpr referee::TypeID kTypeCaliperCatalog{0x43414C5000000009ULL};
 
 constexpr referee::TypeID kTypeFieldDefinition{0x5246524346000001ULL};
 constexpr referee::TypeID kTypeOperationDefinition{0x5246524346000002ULL};
@@ -398,11 +401,25 @@ TypeDefinition make_caliper_unit() {
   def.fields.push_back(FieldDefinition{ "symbol", kTypeString, true, std::nullopt });
   def.fields.push_back(FieldDefinition{ "dimension_id", kTypeObjectID, true, std::nullopt });
   def.fields.push_back(FieldDefinition{ "system", kTypeString, false, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "systems", kTypeBytes, false, std::nullopt });
   def.fields.push_back(FieldDefinition{ "scale", kTypeF64, false, std::nullopt });
   def.fields.push_back(FieldDefinition{ "offset", kTypeF64, false, std::nullopt });
   def.fields.push_back(FieldDefinition{ "base_unit_id", kTypeObjectID, false, std::nullopt });
   add_compatible_operation(def, kTypeCaliperUnit);
   add_convert_operation(def, kTypeBytes, kTypeCaliperUnit);
+  return def;
+}
+
+TypeDefinition make_caliper_catalog() {
+  TypeDefinition def{};
+  def.type_id = kTypeCaliperCatalog;
+  def.name = "Catalog";
+  def.namespace_name = "Caliper";
+  def.version = 1;
+  def.fields.push_back(FieldDefinition{ "name", kTypeString, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "catalog_version", kTypeU64, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "units", kTypeBytes, true, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "dimensions", kTypeBytes, true, std::nullopt });
   return def;
 }
 
@@ -1044,6 +1061,7 @@ std::vector<TypeDefinition> core_schema_definitions() {
   defs.push_back(make_astra_tensor());
   defs.push_back(make_caliper_dimension());
   defs.push_back(make_caliper_unit());
+  defs.push_back(make_caliper_catalog());
   defs.push_back(make_caliper_angle());
   defs.push_back(make_caliper_duration());
   defs.push_back(make_caliper_span());
@@ -1153,28 +1171,51 @@ referee::Result<DefinitionRecord> require_definition(SchemaRegistry& registry, r
   return referee::Result<DefinitionRecord>::ok(defR.value->value());
 }
 
-std::map<std::string, referee::ObjectID> load_named_objects(
+referee::Result<std::map<std::string, referee::ObjectID>> load_named_objects(
     referee::SqliteStore& store,
     referee::TypeID type_id,
     std::string_view key) {
   std::map<std::string, referee::ObjectID> out;
   auto listR = store.list_by_type(type_id);
-  if (!listR) return out;
+  if (!listR) return referee::Result<std::map<std::string, referee::ObjectID>>::err(listR.error->message);
   for (const auto& rec : listR.value.value()) {
     try {
       auto j = nlohmann::json::from_cbor(rec.payload_cbor);
       if (!j.contains(key)) continue;
       auto name = j.at(key).get<std::string>();
-      if (!name.empty()) out[name] = rec.ref.id;
+      if (name.empty()) continue;
+      if (key == "symbol" && name == "C" && j.value("name", "") == "celsius") {
+        // The starter catalog used C for Celsius; keep that immutable legacy object out of the
+        // canonical symbol index now that C denotes coulomb and °C denotes Celsius.
+        continue;
+      }
+      if (key == "symbol" && name == "F" && j.value("name", "") == "fahrenheit") {
+        // The starter catalog used F for Fahrenheit; °F is distinct from farad's symbol F.
+        continue;
+      }
+      if (!out.emplace(name, rec.ref.id).second) {
+        return referee::Result<std::map<std::string, referee::ObjectID>>::err(
+            "duplicate Caliper " + std::string(key) + ": " + name);
+      }
     } catch (const std::exception&) {
-      continue;
+      return referee::Result<std::map<std::string, referee::ObjectID>>::err(
+          "invalid Caliper object while loading catalog by " + std::string(key));
     }
   }
-  return out;
+  return referee::Result<std::map<std::string, referee::ObjectID>>::ok(std::move(out));
 }
 
 referee::Bytes cbor_from_json(const nlohmann::json& j) {
   return nlohmann::json::to_cbor(j);
+}
+
+referee::ObjectID base_caliper_catalog_id() {
+  referee::ObjectID id{};
+  constexpr std::array<std::uint8_t, 16> bytes = {
+    'C', 'A', 'L', 'I', 'P', 'E', 'R', '-', 'B', 'A', 'S', 'E', '-', '0', '0', '1'
+  };
+  id.bytes = bytes;
+  return id;
 }
 
 } // namespace
@@ -1188,10 +1229,14 @@ referee::Result<CatalogBootstrapResult> bootstrap_core_catalog(SchemaRegistry& r
   auto unit_def = require_definition(registry, kTypeCaliperUnit);
   if (!unit_def) return referee::Result<CatalogBootstrapResult>::err(unit_def.error->message);
 
-  std::map<std::string, referee::ObjectID> dimensions_by_name =
-      load_named_objects(store, kTypeCaliperDimension, "name");
-  std::map<std::string, referee::ObjectID> units_by_symbol =
-      load_named_objects(store, kTypeCaliperUnit, "symbol");
+  auto dimensionsR = load_named_objects(store, kTypeCaliperDimension, "name");
+  if (!dimensionsR) {
+    return referee::Result<CatalogBootstrapResult>::err(dimensionsR.error->message);
+  }
+  auto unitsR = load_named_objects(store, kTypeCaliperUnit, "symbol");
+  if (!unitsR) return referee::Result<CatalogBootstrapResult>::err(unitsR.error->message);
+  std::map<std::string, referee::ObjectID> dimensions_by_name = std::move(dimensionsR.value.value());
+  std::map<std::string, referee::ObjectID> units_by_symbol = std::move(unitsR.value.value());
 
   const std::vector<DimensionSeed> dimension_seeds = {
     { "Dimensionless", "1", nlohmann::json::object() },
@@ -1200,6 +1245,9 @@ referee::Result<CatalogBootstrapResult> bootstrap_core_catalog(SchemaRegistry& r
     { "Time", "T", nlohmann::json{ { "Time", 1 } } },
     { "Angle", "Ang", nlohmann::json{ { "Angle", 1 } } },
     { "Temperature", "Temp", nlohmann::json{ { "Temperature", 1 } } },
+    { "ElectricCurrent", "I", nlohmann::json{ { "ElectricCurrent", 1 } } },
+    { "AmountOfSubstance", "N", nlohmann::json{ { "AmountOfSubstance", 1 } } },
+    { "LuminousIntensity", "J", nlohmann::json{ { "LuminousIntensity", 1 } } },
     { "Area", "L2", nlohmann::json{ { "Length", 2 } } },
     { "Volume", "L3", nlohmann::json{ { "Length", 3 } } },
     { "Velocity", "L/T", nlohmann::json{ { "Length", 1 }, { "Time", -1 } } },
@@ -1208,6 +1256,15 @@ referee::Result<CatalogBootstrapResult> bootstrap_core_catalog(SchemaRegistry& r
     { "Pressure", "M/L/T2", nlohmann::json{ { "Mass", 1 }, { "Length", -1 }, { "Time", -2 } } },
     { "Energy", "M*L2/T2", nlohmann::json{ { "Mass", 1 }, { "Length", 2 }, { "Time", -2 } } },
     { "Power", "M*L2/T3", nlohmann::json{ { "Mass", 1 }, { "Length", 2 }, { "Time", -3 } } },
+    { "Frequency", "T-1", nlohmann::json{ { "Time", -1 } } },
+    { "ElectricCharge", "I*T", nlohmann::json{ { "ElectricCurrent", 1 }, { "Time", 1 } } },
+    { "Voltage", "M*L2/T3/I", nlohmann::json{ { "Mass", 1 }, { "Length", 2 }, { "Time", -3 }, { "ElectricCurrent", -1 } } },
+    { "Capacitance", "I2*T4/M/L2", nlohmann::json{ { "Mass", -1 }, { "Length", -2 }, { "Time", 4 }, { "ElectricCurrent", 2 } } },
+    { "Resistance", "M*L2/T3/I2", nlohmann::json{ { "Mass", 1 }, { "Length", 2 }, { "Time", -3 }, { "ElectricCurrent", -2 } } },
+    { "Conductance", "T3*I2/M/L2", nlohmann::json{ { "Mass", -1 }, { "Length", -2 }, { "Time", 3 }, { "ElectricCurrent", 2 } } },
+    { "MagneticFlux", "M*L2/T2/I", nlohmann::json{ { "Mass", 1 }, { "Length", 2 }, { "Time", -2 }, { "ElectricCurrent", -1 } } },
+    { "MagneticFluxDensity", "M/T2/I", nlohmann::json{ { "Mass", 1 }, { "Time", -2 }, { "ElectricCurrent", -1 } } },
+    { "Illuminance", "J/L2", nlohmann::json{ { "LuminousIntensity", 1 }, { "Length", -2 } } },
   };
 
   for (const auto& seed : dimension_seeds) {
@@ -1236,6 +1293,10 @@ referee::Result<CatalogBootstrapResult> bootstrap_core_catalog(SchemaRegistry& r
     return referee::Result<referee::ObjectID>::ok(it->second);
   };
 
+  // SI definitions follow the BIPM SI Brochure. Non-SI length factors follow NIST SP 811;
+  // exact customary volume factors use the U.S. gallon definition (231 in^3).
+  // https://www.bipm.org/en/publications/si-brochure
+  // https://www.nist.gov/pml/special-publication-811
   const std::vector<UnitSeed> unit_seeds = {
     { "one", "1", "Dimensionless", "si", std::nullopt, std::nullopt, std::nullopt },
     { "percent", "%", "Dimensionless", "si", std::string("1"), 0.01, 0.0 },
@@ -1244,6 +1305,8 @@ referee::Result<CatalogBootstrapResult> bootstrap_core_catalog(SchemaRegistry& r
     { "millimeter", "mm", "Length", "si", std::string("m"), 0.001, 0.0 },
     { "centimeter", "cm", "Length", "si", std::string("m"), 0.01, 0.0 },
     { "kilometer", "km", "Length", "si", std::string("m"), 1000.0, 0.0 },
+    { "micrometer", "um", "Length", "si", std::string("m"), 0.000001, 0.0 },
+    { "nanometer", "nm", "Length", "si", std::string("m"), 0.000000001, 0.0 },
     { "inch", "in", "Length", "imperial", std::string("m"), 0.0254, 0.0 },
     { "foot", "ft", "Length", "imperial", std::string("m"), 0.3048, 0.0 },
     { "yard", "yd", "Length", "imperial", std::string("m"), 0.9144, 0.0 },
@@ -1258,13 +1321,16 @@ referee::Result<CatalogBootstrapResult> bootstrap_core_catalog(SchemaRegistry& r
     { "second", "s", "Time", "si", std::nullopt, std::nullopt, std::nullopt },
     { "minute", "min", "Time", "si", std::string("s"), 60.0, 0.0 },
     { "hour", "h", "Time", "si", std::string("s"), 3600.0, 0.0 },
+    { "millisecond", "ms", "Time", "si", std::string("s"), 0.001, 0.0 },
+    { "microsecond", "us", "Time", "si", std::string("s"), 0.000001, 0.0 },
+    { "day", "d", "Time", "si", std::string("s"), 86400.0, 0.0 },
 
     { "radian", "rad", "Angle", "si", std::nullopt, std::nullopt, std::nullopt },
     { "degree", "deg", "Angle", "si", std::string("rad"), 0.017453292519943295, 0.0 },
 
     { "kelvin", "K", "Temperature", "si", std::nullopt, std::nullopt, std::nullopt },
-    { "celsius", "C", "Temperature", "si", std::string("K"), 1.0, 273.15 },
-    { "fahrenheit", "F", "Temperature", "imperial", std::string("K"), 0.5555555555555556, 255.3722222222222 },
+    { "celsius", "°C", "Temperature", "si", std::string("K"), 1.0, 273.15 },
+    { "fahrenheit", "°F", "Temperature", "imperial", std::string("K"), 0.5555555555555556, 255.3722222222222 },
 
     { "square_meter", "m^2", "Area", "si", std::nullopt, std::nullopt, std::nullopt },
     { "square_foot", "ft^2", "Area", "imperial", std::string("m^2"), 0.09290304, 0.0 },
@@ -1292,10 +1358,72 @@ referee::Result<CatalogBootstrapResult> bootstrap_core_catalog(SchemaRegistry& r
 
     { "watt", "W", "Power", "si", std::nullopt, std::nullopt, std::nullopt },
     { "horsepower", "hp", "Power", "imperial", std::string("W"), 745.69987158227022, 0.0 },
+    { "hertz", "Hz", "Frequency", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "ampere", "A", "ElectricCurrent", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "milliampere", "mA", "ElectricCurrent", "si", std::string("A"), 0.001, 0.0 },
+    { "mole", "mol", "AmountOfSubstance", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "candela", "cd", "LuminousIntensity", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "coulomb", "C", "ElectricCharge", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "volt", "V", "Voltage", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "farad", "F", "Capacitance", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "ohm", "ohm", "Resistance", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "siemens", "S", "Conductance", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "weber", "Wb", "MagneticFlux", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "tesla", "T", "MagneticFluxDensity", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "lux", "lx", "Illuminance", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "us_gallon", "gal", "Volume", "us_customary", std::string("m^3"), 0.003785411784, 0.0 },
+    { "us_fluid_ounce", "fl_oz", "Volume", "us_customary", std::string("m^3"), 0.0000295735295625, 0.0 },
+    { "us_cup", "cup", "Volume", "us_customary", std::string("m^3"), 0.0002365882365, 0.0 },
+    { "us_pint", "pt", "Volume", "us_customary", std::string("m^3"), 0.000473176473, 0.0 },
+    { "us_quart", "qt", "Volume", "us_customary", std::string("m^3"), 0.000946352946, 0.0 },
+    { "nautical_mile", "nmi", "Length", "international", std::string("m"), 1852.0, 0.0 },
+    { "knot", "kn", "Velocity", "international", std::string("m/s"), 0.5144444444444445, 0.0 },
   };
+
+  std::set<std::string> seeded_names;
+  std::set<std::string> seeded_symbols;
+  for (const auto& seed : unit_seeds) {
+    if (!seeded_names.insert(seed.name).second || !seeded_symbols.insert(seed.symbol).second) {
+      return referee::Result<CatalogBootstrapResult>::err(
+          "duplicate Caliper unit name or symbol in the canonical catalog: " + seed.symbol);
+    }
+  }
 
   for (const auto& seed : unit_seeds) {
     if (units_by_symbol.find(seed.symbol) != units_by_symbol.end()) {
+      const auto existing_id = units_by_symbol.at(seed.symbol);
+      auto recordR = store.get_latest(existing_id);
+      if (!recordR) return referee::Result<CatalogBootstrapResult>::err(recordR.error->message);
+      if (!recordR.value->has_value()) {
+        return referee::Result<CatalogBootstrapResult>::err("missing existing unit record: " + seed.symbol);
+      }
+      try {
+        auto existing = nlohmann::json::from_cbor(recordR.value->value().payload_cbor);
+        auto expected_dimension = require_dimension(seed.dimension);
+        if (!expected_dimension) {
+          return referee::Result<CatalogBootstrapResult>::err(expected_dimension.error->message);
+        }
+        if (!existing.contains("name") || existing.at("name").get<std::string>() != seed.name
+            || !existing.contains("dimension_id")
+            || existing.at("dimension_id").get<std::string>() != expected_dimension.value->to_hex()
+            || (seed.system.empty() ? existing.contains("system")
+                                    : (!existing.contains("system")
+                                       || existing.at("system").get<std::string>() != seed.system))) {
+          return referee::Result<CatalogBootstrapResult>::err(
+              "conflicting Caliper unit definition for symbol: " + seed.symbol);
+        }
+        if (existing.value("scale", 1.0) != seed.scale.value_or(1.0)) {
+          return referee::Result<CatalogBootstrapResult>::err(
+              "conflicting Caliper conversion scale for symbol: " + seed.symbol);
+        }
+        if (existing.value("offset", 0.0) != seed.offset.value_or(0.0)) {
+          return referee::Result<CatalogBootstrapResult>::err(
+              "conflicting Caliper conversion offset for symbol: " + seed.symbol);
+        }
+      } catch (const std::exception&) {
+        return referee::Result<CatalogBootstrapResult>::err(
+            "invalid existing Caliper unit definition for symbol: " + seed.symbol);
+      }
       ++out.existing;
       continue;
     }
@@ -1306,9 +1434,12 @@ referee::Result<CatalogBootstrapResult> bootstrap_core_catalog(SchemaRegistry& r
     j["name"] = seed.name;
     j["symbol"] = seed.symbol;
     j["dimension_id"] = dimR.value->to_hex();
-    if (!seed.system.empty()) j["system"] = seed.system;
-    if (seed.scale.has_value()) j["scale"] = seed.scale.value();
-    if (seed.offset.has_value()) j["offset"] = seed.offset.value();
+    if (!seed.system.empty()) {
+      j["system"] = seed.system;
+      j["systems"] = nlohmann::json::array({ seed.system });
+    }
+    j["scale"] = seed.scale.value_or(1.0);
+    j["offset"] = seed.offset.value_or(0.0);
     if (seed.base_symbol.has_value()) {
       auto base_it = units_by_symbol.find(seed.base_symbol.value());
       if (base_it != units_by_symbol.end()) {
@@ -1324,7 +1455,207 @@ referee::Result<CatalogBootstrapResult> bootstrap_core_catalog(SchemaRegistry& r
     ++out.inserted;
   }
 
+  auto catalog_def_record = registry.get_definition_by_type(kTypeCaliperCatalog);
+  if (!catalog_def_record) {
+    return referee::Result<CatalogBootstrapResult>::err(catalog_def_record.error->message);
+  }
+  if (!catalog_def_record.value->has_value()) {
+    auto def = make_caliper_catalog();
+    auto registered = registry.register_definition_with_id(
+        def, definition_id_for(kTypeCaliperCatalog));
+    if (!registered) {
+      return referee::Result<CatalogBootstrapResult>::err(registered.error->message);
+    }
+  }
+  auto catalog_def = require_definition(registry, kTypeCaliperCatalog);
+  if (!catalog_def) return referee::Result<CatalogBootstrapResult>::err(catalog_def.error->message);
+
+  nlohmann::json catalog;
+  catalog["name"] = "Caliper Base Catalog";
+  catalog["catalog_version"] = 1;
+  catalog["dimensions"] = nlohmann::json::array();
+  catalog["units"] = nlohmann::json::array();
+
+  for (const auto& [name, id] : dimensions_by_name) {
+    const bool is_shipped_dimension = std::any_of(
+        dimension_seeds.begin(), dimension_seeds.end(),
+        [&](const DimensionSeed& seed) { return seed.name == name; });
+    if (!is_shipped_dimension) continue;
+    auto recordR = store.get_latest(id);
+    if (!recordR) return referee::Result<CatalogBootstrapResult>::err(recordR.error->message);
+    if (!recordR.value->has_value()) {
+      return referee::Result<CatalogBootstrapResult>::err("missing dimension record: " + name);
+    }
+    catalog["dimensions"].push_back(nlohmann::json::from_cbor(recordR.value->value().payload_cbor));
+  }
+  std::map<std::string, std::string> dimension_name_by_id;
+  for (const auto& [name, id] : dimensions_by_name) {
+    dimension_name_by_id.emplace(id.to_hex(), name);
+  }
+  std::map<std::string, std::string> symbol_by_id;
+  for (const auto& [symbol, id] : units_by_symbol) {
+    symbol_by_id.emplace(id.to_hex(), symbol);
+  }
+  for (const auto& symbol : seeded_symbols) {
+    const auto unit_it = units_by_symbol.find(symbol);
+    if (unit_it == units_by_symbol.end()) {
+      return referee::Result<CatalogBootstrapResult>::err("missing shipped unit: " + symbol);
+    }
+    const auto& id = unit_it->second;
+    auto recordR = store.get_latest(id);
+    if (!recordR) return referee::Result<CatalogBootstrapResult>::err(recordR.error->message);
+    if (!recordR.value->has_value()) {
+      return referee::Result<CatalogBootstrapResult>::err("missing unit record: " + symbol);
+    }
+    auto unit = nlohmann::json::from_cbor(recordR.value->value().payload_cbor);
+    if (unit.contains("dimension_id")) {
+      const auto dimension_id = unit.at("dimension_id").get<std::string>();
+      auto dimension_name = dimension_name_by_id.find(dimension_id);
+      if (dimension_name == dimension_name_by_id.end()) {
+        return referee::Result<CatalogBootstrapResult>::err(
+            "unit references a dimension outside the shipped Caliper catalog: " + symbol);
+      }
+      unit["dimension"] = dimension_name->second;
+      unit.erase("dimension_id");
+    }
+    if (unit.contains("base_unit_id")) {
+      const auto base_id = unit.at("base_unit_id").get<std::string>();
+      auto base_symbol = symbol_by_id.find(base_id);
+      if (base_symbol == symbol_by_id.end()) {
+        return referee::Result<CatalogBootstrapResult>::err(
+            "unit references an unknown base unit: " + symbol);
+      }
+      unit["base_symbol"] = base_symbol->second;
+      unit.erase("base_unit_id");
+    }
+    if (unit.contains("system") && !unit.contains("systems")) {
+      unit["systems"] = nlohmann::json::array({ unit.at("system") });
+    }
+    if (!unit.contains("scale")) unit["scale"] = 1.0;
+    if (!unit.contains("offset")) unit["offset"] = 0.0;
+    catalog["units"].push_back(std::move(unit));
+  }
+
+  const auto catalog_id = base_caliper_catalog_id();
+  const auto catalog_payload = cbor_from_json(catalog);
+  auto existing_catalog = store.get_latest(catalog_id);
+  if (!existing_catalog) {
+    return referee::Result<CatalogBootstrapResult>::err(existing_catalog.error->message);
+  }
+  if (existing_catalog.value->has_value()) {
+    if (existing_catalog.value->value().payload_cbor != catalog_payload) {
+      return referee::Result<CatalogBootstrapResult>::err(
+          "immutable Caliper base catalog differs from the shipped catalog version");
+    }
+    ++out.existing;
+  } else {
+    auto createR = store.create_object_with_id(catalog_id,
+                                               catalog_def.value->definition.type_id,
+                                               catalog_def.value->ref.id,
+                                               catalog_payload);
+    if (!createR) return referee::Result<CatalogBootstrapResult>::err(createR.error->message);
+    ++out.inserted;
+  }
+
   return referee::Result<CatalogBootstrapResult>::ok(out);
+}
+
+referee::Result<std::vector<CaliperCatalogUnit>> compose_caliper_catalog(
+    const std::vector<CaliperCatalogUnit>& base,
+    const std::vector<CaliperCatalogUnit>& extension) {
+  std::map<std::string, CaliperCatalogUnit> effective_by_symbol;
+  std::map<std::string, std::string> symbol_by_name;
+
+  auto validate_entry = [](const CaliperCatalogUnit& unit) -> referee::Result<void> {
+    if (unit.name.empty() || unit.symbol.empty() || unit.dimension.empty() || unit.systems.empty()) {
+      return referee::Result<void>::err("Caliper catalog entries require a name, symbol, dimension, and system");
+    }
+    if (std::any_of(unit.systems.begin(), unit.systems.end(),
+                    [](const std::string& system) { return system.empty(); })) {
+      return referee::Result<void>::err("Caliper system tags must not be empty");
+    }
+    auto systems = unit.systems;
+    std::sort(systems.begin(), systems.end());
+    if (std::adjacent_find(systems.begin(), systems.end()) != systems.end()) {
+      return referee::Result<void>::err("duplicate Caliper system tag for symbol: " + unit.symbol);
+    }
+    return referee::Result<void>::ok();
+  };
+
+  for (auto unit : base) {
+    std::sort(unit.systems.begin(), unit.systems.end());
+    auto valid = validate_entry(unit);
+    if (!valid) return referee::Result<std::vector<CaliperCatalogUnit>>::err(valid.error->message);
+    if (unit.override_base) {
+      return referee::Result<std::vector<CaliperCatalogUnit>>::err(
+          "base Caliper catalog entries cannot be marked as overrides");
+    }
+    if (!effective_by_symbol.emplace(unit.symbol, unit).second) {
+      return referee::Result<std::vector<CaliperCatalogUnit>>::err(
+          "duplicate symbol in Caliper base catalog: " + unit.symbol);
+    }
+    if (!symbol_by_name.emplace(unit.name, unit.symbol).second) {
+      return referee::Result<std::vector<CaliperCatalogUnit>>::err(
+          "duplicate name in Caliper base catalog: " + unit.name);
+    }
+  }
+
+  std::set<std::string> extension_symbols;
+  std::set<std::string> extension_names;
+  for (auto unit : extension) {
+    std::sort(unit.systems.begin(), unit.systems.end());
+    auto valid = validate_entry(unit);
+    if (!valid) return referee::Result<std::vector<CaliperCatalogUnit>>::err(valid.error->message);
+    if (!extension_symbols.insert(unit.symbol).second) {
+      return referee::Result<std::vector<CaliperCatalogUnit>>::err(
+          "duplicate symbol in Caliper extension: " + unit.symbol);
+    }
+    if (!extension_names.insert(unit.name).second) {
+      return referee::Result<std::vector<CaliperCatalogUnit>>::err(
+          "duplicate name in Caliper extension: " + unit.name);
+    }
+
+    auto existing = effective_by_symbol.find(unit.symbol);
+    if (existing == effective_by_symbol.end()) {
+      if (unit.override_base) {
+        return referee::Result<std::vector<CaliperCatalogUnit>>::err(
+            "Caliper extension requested an override for a symbol absent from the base: " + unit.symbol);
+      }
+      auto same_name = symbol_by_name.find(unit.name);
+      if (same_name != symbol_by_name.end() && same_name->second != unit.symbol) {
+        return referee::Result<std::vector<CaliperCatalogUnit>>::err(
+            "ambiguous Caliper unit name in extension: " + unit.name);
+      }
+      effective_by_symbol.emplace(unit.symbol, unit);
+      symbol_by_name[unit.name] = unit.symbol;
+      continue;
+    }
+
+    if (!unit.override_base) {
+      return referee::Result<std::vector<CaliperCatalogUnit>>::err(
+          "Caliper extension conflicts with base symbol without explicit override: " + unit.symbol);
+    }
+    if (unit.dimension != existing->second.dimension) {
+      return referee::Result<std::vector<CaliperCatalogUnit>>::err(
+          "Caliper override cannot change the dimension of symbol: " + unit.symbol);
+    }
+    auto same_name = symbol_by_name.find(unit.name);
+    if (same_name != symbol_by_name.end() && same_name->second != unit.symbol) {
+      return referee::Result<std::vector<CaliperCatalogUnit>>::err(
+          "ambiguous Caliper unit name in override: " + unit.name);
+    }
+    symbol_by_name.erase(existing->second.name);
+    existing->second = unit;
+    symbol_by_name[unit.name] = unit.symbol;
+  }
+
+  std::vector<CaliperCatalogUnit> result;
+  result.reserve(effective_by_symbol.size());
+  for (const auto& [symbol, unit] : effective_by_symbol) {
+    (void)symbol;
+    result.push_back(unit);
+  }
+  return referee::Result<std::vector<CaliperCatalogUnit>>::ok(std::move(result));
 }
 
 } // namespace iris::refract

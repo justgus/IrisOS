@@ -12,7 +12,7 @@
       "minor" : 0,
       "patch" : 0
     },
-    "updatedAt" : "2026-10-04T23:00:14Z"
+    "updatedAt" : "2026-10-05T13:58:08Z"
   },
   "notes" : [
 
@@ -30,7 +30,7 @@
       "rawValue" : "SP-008"
     },
     "kind" : "sprint",
-    "status" : "planning",
+    "status" : "active",
     "title" : "Caliper Catalog and Persistence"
   }
 }
