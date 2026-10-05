@@ -8,6 +8,7 @@
     "Store the canonical Caliper catalog as a versioned durable Referee object.",
     "Support user-defined extensions layered over an immutable base catalog, with documented explicit override precedence and deterministic conflict handling."
   ],
+  "dateVerified" : "2026-10-05",
   "epicID" : {
     "rawValue" : "EP-003"
   },
@@ -20,7 +21,7 @@
       "minor" : 0,
       "patch" : 0
     },
-    "updatedAt" : "2026-10-05T19:03:53Z"
+    "updatedAt" : "2026-10-05T19:42:37Z"
   },
   "notes" : [
     "Depends on T-0171 for the expanded catalog model. Runtime conversion behavior and Conch commands remain in T-0172 and T-0173."
@@ -41,7 +42,7 @@
       "rawValue" : "T-0188"
     },
     "kind" : "task",
-    "status" : "implementedNotVerified",
+    "status" : "implementedVerified",
     "title" : "Versioned Caliper Catalog Storage and Extensions"
   }
 }

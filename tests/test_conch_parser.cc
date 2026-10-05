@@ -117,6 +117,25 @@ START_TEST(test_conch_parser_namespace_commands_typed)
 }
 END_TEST
 
+START_TEST(test_conch_parser_caliper_commands_typed)
+{
+  auto list_ast = parse_conch_command("caliper list");
+  ck_assert_uint_eq(as_uint(list_ast.errors.size()), 0U);
+  auto list = list_ast.get_if<CaliperCommand>();
+  ck_assert_ptr_nonnull(list);
+  ck_assert_uint_eq(as_uint(list->args.size()), 1U);
+  ck_assert_str_eq(list->args[0].c_str(), "list");
+
+  auto convert_ast = parse_conch_command("caliper convert 32 °F °C --dimension");
+  ck_assert_uint_eq(as_uint(convert_ast.errors.size()), 0U);
+  auto convert = convert_ast.get_if<CaliperCommand>();
+  ck_assert_ptr_nonnull(convert);
+  ck_assert_uint_eq(as_uint(convert->args.size()), 5U);
+  ck_assert_str_eq(convert->args[0].c_str(), "convert");
+  ck_assert_str_eq(convert->args[4].c_str(), "--dimension");
+}
+END_TEST
+
 START_TEST(test_conch_parser_unterminated)
 {
   auto ast = parse_conch_command("say \"oops\n");
@@ -136,6 +155,7 @@ Suite* conch_parser_suite(void) {
   tcase_add_test(tc, test_conch_parser_call_command_typed);
   tcase_add_test(tc, test_conch_parser_task_and_io_commands_typed);
   tcase_add_test(tc, test_conch_parser_namespace_commands_typed);
+  tcase_add_test(tc, test_conch_parser_caliper_commands_typed);
   tcase_add_test(tc, test_conch_parser_unterminated);
 
   suite_add_tcase(s, tc);

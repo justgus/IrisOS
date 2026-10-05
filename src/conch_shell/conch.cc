@@ -21,6 +21,7 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <map>
 #include <optional>
 #include <regex>
@@ -201,6 +202,9 @@ bool handle_types_list_command(SchemaRegistry& registry,
                                SqliteStore& store,
                                const iris::parser::TypesListCommand& command,
                                const std::string& current_namespace);
+bool handle_caliper_command(SchemaRegistry& registry,
+                            SqliteStore& store,
+                            const iris::parser::CaliperCommand& command);
 bool handle_namespace_family_command(SchemaRegistry& registry,
                                      std::string& current_namespace,
                                      const iris::parser::NamespaceCommand& command);
@@ -355,6 +359,98 @@ bool handle_types_list_command(SchemaRegistry& registry,
                                const iris::parser::TypesListCommand& command,
                                const std::string& current_namespace) {
   return handle_types_list(registry, store, command.args, current_namespace);
+}
+
+bool handle_caliper_command(SchemaRegistry& registry,
+                            SqliteStore& store,
+                            const iris::parser::CaliperCommand& command) {
+  const auto& args = command.args;
+  if (args.empty()) {
+    std::cout << "error: usage: caliper <list|inspect|convert> ...\n";
+    return true;
+  }
+
+  auto catalog = iris::refract::load_caliper_catalog(registry, store);
+  if (!catalog) {
+    std::cout << "error: " << catalog.error->message << "\n";
+    return true;
+  }
+
+  if (args[0] == "list") {
+    if (args.size() != 1) {
+      std::cout << "error: usage: caliper list\n";
+      return true;
+    }
+    for (const auto& unit : *catalog.value) {
+      std::cout << unit.symbol << "  " << unit.name << "  " << unit.dimension << "  ";
+      for (std::size_t i = 0; i < unit.systems.size(); ++i) {
+        if (i != 0) std::cout << ",";
+        std::cout << unit.systems[i];
+      }
+      std::cout << "\n";
+    }
+    return true;
+  }
+
+  if (args[0] == "inspect") {
+    if (args.size() != 2) {
+      std::cout << "error: usage: caliper inspect <symbol-or-name>\n";
+      return true;
+    }
+    const iris::refract::CaliperCatalogUnit* match = nullptr;
+    for (const auto& unit : *catalog.value) {
+      if (unit.symbol == args[1]) {
+        match = &unit;
+        break;
+      }
+    }
+    if (match == nullptr) {
+      for (const auto& unit : *catalog.value) {
+        if (unit.name == args[1]) {
+          match = &unit;
+          break;
+        }
+      }
+    }
+    if (match == nullptr) {
+      std::cout << "error: unknown Caliper unit: " << args[1] << "\n";
+      return true;
+    }
+    std::cout << "Name: " << match->name << "\n";
+    std::cout << "Symbol: " << match->symbol << "\n";
+    std::cout << "Dimension: " << match->dimension << "\n";
+    std::cout << "Systems: ";
+    for (std::size_t i = 0; i < match->systems.size(); ++i) {
+      if (i != 0) std::cout << ", ";
+      std::cout << match->systems[i];
+    }
+    std::cout << "\nBase: " << match->base_symbol.value_or("(root)") << "\n";
+    std::cout << std::setprecision(std::numeric_limits<double>::max_digits10)
+              << "Scale: " << match->scale.value_or(1.0) << "\n"
+              << "Offset: " << match->offset.value_or(0.0) << "\n";
+    return true;
+  }
+
+  if (args[0] == "convert") {
+    if ((args.size() != 4 && args.size() != 5)
+        || (args.size() == 5 && args[4] != "--dimension")) {
+      std::cout << "error: usage: caliper convert <value> <from-unit> <to-unit> [--dimension]\n";
+      return true;
+    }
+    auto converted = iris::refract::convert_caliper_value(*catalog.value, args[1], args[2], args[3]);
+    if (!converted) {
+      std::cout << "error: " << converted.error->message << "\n";
+      return true;
+    }
+    std::cout << std::setprecision(std::numeric_limits<double>::max_digits10)
+              << converted.value->value << " " << converted.value->to_symbol;
+    if (args.size() == 5) std::cout << " [" << converted.value->dimension << "]";
+    std::cout << "\n";
+    return true;
+  }
+
+  std::cout << "error: usage: caliper <list|inspect|convert> ...\n";
+  return true;
 }
 
 bool handle_namespace_command(SchemaRegistry& registry,
@@ -3456,6 +3552,9 @@ void print_help() {
   std::cout << "  ls [pattern]\n";
   std::cout << "  ls --regex <pattern>\n";
   std::cout << "  ls --regex --namespaces <pattern>\n";
+  std::cout << "  caliper list\n";
+  std::cout << "  caliper inspect <symbol-or-name>\n";
+  std::cout << "  caliper convert <value> <from-unit> <to-unit> [--dimension]\n";
   std::cout << "  namespace [<name>|/|.|..]\n";
   std::cout << "  ns [<name>|/|.|..]\n";
   std::cout << "  objects\n";
@@ -5966,6 +6065,10 @@ int main(int argc, char** argv) {
     }
     if (auto list_command = parsed.get_if<iris::parser::TypesListCommand>()) {
       handle_types_list_command(registry, store, *list_command, current_namespace);
+      continue;
+    }
+    if (auto caliper_command = parsed.get_if<iris::parser::CaliperCommand>()) {
+      handle_caliper_command(registry, store, *caliper_command);
       continue;
     }
     if (auto namespace_command = parsed.get_if<iris::parser::NamespaceCommand>()) {

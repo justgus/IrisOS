@@ -1,4 +1,5 @@
 {
+  "endDate" : "2026-10-05",
   "epicID" : {
     "rawValue" : "EP-003"
   },
@@ -12,7 +13,7 @@
       "minor" : 0,
       "patch" : 0
     },
-    "updatedAt" : "2026-10-04T23:00:14Z"
+    "updatedAt" : "2026-10-05T21:50:55Z"
   },
   "notes" : [
 
@@ -30,7 +31,7 @@
       "rawValue" : "SP-009"
     },
     "kind" : "sprint",
-    "status" : "planning",
+    "status" : "closed",
     "title" : "Caliper Conversion and Conch Tooling"
   }
 }

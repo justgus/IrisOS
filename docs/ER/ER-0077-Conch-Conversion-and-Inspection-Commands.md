@@ -16,7 +16,7 @@ ER-Dependencies: ER-0075, ER-0076
 
 - ER ID: ER-0077
 - Title: Conch Conversion and Inspection Commands
-- Status: Proposed
+- Status: Complete
 - Date: 2026-05-28
 - Owners: Mike
 - Type: Enhancement
@@ -79,7 +79,9 @@ ER-Dependencies: ER-0075, ER-0076
 
 ## Implementation Notes
 
-- Notes for implementer: keep command output consistent with existing Conch inspection commands.
+- Commands are available as `caliper list`, `caliper inspect <symbol-or-name>`, and `caliper convert <value> <from-unit> <to-unit> [--dimension]`.
+- Conversion output includes the converted value and target symbol by default. `--dimension` adds the dimension label.
+- Output precision uses the round-trip digit count for binary64; errors follow the existing `error:` convention.
 
 ## Verification Plan
 
@@ -87,3 +89,8 @@ ER-Dependencies: ER-0075, ER-0076
   - `make check`
 - Manual checks:
   - list units, inspect a unit, convert compatible units, and attempt an incompatible conversion.
+
+## Completion Record
+
+- Implementation complete; System Engineer verification remains pending.
+- Validation: `make check` passed all 29 test programs on 2026-10-05.

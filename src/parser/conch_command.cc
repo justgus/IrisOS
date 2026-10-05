@@ -72,6 +72,10 @@ CommandAst parse_conch_command(std::string_view input) {
 
   if (!out.errors.empty() || out.name.empty() || name_token == nullptr) return out;
 
+  if (out.name == "caliper") {
+    out.node = CaliperCommand{out.args};
+    return out;
+  }
   if (out.name == "let" || out.name == "var" || out.name == "alias") {
     parse_alias_assignment(&out, input, *name_token);
     return out;

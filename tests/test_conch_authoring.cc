@@ -591,6 +591,42 @@ START_TEST(test_conch_constraint_metadata_display_and_validation)
 }
 END_TEST
 
+START_TEST(test_conch_caliper_commands)
+{
+  auto db_path = make_temp_path("/tmp/iris-conch-caliper-XXXXXX");
+  const std::string script =
+      "caliper list\n"
+      "caliper inspect °C\n"
+      "caliper convert 0 °C °F\n"
+      "caliper convert 0 °C °F --dimension\n"
+      "caliper convert 1 m kg\n"
+      "caliper convert 1 unknown m\n"
+      "caliper convert 1 m kg --invalid\n"
+      "exit\n";
+  auto output = run_conch_script_with_db(script, db_path);
+  ck_assert_msg(output.find("m  meter  Length") != std::string::npos,
+                "expected Caliper list output");
+  ck_assert_msg(output.find("Name: celsius") != std::string::npos,
+                "expected Caliper unit inspection");
+  ck_assert_msg(output.find("Dimension: Temperature") != std::string::npos,
+                "expected inspected dimension");
+  ck_assert_msg(output.find(" °F\n") != std::string::npos,
+                "expected default conversion output without dimension metadata");
+  ck_assert_msg(output.find(" °F [Temperature]\n") != std::string::npos,
+                "expected opt-in conversion dimension metadata");
+  ck_assert_msg(output.find("error: incompatible Caliper dimensions: Length and Mass")
+                    != std::string::npos,
+                "expected deterministic incompatible-dimension error");
+  ck_assert_msg(output.find("error: unknown Caliper unit: unknown") != std::string::npos,
+                "expected deterministic unknown-unit error");
+  ck_assert_msg(output.find("usage: caliper convert <value> <from-unit> <to-unit> [--dimension]")
+                    != std::string::npos,
+                "expected invalid-option usage error");
+  std::filesystem::remove_all(db_path + ".segments");
+  ::unlink(db_path.c_str());
+}
+END_TEST
+
 Suite* conch_authoring_suite(void) {
   Suite* s = suite_create("ConchAuthoring");
   TCase* tc = tcase_create("core");
@@ -605,6 +641,7 @@ Suite* conch_authoring_suite(void) {
   tcase_add_test(tc, test_conch_namespace_navigation);
   tcase_add_test(tc, test_conch_show_type_displays_inheritance_metadata);
   tcase_add_test(tc, test_conch_constraint_metadata_display_and_validation);
+  tcase_add_test(tc, test_conch_caliper_commands);
 
   suite_add_tcase(s, tc);
   return s;

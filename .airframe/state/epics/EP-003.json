@@ -13,6 +13,7 @@
       "rawValue" : "AC-0023"
     }
   ],
+  "closeDate" : "2026-10-05",
   "goal" : "Deliver the full Caliper catalog and the runtime and Conch conversion tooling required by AR-0019.",
   "issueIDs" : [
 
@@ -24,7 +25,7 @@
       "patch" : 0
     },
     "source" : "docs\/Epics\/Epic-backlog.md",
-    "updatedAt" : "2026-10-05T13:58:08Z"
+    "updatedAt" : "2026-10-05T21:50:58Z"
   },
   "notes" : [
 
@@ -67,7 +68,7 @@
       "rawValue" : "EP-003"
     },
     "kind" : "epic",
-    "status" : "active",
+    "status" : "closed",
     "title" : "Caliper Catalog and Conversion Tooling"
   }
 }

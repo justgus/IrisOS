@@ -11,8 +11,9 @@
 
   ],
   "expectedResults" : [
-    "Compatible conversions return expected deterministic results under documented precision and rounding rules.",
-    "Unknown units and incompatible dimensions fail deterministically.",
+    "Compatible conversions return deterministic results; exact rational factors remain exact through the chain where supported and conversion to the public numeric type happens only at the final result.",
+    "Final numeric precision, tolerance, and rounding are explicit and covered by tests.",
+    "Unknown units, incompatible dimensions, and unsupported or overflowing exact-rational operations fail deterministically.",
     "Results remain stable across catalog reloads."
   ],
   "id" : {
@@ -27,21 +28,26 @@
     }
   },
   "notes" : [
-
+    "System Engineer planning decision: use exact rational conversion factors through the chain where possible; perform numeric conversion only for the final result. Check portable, dependency-free arithmetic and bounds; report limitations rather than silently rounding intermediates."
   ],
   "objective" : "Verify dimension-based compatibility and deterministic direct, chained, scale, and offset conversions, including invalid input behavior.",
   "requirementIDs" : [
 
   ],
-  "status" : "draft",
+  "status" : "ready",
   "steps" : [
-    "Convert representative compatible units directly and through a conversion chain.",
-    "Exercise scale and offset conversions, including temperature.",
-    "Attempt conversion for an unknown unit and for incompatible dimensions.",
+    "Convert representative compatible units directly and through a multi-step chain.",
+    "Exercise scale and offset conversions, including Celsius and Fahrenheit.",
+    "Use a chain whose exact rational intermediate result differs from binary floating-point rounding, and verify no intermediate rounding occurs.",
+    "Exercise unsupported factor or overflow boundaries; require a deterministic error and no silent approximation if exact rational arithmetic cannot safely represent the operation.",
+    "Attempt conversion for an unknown unit and incompatible dimensions.",
     "Repeat conversions after catalog reload and compare results."
   ],
   "title" : "Caliper runtime conversion and compatibility",
   "workItemIDs" : [
+    {
+      "rawValue" : "SP-009"
+    },
     {
       "rawValue" : "T-0172"
     }

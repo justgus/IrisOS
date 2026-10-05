@@ -4,6 +4,7 @@
 
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace iris::refract {
@@ -29,6 +30,13 @@ struct CaliperCatalogUnit {
   bool override_base{false};
 };
 
+struct CaliperConversionResult {
+  double value{0.0};
+  std::string dimension;
+  std::string from_symbol;
+  std::string to_symbol;
+};
+
 // Returns the canonical TypeDefinition set for Refract core schema.
 std::vector<TypeDefinition> core_schema_definitions();
 
@@ -44,5 +52,18 @@ referee::Result<CatalogBootstrapResult> bootstrap_core_catalog(SchemaRegistry& r
 referee::Result<std::vector<CaliperCatalogUnit>> compose_caliper_catalog(
     const std::vector<CaliperCatalogUnit>& base,
     const std::vector<CaliperCatalogUnit>& extension);
+
+// Loads the persisted Caliper unit objects in deterministic symbol order.
+referee::Result<std::vector<CaliperCatalogUnit>> load_caliper_catalog(
+    SchemaRegistry& registry,
+    referee::SqliteStore& store);
+
+// Converts a decimal input without rounding between catalog conversion steps.
+// Rational intermediate operations are bounded to signed 64-bit numerator and denominator values.
+referee::Result<CaliperConversionResult> convert_caliper_value(
+    const std::vector<CaliperCatalogUnit>& catalog,
+    std::string_view value,
+    std::string_view from_unit,
+    std::string_view to_unit);
 
 } // namespace iris::refract
