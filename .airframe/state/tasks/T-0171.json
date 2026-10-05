@@ -21,7 +21,7 @@
       "patch" : 0
     },
     "source" : "docs\/ER\/ER-0075-Full-Caliper-Catalog-Expansion.md",
-    "updatedAt" : "2026-10-04T22:59:38Z"
+    "updatedAt" : "2026-10-05T18:41:33Z"
   },
   "notes" : [
     "Legacy requirement ER-0075; depends on AR-0019 and ER-0033.",
@@ -45,7 +45,7 @@
       "rawValue" : "T-0171"
     },
     "kind" : "task",
-    "status" : "active",
+    "status" : "implementedNotVerified",
     "title" : "Full Caliper Catalog Expansion"
   }
 }

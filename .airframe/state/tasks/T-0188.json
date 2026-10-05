@@ -20,7 +20,7 @@
       "minor" : 0,
       "patch" : 0
     },
-    "updatedAt" : "2026-10-04T22:59:38Z"
+    "updatedAt" : "2026-10-05T19:03:53Z"
   },
   "notes" : [
     "Depends on T-0171 for the expanded catalog model. Runtime conversion behavior and Conch commands remain in T-0172 and T-0173."
@@ -41,7 +41,7 @@
       "rawValue" : "T-0188"
     },
     "kind" : "task",
-    "status" : "active",
+    "status" : "implementedNotVerified",
     "title" : "Versioned Caliper Catalog Storage and Extensions"
   }
 }
