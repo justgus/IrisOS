@@ -55,14 +55,18 @@ Before implementation begins:
 2. Break the eligible AR work into the smallest independently implementable ERs that can be
    reviewed and validated. Order them by dependencies and avoid bundling unrelated changes.
 3. Draft each ER from `docs/ER/ER-Template.md`. Include the parent AR, concrete acceptance criteria,
-   exact local validation commands, dependency IDs, and any required documentation or migration.
+   exact local validation commands, dependency IDs, a completed `Live Pass (Human)` applicability
+   decision, and any required documentation or migration. Require a human live pass when observable
+   behavior or the target environment cannot be faithfully validated by Codex.
 4. The user-selected AR range authorizes these derived ERs. Set them to `Approved` after checking
    that their scope implements the accepted AR without extending it. Update parent AR dependency
    lists and the ER Status Ledger.
 5. Run a separate, read-only Codex planning review against the parent ARs. It must check coverage,
    scope, dependencies, acceptance criteria, and whether the validation commands can prove those
-   criteria. Fix its findings before implementation. If no independent review context is available,
-   leave the batch in Planning and record the blocker; do not treat self-review as equivalent.
+   criteria. Have the reviewer derive a requirement-to-test matrix from the ARs and ERs before
+   implementation. Fix its findings before implementation. If no separate reviewer context is
+   available, leave the batch in Planning and record the blocker; do not treat self-review as
+   equivalent.
 6. Synchronize each ER with GitHub using the repository's established issue workflow. Record issue
    IDs and links in the progress file.
 7. Commit the coherent ER-planning changes, open a planning PR, wait for required CI, and merge it
@@ -89,24 +93,45 @@ Process one ER at a time, in dependency order:
 
 After local validation and before opening the PR, run a separate Codex review in a fresh reviewer
 context. Use a reviewer/subagent with read-only access to source and documentation; it may run the
-specified validation commands but must not edit implementation files. Give it the ER, acceptance
-criteria, full diff, and test output. Do not supply the implementer's reasoning as a substitute for
-the artifact evidence. If the active Codex surface cannot provide an independent reviewer context,
-do not claim the gate passed or mark work Verified; record the limitation in the batch ledger.
+specified validation commands but must not edit implementation files. Give it the parent AR, ER,
+independently derived requirement-to-test matrix, full diff, test output, and exact commands. Do not
+provide the implementer's explanation or conclusions. The reviewer must inspect the artifacts and
+run the relevant validation itself; summaries are not evidence. If the active Codex surface cannot
+provide a separate reviewer context, do not claim the gate passed or mark work Verified; record the
+limitation in the batch ledger.
 
-The review must report concrete findings with file and line references, or explicitly report no
-findings. It checks:
+The review result is a criterion-by-criterion table with only these verdicts: `Pass`, `Fail`, or
+`Unverified`. Every `Pass` must cite concrete implementation evidence and a test or other
+independent validation result. `Unverified` is not a pass. The reviewer must:
 
-- every acceptance criterion against the resulting code and docs;
-- scope and consistency with the parent AR and existing architecture;
-- correctness risks, regressions, error paths, and security/capability boundaries;
-- whether tests exercise changed behavior and meaningful failure cases;
-- whether validation evidence corresponds to this branch and current diff.
+- compare every AR/ER acceptance criterion to implementation evidence and test evidence;
+- reconcile the independently derived requirement-to-test matrix with the delivered tests;
+- inspect error paths, boundary cases, regressions, and security/capability boundaries;
+- attempt to find a concrete counterexample or failure mode for each changed behavior;
+- run the specified validation commands in the current worktree and report their observed results;
+- identify checks it could not perform and residual risks, without treating absence of a discovered
+  bug as proof of correctness.
 
-Fix every valid finding and repeat independent review and affected tests. A disagreement is resolved
-by evidence from the AR, ER, code, and validation. After three repair cycles, leave the ER blocked
-with the unresolved finding and continue independent work. A review with unresolved findings never
-passes the gate.
+A review cannot pass with missing evidence, a failing command, a criterion labeled `Unverified`, or
+an unaddressed credible finding. Fix findings and repeat the review and affected tests. A disagreement
+is resolved against the AR, ER, code, and observed validation results, not the implementer's
+confidence. After three repair cycles, leave the ER incomplete with the unresolved finding and
+continue independent eligible work. A fresh Codex context reduces anchoring on the implementation
+discussion, but is not a guarantee against shared model blind spots; executable tests and CI are
+required gates, not optional corroboration.
+
+## Human Live Pass Gate
+
+For an ER whose `Live Pass (Human)` is Required, automation can build and stage the implementation,
+prepare exact steps and expected observations, run automated checks, and leave the ER in `Complete`
+while awaiting the human. It cannot perform or attest to the live pass. The human records the
+observed result and date in the ER. On `Continue`, Codex checks that report, handles any failure, and
+proceeds to final verification only after a human-reported Pass. Other independent ERs may continue
+while one ER awaits a live pass.
+
+When live validation depends on a physical device, display, sound, or interaction that is not
+available to Codex, do not substitute screenshots, logs, simulation, or reviewer confidence for
+the required human observation.
 
 ## GitHub Completion and Status Changes
 
@@ -126,9 +151,11 @@ passes the gate.
    realized and every ER in its `ER-Dependencies` list is Verified. Include the progress ledger and
    evidence references in this PR. This is the only batch-authorized docs-only status PR. Run
    required CI and an independent read-only review of the reconciliation; merge only when both
-   pass. If any required verification gate is missing, keep those ERs Complete and leave the
-   affected AR Accepted. Do not mark an AR Implemented if a required dependency is blocked,
-   incomplete, or outside the authorized batch.
+   pass. The reconciliation review must apply the same evidence-based verdict table to each status
+   transition. Exclude ERs with a required live pass still pending or failed; keep them `Complete`
+   and identify them as awaiting or needing a live retest in the progress file. If any required
+   verification gate is missing, leave the affected AR Accepted. Do not mark an AR Implemented if a
+   required dependency is blocked, incomplete, or outside the authorized batch.
 
 If a required GitHub action cannot be completed because credentials, permissions, network, CI, or
 repository policy prevents it, record exact evidence and leave affected statuses honest. Continue
@@ -186,6 +213,7 @@ Create `docs/Plans/AR-Batch-Progress.md` at batch start with:
 - Exact validation results:
 - Independent review result:
 - CI result:
+- Live pass requirement and human-reported result:
 - Merge result:
 
 ## Decisions and Blockers
