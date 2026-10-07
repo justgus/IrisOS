@@ -32,6 +32,12 @@ Proposed ARs in `docs/AR/proposed/` are active recommendation drafts under revie
 `docs/AR/accepted/` are approved direction. ARs remain the architecture record system of record and
 are not converted into Agile Airframe Epics.
 
+AR status is recorded in each AR document. `Accepted` means approved and waiting; `In Progress`
+means selected into a started Autonomous AR Batch; `Implemented` means required implementation
+work passed its verification gates. When asked for AR status, Codex reports every AR in a Markdown
+table in chat, including available batch or ER progress. Keep the status in
+`Architecture-Decision-Index.json` aligned as a derived summary.
+
 ## ER Docs
 
 - ER documents: `docs/ER/`

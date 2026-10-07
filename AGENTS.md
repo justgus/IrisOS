@@ -69,6 +69,14 @@ Never merge when a required check fails, review findings remain, or the remote r
 - Prefer existing utilities/abstractions over introducing new ones.
 - If blocked, ask **one** focused question. Otherwise, make reasonable assumptions and proceed.
 
+## AR Status Reports
+- When the user asks “What is the status of the ARs?” or an equivalent question, read the current
+  status from every AR document and reply in Codex chat with a Markdown table. Include AR ID, title,
+  and status; include current batch or ER progress when available. Do not answer with only counts or
+  point the user to a repository file.
+- AR document status is authoritative. If an active batch ledger or linked ER statuses conflict
+  with it, show the AR status and report the discrepancy in the table or a short note.
+
 ---
 
 ## Autotools / Automake Rules (Important)
@@ -190,6 +198,9 @@ A task is done when:
 - The trigger is an explicit request such as `Run an Autonomous AR Batch for AR-0017 through AR-0019`.
 - Only ARs in the requested inclusive range that are already Accepted are eligible. Do not change
   an AR's architectural recommendation or implement work belonging only to ARs outside the range.
+- At batch start, mark each selected eligible AR `In Progress` in its AR document and in
+  `docs/governance/Architecture-Decision-Index.json`. Keep it `In Progress` across session
+  boundaries and documented blockers; mark it `Implemented` only at successful batch reconciliation.
 - Use `docs/Plans/Autonomous-AR-Batch-Workflow.md` and persist current state in
   `docs/Plans/AR-Batch-Progress.md`. Treat that ledger and repository/GitHub state as authoritative
   across sessions; a user message of `Continue` resumes the ledger's first eligible unfinished item.
