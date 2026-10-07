@@ -1,11 +1,11 @@
 ---
 GitHub-Issue: #75
-ER-Dependencies: ER-0009, ER-0011, ER-0012, ER-0013, ER-0014, ER-0052
+ER-Dependencies: ER-0009, ER-0011, ER-0012, ER-0013, ER-0014, ER-0052, ER-0063, ER-0064, ER-0065, ER-0066, ER-0083, ER-0084, ER-0087
 ---
 
 # AR-0011 — Vizier Interpretation Layer (Recommendation)
 
-- Status: Accepted
+- Status: In Progress
 - Date: 2026-02-16
 - Owners: Mike
 
