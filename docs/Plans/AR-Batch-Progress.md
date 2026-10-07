@@ -28,7 +28,7 @@
 ## Current Item
 
 - Next action: Restore GitHub write access, synchronize ER issues and AR issue status, publish the planning branch, and open the planning PR before implementation.
-- Last completed action: Independent planning review passed ER-0081 through ER-0087; corrected the final ER-0086 ownership groups and focused test list.
+- Last completed action: Independent planning review passed ER-0081 through ER-0087; corrected the final ER-0086 ownership groups and focused test list; planning commit `834682cb47482e7361cdf21b782cbdf7895bc31d` created.
 - Exact validation results: `git diff --check` passed for tracked changes; `python3 -m json.tool docs/governance/Architecture-Decision-Index.json` passed. Revised plan documents still need whitespace validation after staging.
 - Independent review result: Passed in separate read-only Codex reviewer context after four review/fix cycles; final finding about TaskRegistry/TaskComms/IoReactor/IoExecutor API ownership was corrected. No remaining material findings.
 - CI result: Not run; planning PR not created.
