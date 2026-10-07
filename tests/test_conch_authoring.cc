@@ -254,10 +254,9 @@ START_TEST(test_conch_define_and_instantiate)
 
   auto recR = store.get_latest(createR.value->ref.id);
   ck_assert_msg(recR, "get_latest failed: %s", result_message(recR));
-  ck_assert_msg(recR.value->has_value(), "expected object record");
-  ck_assert_uint_eq(recR.value->value().type.v, def.type_id.v);
+  ck_assert_uint_eq(recR.value->type.v, def.type_id.v);
 
-  auto decoded = nlohmann::json::from_cbor(recR.value->value().payload_cbor);
+  auto decoded = nlohmann::json::from_cbor(recR.value->payload_cbor);
   ck_assert_str_eq(decoded.value("label", "").c_str(), "alpha");
 
   ck_assert_msg(store.close(), "close failed");

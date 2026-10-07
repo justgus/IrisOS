@@ -2,7 +2,7 @@
 
 - Requested ARs: AR-0001, AR-0011, AR-0012
 - Started: 2026-10-07
-- Current state: Planning PR #330 CI stalled at dependency installation; local workflow fix prepared but not pushed
+- Current state: ER-0081 implementation and local suite complete; independent review pending
 - Goal/thread reference: 01a1120b-578d-7563-8735-2de39aeeee44
 
 ## AR Queue
@@ -17,7 +17,7 @@
 
 | ER | Parent AR | Dependencies | Branch / PR | State | Last verified checkpoint |
 |---|---|---|---|---|---|
-| ER-0081 | AR-0001 | None | PR #330 | Approved | Independent planning review passed; storage lookup criteria mapped to focused tests. |
+| ER-0081 | AR-0001 | None | `codex/er-0081-referee-notfound` | In Progress | Storage APIs/callers migrated; 29 local tests pass with documented Clang warning suppressions; independent review passed with no open findings. |
 | ER-0082 | AR-0001 | ER-0081 | PR #330 | Approved | Independent planning review passed; Refract lookup and propagation criteria mapped. |
 | ER-0083 | AR-0001, AR-0011 | ER-0081, ER-0082 | PR #330 | Approved | Independent planning review passed; runtime lookup and normal empty-result distinctions mapped. |
 | ER-0084 | AR-0011, AR-0012 | ER-0066, ER-0081, ER-0082, ER-0083 | PR #330 | Approved | Independent planning review passed; shell subprocess integration and human live pass specified. |
@@ -27,21 +27,21 @@
 
 ## Current Item
 
-- Next action: Publish the local `.github/workflows/ci.yml` fix after GitHub write access is restored, then wait for its CI run; merge the planning PR only after all required checks pass. Synchronize issues where credentials permit before implementation.
-- Last completed action: Independent read-only review passed the `.github/workflows/ci.yml` correction; committed it locally as `dbc8e093fe1bf612ccf412218a3fbee94a6d8c39`. The existing remote run remains on the previous head.
-- Exact validation results: `git diff --check` and `git diff --cached --check` passed. Independent review confirmed GitHub Actions timeout syntax and apt options; no tests were run. CI run 37673963672 remains in progress at dependency installation; active logs return 404. Local workflow change awaits CI validation.
-- Independent review result: Passed in separate read-only Codex reviewer context after four review/fix cycles; final finding about TaskRegistry/TaskComms/IoReactor/IoExecutor API ownership was corrected. No remaining material findings.
-- CI result: PR #330, run 37673963672, `ci-linux` in progress over 20 minutes at `Install dependencies`; logs unavailable during execution.
+- Next action: Complete independent review of ER-0081; address findings, then commit, push, open PR, and await required CI.
+- Last completed action: ER-0081 storage API, caller migration, and focused error tests are implemented on `codex/er-0081-referee-notfound`.
+- Exact validation results: `make -C tests test_referee_core` passed. `make check AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-gnu-zero-variadic-macro-arguments'` passed all 29 tests. The unsuppressed `make -j` and `make check` stop on pre-existing local Clang `-Werror` diagnostics (`kTypeKernelIo` unused and `IoReactor::registry_` unused); the full check additionally treats Check's GNU variadic macro as an error. The full build succeeded after adding only those warning suppressions; no source changes were made to the unrelated diagnostics.
+- Independent review result: Passed in a separate read-only Codex context; no open findings. The reviewer confirmed typed lookup errors, preserved higher-level optional absence behavior, focused test coverage, and the generated wrapper is absent from the diff.
+- CI result: PR #330 merged; run 37688293301 succeeded. Earlier run 37673963672 was canceled after 104 minutes at `Install dependencies`.
 - Live pass requirement and human-reported result: ER-0084 and ER-0085 require human live passes; both are pending. Other drafted ERs mark live pass not required.
-- Merge result: PR #330 open and mergeable; not merged while CI is running.
+- Merge result: PR #330 merged at 2026-10-07T21:52:33Z; merge commit `e42f3a9e5cd404534fbac51a8d10687f232f4da7`.
 
 ## Decisions and Blockers
 
 - The user's selected set is exactly AR-0001, AR-0011, and AR-0012; intervening AR IDs are out of scope.
 - GitHub issue synchronization for AR issues #65, #75, and #76 failed with HTTP 403 `Resource not accessible by integration`. The connected GitHub integration can read these issues but does not have permission to update them. Local AR statuses are In Progress; issue labels and bodies remain stale.
 - Creating the first planned ER issue (#ER-0081) failed with HTTP 403 `Resource not accessible by integration`; no new ER issues were created. The integration permission block still prevents issue synchronization; retry only if credential or app permissions have changed.
-- The local Git credential helper had previously failed with `System.OverflowException` in `GitCredentialManager` (`Interop.Sys.GetGroups`). The user has since created PR #330 from the reviewed branch. Do not start implementation until that planning PR merges.
-- Attempting to update `.github/workflows/ci.yml` on the PR branch through the GitHub connector failed with HTTP 403 `Resource not accessible by integration`. The reviewed fix is committed locally, one commit ahead of PR #330's current remote head; `gh auth status` reports an invalid token. The old CI run remains active and the local fix has not triggered a new run.
+- The local Git credential helper had previously failed with `System.OverflowException` in `GitCredentialManager` (`Interop.Sys.GetGroups`). PR #330 has since been merged by the user and local `main` fast-forwarded.
+- GitHub issue synchronization remains blocked: connector writes returned HTTP 403 `Resource not accessible by integration`, and `gh auth status` reported an invalid token. The CI workflow fix was included in merged PR #330 and its required checks passed.
 - ER-0081 through ER-0083 implement AR-0001's documented lookup-absence gap in ordered storage, Refract, and runtime slices. Normal empty datagram and no-route results remain optional because they are not missing-object lookups.
 - AR-0011 and AR-0012's existing ER-0063 through ER-0066 are already Verified. ER-0084 is needed because `bin/conch` does not call the existing `update_session_from_graph` API.
 - First independent reviewer found gaps: parent mismatch for ER-0083, no shell-level automated verification in ER-0084, no AR-0012 layout coverage, and missing parent-requirement evidence mapping. The revised plan now links ER-0083 to AR-0011, adds it as an AR-0011 dependency, uses the existing subprocess-capable `test_conch_authoring` target for ER-0084 shell integration coverage, and adds ER-0085.

@@ -78,19 +78,18 @@ referee::Result<std::optional<RelationshipRouteDecision>> route_for_relationship
 
   auto artifactR = store.get_object(edge.to);
   if (!artifactR) {
-    return referee::Result<std::optional<RelationshipRouteDecision>>::err(artifactR.error->message);
+    if (artifactR.error->code == referee::ErrorCode::NotFound) {
+      return referee::Result<std::optional<RelationshipRouteDecision>>::ok(
+          std::optional<RelationshipRouteDecision>{});
+    }
+    return referee::Result<std::optional<RelationshipRouteDecision>>::err(artifactR.error.value());
   }
-  if (!artifactR.value->has_value()) {
-    return referee::Result<std::optional<RelationshipRouteDecision>>::ok(
-        std::optional<RelationshipRouteDecision>{});
-  }
-
   auto typesR = registry.list_types();
   if (!typesR) {
     return referee::Result<std::optional<RelationshipRouteDecision>>::err(typesR.error->message);
   }
   for (const auto& summary : typesR.value.value()) {
-    if (summary.type_id == artifactR.value->value().type) {
+    if (summary.type_id == artifactR.value->type) {
       if (is_task_relationship(edge.name)) {
         if (summary.type_id != iris::viz::kTypeVizTaskView) {
           return referee::Result<std::optional<RelationshipRouteDecision>>::ok(
@@ -99,7 +98,7 @@ referee::Result<std::optional<RelationshipRouteDecision>> route_for_relationship
 
         nlohmann::json payload;
         try {
-          payload = nlohmann::json::from_cbor(artifactR.value->value().payload_cbor);
+          payload = nlohmann::json::from_cbor(artifactR.value->payload_cbor);
         } catch (const nlohmann::json::exception&) {
           return referee::Result<std::optional<RelationshipRouteDecision>>::ok(
               std::optional<RelationshipRouteDecision>{});
@@ -159,12 +158,8 @@ referee::Result<std::optional<referee::ObjectID>> spawn_concho_for_artifact(
     referee::SqliteStore& store,
     referee::ObjectID artifact_id) {
   auto recR = store.get_latest(artifact_id);
-  if (!recR) return referee::Result<std::optional<referee::ObjectID>>::err(recR.error->message);
-  if (!recR.value->has_value()) {
-    return referee::Result<std::optional<referee::ObjectID>>::err("artifact not found");
-  }
-
-  auto route = route_for_type_id(registry, recR.value->value().type);
+  if (!recR) return referee::Result<std::optional<referee::ObjectID>>::err(recR.error.value());
+  auto route = route_for_type_id(registry, recR.value->type);
   if (!route.has_value()) {
     return referee::Result<std::optional<referee::ObjectID>>::ok(
         std::optional<referee::ObjectID>{});
@@ -194,7 +189,7 @@ referee::Result<std::optional<referee::ObjectID>> spawn_concho_for_artifact(
   }
 
   referee::Bytes props;
-  auto edgeR = store.add_edge(recR.value->value().ref, createR.value->ref, "view", "concho", props);
+  auto edgeR = store.add_edge(recR.value->ref, createR.value->ref, "view", "concho", props);
   if (!edgeR) {
     return referee::Result<std::optional<referee::ObjectID>>::err(edgeR.error->message);
   }

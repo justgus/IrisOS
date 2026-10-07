@@ -27,8 +27,7 @@ const char* result_message(const Result<T>& r) {
 ObjectRef latest_ref(SqliteStore& store, ObjectID id) {
   auto recR = store.get_latest(id);
   ck_assert_msg(recR, "get_latest failed: %s", result_message(recR));
-  ck_assert_msg(recR.value->has_value(), "expected object present");
-  return recR.value->value().ref;
+  return recR.value->ref;
 }
 
 std::size_t count_session_conchos(SqliteStore& store, const SessionState& state) {
@@ -56,7 +55,7 @@ bool has_concho_type(SqliteStore& store,
   for (const auto& edge : edgesR.value.value()) {
     auto recR = store.get_object(edge.to);
     ck_assert_msg(recR, "get_object failed: %s", result_message(recR));
-    if (recR.value->has_value() && recR.value->value().type == target->type_id) return true;
+    if (recR.value->type == target->type_id) return true;
   }
   return false;
 }

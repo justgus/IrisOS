@@ -203,9 +203,8 @@ START_TEST(test_task_state_relationship_routes_known_task_view)
   ck_assert_msg(taskR, "create_task_view failed: %s", result_message(taskR));
   auto taskRecR = store.get_latest(taskR.value.value());
   ck_assert_msg(taskRecR, "get_latest task failed: %s", result_message(taskRecR));
-  ck_assert_msg(taskRecR.value->has_value(), "expected task view");
 
-  auto edgeR = store.add_edge(sourceR.value->ref, taskRecR.value->value().ref, "task_state", "task",
+  auto edgeR = store.add_edge(sourceR.value->ref, taskRecR.value->ref, "task_state", "task",
                               referee::Bytes{});
   ck_assert_msg(edgeR, "add edge failed: %s", result_message(edgeR));
 

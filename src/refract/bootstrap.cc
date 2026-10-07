@@ -1393,12 +1393,9 @@ referee::Result<CatalogBootstrapResult> bootstrap_core_catalog(SchemaRegistry& r
     if (units_by_symbol.find(seed.symbol) != units_by_symbol.end()) {
       const auto existing_id = units_by_symbol.at(seed.symbol);
       auto recordR = store.get_latest(existing_id);
-      if (!recordR) return referee::Result<CatalogBootstrapResult>::err(recordR.error->message);
-      if (!recordR.value->has_value()) {
-        return referee::Result<CatalogBootstrapResult>::err("missing existing unit record: " + seed.symbol);
-      }
+      if (!recordR) return referee::Result<CatalogBootstrapResult>::err(recordR.error.value());
       try {
-        auto existing = nlohmann::json::from_cbor(recordR.value->value().payload_cbor);
+        auto existing = nlohmann::json::from_cbor(recordR.value->payload_cbor);
         auto expected_dimension = require_dimension(seed.dimension);
         if (!expected_dimension) {
           return referee::Result<CatalogBootstrapResult>::err(expected_dimension.error->message);
@@ -1482,11 +1479,8 @@ referee::Result<CatalogBootstrapResult> bootstrap_core_catalog(SchemaRegistry& r
         [&](const DimensionSeed& seed) { return seed.name == name; });
     if (!is_shipped_dimension) continue;
     auto recordR = store.get_latest(id);
-    if (!recordR) return referee::Result<CatalogBootstrapResult>::err(recordR.error->message);
-    if (!recordR.value->has_value()) {
-      return referee::Result<CatalogBootstrapResult>::err("missing dimension record: " + name);
-    }
-    catalog["dimensions"].push_back(nlohmann::json::from_cbor(recordR.value->value().payload_cbor));
+    if (!recordR) return referee::Result<CatalogBootstrapResult>::err(recordR.error.value());
+    catalog["dimensions"].push_back(nlohmann::json::from_cbor(recordR.value->payload_cbor));
   }
   std::map<std::string, std::string> dimension_name_by_id;
   for (const auto& [name, id] : dimensions_by_name) {
@@ -1503,11 +1497,8 @@ referee::Result<CatalogBootstrapResult> bootstrap_core_catalog(SchemaRegistry& r
     }
     const auto& id = unit_it->second;
     auto recordR = store.get_latest(id);
-    if (!recordR) return referee::Result<CatalogBootstrapResult>::err(recordR.error->message);
-    if (!recordR.value->has_value()) {
-      return referee::Result<CatalogBootstrapResult>::err("missing unit record: " + symbol);
-    }
-    auto unit = nlohmann::json::from_cbor(recordR.value->value().payload_cbor);
+    if (!recordR) return referee::Result<CatalogBootstrapResult>::err(recordR.error.value());
+    auto unit = nlohmann::json::from_cbor(recordR.value->payload_cbor);
     if (unit.contains("dimension_id")) {
       const auto dimension_id = unit.at("dimension_id").get<std::string>();
       auto dimension_name = dimension_name_by_id.find(dimension_id);
@@ -1540,21 +1531,20 @@ referee::Result<CatalogBootstrapResult> bootstrap_core_catalog(SchemaRegistry& r
   const auto catalog_payload = cbor_from_json(catalog);
   auto existing_catalog = store.get_latest(catalog_id);
   if (!existing_catalog) {
-    return referee::Result<CatalogBootstrapResult>::err(existing_catalog.error->message);
-  }
-  if (existing_catalog.value->has_value()) {
-    if (existing_catalog.value->value().payload_cbor != catalog_payload) {
-      return referee::Result<CatalogBootstrapResult>::err(
-          "immutable Caliper base catalog differs from the shipped catalog version");
+    if (existing_catalog.error->code != referee::ErrorCode::NotFound) {
+      return referee::Result<CatalogBootstrapResult>::err(existing_catalog.error.value());
     }
-    ++out.existing;
-  } else {
     auto createR = store.create_object_with_id(catalog_id,
                                                catalog_def.value->definition.type_id,
                                                catalog_def.value->ref.id,
                                                catalog_payload);
     if (!createR) return referee::Result<CatalogBootstrapResult>::err(createR.error->message);
     ++out.inserted;
+  } else if (existing_catalog.value->payload_cbor != catalog_payload) {
+    return referee::Result<CatalogBootstrapResult>::err(
+        "immutable Caliper base catalog differs from the shipped catalog version");
+  } else {
+    ++out.existing;
   }
 
   return referee::Result<CatalogBootstrapResult>::ok(out);

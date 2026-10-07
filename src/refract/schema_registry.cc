@@ -965,16 +965,13 @@ referee::Result<DefinitionRecord> SchemaRegistry::register_definition(const Type
 
   if (normalized.supersedes_definition_id.has_value()) {
     auto priorR = store_.get_latest(normalized.supersedes_definition_id.value());
-    if (!priorR) return referee::Result<DefinitionRecord>::err(priorR.error->message);
-    if (!priorR.value->has_value()) {
-      return referee::Result<DefinitionRecord>::err("supersedes definition not found");
-    }
-    auto edgeR = store_.add_edge(createR.value->ref, priorR.value->value().ref,
+    if (!priorR) return referee::Result<DefinitionRecord>::err(priorR.error.value());
+    auto edgeR = store_.add_edge(createR.value->ref, priorR.value->ref,
                                  "supersedes", "definition", {});
     if (!edgeR) return referee::Result<DefinitionRecord>::err(edgeR.error->message);
     if (normalized.migration_hook.has_value()) {
       auto hookProps = referee::cbor_from_json_kv("hook", normalized.migration_hook.value());
-      auto hookR = store_.add_edge(createR.value->ref, priorR.value->value().ref,
+      auto hookR = store_.add_edge(createR.value->ref, priorR.value->ref,
                                    "migration_hook", "definition", hookProps);
       if (!hookR) return referee::Result<DefinitionRecord>::err(hookR.error->message);
     }
@@ -1001,16 +998,13 @@ referee::Result<DefinitionRecord> SchemaRegistry::register_definition_with_id(
 
   if (normalized.supersedes_definition_id.has_value()) {
     auto priorR = store_.get_latest(normalized.supersedes_definition_id.value());
-    if (!priorR) return referee::Result<DefinitionRecord>::err(priorR.error->message);
-    if (!priorR.value->has_value()) {
-      return referee::Result<DefinitionRecord>::err("supersedes definition not found");
-    }
-    auto edgeR = store_.add_edge(createR.value->ref, priorR.value->value().ref,
+    if (!priorR) return referee::Result<DefinitionRecord>::err(priorR.error.value());
+    auto edgeR = store_.add_edge(createR.value->ref, priorR.value->ref,
                                  "supersedes", "definition", {});
     if (!edgeR) return referee::Result<DefinitionRecord>::err(edgeR.error->message);
     if (normalized.migration_hook.has_value()) {
       auto hookProps = referee::cbor_from_json_kv("hook", normalized.migration_hook.value());
-      auto hookR = store_.add_edge(createR.value->ref, priorR.value->value().ref,
+      auto hookR = store_.add_edge(createR.value->ref, priorR.value->ref,
                                    "migration_hook", "definition", hookProps);
       if (!hookR) return referee::Result<DefinitionRecord>::err(hookR.error->message);
     }
@@ -1023,12 +1017,14 @@ referee::Result<DefinitionRecord> SchemaRegistry::register_definition_with_id(
 
 referee::Result<std::optional<DefinitionRecord>> SchemaRegistry::get_definition_by_id(referee::ObjectID id) {
   auto recR = store_.get_latest(id);
-  if (!recR) return referee::Result<std::optional<DefinitionRecord>>::err(recR.error->message);
-  if (!recR.value->has_value()) {
-    return referee::Result<std::optional<DefinitionRecord>>::ok(std::optional<DefinitionRecord>{});
+  if (!recR) {
+    if (recR.error->code == referee::ErrorCode::NotFound) {
+      return referee::Result<std::optional<DefinitionRecord>>::ok(std::optional<DefinitionRecord>{});
+    }
+    return referee::Result<std::optional<DefinitionRecord>>::err(recR.error.value());
   }
 
-  const auto& rec = recR.value->value();
+  const auto& rec = recR.value.value();
   if (rec.type.v != kTypeDefinitionType.v) {
     return referee::Result<std::optional<DefinitionRecord>>::err("object is not a type definition");
   }
@@ -1102,12 +1098,8 @@ referee::Result<std::vector<TypeSummary>> SchemaRegistry::list_types() {
 referee::Result<std::vector<SupersedesLink>> SchemaRegistry::list_supersedes_chain(
     referee::ObjectID definition_id) {
   auto currentR = store_.get_latest(definition_id);
-  if (!currentR) return referee::Result<std::vector<SupersedesLink>>::err(currentR.error->message);
-  if (!currentR.value->has_value()) {
-    return referee::Result<std::vector<SupersedesLink>>::err("definition not found");
-  }
-
-  auto current = currentR.value->value();
+  if (!currentR) return referee::Result<std::vector<SupersedesLink>>::err(currentR.error.value());
+  auto current = currentR.value.value();
   if (current.type.v != kTypeDefinitionType.v) {
     return referee::Result<std::vector<SupersedesLink>>::err("object is not a type definition");
   }
@@ -1124,15 +1116,12 @@ referee::Result<std::vector<SupersedesLink>> SchemaRegistry::list_supersedes_cha
 
     const auto& edge = edgesR.value->front();
     auto priorRecR = store_.get_object(edge.to);
-    if (!priorRecR) return referee::Result<std::vector<SupersedesLink>>::err(priorRecR.error->message);
-    if (!priorRecR.value->has_value()) {
-      return referee::Result<std::vector<SupersedesLink>>::err("supersedes target not found");
-    }
-    if (priorRecR.value->value().type.v != kTypeDefinitionType.v) {
+    if (!priorRecR) return referee::Result<std::vector<SupersedesLink>>::err(priorRecR.error.value());
+    if (priorRecR.value->type.v != kTypeDefinitionType.v) {
       return referee::Result<std::vector<SupersedesLink>>::err("supersedes target is not a type definition");
     }
 
-    auto priorDefR = record_from_object(priorRecR.value->value());
+    auto priorDefR = record_from_object(priorRecR.value.value());
     if (!priorDefR) return referee::Result<std::vector<SupersedesLink>>::err(priorDefR.error->message);
 
     SupersedesLink link;
@@ -1151,7 +1140,7 @@ referee::Result<std::vector<SupersedesLink>> SchemaRegistry::list_supersedes_cha
     }
 
     chain.push_back(std::move(link));
-    current = priorRecR.value->value();
+    current = priorRecR.value.value();
   }
 
   return referee::Result<std::vector<SupersedesLink>>::ok(std::move(chain));

@@ -20,13 +20,6 @@ const char* result_message(const Result<T>& r) {
   return r.error.has_value() ? r.error->message.c_str() : "ok";
 }
 
-template <typename T>
-std::optional<T> require_optional(const Result<std::optional<T>>& r, const char* context) {
-  ck_assert_msg(r, "%s: %s", context, result_message(r));
-  ck_assert_msg(r.value.has_value(), "%s: missing optional container", context);
-  return r.value.value();
-}
-
 } // namespace
 
 START_TEST(test_create_and_get_object_roundtrip)
@@ -45,12 +38,14 @@ START_TEST(test_create_and_get_object_roundtrip)
   ck_assert_msg(createdR, "create_object failed: %s", result_message(createdR));
 
   auto getR = store.get_object(createdR.value->ref);
-  auto opt = require_optional(getR, "get_object");
-  ck_assert_msg(opt.has_value(), "expected object present");
-
-  const auto& obj = opt.value();      // ObjectRecord
+  ck_assert_msg(getR, "get_object failed: %s", result_message(getR));
+  const auto& obj = getR.value.value();
   ck_assert_uint_eq(obj.type.v, demoType.v);
   ck_assert(obj.definition_id == demoDef);
+
+  auto latestR = store.get_latest(createdR.value->ref.id);
+  ck_assert_msg(latestR, "get_latest failed: %s", result_message(latestR));
+  ck_assert(latestR.value->ref == createdR.value->ref);
 
   auto json = json_string_from_cbor(obj.payload_cbor);
   ck_assert_msg(json.find("Ship Propulsion") != std::string::npos, "payload didn't match json=%s", json.c_str());
@@ -95,10 +90,24 @@ START_TEST(test_edges_from_and_to)
 
   // After rollback, nothing should exist.
   auto latestA = store.get_latest(aR.value->ref.id);
-  ck_assert(latestA);
-  ck_assert_msg(!latestA.value->has_value(), "expected no object after rollback");
+  ck_assert(!latestA);
+  ck_assert(latestA.error->code == ErrorCode::NotFound);
+
+  auto missingRef = store.get_object(aR.value->ref);
+  ck_assert(!missingRef);
+  ck_assert(missingRef.error->code == ErrorCode::NotFound);
 
   ck_assert_msg(store.close(), "close failed");
+}
+END_TEST
+
+START_TEST(test_lookup_errors_distinguish_closed_store)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  auto closed = store.get_latest(ObjectID::random());
+  ck_assert(!closed);
+  ck_assert_msg(closed.error.has_value(), "expected closed-store error");
+  ck_assert(closed.error->code != ErrorCode::NotFound);
 }
 END_TEST
 
@@ -184,6 +193,7 @@ Suite* referee_suite(void) {
 
   tcase_add_test(tc, test_create_and_get_object_roundtrip);
   tcase_add_test(tc, test_edges_from_and_to);
+  tcase_add_test(tc, test_lookup_errors_distinguish_closed_store);
   tcase_add_test(tc, test_result_carries_typed_error_code);
   tcase_add_test(tc, test_graph_change_feed_filters_objects_and_edges);
 
