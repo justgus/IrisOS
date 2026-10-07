@@ -55,7 +55,9 @@ Before implementation begins:
 2. Break the eligible AR work into the smallest independently implementable ERs that can be
    reviewed and validated. Order them by dependencies and avoid bundling unrelated changes.
 3. Draft each ER from `docs/ER/ER-Template.md`. Include the parent AR, concrete acceptance criteria,
-   exact local validation commands, dependency IDs, and any required documentation or migration.
+   exact local validation commands, dependency IDs, a completed `Live Pass (Human)` applicability
+   decision, and any required documentation or migration. Require a human live pass when observable
+   behavior or the target environment cannot be faithfully validated by Codex.
 4. The user-selected AR range authorizes these derived ERs. Set them to `Approved` after checking
    that their scope implements the accepted AR without extending it. Update parent AR dependency
    lists and the ER Status Ledger.
@@ -118,6 +120,19 @@ continue independent eligible work. A fresh Codex context reduces anchoring on t
 discussion, but is not a guarantee against shared model blind spots; executable tests and CI are
 required gates, not optional corroboration.
 
+## Human Live Pass Gate
+
+For an ER whose `Live Pass (Human)` is Required, automation can build and stage the implementation,
+prepare exact steps and expected observations, run automated checks, and leave the ER in `Complete`
+while awaiting the human. It cannot perform or attest to the live pass. The human records the
+observed result and date in the ER. On `Continue`, Codex checks that report, handles any failure, and
+proceeds to final verification only after a human-reported Pass. Other independent ERs may continue
+while one ER awaits a live pass.
+
+When live validation depends on a physical device, display, sound, or interaction that is not
+available to Codex, do not substitute screenshots, logs, simulation, or reviewer confidence for
+the required human observation.
+
 ## GitHub Completion and Status Changes
 
 1. Commit the implementation, tests, review fixes, and implementation-progress status (normally
@@ -137,9 +152,10 @@ required gates, not optional corroboration.
    evidence references in this PR. This is the only batch-authorized docs-only status PR. Run
    required CI and an independent read-only review of the reconciliation; merge only when both
    pass. The reconciliation review must apply the same evidence-based verdict table to each status
-   transition. If any required verification gate is missing, keep those ERs Complete and leave the
-   affected AR Accepted. Do not mark an AR Implemented if a required dependency is blocked,
-   incomplete, or outside the authorized batch.
+   transition. Exclude ERs with a required live pass still pending or failed; keep them `Complete`
+   and identify them as awaiting or needing a live retest in the progress file. If any required
+   verification gate is missing, leave the affected AR Accepted. Do not mark an AR Implemented if a
+   required dependency is blocked, incomplete, or outside the authorized batch.
 
 If a required GitHub action cannot be completed because credentials, permissions, network, CI, or
 repository policy prevents it, record exact evidence and leave affected statuses honest. Continue
@@ -197,6 +213,7 @@ Create `docs/Plans/AR-Batch-Progress.md` at batch start with:
 - Exact validation results:
 - Independent review result:
 - CI result:
+- Live pass requirement and human-reported result:
 - Merge result:
 
 ## Decisions and Blockers

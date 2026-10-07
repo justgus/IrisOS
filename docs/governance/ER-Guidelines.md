@@ -80,6 +80,14 @@ Keep `docs/ER/ER-Status.md` aligned with the current document status.
 - Tie each implementation ER to the AR that spawned it unless the work is explicitly standalone.
 - Add implementation notes only when they reduce ambiguity for the implementer.
 - Include a verification plan with exact tests and manual checks where practical.
+- Include a `Live Pass (Human)` section in every ER. Require it for behavior whose correctness
+  depends on user-visible interaction, rendering, sound, hardware, or a target environment that
+  Codex cannot faithfully validate. Give reproducible steps and observable expected results. Use
+  `Not Required` only with a short reason when automated evidence fully covers the acceptance
+  criteria.
+- Only the human tester may record a required live pass as `Pass` or `Fail`. Codex may prepare the
+  checklist and record a result the human reports, but may not infer a live pass from code, logs,
+  screenshots, or automated checks.
 
 ## Workflow
 
@@ -97,7 +105,8 @@ Keep `docs/ER/ER-Status.md` aligned with the current document status.
 6. Update `docs/ER/ER-Status.md` when the ER status changes.
 7. The System Engineer normally reviews, tests, and marks the ER `Verified`. For an explicitly
    authorized Autonomous AR Batch, Codex completes this step using the independent review and
-   validation gates in `docs/Plans/Autonomous-AR-Batch-Workflow.md`.
+   validation gates in `docs/Plans/Autonomous-AR-Batch-Workflow.md`. A required human live pass must
+   be completed by the human before either path may mark the ER `Verified`.
 
 ## GitHub Workflow
 

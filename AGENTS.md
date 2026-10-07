@@ -31,7 +31,8 @@ milestones. The batch ledger and the workflow's review, test, CI, and merge gate
 - Default implementation baseline: C++20 or C++24.
 - Outside an explicitly requested Autonomous AR Batch, only the System Engineer may mark ER/DR
   items Verified. In a batch, Codex may mark an ER Verified only after the independent review and
-  validation gates in `docs/Plans/Autonomous-AR-Batch-Workflow.md` pass. Never mark a DR Verified.
+  validation gates in `docs/Plans/Autonomous-AR-Batch-Workflow.md` pass. A required `Live Pass
+  (Human)` must be recorded by the human. Never mark a DR Verified.
 
 ### Git Workflow
 - Create a new branch named `codex/<topic>` unless explicitly told otherwise.
@@ -206,9 +207,13 @@ A task is done when:
   counterexample search, and fresh execution of relevant validation. `Unverified` is not a pass.
   Fix findings and repeat review. The reviewer must not author the implementation or rely on the
   implementer's reasoning as evidence.
+- Require a `Live Pass (Human)` entry in each ER. If acceptance criteria require user observation or
+  a target environment Codex cannot faithfully validate, leave it Pending until the human performs
+  and reports it. Never infer or record a human pass. Continue independent ERs while waiting.
 - Mark an ER Verified only when its acceptance criteria pass, its required local validation passes,
   independent review has no open findings, and required CI checks pass. If CI is unavailable or
-  inconclusive, leave the ER unverified and record the exact state.
+  inconclusive, or a required human live pass is pending, leave the ER unverified and record the
+  exact state.
 - Mark an AR Implemented only when every ER listed as its dependency is Verified and the AR's
   acceptance criteria are met. Update implementation progress with its implementation commit;
   use the batch reconciliation PR for post-merge verification and any resulting AR completion.

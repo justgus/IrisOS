@@ -78,3 +78,15 @@ AR-Dependencies: AR-XXXX
 
 - Tests to run:
 - Manual checks:
+
+### Live Pass (Human)
+
+- Required: Yes | No
+- If no, reason:
+- Build / environment / target:
+- Steps:
+- Expected observations:
+- Observed results:
+- Result: Pending | Pass | Fail | Not Required
+- Performed by:
+- Date:
