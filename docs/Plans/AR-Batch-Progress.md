@@ -28,10 +28,10 @@
 ## Current Item
 
 - Next action: Restore GitHub write access, synchronize ER issues and AR issue status, publish the planning branch, and open the planning PR before implementation.
-- Last completed action: Independent planning review passed ER-0081 through ER-0087; corrected the final ER-0086 ownership groups and focused test list; planning commit `834682cb47482e7361cdf21b782cbdf7895bc31d` created.
+- Last completed action: Independent planning review passed ER-0081 through ER-0087; planning commit `834682cb47482e7361cdf21b782cbdf7895bc31d` and ledger checkpoint commit `dbc28b9` created.
 - Exact validation results: `git diff --check` passed for tracked changes; `python3 -m json.tool docs/governance/Architecture-Decision-Index.json` passed. Revised plan documents still need whitespace validation after staging.
 - Independent review result: Passed in separate read-only Codex reviewer context after four review/fix cycles; final finding about TaskRegistry/TaskComms/IoReactor/IoExecutor API ownership was corrected. No remaining material findings.
-- CI result: Not run; planning PR not created.
+- CI result: Not run; planning PR not created because branch publication failed.
 - Live pass requirement and human-reported result: ER-0084 and ER-0085 require human live passes; both are pending. Other drafted ERs mark live pass not required.
 - Merge result: No batch PR yet.
 
@@ -40,6 +40,7 @@
 - The user's selected set is exactly AR-0001, AR-0011, and AR-0012; intervening AR IDs are out of scope.
 - GitHub issue synchronization for AR issues #65, #75, and #76 failed with HTTP 403 `Resource not accessible by integration`. The connected GitHub integration can read these issues but does not have permission to update them. Local AR statuses are In Progress; issue labels and bodies remain stale.
 - Creating the first planned ER issue (#ER-0081) also failed with HTTP 403 `Resource not accessible by integration`; no new ER issues were created. The same integration permission block prevents required issue synchronization. Do not continue issue creation until write access changes.
+- `git push -u origin codex/ar-batch-ar0001-ar0011-ar0012` failed because `github.com` DNS resolution failed. Retrying with the known GitHub endpoint reached the credential helper, which crashed with `System.OverflowException` in `GitCredentialManager` (`Interop.Sys.GetGroups`) and then reported `fatal: could not read Username`. The branch remains local; no PR exists. Implementation must not start before the planning PR is published and merged.
 - ER-0081 through ER-0083 implement AR-0001's documented lookup-absence gap in ordered storage, Refract, and runtime slices. Normal empty datagram and no-route results remain optional because they are not missing-object lookups.
 - AR-0011 and AR-0012's existing ER-0063 through ER-0066 are already Verified. ER-0084 is needed because `bin/conch` does not call the existing `update_session_from_graph` API.
 - First independent reviewer found gaps: parent mismatch for ER-0083, no shell-level automated verification in ER-0084, no AR-0012 layout coverage, and missing parent-requirement evidence mapping. The revised plan now links ER-0083 to AR-0011, adds it as an AR-0011 dependency, uses the existing subprocess-capable `test_conch_authoring` target for ER-0084 shell integration coverage, and adds ER-0085.
