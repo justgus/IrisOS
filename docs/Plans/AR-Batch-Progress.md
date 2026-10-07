@@ -23,12 +23,12 @@
 | ER-0084 | AR-0011, AR-0012 | ER-0066, ER-0081, ER-0082, ER-0083 | PR #330 | Approved | Independent planning review passed; shell subprocess integration and human live pass specified. |
 | ER-0085 | AR-0012 | ER-0084 | PR #330 | Approved | Independent planning review passed; tiling/nesting model, Automake target, and human live pass specified. |
 | ER-0086 | AR-0001 | ER-0081, ER-0082, ER-0083 | PR #330 | Approved | Independent planning review passed; API ownership groups and focused test mappings enumerated. |
-| ER-0087 | AR-0011 | ER-0009, ER-0064 | `codex/er-0087-vizier-operation-metadata` | In Progress | API and focused tests implemented; full suite 29/29 passed with documented local Clang warning suppressions; independent review passed with no open findings. |
+| ER-0087 | AR-0011 | ER-0009, ER-0064 | `codex/er-0087-vizier-operation-metadata` | In Progress | Implementation commit `6ac2673`; full suite 29/29 passed with documented local Clang warning suppressions; independent review passed with no open findings. |
 
 ## Current Item
 
-- Next action: Commit the reviewed ER-0087 implementation and attempt PR publication; retry ER-0081 publication when GitHub authentication is restored.
-- Last completed action: ER-0087 independent review passed with no open findings; the reviewer flagged a generated test wrapper, which has been restored and is absent from the diff. ER-0081 remains committed locally as `8efa326`; its push attempts failed through HTTPS and SSH.
+- Next action: Push `codex/er-0087-vizier-operation-metadata`, open its PR, and await CI; retry ER-0081 publication when GitHub authentication is restored.
+- Last completed action: ER-0087 implementation committed as `6ac2673`; independent review passed with no open findings. The reviewer flagged a generated test wrapper, which has been restored and is absent from the diff. ER-0081 remains committed locally as `8efa326`; its push attempts failed through HTTPS and SSH.
 - Exact validation results: ER-0087 `make -j` completed successfully after its sources were built with local Clang warning suppressions. `make -C tests test_vizier_routing test_refract_registry` passed. `make check AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-gnu-zero-variadic-macro-arguments -Wno-dangling-gsl'` passed all 29 tests. Suppressions cover existing local Clang diagnostics in CEO unused symbols, Check's GNU variadic macro, and a pre-existing dangling `c_str()` warning in `test_conch_authoring.cc`. ER-0081's focused and full suite also passed with its documented warning suppressions.
 - Independent review result: ER-0081 and ER-0087 passed in separate read-only Codex contexts with no remaining findings.
 - CI result: PR #330 merged; run 37688293301 succeeded. Earlier run 37673963672 was canceled after 104 minutes at `Install dependencies`.
