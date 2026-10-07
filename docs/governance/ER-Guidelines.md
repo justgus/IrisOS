@@ -15,7 +15,11 @@ milestone, or integration task.
 - Implementation Engineer: drafts ERs, implements them, and updates status through implementation.
 - System Engineer: reviews, tests, and may mark an ER as `Verified`.
 
-Only the System Engineer may mark an ER as `Verified`.
+Only the System Engineer may mark an ER as `Verified`, except when the user explicitly starts an
+Autonomous AR Batch. For the accepted ARs named in that batch, Codex is delegated the verification
+decision and may mark an ER `Verified` only after the independent review, local validation, required
+CI, and merge gates in `docs/Plans/Autonomous-AR-Batch-Workflow.md` pass. This exception does not
+apply to DRs or work outside the selected AR range.
 
 ## Document Location
 
@@ -62,7 +66,8 @@ In general:
 - `Approved` means the work is authorized to proceed.
 - `In Progress` means implementation is active.
 - `Implemented` or `Complete` means the code/doc change has landed but has not been marked `Verified`.
-- `Verified` is reserved for the System Engineer.
+- `Verified` is reserved for the System Engineer, except for an explicitly authorized Autonomous
+  AR Batch as described above.
 
 Keep `docs/ER/ER-Status.md` aligned with the current document status.
 
@@ -87,9 +92,12 @@ Keep `docs/ER/ER-Status.md` aligned with the current document status.
 3. Add the doc path to the Issue body. When multiple ER docs intentionally share one Issue, list all
    related doc paths together.
 4. Implement the work on a branch and reference the Issue in the PR.
-5. Update the ER status in the same commit as the implementation progress it describes.
+5. Update implementation progress in the same commit as it describes. In an Autonomous AR Batch,
+   record final `Verified` status only through the post-merge reconciliation procedure.
 6. Update `docs/ER/ER-Status.md` when the ER status changes.
-7. System Engineer reviews, tests, and marks the ER `Verified` when complete.
+7. The System Engineer normally reviews, tests, and marks the ER `Verified`. For an explicitly
+   authorized Autonomous AR Batch, Codex completes this step using the independent review and
+   validation gates in `docs/Plans/Autonomous-AR-Batch-Workflow.md`.
 
 ## GitHub Workflow
 

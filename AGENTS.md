@@ -5,6 +5,11 @@ You are the repo’s implementation engineer for **irisOS** (C++ + Autotools/Aut
 I (the human) act as system engineer/manager and will set direction and accept/reject changes.
 Your job: make safe, reviewable, minimal diffs that pass CI and match existing architecture.
 
+An explicitly requested Autonomous AR Batch is a scoped delegation of those system engineer
+decisions for the named, already Accepted ARs. In that mode, follow
+`docs/Plans/Autonomous-AR-Batch-Workflow.md`; do not ask for per-ER approval or stop at routine
+milestones. The batch ledger and the workflow's review, test, CI, and merge gates remain mandatory.
+
 ---
 
 ## Non-Negotiables
@@ -24,7 +29,9 @@ Your job: make safe, reviewable, minimal diffs that pass CI and match existing a
 - Do not compact or reflow lines in ways that risk obscuring or losing content.
 - Keep source files reasonably small; if a file grows too large to be fully replaced in a change, split it into smaller local files.
 - Default implementation baseline: C++20 or C++24.
-- Only the System Engineer may mark ER/DR items as Verified (Implementation Engineer may use Proposed/In Progress/Complete).
+- Outside an explicitly requested Autonomous AR Batch, only the System Engineer may mark ER/DR
+  items Verified. In a batch, Codex may mark an ER Verified only after the independent review and
+  validation gates in `docs/Plans/Autonomous-AR-Batch-Workflow.md` pass. Never mark a DR Verified.
 
 ### Git Workflow
 - Create a new branch named `codex/<topic>` unless explicitly told otherwise.
@@ -36,6 +43,11 @@ Your job: make safe, reviewable, minimal diffs that pass CI and match existing a
 - Use `git rebase origin/main` only when asked.
 - Networked git/GitHub commands may need to run outside the sandbox (e.g., `git fetch/push`, `gh pr ...`, `curl`); request escalation when needed.
 - All `gh` commands must be executed outside the app sandbox; the implementation engineer is authorized to request escalation for them.
+
+In an Autonomous AR Batch, the user's explicit AR range authorizes the full documented GitHub
+workflow, including issue synchronization, pushing branches, opening PRs, merging after every
+required CI check and independent review passes, branch cleanup, and fast-forwarding local `main`.
+Never merge when a required check fails, review findings remain, or the remote result is unknown.
 
 ### Security / Secrets
 - Never create, edit, or print secrets: API keys, tokens, `.env`, private certs, SSH keys, passwords.
@@ -117,6 +129,10 @@ If a build/test step fails, stop and report:
 - your best diagnosis
 - the next minimal fix attempt
 
+In an Autonomous AR Batch, use that failure report in the progress ledger, apply the bounded repair
+policy in the batch workflow, and continue only with independent eligible ERs. Do not stop the
+entire batch for a failure isolated to one ER.
+
 ---
 
 ## Code Quality Guidelines (C++)
@@ -151,8 +167,12 @@ For each completed task, include:
 - If Autotools regeneration occurred: the exact command(s) run and why
 
 ## ER Status Policy
-- When implementing an ER, update the ER status in the same commit as the implementation.
-- Do not create separate docs-only commits for ER status updates.
+- Update implementation progress statuses in the same commit as the corresponding implementation.
+- In an Autonomous AR Batch only, record `Verified` after merge and after independent review, local
+  validation, and required CI have passed. Make this verification transition in the batch's
+  final reconciliation PR, together with any parent AR completion and progress-ledger update due at
+  that checkpoint. This is the only batch-authorized docs-only status PR. Do not create other
+  standalone docs-only commits for ER status changes.
 
 ---
 
@@ -163,3 +183,41 @@ A task is done when:
 - Build/tests are run (or you explain why not)
 - Validation commands are provided
 - CI impact is considered
+
+## Autonomous AR Batches
+
+- The trigger is an explicit request such as `Run an Autonomous AR Batch for AR-0017 through AR-0019`.
+- Only ARs in the requested inclusive range that are already Accepted are eligible. Do not change
+  an AR's architectural recommendation or implement work belonging only to ARs outside the range.
+- Use `docs/Plans/Autonomous-AR-Batch-Workflow.md` and persist current state in
+  `docs/Plans/AR-Batch-Progress.md`. Treat that ledger and repository/GitHub state as authoritative
+  across sessions; a user message of `Continue` resumes the ledger's first eligible unfinished item.
+- Use Codex Goal for the requested batch when available, with completion and blocker conditions from
+  the workflow. The goal preserves intent; the progress file preserves recoverable implementation
+  state.
+- Fully draft the ER breakdown before implementation, set its verifiable acceptance criteria and
+  exact validation commands, and mark batch-authorized ERs Approved. Add ER dependencies to each
+  parent AR and synchronize the corresponding GitHub issues.
+- Work through eligible ERs in dependency order, one implementation branch at a time. Do not begin
+  dependent ERs before prerequisites pass. An unresolved dependency outside the selected AR range
+  blocks only work that needs it; record the reason and continue independent eligible work.
+- Run an independent, read-only Codex review for each ER, in a separate reviewer context. The review
+  checks the ER acceptance criteria, diff scope, regression risk, and test sufficiency. Fix findings
+  and repeat review. The reviewer must not author the implementation.
+- Mark an ER Verified only when its acceptance criteria pass, its required local validation passes,
+  independent review has no open findings, and required CI checks pass. If CI is unavailable or
+  inconclusive, leave the ER unverified and record the exact state.
+- Mark an AR Implemented only when every ER listed as its dependency is Verified and the AR's
+  acceptance criteria are met. Update implementation progress with its implementation commit;
+  use the batch reconciliation PR for post-merge verification and any resulting AR completion.
+- Checkpoint the progress ledger before and after each ER, commit, push, PR, CI wait, merge, and
+  branch cleanup. On a context, quota, or day boundary, stop cleanly after checkpointing; never
+  claim unfinished work is complete. On `Continue`, reload instructions, ledger, Git status, and
+  PR/CI state before taking the next action.
+- Attempt at most three focused repair cycles for a failing ER validation or review. Then mark that
+  ER's blocker in the batch ledger, leave its ER status Proposed or In Progress as appropriate, and
+  continue other independent work. Do not add an unrecognized `Blocked` ER status or weaken checks
+  to force completion.
+- A batch is finished only when every eligible in-range AR is Implemented or has a documented
+  blocker, all mergeable ER work has completed the required workflow, and the progress ledger is
+  finalized with evidence and remaining blockers.

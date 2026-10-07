@@ -50,6 +50,7 @@ are not converted into Agile Airframe Epics.
 
 ## Supporting Workflow
 
+- Autonomous AR batches: `docs/Plans/Autonomous-AR-Batch-Workflow.md`
 - Issue sync script: `scripts/issue_sync.sh`
 - Issue template config: `.github/ISSUE_TEMPLATE/config.yml`
 

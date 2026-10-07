@@ -293,6 +293,13 @@
         "ER-0056 implements Level 2 and begins Level 3.",
         "Level 4 remains planned under ER-0067 through ER-0069."
       ]
+    },
+    {
+      "id": "AR-0027",
+      "name": "Standard Operation Contracts and Discovery",
+      "status": "Accepted",
+      "decision": "Define a versioned catalog of operation contracts with explicit conformance, deterministic dispatch, effects, and Refract-based discovery.",
+      "conformance": "Planned"
     }
   ],
   "known_conformance_gaps": [

@@ -4,7 +4,7 @@ GitHub-Issue: N/A
 
 # AR-0027 — Standard Operation Contracts and Discovery
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-10-06
 - Owners: Mike
 
@@ -157,7 +157,6 @@ adequately through the established Refract and service interfaces.
 
 ## Next Steps
 
-- Review and accept or revise this architecture direction.
 - Define the contract identity, version, conformance, and compatibility rules.
 - Inventory existing Refract operation metadata and discovery APIs against the proposed model.
 - Draft ERs for catalog metadata, conformance and discovery, and an initial set of core contracts.
