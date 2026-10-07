@@ -2,7 +2,7 @@
 
 - Requested ARs: AR-0001, AR-0011, AR-0012
 - Started: 2026-10-07
-- Current state: ER-0081 and ER-0087 are implemented, reviewed, and validated locally; publishing both PRs is blocked by GitHub DNS and Git Credential Manager failures
+- Current state: ER-0081 and ER-0087 are implemented, reviewed, and validated locally; publishing both PRs is blocked because `gh auth status` reports the saved GitHub token is invalid
 - Goal/thread reference: 01a1120b-578d-7563-8735-2de39aeeee44
 
 ## AR Queue
@@ -27,8 +27,8 @@
 
 ## Current Item
 
-- Next action: Restore GitHub authentication for this workspace, then publish ER-0087 and ER-0081 one branch at a time, starting with independent ER-0087.
-- Last completed action: ER-0087 implementation committed as `6ac2673`; independent review passed with no open findings. The reviewer flagged a generated test wrapper, which has been restored and is absent from the diff. ER-0081 remains committed locally as `8efa326`.
+- Next action: Re-authenticate GitHub CLI in this workspace, verify with `gh auth status`, then publish ER-0087 and ER-0081 one branch at a time, starting with independent ER-0087.
+- Last completed action: On 2026-10-07, `gh auth status` reported `The token in default is invalid` for active account `justgus`. No remote state was changed. ER-0087 implementation is committed as `6ac2673`; independent review passed with no open findings. The reviewer flagged a generated test wrapper, which has been restored and is absent from the diff. ER-0081 remains committed locally as `8efa326`.
 - Exact validation results: ER-0087 `make -j` completed successfully after its sources were built with local Clang warning suppressions. `make -C tests test_vizier_routing test_refract_registry` passed. `make check AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-gnu-zero-variadic-macro-arguments -Wno-dangling-gsl'` passed all 29 tests. Suppressions cover existing local Clang diagnostics in CEO unused symbols, Check's GNU variadic macro, and a pre-existing dangling `c_str()` warning in `test_conch_authoring.cc`. ER-0081's focused and full suite also passed with its documented warning suppressions.
 - Independent review result: ER-0081 and ER-0087 passed in separate read-only Codex contexts with no remaining findings.
 - CI result: PR #330 merged; run 37688293301 succeeded. Earlier run 37673963672 was canceled after 104 minutes at `Install dependencies`.
@@ -42,6 +42,7 @@
 - Creating the first planned ER issue (#ER-0081) failed with HTTP 403 `Resource not accessible by integration`; no new ER issues were created. The integration permission block still prevents issue synchronization; retry only if credential or app permissions have changed.
 - The local Git credential helper had previously failed with `System.OverflowException` in `GitCredentialManager` (`Interop.Sys.GetGroups`). PR #330 has since been merged by the user and local `main` fast-forwarded.
 - GitHub issue synchronization remains blocked: connector writes returned HTTP 403 `Resource not accessible by integration`, and `gh auth status` reported an invalid token. The CI workflow fix was included in merged PR #330 and its required checks passed.
+- Latest credential check: escalated `gh auth status` on 2026-10-07 reports the active `justgus` account's default token is invalid and recommends `gh auth login -h github.com`. Do not retry push/PR operations until authentication is restored; no credential or token should be shared in chat.
 - Publishing ER-0081 is blocked locally: normal and escalated pushes failed to resolve `github.com`; using the known address override reached GitHub but Git Credential Manager crashed in `Interop.Sys.GetGroups` with `System.OverflowException`, then Git could not read the HTTPS username. No remote branch or PR was created. Retry after DNS or credential-helper state changes.
 - SSH transport retry also failed before authentication with `No user exists for uid 502`; no remote branch or PR was created. ER-0081 remains In Progress; ER-0082, ER-0083, ER-0084, ER-0085, and ER-0086 remain unstarted because they depend on it. ER-0087 is independent and has proceeded locally.
 - ER-0087 HTTPS push also failed DNS resolution; the address-override retry reached GitHub but hit the same Git Credential Manager `System.OverflowException` and could not read the HTTPS username. No remote branch or PR exists for ER-0087. After authentication is restored, publish ER-0087 first, then ER-0081; ER statuses remain In Progress until their merge/verification gates pass.
