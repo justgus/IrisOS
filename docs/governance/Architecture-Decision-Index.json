@@ -68,13 +68,13 @@
     {
       "id": "AR-0001",
       "name": "Expected-Style Error Model",
-      "status": "Accepted",
+      "status": "In Progress",
       "decision": "Use explicit result-style error propagation and avoid exceptions as normal cross-boundary control flow.",
       "conformance": "Partial",
       "notes": [
         "The AR specifies Result<T> with expected-style semantics and enum class ErrorCode.",
         "The current implementation provides enum class ErrorCode through referee::Result<T>.",
-        "Remaining conformance depends on settling lookup absence semantics consistently with the AR."
+        "The batch is migrating public lookup absence to ErrorCode::NotFound and auditing exception behavior at affected module boundaries."
       ]
     },
     {
@@ -154,23 +154,23 @@
     {
       "id": "AR-0011",
       "name": "Vizier Interpretation Layer",
-      "status": "Accepted",
+      "status": "In Progress",
       "decision": "Use Vizier to route object graph and artifact state into view models and Concho growth.",
       "conformance": "Partial",
       "notes": [
         "Triggered artifact routing exists.",
-        "Observer-driven graph routing remains planned under AR-0025."
+        "Graph routing and session growth have verified library support; this batch integrates session updates into the shell and checks typed missing-artifact errors."
       ]
     },
     {
       "id": "AR-0012",
       "name": "Conch Shell and Concho Views",
-      "status": "Accepted",
+      "status": "In Progress",
       "decision": "Use Conch as the terminal-first shell over object graph state and Conchos as object-backed views.",
       "conformance": "Staged",
       "notes": [
-        "Existing ER dependencies are verified for current shell and view behavior.",
-        "Observer-driven session growth remains later-stage work under AR-0025."
+        "Graph observation, relationship routing, and session growth have verified library support.",
+        "This batch integrates the running shell with session growth and adds the accepted tiling workspace data model."
       ]
     },
     {

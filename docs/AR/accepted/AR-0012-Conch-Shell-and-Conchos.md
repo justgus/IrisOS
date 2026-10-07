@@ -1,12 +1,12 @@
 ---
 GitHub-Issue: #76
-ER-Dependencies: ER-0008, ER-0011, ER-0012, ER-0013, ER-0014, ER-0021, ER-0030, ER-0047, ER-0047.1, ER-0047.2, ER-0047.3, ER-0047.4, ER-0052, ER-0054
+ER-Dependencies: ER-0008, ER-0011, ER-0012, ER-0013, ER-0014, ER-0021, ER-0030, ER-0047, ER-0047.1, ER-0047.2, ER-0047.3, ER-0047.4, ER-0052, ER-0054, ER-0063, ER-0064, ER-0065, ER-0066, ER-0084, ER-0085
 DR-Dependencies: DR-0001
 ---
 
 # AR-0012 — Conch Shell and Concho Views (Recommendation)
 
-- Status: Accepted
+- Status: In Progress
 - Date: 2026-02-16
 - Owners: Mike
 

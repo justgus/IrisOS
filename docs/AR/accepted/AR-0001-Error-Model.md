@@ -1,10 +1,11 @@
 ---
 GitHub-Issue: #65
+ER-Dependencies: ER-0081, ER-0082, ER-0083, ER-0086
 ---
 
 # AR-0001 — Expected-Style Error Model
 
-- Status: Accepted
+- Status: In Progress
 - Date: 2026-02-14
 - Owners: Mike
 

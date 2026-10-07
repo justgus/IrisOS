@@ -27,15 +27,24 @@ If Codex Goals are available, create one Goal for this bounded batch. Its comple
 > mergeable work has completed the GitHub workflow.
 
 The active batch file is `docs/Plans/AR-Batch-Progress.md`. Create it at batch start and treat it as
-the durable checkpoint across sessions. Do not overwrite an unfinished batch. If one already
-exists, resume it and do not start a different range until it is complete or explicitly abandoned.
+the durable checkpoint across sessions. At that same start, change every selected eligible AR
+from `Accepted` to `In Progress` in its AR document and in
+`docs/governance/Architecture-Decision-Index.json`. Commit these transitions with the batch's
+planning changes. Do not overwrite an unfinished batch. If one already exists, resume it and do not
+start a different range until it is complete or explicitly abandoned.
 
 ## Eligibility and Scope
 
 1. Parse the requested range as inclusive. Enumerate existing AR IDs in that range.
-2. ARs currently marked `Accepted` are eligible. Mark ARs already `Implemented` or `Done` as
-   complete; report missing IDs and all other statuses in the progress file. Do not silently treat
-   Proposed ARs as approved work.
+2. ARs currently marked `Accepted` are eligible. At batch start, mark each selected eligible AR
+   `In Progress`; this status persists across sessions and while a documented blocker remains. Mark
+   ARs already `Implemented` or `Done` as complete. An AR already `In Progress` may only be resumed
+   when its active batch is identified in the progress file; do not start duplicate work for it.
+   Report missing IDs and all other statuses in the progress file. Do not silently treat Proposed
+   ARs as approved work.
+   Keep the status in the AR document and `Architecture-Decision-Index.json` aligned. If the AR has
+   a GitHub Issue, synchronize its status label through `scripts/issue_sync.sh` and record the
+   result in the progress file.
 3. Read each eligible AR, its stated dependencies, linked ERs, acceptance criteria, known
    conformance gaps, and relevant existing code before defining work.
 4. Keep implementation inside the selected AR range. A dependency outside the range may be read and
@@ -154,8 +163,10 @@ the required human observation.
    pass. The reconciliation review must apply the same evidence-based verdict table to each status
    transition. Exclude ERs with a required live pass still pending or failed; keep them `Complete`
    and identify them as awaiting or needing a live retest in the progress file. If any required
-   verification gate is missing, leave the affected AR Accepted. Do not mark an AR Implemented if a
-   required dependency is blocked, incomplete, or outside the authorized batch.
+   verification gate is missing, leave the affected AR `In Progress` and record the blocker. Do not
+   mark an AR Implemented if a required dependency is blocked, incomplete, or outside the authorized
+   batch. Return an AR to `Accepted` only after the System Engineer explicitly abandons the batch
+   and confirms its work is no longer active.
 
 If a required GitHub action cannot be completed because credentials, permissions, network, CI, or
 repository policy prevents it, record exact evidence and leave affected statuses honest. Continue
@@ -163,7 +174,8 @@ other in-range ERs that do not depend on the blocked action.
 
 ## Checkpointing and Resume
 
-Update `docs/Plans/AR-Batch-Progress.md` before and after each material transition: ER drafting,
+Update `docs/Plans/AR-Batch-Progress.md` before and after each material transition: AR status change,
+ER drafting,
 approval, branch creation, implementation, validation, review, commit, push, PR creation, CI result,
 merge, and cleanup. Write the checkpoint before waiting on a long operation when possible. A
 checkpoint must be understandable without the original conversation.
@@ -198,8 +210,8 @@ Create `docs/Plans/AR-Batch-Progress.md` at batch start with:
 
 ## AR Queue
 
-| AR | Eligibility | ERs | State | Blocker / evidence |
-|---|---|---|---|---|
+| AR | Eligibility | AR status | ERs | State | Blocker / evidence |
+|---|---|---|---|---|---|
 
 ## ER Queue
 

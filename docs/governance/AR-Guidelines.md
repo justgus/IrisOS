@@ -35,7 +35,7 @@ DR-Dependencies: DR-XXXX
 
 # AR-XXXX — Short Title
 
-- Status: Proposed | Accepted | Implemented | Done | Rejected
+- Status: Proposed | Accepted | In Progress | Implemented | Done | Rejected
 - Date: YYYY-MM-DD
 - Owners:
 ```
@@ -89,7 +89,31 @@ without expanding into implementation task detail.
    accepts or rejects it.
 4. On acceptance, update `- Status:` and move the file to `docs/AR/accepted/`.
 5. When implementation is needed, create or link the dependent ERs.
-6. When all dependent ERs and DRs are complete, update the AR status to `Implemented` or `Done`.
+6. Mark an AR `Implemented` only after all required dependent ERs and DRs are verified and the
+   recommendation's acceptance criteria are met. Use `Done` only to close it without implementation,
+   recording the reason.
+
+### Status Meanings
+
+- `Proposed`: the recommendation is under review and is not authorized implementation work.
+- `Accepted`: the recommendation is approved and waiting for implementation to be selected.
+- `In Progress`: the System Engineer selected the AR for an Autonomous AR Batch, and the batch
+  has started. Keep this status across session, quota, and day boundaries and while a documented
+  blocker remains.
+- `Implemented`: the recommendation's required ERs and DRs have passed their verification gates.
+- `Done`: the recommendation is closed without further implementation, with the reason recorded.
+- `Rejected`: the recommendation was not accepted.
+
+When an Autonomous AR Batch starts, update every selected `Accepted` AR to `In Progress` and
+update its status in `Architecture-Decision-Index.json` in the batch planning change. When the
+batch is reconciled, update both records to `Implemented` only after the workflow's completion
+criteria pass. Return an `In Progress` AR to `Accepted` only if the System Engineer explicitly
+abandons the batch and no longer considers its work active.
+
+When asked for AR status, Codex reads each AR's canonical status and presents all ARs in a Markdown
+table in chat. The report includes each AR's ID, title, status, and any current batch/ER progress
+that is available. `Architecture-Decision-Index.json` is a derived view and must be kept aligned
+with AR status changes.
 
 ## GitHub Workflow
 

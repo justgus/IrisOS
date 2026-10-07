@@ -15,15 +15,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Install dependencies
+        timeout-minutes: 10
         run: |
-          sudo apt-get update
-          sudo apt-get install -y \
+          sudo apt-get -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=2 update
+          sudo apt-get -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=2 install --no-install-recommends -y \
             build-essential g++ \
             autoconf automake libtool pkg-config autoconf-archive \
             sqlite3 libsqlite3-dev \
             check \
-            gdb \
-            valgrind \
             nlohmann-json3-dev
 
       - name: Bootstrap (autoreconf)
@@ -39,7 +38,8 @@ jobs:
         run: |
           ulimit -c unlimited
           make check V=1 || {
-            echo "make check failed; running gdb on test_referee_core"
+            echo "make check failed; installing gdb and running it on test_referee_core"
+            sudo apt-get -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30 -o Acquire::Retries=2 install --no-install-recommends -y gdb
             make -C tests test_referee_core || true
             if [ -x tests/.libs/test_referee_core ]; then
               TARGET=tests/.libs/test_referee_core
