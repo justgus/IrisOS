@@ -2,7 +2,7 @@
 
 - Requested ARs: AR-0001, AR-0011, AR-0012
 - Started: 2026-10-07
-- Current state: ER-0081 implementation and local suite complete; independent review pending
+- Current state: ER-0081 implementation commit `8efa326` created; ready for branch push and PR
 - Goal/thread reference: 01a1120b-578d-7563-8735-2de39aeeee44
 
 ## AR Queue
@@ -17,7 +17,7 @@
 
 | ER | Parent AR | Dependencies | Branch / PR | State | Last verified checkpoint |
 |---|---|---|---|---|---|
-| ER-0081 | AR-0001 | None | `codex/er-0081-referee-notfound` | In Progress | Storage APIs/callers migrated; 29 local tests pass with documented Clang warning suppressions; independent review passed with no open findings. |
+| ER-0081 | AR-0001 | None | `codex/er-0081-referee-notfound` | In Progress | Implementation commit `8efa326`; 29 local tests pass with documented Clang warning suppressions; independent review passed with no open findings. |
 | ER-0082 | AR-0001 | ER-0081 | PR #330 | Approved | Independent planning review passed; Refract lookup and propagation criteria mapped. |
 | ER-0083 | AR-0001, AR-0011 | ER-0081, ER-0082 | PR #330 | Approved | Independent planning review passed; runtime lookup and normal empty-result distinctions mapped. |
 | ER-0084 | AR-0011, AR-0012 | ER-0066, ER-0081, ER-0082, ER-0083 | PR #330 | Approved | Independent planning review passed; shell subprocess integration and human live pass specified. |
@@ -27,8 +27,8 @@
 
 ## Current Item
 
-- Next action: Complete independent review of ER-0081; address findings, then commit, push, open PR, and await required CI.
-- Last completed action: ER-0081 storage API, caller migration, and focused error tests are implemented on `codex/er-0081-referee-notfound`.
+- Next action: Push `codex/er-0081-referee-notfound`, open its PR, and await required CI.
+- Last completed action: ER-0081 implementation committed as `8efa326` on `codex/er-0081-referee-notfound`.
 - Exact validation results: `make -C tests test_referee_core` passed. `make check AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-gnu-zero-variadic-macro-arguments'` passed all 29 tests. The unsuppressed `make -j` and `make check` stop on pre-existing local Clang `-Werror` diagnostics (`kTypeKernelIo` unused and `IoReactor::registry_` unused); the full check additionally treats Check's GNU variadic macro as an error. The full build succeeded after adding only those warning suppressions; no source changes were made to the unrelated diagnostics.
 - Independent review result: Passed in a separate read-only Codex context; no open findings. The reviewer confirmed typed lookup errors, preserved higher-level optional absence behavior, focused test coverage, and the generated wrapper is absent from the diff.
 - CI result: PR #330 merged; run 37688293301 succeeded. Earlier run 37673963672 was canceled after 104 minutes at `Install dependencies`.
