@@ -2,7 +2,7 @@
 
 - Requested ARs: AR-0001, AR-0011, AR-0012
 - Started: 2026-10-07
-- Current state: Planning — blocked on GitHub issue/PR write access
+- Current state: Planning PR #330 CI stalled at dependency installation; local workflow fix prepared but not pushed
 - Goal/thread reference: 01a1120b-578d-7563-8735-2de39aeeee44
 
 ## AR Queue
@@ -17,30 +17,31 @@
 
 | ER | Parent AR | Dependencies | Branch / PR | State | Last verified checkpoint |
 |---|---|---|---|---|---|
-| ER-0081 | AR-0001 | None | Planning branch / no PR | Approved | Independent planning review passed; storage lookup criteria mapped to focused tests. |
-| ER-0082 | AR-0001 | ER-0081 | Planning branch / no PR | Approved | Independent planning review passed; Refract lookup and propagation criteria mapped. |
-| ER-0083 | AR-0001, AR-0011 | ER-0081, ER-0082 | Planning branch / no PR | Approved | Independent planning review passed; runtime lookup and normal empty-result distinctions mapped. |
-| ER-0084 | AR-0011, AR-0012 | ER-0066, ER-0081, ER-0082, ER-0083 | Planning branch / no PR | Approved | Independent planning review passed; shell subprocess integration and human live pass specified. |
-| ER-0085 | AR-0012 | ER-0084 | Planning branch / no PR | Approved | Independent planning review passed; tiling/nesting model, Automake target, and human live pass specified. |
-| ER-0086 | AR-0001 | ER-0081, ER-0082, ER-0083 | Planning branch / no PR | Approved | Independent planning review passed; API ownership groups and focused test mappings enumerated. |
-| ER-0087 | AR-0011 | ER-0009, ER-0064 | Planning branch / no PR | Approved | Independent planning review passed; canonical type target and opaque target semantics specified. |
+| ER-0081 | AR-0001 | None | PR #330 | Approved | Independent planning review passed; storage lookup criteria mapped to focused tests. |
+| ER-0082 | AR-0001 | ER-0081 | PR #330 | Approved | Independent planning review passed; Refract lookup and propagation criteria mapped. |
+| ER-0083 | AR-0001, AR-0011 | ER-0081, ER-0082 | PR #330 | Approved | Independent planning review passed; runtime lookup and normal empty-result distinctions mapped. |
+| ER-0084 | AR-0011, AR-0012 | ER-0066, ER-0081, ER-0082, ER-0083 | PR #330 | Approved | Independent planning review passed; shell subprocess integration and human live pass specified. |
+| ER-0085 | AR-0012 | ER-0084 | PR #330 | Approved | Independent planning review passed; tiling/nesting model, Automake target, and human live pass specified. |
+| ER-0086 | AR-0001 | ER-0081, ER-0082, ER-0083 | PR #330 | Approved | Independent planning review passed; API ownership groups and focused test mappings enumerated. |
+| ER-0087 | AR-0011 | ER-0009, ER-0064 | PR #330 | Approved | Independent planning review passed; canonical type target and opaque target semantics specified. |
 
 ## Current Item
 
-- Next action: Restore GitHub write access, synchronize ER issues and AR issue status, publish the planning branch, and open the planning PR before implementation.
-- Last completed action: Independent planning review passed ER-0081 through ER-0087; planning commit `834682cb47482e7361cdf21b782cbdf7895bc31d`, checkpoint `dbc28b9`, and blocker checkpoint `514b1cb95545e1bee2b1a3cbde6d68d146334161` created.
-- Exact validation results: `git diff --check` passed for tracked changes; `python3 -m json.tool docs/governance/Architecture-Decision-Index.json` passed. Revised plan documents still need whitespace validation after staging.
+- Next action: Publish the local `.github/workflows/ci.yml` fix after GitHub write access is restored, then wait for its CI run; merge the planning PR only after all required checks pass. Synchronize issues where credentials permit before implementation.
+- Last completed action: Inspected CI workflow and live run; `ci-linux` has remained at `Install dependencies` for over 20 minutes. Prepared a local fix with apt timeouts, a ten-minute step timeout, and failure-only gdb installation. Direct GitHub file update was rejected with HTTP 403.
+- Exact validation results: Existing planning diff passed `git diff --cached --check`; Architecture Decision Index JSON parsed successfully. CI run 37673963672 remains in progress at dependency installation; active logs return 404. Local workflow change not yet validated by GitHub CI.
 - Independent review result: Passed in separate read-only Codex reviewer context after four review/fix cycles; final finding about TaskRegistry/TaskComms/IoReactor/IoExecutor API ownership was corrected. No remaining material findings.
-- CI result: Not run; planning PR not created because branch publication failed.
+- CI result: PR #330, run 37673963672, `ci-linux` in progress over 20 minutes at `Install dependencies`; logs unavailable during execution.
 - Live pass requirement and human-reported result: ER-0084 and ER-0085 require human live passes; both are pending. Other drafted ERs mark live pass not required.
-- Merge result: No batch PR yet.
+- Merge result: PR #330 open and mergeable; not merged while CI is running.
 
 ## Decisions and Blockers
 
 - The user's selected set is exactly AR-0001, AR-0011, and AR-0012; intervening AR IDs are out of scope.
 - GitHub issue synchronization for AR issues #65, #75, and #76 failed with HTTP 403 `Resource not accessible by integration`. The connected GitHub integration can read these issues but does not have permission to update them. Local AR statuses are In Progress; issue labels and bodies remain stale.
-- Creating the first planned ER issue (#ER-0081) also failed with HTTP 403 `Resource not accessible by integration`; no new ER issues were created. The same integration permission block prevents required issue synchronization. Do not continue issue creation until write access changes.
-- `git push -u origin codex/ar-batch-ar0001-ar0011-ar0012` failed because `github.com` DNS resolution failed. Retrying with the known GitHub endpoint reached the credential helper, which crashed with `System.OverflowException` in `GitCredentialManager` (`Interop.Sys.GetGroups`) and then reported `fatal: could not read Username`. The branch remains local; no PR exists. Implementation must not start before the planning PR is published and merged.
+- Creating the first planned ER issue (#ER-0081) failed with HTTP 403 `Resource not accessible by integration`; no new ER issues were created. The integration permission block still prevents issue synchronization; retry only if credential or app permissions have changed.
+- The local Git credential helper had previously failed with `System.OverflowException` in `GitCredentialManager` (`Interop.Sys.GetGroups`). The user has since created PR #330 from the reviewed branch. Do not start implementation until that planning PR merges.
+- Attempting to update `.github/workflows/ci.yml` on the PR branch through the GitHub connector failed with HTTP 403 `Resource not accessible by integration`. Local change is unpushed; `gh auth status` reports an invalid token. CI workflow writes and issue writes are blocked until credentials/integration permissions are restored.
 - ER-0081 through ER-0083 implement AR-0001's documented lookup-absence gap in ordered storage, Refract, and runtime slices. Normal empty datagram and no-route results remain optional because they are not missing-object lookups.
 - AR-0011 and AR-0012's existing ER-0063 through ER-0066 are already Verified. ER-0084 is needed because `bin/conch` does not call the existing `update_session_from_graph` API.
 - First independent reviewer found gaps: parent mismatch for ER-0083, no shell-level automated verification in ER-0084, no AR-0012 layout coverage, and missing parent-requirement evidence mapping. The revised plan now links ER-0083 to AR-0011, adds it as an AR-0011 dependency, uses the existing subprocess-capable `test_conch_authoring` target for ER-0084 shell integration coverage, and adds ER-0085.
