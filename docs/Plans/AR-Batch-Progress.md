@@ -2,7 +2,7 @@
 
 - Requested ARs: AR-0001, AR-0011, AR-0012
 - Started: 2026-10-07
-- Current state: ER-0081 implementation commit `8efa326` created; ready for branch push and PR
+- Current state: ER-0081 implementation/review/validation complete locally; push blocked by GitHub DNS and Git Credential Manager; proceeding with independent ER-0087
 - Goal/thread reference: 01a1120b-578d-7563-8735-2de39aeeee44
 
 ## AR Queue
@@ -17,7 +17,7 @@
 
 | ER | Parent AR | Dependencies | Branch / PR | State | Last verified checkpoint |
 |---|---|---|---|---|---|
-| ER-0081 | AR-0001 | None | `codex/er-0081-referee-notfound` | In Progress | Implementation commit `8efa326`; 29 local tests pass with documented Clang warning suppressions; independent review passed with no open findings. |
+| ER-0081 | AR-0001 | None | `codex/er-0081-referee-notfound` (local; no PR yet) | In Progress | Commits `8efa326`, `9593a66`; 29 local tests pass with documented Clang warning suppressions; independent review passed; push blocked by DNS/Git Credential Manager. |
 | ER-0082 | AR-0001 | ER-0081 | PR #330 | Approved | Independent planning review passed; Refract lookup and propagation criteria mapped. |
 | ER-0083 | AR-0001, AR-0011 | ER-0081, ER-0082 | PR #330 | Approved | Independent planning review passed; runtime lookup and normal empty-result distinctions mapped. |
 | ER-0084 | AR-0011, AR-0012 | ER-0066, ER-0081, ER-0082, ER-0083 | PR #330 | Approved | Independent planning review passed; shell subprocess integration and human live pass specified. |
@@ -27,7 +27,7 @@
 
 ## Current Item
 
-- Next action: Push `codex/er-0081-referee-notfound`, open its PR, and await required CI.
+- Next action: Implement independent ER-0087 on its own branch; retry ER-0081 publish after GitHub connectivity/credential access is restored.
 - Last completed action: ER-0081 implementation committed as `8efa326` on `codex/er-0081-referee-notfound`.
 - Exact validation results: `make -C tests test_referee_core` passed. `make check AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-gnu-zero-variadic-macro-arguments'` passed all 29 tests. The unsuppressed `make -j` and `make check` stop on pre-existing local Clang `-Werror` diagnostics (`kTypeKernelIo` unused and `IoReactor::registry_` unused); the full check additionally treats Check's GNU variadic macro as an error. The full build succeeded after adding only those warning suppressions; no source changes were made to the unrelated diagnostics.
 - Independent review result: Passed in a separate read-only Codex context; no open findings. The reviewer confirmed typed lookup errors, preserved higher-level optional absence behavior, focused test coverage, and the generated wrapper is absent from the diff.
@@ -42,6 +42,7 @@
 - Creating the first planned ER issue (#ER-0081) failed with HTTP 403 `Resource not accessible by integration`; no new ER issues were created. The integration permission block still prevents issue synchronization; retry only if credential or app permissions have changed.
 - The local Git credential helper had previously failed with `System.OverflowException` in `GitCredentialManager` (`Interop.Sys.GetGroups`). PR #330 has since been merged by the user and local `main` fast-forwarded.
 - GitHub issue synchronization remains blocked: connector writes returned HTTP 403 `Resource not accessible by integration`, and `gh auth status` reported an invalid token. The CI workflow fix was included in merged PR #330 and its required checks passed.
+- Publishing ER-0081 is blocked locally: normal and escalated pushes failed to resolve `github.com`; using the known address override reached GitHub but Git Credential Manager crashed in `Interop.Sys.GetGroups` with `System.OverflowException`, then Git could not read the HTTPS username. No remote branch or PR was created. Retry after DNS or credential-helper state changes.
 - ER-0081 through ER-0083 implement AR-0001's documented lookup-absence gap in ordered storage, Refract, and runtime slices. Normal empty datagram and no-route results remain optional because they are not missing-object lookups.
 - AR-0011 and AR-0012's existing ER-0063 through ER-0066 are already Verified. ER-0084 is needed because `bin/conch` does not call the existing `update_session_from_graph` API.
 - First independent reviewer found gaps: parent mismatch for ER-0083, no shell-level automated verification in ER-0084, no AR-0012 layout coverage, and missing parent-requirement evidence mapping. The revised plan now links ER-0083 to AR-0011, adds it as an AR-0011 dependency, uses the existing subprocess-capable `test_conch_authoring` target for ER-0084 shell integration coverage, and adds ER-0085.
