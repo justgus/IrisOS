@@ -201,9 +201,11 @@ A task is done when:
 - Work through eligible ERs in dependency order, one implementation branch at a time. Do not begin
   dependent ERs before prerequisites pass. An unresolved dependency outside the selected AR range
   blocks only work that needs it; record the reason and continue independent eligible work.
-- Run an independent, read-only Codex review for each ER, in a separate reviewer context. The review
-  checks the ER acceptance criteria, diff scope, regression risk, and test sufficiency. Fix findings
-  and repeat review. The reviewer must not author the implementation.
+- Run an independent, read-only Codex review for each ER, in a separate reviewer context. Require a
+  criterion-by-criterion evidence table, comparison against an independently derived test matrix,
+  counterexample search, and fresh execution of relevant validation. `Unverified` is not a pass.
+  Fix findings and repeat review. The reviewer must not author the implementation or rely on the
+  implementer's reasoning as evidence.
 - Mark an ER Verified only when its acceptance criteria pass, its required local validation passes,
   independent review has no open findings, and required CI checks pass. If CI is unavailable or
   inconclusive, leave the ER unverified and record the exact state.
