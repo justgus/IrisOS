@@ -2,7 +2,7 @@
 
 - Requested ARs: AR-0001, AR-0011, AR-0012
 - Started: 2026-10-07
-- Current state: ER-0081 and ER-0087 are implemented, reviewed, and validated locally; PRs #331 and #332 are open with required CI checks in progress
+- Current state: ER-0081 and ER-0087 are implemented, reviewed, and validated locally; all required CI checks pass and PR #331 is queued for merge
 - Goal/thread reference: 01a1120b-578d-7563-8735-2de39aeeee44
 
 ## AR Queue
@@ -23,15 +23,15 @@
 | ER-0084 | AR-0011, AR-0012 | ER-0066, ER-0081, ER-0082, ER-0083 | PR #330 | Approved | Independent planning review passed; shell subprocess integration and human live pass specified. |
 | ER-0085 | AR-0012 | ER-0084 | PR #330 | Approved | Independent planning review passed; tiling/nesting model, Automake target, and human live pass specified. |
 | ER-0086 | AR-0001 | ER-0081, ER-0082, ER-0083 | PR #330 | Approved | Independent planning review passed; API ownership groups and focused test mappings enumerated. |
-| ER-0087 | AR-0011 | ER-0009, ER-0064 | `codex/er-0087-vizier-operation-metadata` / [PR #331](https://github.com/justgus/IrisOS/pull/331) | In Progress | Branch pushed and PR opened 2026-10-08; both `ci-linux` checks are in progress in runs 37792280473 and 37792290137. |
+| ER-0087 | AR-0011 | ER-0009, ER-0064 | `codex/er-0087-vizier-operation-metadata` / [PR #331](https://github.com/justgus/IrisOS/pull/331) | In Progress | Both `ci-linux` checks passed in runs 37792280473 and 37792290137; independent review passed; ready to merge. |
 
 ## Current Item
 
-- Next action: Wait for the required CI checks on PRs #331 and #332 to reach final states; merge only after all checks pass.
-- Last completed action: On 2026-10-08, ER-0081 branch `codex/er-0081-referee-notfound` was pushed and PR #332 was opened against `main`. Both PR #332 `ci-linux` checks are pending in runs 37792695083 and 37792716250; PR #331's checks remain pending in runs 37792280473 and 37792290137.
+- Next action: Merge PR #331, then reconcile `main` and refresh PR #332 checks before its merge.
+- Last completed action: On 2026-10-08, GitHub reports both `ci-linux` checks passed for PR #331 (runs 37792280473, 37792290137) and PR #332 (latest runs 37792879799, 37792886363). Both PRs target `main` and are `MERGEABLE`. The batch's independent reviews and local validation are recorded as passing.
 - Exact validation results: `make -C tests test_referee_core` passed. `make check AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-gnu-zero-variadic-macro-arguments'` passed all 29 tests. The unsuppressed `make -j` and `make check` stop on pre-existing local Clang `-Werror` diagnostics (`kTypeKernelIo` unused and `IoReactor::registry_` unused); the full check additionally treats Check's GNU variadic macro as an error. The full build succeeded after adding only those warning suppressions; no source changes were made to the unrelated diagnostics.
 - Independent review result: Passed in a separate read-only Codex context; no open findings. The reviewer confirmed typed lookup errors, preserved higher-level optional absence behavior, focused test coverage, and the generated wrapper is absent from the diff.
-- CI result: PR #330 merged; run 37688293301 succeeded. PR #331 checks are pending in runs 37792280473 and 37792290137; PR #332 checks are pending in runs 37792695083 and 37792716250. Earlier run 37673963672 was canceled after 104 minutes at `Install dependencies`.
+- CI result: PR #330 merged; run 37688293301 succeeded. PR #331 runs 37792280473 and 37792290137 passed; PR #332 latest runs 37792879799 and 37792886363 passed. Earlier run 37673963672 was canceled after 104 minutes at `Install dependencies`.
 - Live pass requirement and human-reported result: ER-0084 and ER-0085 require human live passes; both are pending. Other drafted ERs mark live pass not required.
 - Merge result: PR #330 merged at 2026-10-07T21:52:33Z; merge commit `e42f3a9e5cd404534fbac51a8d10687f232f4da7`.
 
