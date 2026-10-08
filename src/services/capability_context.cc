@@ -200,17 +200,17 @@ referee::Result<SandboxIdentityRecord> CapabilityContextStore::persist_sandbox(
 referee::Result<std::optional<SandboxIdentityRecord>> CapabilityContextStore::get_sandbox(
     referee::ObjectID id) {
   auto recR = store_.get_latest(id);
-  if (!recR) return referee::Result<std::optional<SandboxIdentityRecord>>::err(recR.error.value());
-  if (!recR.value->has_value()) {
+  if (!recR && recR.error->code == referee::ErrorCode::NotFound) {
     return referee::Result<std::optional<SandboxIdentityRecord>>::ok(std::nullopt);
   }
-  if (recR.value->value().type != kSandboxIdentityType) {
+  if (!recR) return referee::Result<std::optional<SandboxIdentityRecord>>::err(recR.error.value());
+  if (recR.value->type != kSandboxIdentityType) {
     return referee::Result<std::optional<SandboxIdentityRecord>>::err(
         referee::ErrorCode::InvalidArgument,
         "object is not a sandbox identity");
   }
 
-  auto recordR = sandbox_record_from_object(recR.value->value());
+  auto recordR = sandbox_record_from_object(recR.value.value());
   if (!recordR) {
     return referee::Result<std::optional<SandboxIdentityRecord>>::err(recordR.error.value());
   }
@@ -277,17 +277,17 @@ referee::Result<CapabilityContextRecord> CapabilityContextStore::persist_context
 referee::Result<std::optional<CapabilityContextRecord>> CapabilityContextStore::get_context(
     referee::ObjectID id) {
   auto recR = store_.get_latest(id);
-  if (!recR) return referee::Result<std::optional<CapabilityContextRecord>>::err(recR.error.value());
-  if (!recR.value->has_value()) {
+  if (!recR && recR.error->code == referee::ErrorCode::NotFound) {
     return referee::Result<std::optional<CapabilityContextRecord>>::ok(std::nullopt);
   }
-  if (recR.value->value().type != kCapabilityContextType) {
+  if (!recR) return referee::Result<std::optional<CapabilityContextRecord>>::err(recR.error.value());
+  if (recR.value->type != kCapabilityContextType) {
     return referee::Result<std::optional<CapabilityContextRecord>>::err(
         referee::ErrorCode::InvalidArgument,
         "object is not a capability context");
   }
 
-  auto recordR = record_from_object(recR.value->value());
+  auto recordR = record_from_object(recR.value.value());
   if (!recordR) {
     return referee::Result<std::optional<CapabilityContextRecord>>::err(recordR.error.value());
   }

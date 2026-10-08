@@ -41,8 +41,7 @@ START_TEST(test_viz_artifact_create)
 
   auto recR = store.get_latest(logR.value.value());
   ck_assert_msg(recR, "get_latest failed: %s", result_message(recR));
-  ck_assert_msg(recR.value->has_value(), "expected object present");
-  ck_assert_uint_eq(recR.value->value().type.v, kTypeVizTextLog.v);
+  ck_assert_uint_eq(recR.value->type.v, kTypeVizTextLog.v);
 
   ck_assert_msg(store.close(), "close failed");
 }
@@ -66,8 +65,7 @@ START_TEST(test_viz_metric_create)
 
   auto recR = store.get_latest(metricR.value.value());
   ck_assert_msg(recR, "get_latest failed: %s", result_message(recR));
-  ck_assert_msg(recR.value->has_value(), "expected object present");
-  ck_assert_uint_eq(recR.value->value().type.v, kTypeVizMetric.v);
+  ck_assert_uint_eq(recR.value->type.v, kTypeVizMetric.v);
 
   ck_assert_msg(store.close(), "close failed");
 }
@@ -94,8 +92,7 @@ START_TEST(test_task_view_create)
 
   auto recR = store.get_latest(taskR.value.value());
   ck_assert_msg(recR, "get_latest failed: %s", result_message(recR));
-  ck_assert_msg(recR.value->has_value(), "expected object present");
-  ck_assert_uint_eq(recR.value->value().type.v, kTypeVizTaskView.v);
+  ck_assert_uint_eq(recR.value->type.v, kTypeVizTaskView.v);
 
   ck_assert_msg(store.close(), "close failed");
 }

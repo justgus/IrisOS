@@ -83,8 +83,8 @@ public:
   Result<ObjectRecord> create_object(TypeID type, ObjectID definition_id, const Bytes& payload_cbor);
   Result<ObjectRecord> create_object_with_id(ObjectID object_id, TypeID type, ObjectID definition_id,
                                              const Bytes& payload_cbor);
-  Result<std::optional<ObjectRecord>> get_object(ObjectRef ref);
-  Result<std::optional<ObjectRecord>> get_latest(ObjectID id);
+  Result<ObjectRecord> get_object(ObjectRef ref);
+  Result<ObjectRecord> get_latest(ObjectID id);
   Result<std::vector<ObjectRecord>> list_by_type(TypeID type);
 
   // Edge operations

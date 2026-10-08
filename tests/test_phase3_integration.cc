@@ -71,9 +71,8 @@ START_TEST(test_phase3_artifact_route)
 
   auto recR = store.get_latest(logR.value.value());
   ck_assert_msg(recR, "get_latest failed: %s", result_message(recR));
-  ck_assert_msg(recR.value->has_value(), "expected record");
 
-  auto route = route_for_type_id(registry, recR.value->value().type);
+  auto route = route_for_type_id(registry, recR.value->type);
   ck_assert_msg(route.has_value(), "expected route for TextLog");
   ck_assert_str_eq(route->concho.c_str(), "Log");
 
@@ -102,15 +101,13 @@ START_TEST(test_phase3_concho_spawn)
 
   auto conchoRecR = store.get_latest(conchoR.value->value());
   ck_assert_msg(conchoRecR, "get_latest concho failed: %s", result_message(conchoRecR));
-  ck_assert_msg(conchoRecR.value->has_value(), "expected concho record");
   auto conchoType = find_type_id(registry, "Conch", "Concho");
   ck_assert_msg(conchoType.has_value(), "expected Conch::Concho type");
-  ck_assert_uint_eq(conchoRecR.value->value().type.v, conchoType->v);
+  ck_assert_uint_eq(conchoRecR.value->type.v, conchoType->v);
 
   auto logRecR = store.get_latest(logR.value.value());
   ck_assert_msg(logRecR, "get_latest log failed: %s", result_message(logRecR));
-  ck_assert_msg(logRecR.value->has_value(), "expected log record");
-  auto edgesR = store.edges_from(logRecR.value->value().ref);
+  auto edgesR = store.edges_from(logRecR.value->ref);
   ck_assert_msg(edgesR, "edges_from failed: %s", result_message(edgesR));
   bool found = false;
   for (const auto& edge : edgesR.value.value()) {
@@ -213,9 +210,8 @@ START_TEST(test_phase4_demo_schema)
 
   auto metricRecR = store.get_latest(metricR.value.value());
   ck_assert_msg(metricRecR, "get_latest metric failed: %s", result_message(metricRecR));
-  ck_assert_msg(metricRecR.value->has_value(), "expected metric record");
 
-  auto edgeR2 = store.add_edge(detailR.value->ref, metricRecR.value->value().ref,
+  auto edgeR2 = store.add_edge(detailR.value->ref, metricRecR.value->ref,
                                "produced", "artifact", props);
   ck_assert_msg(edgeR2, "add_edge metric failed: %s", result_message(edgeR2));
 

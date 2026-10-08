@@ -281,23 +281,25 @@ Result<ObjectRecord> SqliteStore::create_object_with_id(ObjectID object_id, Type
   return Result<ObjectRecord>::ok(std::move(rec));
 }
 
-Result<std::optional<ObjectRecord>> SqliteStore::get_object(ObjectRef ref) {
-  if (!open_) return Result<std::optional<ObjectRecord>>::err("store not open");
+Result<ObjectRecord> SqliteStore::get_object(ObjectRef ref) {
+  if (!open_) return Result<ObjectRecord>::err(ErrorCode::FailedPrecondition, "store not open");
   if (in_txn_) {
     for (const auto& rec : pending_objects_) {
       if (rec.ref == ref) {
-        return Result<std::optional<ObjectRecord>>::ok(std::optional<ObjectRecord>(rec));
+        return Result<ObjectRecord>::ok(rec);
       }
     }
   }
   ObjectRefKey key{ref.id, ref.ver};
   auto it = objects_by_ref_.find(key);
-  if (it == objects_by_ref_.end()) return Result<std::optional<ObjectRecord>>::ok(std::nullopt);
-  return Result<std::optional<ObjectRecord>>::ok(std::optional<ObjectRecord>(it->second));
+  if (it == objects_by_ref_.end()) {
+    return Result<ObjectRecord>::err(ErrorCode::NotFound, "object reference not found");
+  }
+  return Result<ObjectRecord>::ok(it->second);
 }
 
-Result<std::optional<ObjectRecord>> SqliteStore::get_latest(ObjectID id) {
-  if (!open_) return Result<std::optional<ObjectRecord>>::err("store not open");
+Result<ObjectRecord> SqliteStore::get_latest(ObjectID id) {
+  if (!open_) return Result<ObjectRecord>::err(ErrorCode::FailedPrecondition, "store not open");
   if (in_txn_) {
     const ObjectRecord* best = nullptr;
     for (const auto& rec : pending_objects_) {
@@ -308,12 +310,14 @@ Result<std::optional<ObjectRecord>> SqliteStore::get_latest(ObjectID id) {
       }
     }
     if (best) {
-      return Result<std::optional<ObjectRecord>>::ok(std::optional<ObjectRecord>(*best));
+      return Result<ObjectRecord>::ok(*best);
     }
   }
   auto it = latest_by_id_.find(id);
-  if (it == latest_by_id_.end()) return Result<std::optional<ObjectRecord>>::ok(std::nullopt);
-  return Result<std::optional<ObjectRecord>>::ok(std::optional<ObjectRecord>(it->second));
+  if (it == latest_by_id_.end()) {
+    return Result<ObjectRecord>::err(ErrorCode::NotFound, "object ID not found");
+  }
+  return Result<ObjectRecord>::ok(it->second);
 }
 
 Result<std::vector<ObjectRecord>> SqliteStore::list_by_type(TypeID type) {

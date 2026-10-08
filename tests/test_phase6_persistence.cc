@@ -180,17 +180,14 @@ START_TEST(test_phase6_demo_persistence)
 
     auto demoRec = store.get_latest(demo_id);
     ck_assert_msg(demoRec, "get_latest demo failed: %s", result_message(demoRec));
-    ck_assert_msg(demoRec.value->has_value(), "expected demo record");
 
     auto summaryRec = store.get_latest(summary_id);
     ck_assert_msg(summaryRec, "get_latest summary failed: %s", result_message(summaryRec));
-    ck_assert_msg(summaryRec.value->has_value(), "expected summary record");
 
     auto detailRec = store.get_latest(detail_id);
     ck_assert_msg(detailRec, "get_latest detail failed: %s", result_message(detailRec));
-    ck_assert_msg(detailRec.value->has_value(), "expected detail record");
 
-    auto demoEdges = store.edges_from(demoRec.value->value().ref);
+    auto demoEdges = store.edges_from(demoRec.value->ref);
     ck_assert_msg(demoEdges, "edges_from demo failed: %s", result_message(demoEdges));
     bool found_summary = false;
     for (const auto& edge : demoEdges.value.value()) {
@@ -202,7 +199,7 @@ START_TEST(test_phase6_demo_persistence)
     }
     ck_assert_msg(found_summary, "expected demo->summary edge");
 
-    auto summaryEdges = store.edges_from(summaryRec.value->value().ref);
+    auto summaryEdges = store.edges_from(summaryRec.value->ref);
     ck_assert_msg(summaryEdges, "edges_from summary failed: %s", result_message(summaryEdges));
     bool found_detail = false;
     for (const auto& edge : summaryEdges.value.value()) {

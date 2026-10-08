@@ -1479,11 +1479,7 @@ std::optional<ObjectRef> latest_ref(SqliteStore& store, const ObjectID& id, std:
     if (err_out) *err_out = recR.error->message;
     return std::nullopt;
   }
-  if (!recR.value->has_value()) {
-    if (err_out) *err_out = "object not found";
-    return std::nullopt;
-  }
-  return recR.value->value().ref;
+  return recR.value->ref;
 }
 
 std::pair<std::string, std::string> split_type_name(const std::string& full) {
@@ -2883,6 +2879,10 @@ referee::Result<void> import_bundle(SchemaRegistry& registry,
     store.rollback();
     return referee::Result<void>::err(msg);
   };
+  auto fail_with_error = [&](const referee::Error& error) {
+    store.rollback();
+    return referee::Result<void>::err(error);
+  };
 
   auto edge_exists = [&](const ObjectRef& from,
                          const ObjectRef& to,
@@ -2916,8 +2916,8 @@ referee::Result<void> import_bundle(SchemaRegistry& registry,
       if (!parse_object_id_hex(def_text, &def_id, &err)) return fail("definition definition_id invalid");
       if (id != def_id) return fail("definition id mismatch");
       auto existingR = store.get_latest(id);
-      if (!existingR) return fail(existingR.error->message);
-      if (existingR.value->has_value()) continue;
+      if (existingR) continue;
+      if (existingR.error->code != referee::ErrorCode::NotFound) return fail_with_error(existingR.error.value());
       referee::Bytes payload;
       if (!parse_hex_bytes(payload_hex, &payload, &err)) return fail(err);
       auto createR = store.create_object_with_id(id, iris::refract::kTypeDefinitionType,
@@ -2938,11 +2938,10 @@ referee::Result<void> import_bundle(SchemaRegistry& registry,
       if (!parse_object_id_hex(id_text, &id, &err)) return fail("object id invalid");
       if (!parse_object_id_hex(def_text, &def_id, &err)) return fail("object definition_id invalid");
       auto existingR = store.get_latest(id);
-      if (!existingR) return fail(existingR.error->message);
-      if (existingR.value->has_value()) continue;
+      if (existingR) continue;
+      if (existingR.error->code != referee::ErrorCode::NotFound) return fail_with_error(existingR.error.value());
       auto defR = store.get_latest(def_id);
-      if (!defR) return fail(defR.error->message);
-      if (!defR.value->has_value()) return fail("definition not found for object");
+      if (!defR) return fail_with_error(defR.error.value());
       auto type_id = TypeID{item.value("type_id", 0ULL)};
       referee::Bytes payload;
       if (!parse_hex_bytes(payload_hex, &payload, &err)) return fail(err);
@@ -2965,11 +2964,9 @@ referee::Result<void> import_bundle(SchemaRegistry& registry,
       referee::Version from_ver{item.value("from_version", 0ULL)};
       referee::Version to_ver{item.value("to_version", 0ULL)};
       auto fromR = store.get_object(ObjectRef{from_id, from_ver});
-      if (!fromR) return fail(fromR.error->message);
-      if (!fromR.value->has_value()) return fail("edge from object not found");
+      if (!fromR) return fail_with_error(fromR.error.value());
       auto toR = store.get_object(ObjectRef{to_id, to_ver});
-      if (!toR) return fail(toR.error->message);
-      if (!toR.value->has_value()) return fail("edge to object not found");
+      if (!toR) return fail_with_error(toR.error.value());
 
       std::string name = item.value("name", "");
       std::string role = item.value("role", "");
@@ -3294,13 +3291,9 @@ referee::Result<void> migrate_apply(SchemaRegistry& registry,
         auto nextR = store.get_latest(record_it->second.to_object_id);
         if (!nextR) {
           (void)store.rollback();
-          return referee::Result<void>::err(nextR.error->message);
+          return referee::Result<void>::err(nextR.error.value());
         }
-        if (!nextR.value->has_value()) {
-          (void)store.rollback();
-          return referee::Result<void>::err("migration record target missing");
-        }
-        current = nextR.value->value();
+        current = nextR.value.value();
         continue;
       }
 
@@ -3403,11 +3396,11 @@ referee::Result<void> migrate_verify(SchemaRegistry& registry,
         break;
       }
       auto nextR = store.get_latest(record_it->second.to_object_id);
-      if (!nextR || !nextR.value->has_value()) {
+      if (!nextR) {
         missing[from_hex]++;
         break;
       }
-      current = nextR.value->value();
+      current = nextR.value.value();
     }
   }
 
@@ -4417,12 +4410,7 @@ void cmd_show(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id) 
     std::cout << "error: " << recR.error->message << "\n";
     return;
   }
-  if (!recR.value->has_value()) {
-    std::cout << "error: object not found\n";
-    return;
-  }
-
-  const auto& rec = recR.value->value();
+  const auto& rec = recR.value.value();
   std::cout << "object " << rec.ref.id.to_hex() << " v" << rec.ref.ver.v << "\n";
   std::cout << "type 0x" << std::hex << rec.type.v << std::dec << "\n";
   std::cout << "definition " << rec.definition_id.to_hex() << "\n";
@@ -4590,11 +4578,7 @@ bool cmd_debug_dispatch(SchemaRegistry& registry,
       std::cout << "error: " << recR.error->message << "\n";
       return false;
     }
-    if (!recR.value->has_value()) {
-      std::cout << "error: object not found\n";
-      return false;
-    }
-    target_type = recR.value->value().type;
+    target_type = recR.value->type;
     target_display = type_display_name_for(types, target_type);
   } else {
     std::string err;
@@ -4740,10 +4724,6 @@ bool cmd_debug_graph(SchemaRegistry& registry,
     std::cout << "error: " << recR.error->message << "\n";
     return false;
   }
-  if (!recR.value->has_value()) {
-    std::cout << "error: object not found\n";
-    return false;
-  }
 
   auto typesR = registry.list_types();
   if (!typesR) {
@@ -4752,7 +4732,7 @@ bool cmd_debug_graph(SchemaRegistry& registry,
   }
   const auto& types = typesR.value.value();
 
-  auto defR = registry.get_definition_by_type(recR.value->value().type);
+  auto defR = registry.get_definition_by_type(recR.value->type);
   if (!defR) {
     std::cout << "error: " << defR.error->message << "\n";
     return false;
@@ -4763,7 +4743,7 @@ bool cmd_debug_graph(SchemaRegistry& registry,
   }
 
   const auto& def = defR.value->value().definition;
-  std::cout << "graph " << recR.value->value().ref.id.to_hex()
+  std::cout << "graph " << recR.value->ref.id.to_hex()
             << " type " << type_display_name_for(types, def.type_id)
             << " v" << def.version << "\n";
 
@@ -4781,26 +4761,26 @@ bool cmd_debug_graph(SchemaRegistry& registry,
     std::cout << "relationships (none)\n";
   }
 
-  auto outR = store.edges_from(recR.value->value().ref);
+  auto outR = store.edges_from(recR.value->ref);
   if (!outR) {
     std::cout << "error: " << outR.error->message << "\n";
     return false;
   }
-  auto inR = store.edges_to(recR.value->value().ref);
+  auto inR = store.edges_to(recR.value->ref);
   if (!inR) {
     std::cout << "error: " << inR.error->message << "\n";
     return false;
   }
 
-  std::cout << "edges from " << recR.value->value().ref.id.to_hex() << "\n";
+  std::cout << "edges from " << recR.value->ref.id.to_hex() << "\n";
   if (outR.value->empty()) {
     std::cout << "  (none)\n";
   } else {
     for (const auto& edge : outR.value.value()) {
       std::string target_display = "<unknown>";
       auto targetR = store.get_latest(edge.to.id);
-      if (targetR && targetR.value->has_value()) {
-        target_display = type_display_name_for(types, targetR.value->value().type);
+      if (targetR) {
+        target_display = type_display_name_for(types, targetR.value->type);
       }
       std::string note;
       auto rel_it = relationships.find(edge.role);
@@ -4816,8 +4796,7 @@ bool cmd_debug_graph(SchemaRegistry& registry,
           }
           auto summary = find_type_summary(types, rel.target, &target_err);
           if (!summary.has_value()) continue;
-          if (targetR && targetR.value->has_value()
-              && summary->type_id.v == targetR.value->value().type.v) {
+          if (targetR && summary->type_id.v == targetR.value->type.v) {
             target_ok = true;
             break;
           }
@@ -4832,15 +4811,15 @@ bool cmd_debug_graph(SchemaRegistry& registry,
     }
   }
 
-  std::cout << "edges to " << recR.value->value().ref.id.to_hex() << "\n";
+  std::cout << "edges to " << recR.value->ref.id.to_hex() << "\n";
   if (inR.value->empty()) {
     std::cout << "  (none)\n";
   } else {
     for (const auto& edge : inR.value.value()) {
       std::string source_display = "<unknown>";
       auto sourceR = store.get_latest(edge.from.id);
-      if (sourceR && sourceR.value->has_value()) {
-        source_display = type_display_name_for(types, sourceR.value->value().type);
+      if (sourceR) {
+        source_display = type_display_name_for(types, sourceR.value->type);
       }
       std::cout << "  <- " << edge.from.id.to_hex() << " v" << edge.from.ver.v
                 << " type=" << source_display << " name=" << edge.name
@@ -4859,11 +4838,7 @@ bool cmd_call(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id,
     std::cout << "error: " << recR.error->message << "\n";
     return false;
   }
-  if (!recR.value->has_value()) {
-    std::cout << "error: object not found\n";
-    return false;
-  }
-  auto defR = registry.get_definition_by_type(recR.value->value().type);
+  auto defR = registry.get_definition_by_type(recR.value->type);
   if (!defR) {
     std::cout << "error: " << defR.error->message << "\n";
     return false;
@@ -4987,13 +4962,13 @@ bool cmd_call(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id,
 
     nlohmann::json payload;
     try {
-      payload = nlohmann::json::from_cbor(recR.value->value().payload_cbor);
+      payload = nlohmann::json::from_cbor(recR.value->payload_cbor);
     } catch (const std::exception& ex) {
       std::cout << "error: payload decode failed: " << ex.what() << "\n";
       return true;
     }
 
-    auto type_id = recR.value->value().type;
+    auto type_id = recR.value->type;
     std::string err;
     CoreValue self_value;
     if (!read_core_value(type_id, payload, &self_value, &err)) {
@@ -5031,11 +5006,7 @@ bool cmd_call(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id,
           std::cout << "error: " << otherR.error->message << "\n";
           return true;
         }
-        if (!otherR.value->has_value()) {
-          std::cout << "error: object not found\n";
-          return true;
-        }
-        const auto& other_rec = otherR.value->value();
+        const auto& other_rec = otherR.value.value();
         if (other_rec.type.v != type_id.v) {
           std::cout << "error: compare expects matching type\n";
           return true;
@@ -5945,11 +5916,7 @@ void cmd_route_object(SchemaRegistry& registry, SqliteStore& store,
     std::cout << "error: " << recR.error->message << "\n";
     return;
   }
-  if (!recR.value->has_value()) {
-    std::cout << "error: object not found\n";
-    return;
-  }
-  auto route = iris::vizier::route_for_type_id(registry, recR.value->value().type);
+  auto route = iris::vizier::route_for_type_id(registry, recR.value->type);
   if (!route.has_value()) {
     std::cout << "route: none\n";
     return;
