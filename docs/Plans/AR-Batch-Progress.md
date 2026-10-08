@@ -2,7 +2,7 @@
 
 - Requested ARs: AR-0001, AR-0011, AR-0012
 - Started: 2026-10-07
-- Current state: ER-0087 is merged; ER-0081 remains open pending final CI and merge gates
+- Current state: ER-0087 is merged; ER-0081 PR #332 is being updated to resolve a progress-ledger conflict with the new main and must pass CI again
 - Goal/thread reference: 01a1120b-578d-7563-8735-2de39aeeee44
 
 ## AR Queue
@@ -17,7 +17,7 @@
 
 | ER | Parent AR | Dependencies | Branch / PR | State | Last verified checkpoint |
 |---|---|---|---|---|---|
-| ER-0081 | AR-0001 | None | `codex/er-0081-referee-notfound` / [PR #332](https://github.com/justgus/IrisOS/pull/332) | In Progress | Commits `8efa326`, `9593a66`; 29 local tests pass with documented Clang warning suppressions; independent review passed; PR opened 2026-10-08, CI pending. |
+| ER-0081 | AR-0001 | None | `codex/er-0081-referee-notfound` / [PR #332](https://github.com/justgus/IrisOS/pull/332) | In Progress | Commits `8efa326`, `9593a66`; local validation and independent review passed; prior CI runs 37792879799 and 37792886363 passed, but PR now conflicts with updated `main`; merge resolution and fresh CI required. |
 | ER-0082 | AR-0001 | ER-0081 | PR #330 | Approved | Independent planning review passed; Refract lookup and propagation criteria mapped. |
 | ER-0083 | AR-0001, AR-0011 | ER-0081, ER-0082 | PR #330 | Approved | Independent planning review passed; runtime lookup and normal empty-result distinctions mapped. |
 | ER-0084 | AR-0011, AR-0012 | ER-0066, ER-0081, ER-0082, ER-0083 | PR #330 | Approved | Independent planning review passed; shell subprocess integration and human live pass specified. |
@@ -27,13 +27,13 @@
 
 ## Current Item
 
-- Next action: Fetch origin, fast-forward local `main`, delete the merged ER-0087 local branch, and refresh PR #332's mergeability and CI after the base update.
-- Last completed action: PR #331 merged on 2026-10-08 at 15:00:51Z as `a484bd3e279ee9592dc7b71c2a0abcc6c91fca60`. Before merge, both CI runs passed and independent review/local validation were recorded as passing. PR #332's prior CI runs 37792879799 and 37792886363 passed; its final state must be rechecked after `main` advances.
-- Exact validation results: `make -C tests test_referee_core` passed. `make check AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-gnu-zero-variadic-macro-arguments'` passed all 29 tests. The unsuppressed `make -j` and `make check` stop on pre-existing local Clang `-Werror` diagnostics (`kTypeKernelIo` unused and `IoReactor::registry_` unused); the full check additionally treats Check's GNU variadic macro as an error. The full build succeeded after adding only those warning suppressions; no source changes were made to the unrelated diagnostics.
+- Next action: Finish resolving the merge in progress by staging the reconciled ledger, commit and push the ER-0081 branch update, then confirm PR #332 is mergeable and its fresh required CI passes.
+- Last completed action: PR #331 merged on 2026-10-08 at 15:00:51Z as `a484bd3e279ee9592dc7b71c2a0abcc6c91fca60`; local `main` fast-forwarded to that commit. The local ER-0087 branch was already absent; deleting its origin ref returned “remote ref does not exist,” confirming the remote branch was already removed. PR #332 became `CONFLICTING` after `main` advanced. Merging `origin/main` into the ER-0081 branch auto-merged the ER-0087 code and tests; only `docs/Plans/AR-Batch-Progress.md` conflicted, and that ledger conflict is being reconciled.
+- Exact validation results: ER-0081 `make -C tests test_referee_core` passed. `make check AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-gnu-zero-variadic-macro-arguments'` passed all 29 tests. The unsuppressed `make -j` and `make check` stop on pre-existing local Clang `-Werror` diagnostics (`kTypeKernelIo` unused and `IoReactor::registry_` unused); the full check additionally treats Check's GNU variadic macro as an error. ER-0087 `make -j`, focused routing/registry tests, and the full 29-test suite passed with documented local Clang warning suppressions.
 - Independent review result: Passed in a separate read-only Codex context; no open findings. The reviewer confirmed typed lookup errors, preserved higher-level optional absence behavior, focused test coverage, and the generated wrapper is absent from the diff.
-- CI result: PR #330 merged; run 37688293301 succeeded. PR #331 runs 37792280473 and 37792290137 passed and PR #331 merged. PR #332 prior runs 37792879799 and 37792886363 passed; refresh checks after the base branch advances. Earlier run 37673963672 was canceled after 104 minutes at `Install dependencies`.
+- CI result: PR #330 merged; run 37688293301 succeeded. PR #331 runs 37792280473 and 37792290137 passed and PR #331 merged. PR #332 prior runs 37792879799 and 37792886363 passed; fresh checks are required after the conflict resolution. Earlier run 37673963672 was canceled after 104 minutes at `Install dependencies`.
 - Live pass requirement and human-reported result: ER-0084 and ER-0085 require human live passes; both are pending. Other drafted ERs mark live pass not required.
-- Merge result: PR #330 merged at 2026-10-07T21:52:33Z; merge commit `e42f3a9e5cd404534fbac51a8d10687f232f4da7`. PR #331 merged at 2026-10-08T15:00:51Z; merge commit `a484bd3e279ee9592dc7b71c2a0abcc6c91fca60`.
+- Merge result: PR #330 merged at 2026-10-07T21:52:33Z; merge commit `e42f3a9e5cd404534fbac51a8d10687f232f4da7`. PR #331 merged at 2026-10-08T15:00:51Z; merge commit `a484bd3e279ee9592dc7b71c2a0abcc6c91fca60`. PR #332 remains open.
 
 ## Decisions and Blockers
 

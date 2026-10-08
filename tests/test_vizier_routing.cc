@@ -22,6 +22,7 @@ using iris::refract::TypeSummary;
 using iris::vizier::route_for_graph_change;
 using iris::vizier::route_for_relationship;
 using iris::vizier::route_for_type;
+using iris::vizier::emitted_artifact_routes;
 using iris::viz::TaskView;
 using iris::viz::create_task_view;
 using iris::refract::bootstrap_core_schema;
@@ -58,6 +59,86 @@ START_TEST(test_viz_routes)
   ck_assert(route_for_type(metric).has_value());
   ck_assert(route_for_type(table).has_value());
   ck_assert(route_for_type(tree).has_value());
+}
+END_TEST
+
+START_TEST(test_emitted_artifact_routes_preserve_metadata_without_mutation)
+{
+  referee::SqliteStore store(referee::SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+  SchemaRegistry registry(store);
+
+  TypeDefinition producer = make_type(referee::TypeID{0xA001ULL}, "Producer", "Demo");
+  iris::refract::OperationDefinition publish;
+  publish.name = "publish";
+  publish.effects.push_back(iris::refract::OperationEffect{
+      iris::refract::OperationEffectKind::Writes, "Demo::Ignored", std::nullopt});
+  publish.effects.push_back(iris::refract::OperationEffect{
+      iris::refract::OperationEffectKind::Emits, "Demo::RoutedPanel", std::nullopt});
+  publish.effects.push_back(iris::refract::OperationEffect{
+      iris::refract::OperationEffectKind::Emits, "demo.events", std::nullopt});
+  publish.effects.push_back(iris::refract::OperationEffect{
+      iris::refract::OperationEffectKind::Emits, "Demo::Unroutable", std::nullopt});
+  producer.operations.push_back(publish);
+
+  iris::refract::OperationDefinition inspect;
+  inspect.name = "inspect";
+  inspect.effects.push_back(iris::refract::OperationEffect{
+      iris::refract::OperationEffectKind::Reads, "Demo::RoutedPanel", std::nullopt});
+  producer.operations.push_back(inspect);
+
+  iris::refract::OperationDefinition publish_again;
+  publish_again.name = "publish_again";
+  publish_again.effects.push_back(iris::refract::OperationEffect{
+      iris::refract::OperationEffectKind::Emits, "Demo::RoutedPanel", std::nullopt});
+  producer.operations.push_back(publish_again);
+
+  auto producerR = registry.register_definition(producer);
+  ck_assert_msg(producerR, "register producer failed: %s", result_message(producerR));
+
+  auto routedR = registry.register_definition(
+      make_type(referee::TypeID{0xA002ULL}, "RoutedPanel", "Demo", "Panel"));
+  ck_assert_msg(routedR, "register routed artifact failed: %s", result_message(routedR));
+  auto unroutableR = registry.register_definition(
+      make_type(referee::TypeID{0xA003ULL}, "Unroutable", "Demo"));
+  ck_assert_msg(unroutableR, "register unroutable artifact failed: %s", result_message(unroutableR));
+
+  auto beforeR = store.graph_cursor();
+  ck_assert_msg(beforeR, "graph_cursor failed: %s", result_message(beforeR));
+  auto routesR = emitted_artifact_routes(registry, producer.type_id);
+  ck_assert_msg(routesR, "emitted_artifact_routes failed: %s", result_message(routesR));
+  ck_assert_int_eq((int)routesR.value->size(), 4);
+
+  const auto& routed = routesR.value->at(0);
+  ck_assert_str_eq(routed.operation_name.c_str(), "publish");
+  ck_assert_str_eq(routed.declared_target.c_str(), "Demo::RoutedPanel");
+  ck_assert(routed.artifact_type.has_value());
+  ck_assert(routed.artifact_type.value() == routedR.value->definition.type_id);
+  ck_assert(routed.route.has_value());
+  ck_assert_str_eq(routed.route->concho.c_str(), "Panel");
+
+  const auto& opaque = routesR.value->at(1);
+  ck_assert_str_eq(opaque.operation_name.c_str(), "publish");
+  ck_assert_str_eq(opaque.declared_target.c_str(), "demo.events");
+  ck_assert(!opaque.artifact_type.has_value());
+  ck_assert(!opaque.route.has_value());
+
+  const auto& unroutable = routesR.value->at(2);
+  ck_assert_str_eq(unroutable.declared_target.c_str(), "Demo::Unroutable");
+  ck_assert(unroutable.artifact_type.has_value());
+  ck_assert(unroutable.artifact_type.value() == unroutableR.value->definition.type_id);
+  ck_assert(!unroutable.route.has_value());
+
+  const auto& second_operation = routesR.value->at(3);
+  ck_assert_str_eq(second_operation.operation_name.c_str(), "publish_again");
+  ck_assert_str_eq(second_operation.declared_target.c_str(), "Demo::RoutedPanel");
+  ck_assert(second_operation.route.has_value());
+
+  auto afterR = store.graph_cursor();
+  ck_assert_msg(afterR, "graph_cursor after query failed: %s", result_message(afterR));
+  ck_assert(beforeR.value.value() == afterR.value.value());
+  ck_assert_msg(store.close(), "close failed");
 }
 END_TEST
 
@@ -287,6 +368,7 @@ Suite* vizier_routing_suite(void) {
   tcase_add_test(tc, test_viz_routes);
   tcase_add_test(tc, test_unknown_route);
   tcase_add_test(tc, test_preferred_renderer_route);
+  tcase_add_test(tc, test_emitted_artifact_routes_preserve_metadata_without_mutation);
   tcase_add_test(tc, test_relationship_routes_known_artifact_relationships);
   tcase_add_test(tc, test_relationship_route_honors_preferred_renderer);
   tcase_add_test(tc, test_relationship_route_rejects_unknown_relationship_and_target);

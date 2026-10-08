@@ -153,6 +153,46 @@ std::optional<Route> route_for_type_id(iris::refract::SchemaRegistry& registry,
   return std::nullopt;
 }
 
+referee::Result<std::vector<EmittedArtifactRoute>> emitted_artifact_routes(
+    iris::refract::SchemaRegistry& registry,
+    referee::TypeID producer_type) {
+  auto producerR = registry.get_latest_definition_by_type(producer_type);
+  if (!producerR) {
+    return referee::Result<std::vector<EmittedArtifactRoute>>::err(producerR.error.value());
+  }
+  if (!producerR.value->has_value()) {
+    return referee::Result<std::vector<EmittedArtifactRoute>>::err(
+        referee::ErrorCode::NotFound, "producer type definition not found");
+  }
+
+  auto typesR = registry.list_types();
+  if (!typesR) {
+    return referee::Result<std::vector<EmittedArtifactRoute>>::err(typesR.error.value());
+  }
+
+  std::vector<EmittedArtifactRoute> out;
+  const auto& definition = producerR.value->value().definition;
+  for (const auto& operation : definition.operations) {
+    for (const auto& effect : operation.effects) {
+      if (effect.kind != iris::refract::OperationEffectKind::Emits) continue;
+
+      EmittedArtifactRoute descriptor;
+      descriptor.operation_name = operation.name;
+      descriptor.declared_target = effect.target;
+      for (const auto& summary : typesR.value.value()) {
+        if (summary.namespace_name.empty()) continue;
+        if (effect.target != summary.namespace_name + "::" + summary.name) continue;
+        descriptor.artifact_type = summary.type_id;
+        descriptor.route = route_for_type(summary);
+        break;
+      }
+      out.push_back(std::move(descriptor));
+    }
+  }
+
+  return referee::Result<std::vector<EmittedArtifactRoute>>::ok(std::move(out));
+}
+
 referee::Result<std::optional<referee::ObjectID>> spawn_concho_for_artifact(
     iris::refract::SchemaRegistry& registry,
     referee::SqliteStore& store,
