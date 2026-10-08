@@ -16,7 +16,7 @@ ER-Dependencies: ER-0066, ER-0081, ER-0082, ER-0083
 
 - ER ID: ER-0084
 - Title: Conch Shell Session-Growth Integration
-- Status: Approved
+- Status: Complete
 - Date: 2026-10-07
 - Owners: Mike
 - Type: Enhancement
@@ -86,6 +86,16 @@ ER-Dependencies: ER-0066, ER-0081, ER-0082, ER-0083
 - Do not introduce threads or dependencies.
 - Keep the initial graph cursor so existing historical artifacts are not retroactively spawned into a new process session.
 - Use the existing `SessionState` and update APIs rather than duplicate routing logic.
+- The Conch process now creates and reports one active session at startup, then applies the existing update API when each REPL loop iteration ends.
+- Subprocess integration coverage seeds a historical routable relationship, verifies it is excluded from the new session, exercises `demo v1`, inspects session-to-Concho links, and confirms subsequent read-only commands create no duplicates.
+
+## Implementation Validation
+
+- `make -j AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-dangling-gsl'` passed.
+- `make -C tests test_conch_authoring test_conch_session_growth AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-gnu-zero-variadic-macro-arguments -Wno-dangling-gsl'` passed.
+- `DYLD_LIBRARY_PATH=/Users/justgus/Xcode-Projects/IrisOS/src/.libs TMPDIR=/private/tmp make check AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-gnu-zero-variadic-macro-arguments -Wno-dangling-gsl'` passed all 29 tests.
+- Independent review: Pass. Reviewer derived the AR/ER matrix independently, inspected command-loop control paths and startup cursor ordering, and freshly passed the focused two-test suite. The first subsequent read-only update is asserted to create zero Conchos.
+- Live Pass (Human): Pending as required.
 
 ## Verification Plan
 
