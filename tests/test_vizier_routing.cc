@@ -360,6 +360,40 @@ START_TEST(test_task_state_relationship_ignores_unknown_or_incomplete_task_metad
 }
 END_TEST
 
+START_TEST(test_spawn_concho_not_found_and_unroutable_artifact)
+{
+  referee::SqliteStore store(referee::SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+  auto boot = bootstrap_core_schema(registry);
+  ck_assert_msg(boot, "bootstrap failed: %s", result_message(boot));
+
+  auto unrouteable_def = registry.register_definition(
+      make_type(referee::TypeID{0xA010ULL}, "Unroutable", "Demo"));
+  ck_assert_msg(unrouteable_def, "register unrouteable type failed: %s",
+                result_message(unrouteable_def));
+  auto unrouteable = store.create_object(unrouteable_def.value->definition.type_id,
+                                         unrouteable_def.value->ref.id,
+                                         referee::Bytes{0x01});
+  ck_assert_msg(unrouteable, "create unrouteable artifact failed: %s",
+                result_message(unrouteable));
+
+  auto missing = iris::vizier::spawn_concho_for_artifact(
+      registry, store, referee::ObjectID::random());
+  ck_assert_msg(!missing, "expected missing artifact to fail");
+  ck_assert_int_eq((int)missing.error->code, (int)referee::ErrorCode::NotFound);
+
+  auto no_route = iris::vizier::spawn_concho_for_artifact(
+      registry, store, unrouteable.value->ref.id);
+  ck_assert_msg(no_route, "unroutable artifact lookup failed: %s", result_message(no_route));
+  ck_assert_msg(!no_route.value->has_value(), "expected unroutable artifact to yield no Concho");
+
+  ck_assert_msg(store.close(), "close failed");
+}
+END_TEST
+
 Suite* vizier_routing_suite(void) {
   Suite* s = suite_create("VizierRouting");
   TCase* tc = tcase_create("core");
@@ -374,6 +408,7 @@ Suite* vizier_routing_suite(void) {
   tcase_add_test(tc, test_graph_change_relationship_route_uses_registry_target_type);
   tcase_add_test(tc, test_task_state_relationship_routes_known_task_view);
   tcase_add_test(tc, test_task_state_relationship_ignores_unknown_or_incomplete_task_metadata);
+  tcase_add_test(tc, test_spawn_concho_not_found_and_unroutable_artifact);
 
   suite_add_tcase(s, tc);
   return s;

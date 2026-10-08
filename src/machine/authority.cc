@@ -139,12 +139,8 @@ referee::Result<service::CapabilityContext> MachineHandleFactory::load_context(
     referee::ObjectID capability_context_id) {
   auto context = contexts_.get_context(capability_context_id);
   if (!context) return referee::Result<service::CapabilityContext>::err(context.error.value());
-  if (!context.value->has_value()) {
-    return referee::Result<service::CapabilityContext>::err(
-        referee::ErrorCode::NotFound, "capability context not found");
-  }
   return referee::Result<service::CapabilityContext>::ok(
-      std::move(context.value->value().context));
+      std::move(context.value->context));
 }
 
 referee::Result<MachineLease> MachineLeaseRegistry::create_lease(
@@ -160,11 +156,7 @@ referee::Result<MachineLease> MachineLeaseRegistry::create_lease(
   if (!context_record) {
     return referee::Result<MachineLease>::err(context_record.error.value());
   }
-  if (!context_record.value->has_value()) {
-    return referee::Result<MachineLease>::err(referee::ErrorCode::NotFound,
-                                              "capability context not found");
-  }
-  const service::CapabilityContext& context = context_record.value->value().context;
+  const service::CapabilityContext& context = context_record.value->context;
   if (owner_id != context.subject) {
     return referee::Result<MachineLease>::err(referee::ErrorCode::FailedPrecondition,
                                               "lease owner does not match capability subject");

@@ -78,13 +78,22 @@ START_TEST(test_capability_context_roundtrip_and_subject_lookup)
     CapabilityContextStore contexts(store);
     auto loadedR = contexts.get_context(context_id);
     ck_assert_msg(loadedR, "get_context failed: %s", result_message(loadedR));
-    ck_assert_msg(loadedR.value->has_value(), "expected persisted capability context");
-    ck_assert(loadedR.value->value().context.subject == subject_id);
-    ck_assert_uint_eq((unsigned int)loadedR.value->value().context.grants.size(), 2U);
-    ck_assert_str_eq(loadedR.value->value().context.grants[0].name.c_str(),
+    ck_assert(loadedR.value->context.subject == subject_id);
+    ck_assert_uint_eq((unsigned int)loadedR.value->context.grants.size(), 2U);
+    ck_assert_str_eq(loadedR.value->context.grants[0].name.c_str(),
                      "service.lifecycle.start");
-    ck_assert_str_eq(loadedR.value->value().context.grants[1].name.c_str(),
+    ck_assert_str_eq(loadedR.value->context.grants[1].name.c_str(),
                      "service.registry.read");
+
+    auto missing_context = contexts.get_context(ObjectID::random());
+    ck_assert_msg(!missing_context, "expected absent capability context to fail");
+    ck_assert_int_eq((int)missing_context.error->code, (int)ErrorCode::NotFound);
+
+    auto other_object = store.create_object(TypeID{0xC0FFEEULL}, ObjectID{}, {});
+    ck_assert_msg(other_object, "create unrelated object failed");
+    auto wrong_type = contexts.get_context(other_object.value->ref.id);
+    ck_assert_msg(!wrong_type, "expected wrong object type to fail");
+    ck_assert_int_eq((int)wrong_type.error->code, (int)ErrorCode::InvalidArgument);
 
     auto by_subjectR = contexts.list_contexts_for_subject(subject_id);
     ck_assert_msg(by_subjectR, "list_contexts_for_subject failed: %s", result_message(by_subjectR));
@@ -179,8 +188,11 @@ START_TEST(test_sandbox_identity_roundtrip_and_subject_lookup)
     CapabilityContextStore contexts(store);
     auto loadedR = contexts.get_sandbox(sandbox_id);
     ck_assert_msg(loadedR, "get_sandbox failed: %s", result_message(loadedR));
-    ck_assert_msg(loadedR.value->has_value(), "expected persisted sandbox identity");
-    ck_assert_str_eq(loadedR.value->value().sandbox.name.c_str(), "service-host-sandbox");
+    ck_assert_str_eq(loadedR.value->sandbox.name.c_str(), "service-host-sandbox");
+
+    auto missing_sandbox = contexts.get_sandbox(ObjectID::random());
+    ck_assert_msg(!missing_sandbox, "expected absent sandbox identity to fail");
+    ck_assert_int_eq((int)missing_sandbox.error->code, (int)ErrorCode::NotFound);
 
     auto by_subjectR = contexts.list_sandboxes_for_subject(subject_a);
     ck_assert_msg(by_subjectR, "list_sandboxes_for_subject failed: %s", result_message(by_subjectR));

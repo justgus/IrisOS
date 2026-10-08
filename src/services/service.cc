@@ -197,13 +197,14 @@ referee::Result<MemoryRegion> MemoryService::register_region(const MemoryRegion&
   return referee::Result<MemoryRegion>::ok(region);
 }
 
-referee::Result<std::optional<MemoryRegion>> MemoryService::lookup_region(referee::ObjectID id) const {
+referee::Result<MemoryRegion> MemoryService::lookup_region(referee::ObjectID id) const {
   for (const auto& region : regions_) {
     if (region.id == id) {
-      return referee::Result<std::optional<MemoryRegion>>::ok(std::optional<MemoryRegion>{region});
+      return referee::Result<MemoryRegion>::ok(region);
     }
   }
-  return referee::Result<std::optional<MemoryRegion>>::ok(std::optional<MemoryRegion>{});
+  return referee::Result<MemoryRegion>::err(referee::ErrorCode::NotFound,
+                                            "memory region not found");
 }
 
 std::vector<MemoryRegion> MemoryService::list_regions() const {
@@ -249,10 +250,8 @@ referee::Result<MessageEnvelope> MemoryService::handle_message(const MessageEnve
       if (!foundR) return referee::Result<MessageEnvelope>::err(foundR.error.value());
 
       nlohmann::json root;
-      root["found"] = foundR.value->has_value();
-      if (foundR.value->has_value()) {
-        root["region"] = memory_region_to_json(foundR.value->value());
-      }
+      root["found"] = true;
+      root["region"] = memory_region_to_json(foundR.value.value());
 
       auto response = make_response(request,
                                     desc_.id,
@@ -307,34 +306,41 @@ referee::Result<void> ServiceRegistry::unregister_service(const referee::ObjectI
   return referee::Result<void>::ok();
 }
 
-referee::Result<std::optional<ServiceDescriptor>> ServiceRegistry::resolve_by_name(std::string_view name) const {
-  if (name.empty()) return referee::Result<std::optional<ServiceDescriptor>>::err("service name is empty");
+referee::Result<ServiceDescriptor> ServiceRegistry::resolve_by_name(std::string_view name) const {
+  if (name.empty()) {
+    return referee::Result<ServiceDescriptor>::err(referee::ErrorCode::InvalidArgument,
+                                                    "service name is empty");
+  }
 
   auto name_it = by_name_.find(std::string(name));
   if (name_it == by_name_.end()) {
-    return referee::Result<std::optional<ServiceDescriptor>>::ok(std::optional<ServiceDescriptor>{});
+    return referee::Result<ServiceDescriptor>::err(referee::ErrorCode::NotFound,
+                                                   "service name not found");
   }
 
   auto id_it = by_id_.find(name_it->second);
   if (id_it == by_id_.end()) {
-    return referee::Result<std::optional<ServiceDescriptor>>::err("registry corrupted for name");
+    return referee::Result<ServiceDescriptor>::err(referee::ErrorCode::Unknown,
+                                                   "registry corrupted for name");
   }
 
-  return referee::Result<std::optional<ServiceDescriptor>>::ok(id_it->second.desc);
+  return referee::Result<ServiceDescriptor>::ok(id_it->second.desc);
 }
 
-referee::Result<std::optional<ServiceDescriptor>> ServiceRegistry::resolve_by_type(referee::TypeID type) const {
+referee::Result<ServiceDescriptor> ServiceRegistry::resolve_by_type(referee::TypeID type) const {
   auto type_it = by_type_.find(type.v);
   if (type_it == by_type_.end()) {
-    return referee::Result<std::optional<ServiceDescriptor>>::ok(std::optional<ServiceDescriptor>{});
+    return referee::Result<ServiceDescriptor>::err(referee::ErrorCode::NotFound,
+                                                   "service type not found");
   }
 
   auto id_it = by_id_.find(type_it->second);
   if (id_it == by_id_.end()) {
-    return referee::Result<std::optional<ServiceDescriptor>>::err("registry corrupted for type");
+    return referee::Result<ServiceDescriptor>::err(referee::ErrorCode::Unknown,
+                                                   "registry corrupted for type");
   }
 
-  return referee::Result<std::optional<ServiceDescriptor>>::ok(id_it->second.desc);
+  return referee::Result<ServiceDescriptor>::ok(id_it->second.desc);
 }
 
 ServiceObject* ServiceRegistry::handler_for(const referee::ObjectID& id) const {
@@ -398,8 +404,8 @@ std::optional<IpcService::ResolvedService> IpcService::resolve_service(
   const auto& endpoint = request.endpoint.value();
   if (!endpoint.name.empty()) {
     auto resolved = registry_.resolve_by_name(endpoint.name);
-    if (!resolved || !resolved.value->has_value()) return std::nullopt;
-    const auto& descriptor = resolved.value->value();
+    if (!resolved) return std::nullopt;
+    const auto& descriptor = resolved.value.value();
     auto* handler = registry_.handler_for(descriptor.id);
     if (!handler) return std::nullopt;
     return ResolvedService{descriptor, find_declared_endpoint(descriptor, request.endpoint), handler};
@@ -407,8 +413,8 @@ std::optional<IpcService::ResolvedService> IpcService::resolve_service(
 
   if (endpoint.type.has_value()) {
     auto resolved = registry_.resolve_by_type(endpoint.type.value());
-    if (!resolved || !resolved.value->has_value()) return std::nullopt;
-    const auto& descriptor = resolved.value->value();
+    if (!resolved) return std::nullopt;
+    const auto& descriptor = resolved.value.value();
     auto* handler = registry_.handler_for(descriptor.id);
     if (!handler) return std::nullopt;
     return ResolvedService{descriptor, find_declared_endpoint(descriptor, request.endpoint), handler};

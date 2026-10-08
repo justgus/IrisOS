@@ -2,7 +2,7 @@
 
 - Requested ARs: AR-0001, AR-0011, AR-0012
 - Started: 2026-10-07
-- Current state: ER-0081 and ER-0087 are merged; ER-0082 implementation, independent review, and CI have passed; merge pending
+- Current state: ER-0081, ER-0082, and ER-0087 are merged; ER-0083 is the active implementation item
 - Goal/thread reference: 01a1120b-578d-7563-8735-2de39aeeee44
 
 ## AR Queue
@@ -18,8 +18,8 @@
 | ER | Parent AR | Dependencies | Branch / PR | State | Last verified checkpoint |
 |---|---|---|---|---|---|
 | ER-0081 | AR-0001 | None | [PR #332](https://github.com/justgus/IrisOS/pull/332) | In Progress | Merged 2026-10-08 as `7c1ee212d5793c1625493f287fe12ab825bab89b`; independent review and local validation passed; fresh CI runs 37809738189 and 37809744722 passed. Awaiting batch reconciliation. |
-| ER-0082 | AR-0001 | ER-0081 | [PR #333](https://github.com/justgus/IrisOS/pull/333) | In Progress | Implementation commit `b8eac2a` and independent review passed. PR #333 checks 37814653767 and 37814647162 both passed; merge pending. |
-| ER-0083 | AR-0001, AR-0011 | ER-0081, ER-0082 | PR #330 | Approved | Independent planning review passed; runtime lookup and normal empty-result distinctions mapped. |
+| ER-0082 | AR-0001 | ER-0081 | [PR #333](https://github.com/justgus/IrisOS/pull/333) | In Progress | Merged 2026-10-08 as `73aef8f41715af4be37ab34080819408bdb43e2f`; independent review and validation passed; current-head CI runs 37826234939 and 37826228791 passed. Awaiting batch reconciliation. |
+| ER-0083 | AR-0001, AR-0011 | ER-0081, ER-0082 | [PR #334](https://github.com/justgus/IrisOS/pull/334) | Complete | Implementation commit `dcc8d63`; independent review and local full suite passed 29/29. Current PR head `27916c5`; CI runs 37833085684 and 37833091417 passed. |
 | ER-0084 | AR-0011, AR-0012 | ER-0066, ER-0081, ER-0082, ER-0083 | PR #330 | Approved | Independent planning review passed; shell subprocess integration and human live pass specified. |
 | ER-0085 | AR-0012 | ER-0084 | PR #330 | Approved | Independent planning review passed; tiling/nesting model, Automake target, and human live pass specified. |
 | ER-0086 | AR-0001 | ER-0081, ER-0082, ER-0083 | PR #330 | Approved | Independent planning review passed; API ownership groups and focused test mappings enumerated. |
@@ -27,13 +27,13 @@
 
 ## Current Item
 
-- Next action: Merge PR #333 after recording this completed-CI checkpoint, then synchronize local `main` and continue with ER-0083.
-- Last completed action: Both PR #333 `ci-linux` checks passed: 37814653767 at 17:21:34Z and 37814647162 at 17:21:48Z. Implementation commit `b8eac2a` and independent review passed. Reviewer full suite passed (29 executables). A separate local `make check` invocation associated with PR creation failed across all 29 tests because the sandbox lacked `/usr/local/lib/libreferee.0.dylib` and Check could not create its temporary communication file; this is an environment failure, not a code assertion failure. PR #332 merged on 2026-10-08 at 16:44:38Z as `7c1ee212d5793c1625493f287fe12ab825bab89b`; local `main` synchronized to origin/main and stale tracking refs for both feature branches were pruned.
-- Exact validation results: ER-0082 `make -j` initially failed on the expected Refract API migration compile errors; those call sites were updated. The subsequent unsuppressed `make -j` then reached only pre-existing local Clang `-Werror` diagnostics (`kTypeKernelIo` unused and `IoReactor::registry_` unused). `make -j AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-dangling-gsl'` passed. The focused target build `make -C tests test_refract_registry test_refract_bootstrap test_conch_authoring` passed, and `make check AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-gnu-zero-variadic-macro-arguments -Wno-dangling-gsl'` passed all 29 test executables.
-- Independent review result: Pass; reviewer found no acceptance-criteria or correctness findings. Coverage gaps noted (without blocking): no dedicated storage-failure test for `resolve_or_register`, no regression test for parent `NotFound` fallback, and no focused malformed-definition/storage-error test for every lookup. Reviewer freshly reran the full suite successfully.
-- CI result: PR #330 merged; run 37688293301 succeeded. PR #331 runs 37792280473 and 37792290137 passed; PR #332 fresh runs 37809738189 and 37809744722 passed. PR #333 runs 37814653767 and 37814647162 passed. Earlier run 37673963672 was canceled after 104 minutes at `Install dependencies`.
+- Next action: Merge PR #334 after confirming current-head CI runs 37833085684 and 37833091417 are both successful, then synchronize local `main` and begin ER-0084.
+- Last completed action: Both current-head CI runs 37833085684 and 37833091417 for PR #334 head `27916c5ec18ed78a4d9e8f65b1883299f6330c0c` passed on 2026-10-08 (build, unit tests, and distcheck). Independent review and a full local/reviewer `make check` passed 29/29 with the regenerated macOS test wrapper. The PR creation command also emitted a local test-driver abort after the generated wrapper was restored; the wrapper’s stale Linux path was diagnosed and the passing run was recorded above. PR #333 merged at 2026-10-08T18:51:56Z as `73aef8f41715af4be37ab34080819408bdb43e2f`; its current-head CI runs 37826234939 (7m55s) and 37826228791 (10m10s) passed. The ER-0083 branch was created from synchronized `main` and its initial checkpoint was pushed as `12dfd32`.
+- Exact validation results: `make -j AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-dangling-gsl'` passed. Focused targets `make -C tests test_service_ipc test_capability_context test_ceo_tasks test_vizier_routing test_exec_integration test_exec_waitables` built successfully; all six executables ran successfully (41 checks, 0 failures) before the no-datagram test was added. Post-fix `make -C tests test_ceo_io_reactor` built successfully, and the test passed under the full Autotools harness. Fresh post-fix `DYLD_LIBRARY_PATH=/Users/justgus/Xcode-Projects/IrisOS/src/.libs TMPDIR=/private/tmp make check AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-gnu-zero-variadic-macro-arguments -Wno-dangling-gsl'` passed all 29 executables (0 failures); the independent reviewer freshly reran it with the same result. Direct sandbox execution could not create Check temp files. To resolve the stale local wrapper, `make -B -C tests test_referee_core` was run; forced refresh invoked `aclocal-1.19 -I m4`, `automake-1.19 --foreign Makefile`, `autoconf`, and `config.status --recheck`. Generated local artifacts `libtool` and `tests/test_referee_core` will be restored before commit; no source-of-truth Autotools input changed.
+- Independent review result: ER-0081 and ER-0082 passed. ER-0083 re-review passed all criteria, including the no-datagram assertion; reviewer freshly ran the full suite, 29/29 passed.
+- CI result: PR #330 merged; run 37688293301 succeeded. PR #331 runs 37792280473 and 37792290137 passed; PR #332 fresh runs 37809738189 and 37809744722 passed. PR #333 current-head runs 37826234939 and 37826228791 passed. PR #334 current-head runs 37833085684 and 37833091417 passed. Earlier run 37673963672 was canceled after 104 minutes at `Install dependencies`.
 - Live pass requirement and human-reported result: ER-0084 and ER-0085 require human live passes; both are pending. Other drafted ERs mark live pass not required.
-- Merge result: PR #330 merged at 2026-10-07T21:52:33Z; merge commit `e42f3a9e5cd404534fbac51a8d10687f232f4da7`. PR #331 merged at 2026-10-08T15:00:51Z; merge commit `a484bd3e279ee9592dc7b71c2a0abcc6c91fca60`. PR #332 merged at 2026-10-08T16:44:38Z; merge commit `7c1ee212d5793c1625493f287fe12ab825bab89b`.
+- Merge result: PR #330 merged at 2026-10-07T21:52:33Z; merge commit `e42f3a9e5cd404534fbac51a8d10687f232f4da7`. PR #331 merged at 2026-10-08T15:00:51Z; merge commit `a484bd3e279ee9592dc7b71c2a0abcc6c91fca60`. PR #332 merged at 2026-10-08T16:44:38Z; merge commit `7c1ee212d5793c1625493f287fe12ab825bab89b`. PR #333 merged at 2026-10-08T18:51:56Z; merge commit `73aef8f41715af4be37ab34080819408bdb43e2f`.
 
 ## Decisions and Blockers
 
@@ -56,4 +56,15 @@
 - Completed ARs: None.
 - Blocked ARs and reasons: None identified yet.
 - Completed ERs: None.
-- Outstanding CI, PR, status, or cleanup actions: Planning review, ER plan, issue synchronization, planning PR, implementation, validation, independent reviews, CI, reconciliation.
+- Outstanding CI, PR, status, or cleanup actions: ER-0083 independent review, implementation commit/PR/CI/merge; remaining ER implementation and human live passes for ER-0084/85; final batch reconciliation.
+
+## ER-0083 Requirement-to-Test Matrix
+
+| Acceptance criterion | Evidence |
+|---|---|
+| Missing named/type service, memory region, capability context/sandbox, and task return `NotFound`; present records resolve | `tests/test_service_ipc.cc`, `tests/test_capability_context.cc`, and `tests/test_ceo_tasks.cc` cover missing and present cases; implementation in the corresponding registry/store methods. |
+| Invalid input remains distinct from absence; wrong stored object kind remains `InvalidArgument` | Empty service name and malformed memory ID assertions in `tests/test_service_ipc.cc`; wrong capability object kind in `tests/test_capability_context.cc`. |
+| Missing artifact returns `NotFound`, while valid artifact with no route remains a successful empty optional | `test_spawn_concho_not_found_and_unroutable_artifact` in `tests/test_vizier_routing.cc`. |
+| No-datagram receive remains a successful empty optional | `test_conduit_datagram_flow` in `tests/test_ceo_io_reactor.cc` asserts a successful empty result before sending a packet, then verifies the later payload receive. |
+| Consumers propagate or handle typed `NotFound` | `await_task` missing-task assertion in `tests/test_exec_integration.cc`; `TaskComms::open_channel` missing-task assertion in `tests/test_ceo_tasks.cc`; service IPC memory lookup assertion in `tests/test_service_ipc.cc`; machine authority callers return the typed context error. |
+| Existing service, capability, task, and Vizier behavior stays valid | Focused service, capability, task, await, waitable, and Vizier tests passed; fresh full 29-executable `make check` and independent review passed. |

@@ -68,8 +68,8 @@ public:
   referee::Result<void> register_service(const ServiceDescriptor& desc, ServiceObject* handler);
   referee::Result<void> unregister_service(const referee::ObjectID& id);
 
-  referee::Result<std::optional<ServiceDescriptor>> resolve_by_name(std::string_view name) const;
-  referee::Result<std::optional<ServiceDescriptor>> resolve_by_type(referee::TypeID type) const;
+  referee::Result<ServiceDescriptor> resolve_by_name(std::string_view name) const;
+  referee::Result<ServiceDescriptor> resolve_by_type(referee::TypeID type) const;
 
   ServiceObject* handler_for(const referee::ObjectID& id) const;
 
@@ -158,7 +158,7 @@ public:
   referee::Result<MessageEnvelope> handle_message(const MessageEnvelope& request) override;
 
   referee::Result<MemoryRegion> register_region(const MemoryRegion& region);
-  referee::Result<std::optional<MemoryRegion>> lookup_region(referee::ObjectID id) const;
+  referee::Result<MemoryRegion> lookup_region(referee::ObjectID id) const;
   std::vector<MemoryRegion> list_regions() const;
 
 private:

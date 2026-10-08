@@ -213,10 +213,13 @@ referee::Result<void> TaskRegistry::clear_capability_context(TaskID id) {
   return referee::Result<void>::ok();
 }
 
-referee::Result<std::optional<TaskRecord>> TaskRegistry::get_task(TaskID id) const {
+referee::Result<TaskRecord> TaskRegistry::get_task(TaskID id) const {
   const auto* rec = find_task(id);
-  if (!rec) return referee::Result<std::optional<TaskRecord>>::ok(std::nullopt);
-  return referee::Result<std::optional<TaskRecord>>::ok(*rec);
+  if (!rec) {
+    return referee::Result<TaskRecord>::err(referee::ErrorCode::NotFound,
+                                            "task not found");
+  }
+  return referee::Result<TaskRecord>::ok(*rec);
 }
 
 referee::Result<std::vector<TaskRecord>> TaskRegistry::list_tasks() const {
@@ -417,15 +420,9 @@ TaskComms::TaskComms(TaskRegistry& registry) : registry_(registry) {}
 
 referee::Result<std::pair<comms::Channel, comms::Channel>> TaskComms::open_channel(TaskID a, TaskID b) {
   auto aR = registry_.get_task(a);
-  if (!aR) return referee::Result<std::pair<comms::Channel, comms::Channel>>::err(aR.error->message);
-  if (!aR.value->has_value()) {
-    return referee::Result<std::pair<comms::Channel, comms::Channel>>::err("task not found");
-  }
+  if (!aR) return referee::Result<std::pair<comms::Channel, comms::Channel>>::err(aR.error.value());
   auto bR = registry_.get_task(b);
-  if (!bR) return referee::Result<std::pair<comms::Channel, comms::Channel>>::err(bR.error->message);
-  if (!bR.value->has_value()) {
-    return referee::Result<std::pair<comms::Channel, comms::Channel>>::err("task not found");
-  }
+  if (!bR) return referee::Result<std::pair<comms::Channel, comms::Channel>>::err(bR.error.value());
 
   return referee::Result<std::pair<comms::Channel, comms::Channel>>::ok(comms::Channel::loopback());
 }
@@ -434,18 +431,12 @@ referee::Result<std::pair<comms::DatagramPort, comms::DatagramPort>> TaskComms::
   auto aR = registry_.get_task(a);
   if (!aR) {
     return referee::Result<std::pair<comms::DatagramPort, comms::DatagramPort>>::err(
-        aR.error->message);
-  }
-  if (!aR.value->has_value()) {
-    return referee::Result<std::pair<comms::DatagramPort, comms::DatagramPort>>::err("task not found");
+        aR.error.value());
   }
   auto bR = registry_.get_task(b);
   if (!bR) {
     return referee::Result<std::pair<comms::DatagramPort, comms::DatagramPort>>::err(
-        bR.error->message);
-  }
-  if (!bR.value->has_value()) {
-    return referee::Result<std::pair<comms::DatagramPort, comms::DatagramPort>>::err("task not found");
+        bR.error.value());
   }
 
   return referee::Result<std::pair<comms::DatagramPort, comms::DatagramPort>>::ok(

@@ -36,8 +36,7 @@ START_TEST(test_phase5_bytestream_reactor_roundtrip)
 
   auto taskWaitingR = registry.get_task(taskR.value->id);
   ck_assert_msg(taskWaitingR, "get_task failed");
-  ck_assert_msg(taskWaitingR.value->has_value(), "expected task record");
-  ck_assert_int_eq((int)taskWaitingR.value->value().state, (int)TaskState::Waiting);
+  ck_assert_int_eq((int)taskWaitingR.value->state, (int)TaskState::Waiting);
 
   Bytes payload = {0xAA, 0xBB, 0xCC};
   auto outcome = reactor.push(stream, payload);
@@ -46,8 +45,7 @@ START_TEST(test_phase5_bytestream_reactor_roundtrip)
 
   auto taskRunningR = registry.get_task(taskR.value->id);
   ck_assert_msg(taskRunningR, "get_task failed");
-  ck_assert_msg(taskRunningR.value->has_value(), "expected task record");
-  ck_assert_int_eq((int)taskRunningR.value->value().state, (int)TaskState::Running);
+  ck_assert_int_eq((int)taskRunningR.value->state, (int)TaskState::Running);
 
   auto recv = stream.recv(10);
   ck_assert_uint_eq((unsigned int)recv.size(), 3U);
@@ -74,8 +72,7 @@ START_TEST(test_phase5_bytestream_ready_before_wait)
 
   auto taskR2 = registry.get_task(taskR.value->id);
   ck_assert_msg(taskR2, "get_task failed");
-  ck_assert_msg(taskR2.value->has_value(), "expected task record");
-  ck_assert_int_eq((int)taskR2.value->value().state, (int)TaskState::Running);
+  ck_assert_int_eq((int)taskR2.value->state, (int)TaskState::Running);
 
   auto recv = stream.recv(1);
   ck_assert_uint_eq((unsigned int)recv.size(), 1U);

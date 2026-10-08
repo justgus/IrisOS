@@ -4,10 +4,9 @@ namespace iris::exec {
 
 referee::Result<WaitResult> await_task(Waitable& waitable, ceo::TaskRegistry& registry, ceo::TaskID task) {
   auto taskR = registry.get_task(task);
-  if (!taskR) return referee::Result<WaitResult>::err(taskR.error->message);
-  if (!taskR.value->has_value()) return referee::Result<WaitResult>::err("task not found");
+  if (!taskR) return referee::Result<WaitResult>::err(taskR.error.value());
 
-  const auto& rec = taskR.value->value();
+  const auto& rec = taskR.value.value();
   if (rec.state == ceo::TaskState::CancelRequested) {
     auto canceled = registry.mark_canceled(task);
     if (!canceled) return referee::Result<WaitResult>::err(canceled.error->message);
@@ -26,9 +25,9 @@ AwaitOutcome handle_wait_result(ceo::TaskRegistry& registry, const WaitResult& r
   AwaitOutcome out;
   for (auto task_id : result.woken) {
     auto taskR = registry.get_task(task_id);
-    if (!taskR || !taskR.value->has_value()) continue;
+    if (!taskR) continue;
 
-    const auto& rec = taskR.value->value();
+    const auto& rec = taskR.value.value();
     if (rec.state == ceo::TaskState::CancelRequested) {
       if (registry.mark_canceled(task_id)) out.canceled.push_back(task_id);
       continue;

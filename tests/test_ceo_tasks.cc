@@ -13,6 +13,10 @@ using namespace iris::ceo;
 START_TEST(test_spawn_and_parent_child)
 {
   TaskRegistry registry;
+  auto missing = registry.get_task(TaskID{9999});
+  ck_assert_msg(!missing, "expected missing task lookup to fail");
+  ck_assert_int_eq((int)missing.error->code, (int)referee::ErrorCode::NotFound);
+
   auto root = registry.spawn_task(referee::ObjectID::random(), std::nullopt, "root");
   ck_assert_msg(root, "spawn root failed");
   ck_assert_int_eq((int)root.value->state, (int)TaskState::Running);
@@ -24,8 +28,7 @@ START_TEST(test_spawn_and_parent_child)
 
   auto root_lookup = registry.get_task(root.value->id);
   ck_assert_msg(root_lookup, "get_task failed");
-  ck_assert(root_lookup.value->has_value());
-  ck_assert_int_eq((int)root_lookup.value->value().children.size(), 1);
+  ck_assert_int_eq((int)root_lookup.value->children.size(), 1);
 }
 END_TEST
 
@@ -50,15 +53,15 @@ START_TEST(test_cancel_propagation_owned_only)
 
   auto owned_lookup = registry.get_task(owned.value->id);
   ck_assert_msg(owned_lookup, "owned lookup failed");
-  ck_assert_int_eq((int)owned_lookup.value->value().state, (int)TaskState::CancelRequested);
+  ck_assert_int_eq((int)owned_lookup.value->state, (int)TaskState::CancelRequested);
 
   auto service_lookup = registry.get_task(service.value->id);
   ck_assert_msg(service_lookup, "service lookup failed");
-  ck_assert_int_eq((int)service_lookup.value->value().state, (int)TaskState::Running);
+  ck_assert_int_eq((int)service_lookup.value->state, (int)TaskState::Running);
 
   auto detached_lookup = registry.get_task(detached_owned.value->id);
   ck_assert_msg(detached_lookup, "detached lookup failed");
-  ck_assert_int_eq((int)detached_lookup.value->value().state, (int)TaskState::Running);
+  ck_assert_int_eq((int)detached_lookup.value->state, (int)TaskState::Running);
 }
 END_TEST
 
@@ -112,12 +115,12 @@ START_TEST(test_create_start_stop)
   ck_assert_msg(registry.start_task(task.value->id), "start_task failed");
   auto running = registry.get_task(task.value->id);
   ck_assert_msg(running, "get_task failed");
-  ck_assert_int_eq((int)running.value->value().state, (int)TaskState::Running);
+  ck_assert_int_eq((int)running.value->state, (int)TaskState::Running);
 
   ck_assert_msg(registry.stop_task(task.value->id), "stop_task failed");
   auto stopped = registry.get_task(task.value->id);
   ck_assert_msg(stopped, "get_task failed");
-  ck_assert_int_eq((int)stopped.value->value().state, (int)TaskState::CancelRequested);
+  ck_assert_int_eq((int)stopped.value->state, (int)TaskState::CancelRequested);
 }
 END_TEST
 
@@ -134,10 +137,9 @@ START_TEST(test_capability_context_attachment)
 
   auto lookup = registry.get_task(task.value->id);
   ck_assert_msg(lookup, "get_task failed");
-  ck_assert_msg(lookup.value->has_value(), "expected task record");
-  ck_assert_msg(lookup.value->value().capability_context_id.has_value(),
+  ck_assert_msg(lookup.value->capability_context_id.has_value(),
                 "expected capability context attachment");
-  ck_assert(lookup.value->value().capability_context_id.value() == context_id);
+  ck_assert(lookup.value->capability_context_id.value() == context_id);
 
   auto by_context = registry.list_tasks_for_capability_context(context_id);
   ck_assert_msg(by_context, "list_tasks_for_capability_context failed");
@@ -156,13 +158,13 @@ START_TEST(test_capability_context_attachment)
 
   auto after_lifecycle = registry.get_task(task.value->id);
   ck_assert_msg(after_lifecycle, "get_task after lifecycle failed");
-  ck_assert(after_lifecycle.value->value().capability_context_id.value() == context_id);
+  ck_assert(after_lifecycle.value->capability_context_id.value() == context_id);
 
   ck_assert_msg(registry.clear_capability_context(task.value->id),
                 "clear_capability_context failed");
   auto cleared = registry.get_task(task.value->id);
   ck_assert_msg(cleared, "get_task after clear failed");
-  ck_assert_msg(!cleared.value->value().capability_context_id.has_value(),
+  ck_assert_msg(!cleared.value->capability_context_id.has_value(),
                 "expected cleared capability context");
 }
 END_TEST
@@ -192,6 +194,10 @@ START_TEST(test_task_comms_open_close)
   auto b = registry.spawn_task(referee::ObjectID::random());
   ck_assert_msg(b, "spawn b failed");
 
+  auto missing_channel = comms.open_channel(a.value->id, TaskID{9999});
+  ck_assert_msg(!missing_channel, "expected missing task to prevent channel creation");
+  ck_assert_int_eq((int)missing_channel.error->code, (int)referee::ErrorCode::NotFound);
+
   auto channelR = comms.open_channel(a.value->id, b.value->id);
   ck_assert_msg(channelR, "open_channel failed");
   comms.close_channel(channelR.value->first);
@@ -217,15 +223,13 @@ START_TEST(test_supervision_tree_detach_on_terminal)
 
   auto parent_before = registry.get_task(parent.value->id);
   ck_assert_msg(parent_before, "get_task parent failed");
-  ck_assert_msg(parent_before.value->has_value(), "expected parent record");
-  ck_assert_int_eq((int)parent_before.value->value().children.size(), 1);
+  ck_assert_int_eq((int)parent_before.value->children.size(), 1);
 
   ck_assert_msg(registry.complete_task(child.value->id), "complete child failed");
 
   auto parent_after = registry.get_task(parent.value->id);
   ck_assert_msg(parent_after, "get_task parent failed");
-  ck_assert_msg(parent_after.value->has_value(), "expected parent record");
-  ck_assert_int_eq((int)parent_after.value->value().children.size(), 0);
+  ck_assert_int_eq((int)parent_after.value->children.size(), 0);
 }
 END_TEST
 

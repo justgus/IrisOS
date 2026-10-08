@@ -129,7 +129,7 @@ public:
   referee::Result<void> attach_capability_context(TaskID id, referee::ObjectID capability_context_id);
   referee::Result<void> clear_capability_context(TaskID id);
 
-  referee::Result<std::optional<TaskRecord>> get_task(TaskID id) const;
+  referee::Result<TaskRecord> get_task(TaskID id) const;
   referee::Result<std::vector<TaskRecord>> list_tasks() const;
   referee::Result<std::vector<TaskRecord>> list_tasks_for_capability_context(
       referee::ObjectID capability_context_id) const;
