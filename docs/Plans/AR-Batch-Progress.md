@@ -2,7 +2,7 @@
 
 - Requested ARs: AR-0001, AR-0011, AR-0012
 - Started: 2026-10-07
-- Current state: AR-0001 is Implemented after ER-0081, ER-0082, ER-0083, and ER-0086 were independently reviewed, validated, merged, and reconciled as Verified. ER-0084 and ER-0087 are merged. ER-0085 remains Approved and waits for ER-0084's required human live pass.
+- Current state: AR-0001's final reconciliation is open as PR #337 after ER-0081, ER-0082, ER-0083, and ER-0086 passed independent review, validation, merge, and verification gates. ER-0084 and ER-0087 are merged. ER-0085 remains Approved and waits for ER-0084's required human live pass.
 - Goal/thread reference: 01a1120b-578d-7563-8735-2de39aeeee44
 
 ## AR Queue
@@ -27,7 +27,7 @@
 
 ## Current Item
 
-- Next action: Continue the selected batch with ER-0085 only after ER-0084's required human live pass is recorded. AR-0001 is Implemented. Other selected ARs remain In Progress.
+- Next action: Complete CI and merge final reconciliation PR #337. Then continue the selected batch with ER-0085 only after ER-0084's required human live pass is recorded. Other selected ARs remain In Progress.
 - Last completed action: PR #336 merged at 2026-10-08T21:37:47Z as `cc52e027dbd8faa205d60d468f95218534ba0dda`; latest current-head CI runs 37847066559 and 37847071832 passed build, unit tests, and distcheck. Independent review passed, and final reconciliation marked AR-0001 Implemented and ER-0081, ER-0082, ER-0083, and ER-0086 Verified. PR #335 previously merged at 2026-10-08T20:15:50Z as `7861ba58916c5e4d4a2424900e6d72f3a96079c6`; ER-0084 remains Complete, while its required human live pass is pending and blocks dependent ER-0085.
 - Exact validation results: ER-0084 full build passed with `make -j AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-dangling-gsl'`. Focused tests passed with `DYLD_LIBRARY_PATH=/Users/justgus/Xcode-Projects/IrisOS/src/.libs TMPDIR=/private/tmp make -C tests check TESTS='test_conch_authoring test_conch_session_growth'` (2/2). Full `DYLD_LIBRARY_PATH=/Users/justgus/Xcode-Projects/IrisOS/src/.libs TMPDIR=/private/tmp make check AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-gnu-zero-variadic-macro-arguments -Wno-dangling-gsl'` passed 29/29. The first in-sandbox check invocation failed before tests because Check could not create its temporary communication file; the same focused command passed when rerun with approved filesystem access. Generated tracked wrapper `tests/test_referee_core` was restored; no Autotools source inputs changed.
 - Independent review result: ER-0081, ER-0082, ER-0083, ER-0084, and ER-0086 passed. ER-0084's re-review confirmed the tightened exact first-post-growth zero assertion and freshly passed both focused tests. ER-0086 review found and closed two schema typing/coverage gaps; final re-review found no remaining issues and accepted the passing local full suite plus CI evidence.
@@ -56,7 +56,7 @@
 - Completed ARs: AR-0001 (all four dependencies Verified; final reconciliation recorded).
 - Blocked ARs and reasons: None identified yet.
 - Completed ERs: ER-0081, ER-0082, ER-0083, ER-0084, ER-0086, and ER-0087 are merged; ER-0081, ER-0082, ER-0083, and ER-0086 are Verified for AR-0001.
-- Outstanding CI, PR, status, or cleanup actions: ER-0085 implementation is waiting on ER-0084's required human live pass; ER-0084 and ER-0085 live passes remain pending. GitHub issue synchronization remains blocked by integration permissions.
+- Outstanding CI, PR, status, or cleanup actions: final reconciliation PR #337 CI and merge; ER-0085 implementation is waiting on ER-0084's required human live pass; ER-0084 and ER-0085 live passes remain pending. GitHub issue synchronization remains blocked by integration permissions.
 
 ## ER-0083 Requirement-to-Test Matrix
 
