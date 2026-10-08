@@ -86,7 +86,7 @@ referee::Result<std::optional<RelationshipRouteDecision>> route_for_relationship
   }
   auto typesR = registry.list_types();
   if (!typesR) {
-    return referee::Result<std::optional<RelationshipRouteDecision>>::err(typesR.error->message);
+    return referee::Result<std::optional<RelationshipRouteDecision>>::err(typesR.error.value());
   }
   for (const auto& summary : typesR.value.value()) {
     if (summary.type_id == artifactR.value->type) {
@@ -142,15 +142,18 @@ referee::Result<std::optional<RelationshipRouteDecision>> route_for_graph_change
   return route_for_relationship(registry, store, change.edge.value());
 }
 
-std::optional<Route> route_for_type_id(iris::refract::SchemaRegistry& registry,
-                                       referee::TypeID type_id) {
+referee::Result<std::optional<Route>> route_for_type_id(
+    iris::refract::SchemaRegistry& registry,
+    referee::TypeID type_id) {
   auto listR = registry.list_types();
-  if (!listR) return std::nullopt;
+  if (!listR) return referee::Result<std::optional<Route>>::err(listR.error.value());
 
   for (const auto& summary : listR.value.value()) {
-    if (summary.type_id == type_id) return route_for_type(summary);
+    if (summary.type_id == type_id) {
+      return referee::Result<std::optional<Route>>::ok(route_for_type(summary));
+    }
   }
-  return std::nullopt;
+  return referee::Result<std::optional<Route>>::ok(std::optional<Route>{});
 }
 
 referee::Result<std::vector<EmittedArtifactRoute>> emitted_artifact_routes(
@@ -195,16 +198,16 @@ referee::Result<std::optional<referee::ObjectID>> spawn_concho_for_artifact(
     referee::ObjectID artifact_id) {
   auto recR = store.get_latest(artifact_id);
   if (!recR) return referee::Result<std::optional<referee::ObjectID>>::err(recR.error.value());
-  auto route = route_for_type_id(registry, recR.value->type);
-  if (!route.has_value()) {
+  auto routeR = route_for_type_id(registry, recR.value->type);
+  if (!routeR) return referee::Result<std::optional<referee::ObjectID>>::err(routeR.error.value());
+  if (!routeR.value->has_value()) {
     return referee::Result<std::optional<referee::ObjectID>>::ok(
         std::optional<referee::ObjectID>{});
   }
+  const auto& route = routeR.value->value();
 
   auto typesR = registry.list_types();
-  if (!typesR) {
-    return referee::Result<std::optional<referee::ObjectID>>::err(typesR.error->message);
-  }
+  if (!typesR) return referee::Result<std::optional<referee::ObjectID>>::err(typesR.error.value());
   std::optional<iris::refract::TypeSummary> concho_type;
   for (const auto& summary : typesR.value.value()) {
     if (summary.namespace_name == "Conch" && summary.name == "Concho") {
@@ -213,21 +216,22 @@ referee::Result<std::optional<referee::ObjectID>> spawn_concho_for_artifact(
     }
   }
   if (!concho_type.has_value()) {
-    return referee::Result<std::optional<referee::ObjectID>>::err("Conch::Concho type not registered");
+    return referee::Result<std::optional<referee::ObjectID>>::err(
+        referee::ErrorCode::NotFound, "Conch::Concho type not registered");
   }
 
   nlohmann::json payload;
-  payload["title"] = route->concho;
+  payload["title"] = route.concho;
   auto cbor = nlohmann::json::to_cbor(payload);
   auto createR = store.create_object(concho_type->type_id, concho_type->definition_id, cbor);
   if (!createR) {
-    return referee::Result<std::optional<referee::ObjectID>>::err(createR.error->message);
+    return referee::Result<std::optional<referee::ObjectID>>::err(createR.error.value());
   }
 
   referee::Bytes props;
   auto edgeR = store.add_edge(recR.value->ref, createR.value->ref, "view", "concho", props);
   if (!edgeR) {
-    return referee::Result<std::optional<referee::ObjectID>>::err(edgeR.error->message);
+    return referee::Result<std::optional<referee::ObjectID>>::err(edgeR.error.value());
   }
 
   return referee::Result<std::optional<referee::ObjectID>>::ok(createR.value->ref.id);

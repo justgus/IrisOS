@@ -13,6 +13,7 @@ extern "C" {
 #include "referee_sqlite/sqlite_store.h"
 
 #include <string>
+#include <stdexcept>
 
 using namespace referee;
 using namespace iris::refract;
@@ -91,6 +92,30 @@ START_TEST(test_refract_lookups_return_typed_not_found)
   ck_assert_msg(!wrong_kind, "non-definition object unexpectedly decoded as a definition");
   ck_assert_msg(wrong_kind.error->code != ErrorCode::NotFound,
                 "non-definition object was confused with a missing definition");
+  ck_assert_msg(store.close(), "close failed");
+}
+END_TEST
+
+START_TEST(test_schema_registry_validation_and_decode_errors_are_typed)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+  TypeDefinition invalid{};
+  invalid.type_id = TypeID{0xE110ULL};
+  auto invalidR = registry.register_definition(invalid);
+  ck_assert_msg(!invalidR, "expected invalid definition error");
+  ck_assert_int_eq(static_cast<int>(invalidR.error->code),
+                   static_cast<int>(ErrorCode::InvalidArgument));
+
+  auto malformed = store.create_object(kTypeDefinitionType, ObjectID{}, Bytes{});
+  ck_assert_msg(malformed, "create malformed definition record failed");
+  auto decoded = registry.get_definition_by_id(malformed.value->ref.id);
+  ck_assert_msg(!decoded, "expected malformed definition payload error");
+  ck_assert_int_eq(static_cast<int>(decoded.error->code),
+                   static_cast<int>(ErrorCode::CorruptData));
   ck_assert_msg(store.close(), "close failed");
 }
 END_TEST
@@ -802,11 +827,42 @@ START_TEST(test_dispatch_resolution)
 }
 END_TEST
 
+START_TEST(test_inheritance_resolver_exceptions_stay_in_results)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+  auto def = make_definition(TypeID{0xE101ULL}, "ResolverFailure", "Demo");
+  ck_assert_msg(registry.register_definition(def), "register definition failed");
+
+  OperationRegistry operations(registry, [](TypeID) -> std::vector<TypeID> {
+    throw std::runtime_error("resolver failure");
+  });
+  auto operationsR = operations.list_operations(def.type_id, OperationScope::Object, true);
+  ck_assert_msg(!operationsR, "expected resolver failure result");
+  ck_assert_int_eq(static_cast<int>(operationsR.error->code),
+                   static_cast<int>(ErrorCode::Internal));
+  ck_assert_str_eq(operationsR.error->message.c_str(), "resolver failure");
+
+  DispatchEngine dispatch(registry, [](TypeID) -> std::vector<TypeID> {
+    throw 7;
+  });
+  auto dispatchR = dispatch.resolve(def.type_id, "missing", OperationScope::Object, {}, 0, true);
+  ck_assert_msg(!dispatchR, "expected non-standard resolver failure result");
+  ck_assert_int_eq(static_cast<int>(dispatchR.error->code),
+                   static_cast<int>(ErrorCode::Internal));
+  ck_assert_str_eq(dispatchR.error->message.c_str(), "inheritance resolver failed");
+}
+END_TEST
+
 Suite* refract_registry_suite(void) {
   Suite* s = suite_create("RefractRegistry");
   TCase* tc = tcase_create("core");
 
   tcase_add_test(tc, test_refract_lookups_return_typed_not_found);
+  tcase_add_test(tc, test_schema_registry_validation_and_decode_errors_are_typed);
   tcase_add_test(tc, test_schema_registry_roundtrip);
   tcase_add_test(tc, test_schema_registry_supersedes_chain);
   tcase_add_test(tc, test_schema_registry_structured_metadata_roundtrip);
@@ -822,6 +878,7 @@ Suite* refract_registry_suite(void) {
   tcase_add_test(tc, test_scoped_type_registry_promotion);
   tcase_add_test(tc, test_operation_registry_scope_and_inheritance);
   tcase_add_test(tc, test_dispatch_resolution);
+  tcase_add_test(tc, test_inheritance_resolver_exceptions_stay_in_results);
 
   suite_add_tcase(s, tc);
   return s;

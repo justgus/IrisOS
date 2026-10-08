@@ -29,7 +29,8 @@ static referee::Result<FieldConstraintKind> field_constraint_kind_from_string(st
   if (kind == "non_empty") {
     return referee::Result<FieldConstraintKind>::ok(FieldConstraintKind::NonEmpty);
   }
-  return referee::Result<FieldConstraintKind>::err("unknown field constraint kind");
+  return referee::Result<FieldConstraintKind>::err(referee::ErrorCode::CorruptData,
+                                                   "unknown field constraint kind");
 }
 
 static std::string relationship_constraint_kind_to_string(RelationshipConstraintKind kind) {
@@ -50,7 +51,8 @@ static referee::Result<RelationshipConstraintKind> relationship_constraint_kind_
   if (kind == "max_occurs") {
     return referee::Result<RelationshipConstraintKind>::ok(RelationshipConstraintKind::MaxOccurs);
   }
-  return referee::Result<RelationshipConstraintKind>::err("unknown relationship constraint kind");
+  return referee::Result<RelationshipConstraintKind>::err(
+      referee::ErrorCode::CorruptData, "unknown relationship constraint kind");
 }
 
 static std::string operation_effect_kind_to_string(OperationEffectKind kind) {
@@ -81,7 +83,8 @@ static referee::Result<OperationEffectKind> operation_effect_kind_from_string(
   }
   if (kind == "uses_io") return referee::Result<OperationEffectKind>::ok(OperationEffectKind::UsesIo);
   if (kind == "custom") return referee::Result<OperationEffectKind>::ok(OperationEffectKind::Custom);
-  return referee::Result<OperationEffectKind>::err("unknown operation effect kind");
+  return referee::Result<OperationEffectKind>::err(referee::ErrorCode::CorruptData,
+                                                   "unknown operation effect kind");
 }
 
 static nlohmann::json to_json(const DocumentationMetadata& documentation) {
@@ -349,7 +352,8 @@ static referee::Result<void> normalize_field_constraints(FieldDefinition* field)
   for (const auto& constraint : field->constraints) {
     if (constraint.kind == FieldConstraintKind::Required) {
       if (seen_required) {
-        return referee::Result<void>::err("field has duplicate required constraint");
+        return referee::Result<void>::err(referee::ErrorCode::InvalidArgument,
+                                          "field has duplicate required constraint");
       }
       seen_required = true;
       field->required = true;
@@ -357,7 +361,8 @@ static referee::Result<void> normalize_field_constraints(FieldDefinition* field)
     }
     if (constraint.kind == FieldConstraintKind::NonEmpty) {
       if (seen_non_empty) {
-        return referee::Result<void>::err("field has duplicate non_empty constraint");
+        return referee::Result<void>::err(referee::ErrorCode::InvalidArgument,
+                                          "field has duplicate non_empty constraint");
       }
       seen_non_empty = true;
     }
@@ -374,7 +379,8 @@ static referee::Result<void> normalize_relationship_constraints(RelationshipSpec
   } else if (rel->cardinality == "many") {
     add_relationship_constraint(*rel, RelationshipConstraintKind::MinOccurs, 0);
   } else if (!rel->cardinality.empty()) {
-    return referee::Result<void>::err("relationship has unsupported cardinality");
+    return referee::Result<void>::err(referee::ErrorCode::InvalidArgument,
+                                      "relationship has unsupported cardinality");
   }
 
   bool seen_min = false;
@@ -384,7 +390,8 @@ static referee::Result<void> normalize_relationship_constraints(RelationshipSpec
   for (const auto& constraint : rel->constraints) {
     if (constraint.kind == RelationshipConstraintKind::MinOccurs) {
       if (seen_min) {
-        return referee::Result<void>::err("relationship has duplicate min_occurs constraint");
+        return referee::Result<void>::err(referee::ErrorCode::InvalidArgument,
+                                          "relationship has duplicate min_occurs constraint");
       }
       seen_min = true;
       min_occurs = constraint.value;
@@ -392,7 +399,8 @@ static referee::Result<void> normalize_relationship_constraints(RelationshipSpec
     }
     if (constraint.kind == RelationshipConstraintKind::MaxOccurs) {
       if (seen_max) {
-        return referee::Result<void>::err("relationship has duplicate max_occurs constraint");
+        return referee::Result<void>::err(referee::ErrorCode::InvalidArgument,
+                                          "relationship has duplicate max_occurs constraint");
       }
       seen_max = true;
       max_occurs = constraint.value;
@@ -400,12 +408,14 @@ static referee::Result<void> normalize_relationship_constraints(RelationshipSpec
   }
 
   if (min_occurs.has_value() && max_occurs.has_value() && *min_occurs > *max_occurs) {
-    return referee::Result<void>::err("relationship min_occurs exceeds max_occurs");
+    return referee::Result<void>::err(referee::ErrorCode::InvalidArgument,
+                                      "relationship min_occurs exceeds max_occurs");
   }
   if (rel->cardinality == "one") {
     if (!min_occurs.has_value() || !max_occurs.has_value()
         || *min_occurs != 1 || *max_occurs != 1) {
-      return referee::Result<void>::err("relationship cardinality 'one' requires exactly one");
+      return referee::Result<void>::err(referee::ErrorCode::InvalidArgument,
+                                        "relationship cardinality 'one' requires exactly one");
     }
   }
 
@@ -417,7 +427,8 @@ static referee::Result<FieldConstraint> field_constraint_from_json(const nlohman
   auto kind_text = j.is_string() ? j.get<std::string>() : j.value("kind", "");
   auto kindR = field_constraint_kind_from_string(kind_text);
   if (!kindR) {
-    return referee::Result<FieldConstraint>::err("invalid field constraint kind: " + kind_text);
+    return referee::Result<FieldConstraint>::err(referee::ErrorCode::CorruptData,
+                                                 "invalid field constraint kind: " + kind_text);
   }
   return referee::Result<FieldConstraint>::ok(FieldConstraint{ kindR.value.value() });
 }
@@ -457,7 +468,8 @@ static DocumentationMetadata documentation_from_json(const nlohmann::json& j) {
 
 static referee::Result<OperationEffect> operation_effect_from_json(const nlohmann::json& j) {
   if (!j.is_object()) {
-    return referee::Result<OperationEffect>::err("operation effect must be an object");
+    return referee::Result<OperationEffect>::err(referee::ErrorCode::CorruptData,
+                                                 "operation effect must be an object");
   }
   auto kind_text = j.value("kind", "custom");
   auto kindR = operation_effect_kind_from_string(kind_text);
@@ -483,12 +495,12 @@ static referee::Result<FieldDefinition> field_from_json(const nlohmann::json& j)
   if (j.contains("constraints")) {
     for (const auto& item : j.at("constraints")) {
       auto constraintR = field_constraint_from_json(item);
-      if (!constraintR) return referee::Result<FieldDefinition>::err(constraintR.error->message);
+      if (!constraintR) return referee::Result<FieldDefinition>::err(constraintR.error.value());
       f.constraints.push_back(constraintR.value.value());
     }
   }
   auto normalizeR = normalize_field_constraints(&f);
-  if (!normalizeR) return referee::Result<FieldDefinition>::err(normalizeR.error->message);
+  if (!normalizeR) return referee::Result<FieldDefinition>::err(normalizeR.error.value());
   return referee::Result<FieldDefinition>::ok(std::move(f));
 }
 
@@ -530,7 +542,7 @@ static referee::Result<OperationDefinition> operation_from_json(const nlohmann::
   if (j.contains("effects")) {
     for (const auto& item : j.at("effects")) {
       auto effectR = operation_effect_from_json(item);
-      if (!effectR) return referee::Result<OperationDefinition>::err(effectR.error->message);
+      if (!effectR) return referee::Result<OperationDefinition>::err(effectR.error.value());
       op.effects.push_back(effectR.value.value());
     }
   }
@@ -547,12 +559,12 @@ static referee::Result<RelationshipSpec> relationship_from_json(const nlohmann::
   if (j.contains("constraints")) {
     for (const auto& item : j.at("constraints")) {
       auto constraintR = relationship_constraint_from_json(item);
-      if (!constraintR) return referee::Result<RelationshipSpec>::err(constraintR.error->message);
+      if (!constraintR) return referee::Result<RelationshipSpec>::err(constraintR.error.value());
       rel.constraints.push_back(constraintR.value.value());
     }
   }
   auto normalizeR = normalize_relationship_constraints(&rel);
-  if (!normalizeR) return referee::Result<RelationshipSpec>::err(normalizeR.error->message);
+  if (!normalizeR) return referee::Result<RelationshipSpec>::err(normalizeR.error.value());
   return referee::Result<RelationshipSpec>::ok(std::move(rel));
 }
 
@@ -646,7 +658,7 @@ static referee::Result<TypeDefinition> definition_from_json(const nlohmann::json
   if (j.contains("fields")) {
     for (const auto& item : j.at("fields")) {
       auto fieldR = field_from_json(item);
-      if (!fieldR) return referee::Result<TypeDefinition>::err(fieldR.error->message);
+      if (!fieldR) return referee::Result<TypeDefinition>::err(fieldR.error.value());
       def.fields.push_back(fieldR.value.value());
     }
   }
@@ -674,14 +686,14 @@ static referee::Result<TypeDefinition> definition_from_json(const nlohmann::json
   if (j.contains("operations")) {
     for (const auto& item : j.at("operations")) {
       auto opR = operation_from_json(item);
-      if (!opR) return referee::Result<TypeDefinition>::err(opR.error->message);
+      if (!opR) return referee::Result<TypeDefinition>::err(opR.error.value());
       def.operations.push_back(opR.value.value());
     }
   }
   if (j.contains("relationships")) {
     for (const auto& item : j.at("relationships")) {
       auto relR = relationship_from_json(item);
-      if (!relR) return referee::Result<TypeDefinition>::err(relR.error->message);
+      if (!relR) return referee::Result<TypeDefinition>::err(relR.error.value());
       def.relationships.push_back(relR.value.value());
     }
   }
@@ -729,7 +741,8 @@ static referee::Result<std::string> encode_generic_arg_key(const GenericArg& arg
       return referee::Result<std::string>::ok(std::move(key));
     }
   }
-  return referee::Result<std::string>::err("unknown generic arg kind");
+  return referee::Result<std::string>::err(referee::ErrorCode::InvalidArgument,
+                                           "unknown generic arg kind");
 }
 
 static std::uint64_t fnv1a_64(std::string_view input) {
@@ -758,7 +771,7 @@ static referee::Result<GenericInstance> generic_instance_from_json(const nlohman
     }
     for (const auto& item : args_json) {
       auto argR = generic_arg_from_json(item);
-      if (!argR) return referee::Result<GenericInstance>::err(argR.error->message);
+      if (!argR) return referee::Result<GenericInstance>::err(argR.error.value());
       instance.args.push_back(argR.value.value());
     }
   }
@@ -784,7 +797,7 @@ static referee::Result<TypeDefinition> decode_definition(const referee::Bytes& p
     nlohmann::json j = nlohmann::json::from_cbor(payload);
     return definition_from_json(j);
   } catch (const std::exception& ex) {
-    return referee::Result<TypeDefinition>::err(ex.what());
+    return referee::Result<TypeDefinition>::err(referee::ErrorCode::CorruptData, ex.what());
   }
 }
 
@@ -794,7 +807,7 @@ static referee::Bytes encode_definition(const TypeDefinition& def) {
 
 static referee::Result<DefinitionRecord> record_from_object(const referee::ObjectRecord& rec) {
   auto defR = decode_definition(rec.payload_cbor);
-  if (!defR) return referee::Result<DefinitionRecord>::err(defR.error->message);
+  if (!defR) return referee::Result<DefinitionRecord>::err(defR.error.value());
 
   DefinitionRecord out{};
   out.ref = rec.ref;
@@ -808,11 +821,13 @@ static referee::Result<std::optional<std::string>> migration_hook_from_props(
   try {
     auto j = nlohmann::json::from_cbor(props_cbor);
     if (!j.contains("hook")) {
-      return referee::Result<std::optional<std::string>>::err("migration_hook missing hook");
+      return referee::Result<std::optional<std::string>>::err(
+          referee::ErrorCode::CorruptData, "migration_hook missing hook");
     }
     return referee::Result<std::optional<std::string>>::ok(j.at("hook").get<std::string>());
   } catch (const std::exception& ex) {
-    return referee::Result<std::optional<std::string>>::err(ex.what());
+    return referee::Result<std::optional<std::string>>::err(
+        referee::ErrorCode::CorruptData, ex.what());
   }
 }
 
@@ -831,7 +846,7 @@ std::string type_display_name(const TypeSummary& summary) {
 
 referee::Result<std::vector<TypeSummary>> latest_type_summaries(SchemaRegistry& registry) {
   auto typesR = registry.list_types();
-  if (!typesR) return referee::Result<std::vector<TypeSummary>>::err(typesR.error->message);
+  if (!typesR) return referee::Result<std::vector<TypeSummary>>::err(typesR.error.value());
 
   std::map<std::uint64_t, TypeSummary> latest;
   for (const auto& summary : typesR.value.value()) {
@@ -893,7 +908,7 @@ referee::Result<std::vector<referee::TypeID>> legacy_relationship_types(
     const TypeDefinition& def,
     bool (*match_role)(std::string_view)) {
   auto typesR = latest_type_summaries(registry);
-  if (!typesR) return referee::Result<std::vector<referee::TypeID>>::err(typesR.error->message);
+  if (!typesR) return referee::Result<std::vector<referee::TypeID>>::err(typesR.error.value());
 
   std::vector<referee::TypeID> out;
   std::unordered_set<std::uint64_t> seen;
@@ -925,7 +940,8 @@ referee::Result<std::vector<referee::TypeID>> merge_type_lists(
 
 referee::Result<std::string> encode_generic_instance_key(const GenericInstance& instance) {
   if (instance.base_type.v == 0) {
-    return referee::Result<std::string>::err("generic instance base type is zero");
+    return referee::Result<std::string>::err(referee::ErrorCode::InvalidArgument,
+                                             "generic instance base type is zero");
   }
   std::string key = "base=0x" + hex_u64(instance.base_type.v) + ";args=[";
   bool first = true;
@@ -942,40 +958,43 @@ referee::Result<std::string> encode_generic_instance_key(const GenericInstance& 
 
 referee::Result<referee::TypeID> derive_generic_type_id(const GenericInstance& instance) {
   auto keyR = encode_generic_instance_key(instance);
-  if (!keyR) return referee::Result<referee::TypeID>::err(keyR.error->message);
+  if (!keyR) return referee::Result<referee::TypeID>::err(keyR.error.value());
   return referee::Result<referee::TypeID>::ok(referee::TypeID{fnv1a_64(keyR.value.value())});
 }
 
 SchemaRegistry::SchemaRegistry(referee::SqliteStore& store) : store_(store) {}
 
 referee::Result<DefinitionRecord> SchemaRegistry::register_definition(const TypeDefinition& def) {
-  if (def.name.empty()) return referee::Result<DefinitionRecord>::err("definition name is empty");
-  if (def.type_id.v == 0) return referee::Result<DefinitionRecord>::err("type_id is zero");
+  if (def.name.empty()) return referee::Result<DefinitionRecord>::err(
+      referee::ErrorCode::InvalidArgument, "definition name is empty");
+  if (def.type_id.v == 0) return referee::Result<DefinitionRecord>::err(
+      referee::ErrorCode::InvalidArgument, "type_id is zero");
 
   auto normalizedR = normalize_definition(def);
-  if (!normalizedR) return referee::Result<DefinitionRecord>::err(normalizedR.error->message);
+  if (!normalizedR) return referee::Result<DefinitionRecord>::err(normalizedR.error.value());
 
   const auto& normalized = normalizedR.value.value();
   auto payload = encode_definition(normalized);
   auto definition_id = referee::ObjectID::random();
   auto createR = store_.create_object_with_id(definition_id, kTypeDefinitionType, definition_id,
                                               payload);
-  if (!createR) return referee::Result<DefinitionRecord>::err(createR.error->message);
+  if (!createR) return referee::Result<DefinitionRecord>::err(createR.error.value());
 
   if (normalized.supersedes_definition_id.has_value()) {
     auto priorR = store_.get_latest(normalized.supersedes_definition_id.value());
     if (!priorR) return referee::Result<DefinitionRecord>::err(priorR.error.value());
     auto edgeR = store_.add_edge(createR.value->ref, priorR.value->ref,
                                  "supersedes", "definition", {});
-    if (!edgeR) return referee::Result<DefinitionRecord>::err(edgeR.error->message);
+    if (!edgeR) return referee::Result<DefinitionRecord>::err(edgeR.error.value());
     if (normalized.migration_hook.has_value()) {
       auto hookProps = referee::cbor_from_json_kv("hook", normalized.migration_hook.value());
       auto hookR = store_.add_edge(createR.value->ref, priorR.value->ref,
                                    "migration_hook", "definition", hookProps);
-      if (!hookR) return referee::Result<DefinitionRecord>::err(hookR.error->message);
+      if (!hookR) return referee::Result<DefinitionRecord>::err(hookR.error.value());
     }
   } else if (normalized.migration_hook.has_value()) {
-    return referee::Result<DefinitionRecord>::err("migration_hook requires supersedes_definition_id");
+    return referee::Result<DefinitionRecord>::err(
+        referee::ErrorCode::InvalidArgument, "migration_hook requires supersedes_definition_id");
   }
 
   return record_from_object(createR.value.value());
@@ -983,32 +1002,35 @@ referee::Result<DefinitionRecord> SchemaRegistry::register_definition(const Type
 
 referee::Result<DefinitionRecord> SchemaRegistry::register_definition_with_id(
     const TypeDefinition& def, referee::ObjectID definition_id) {
-  if (def.name.empty()) return referee::Result<DefinitionRecord>::err("definition name is empty");
-  if (def.type_id.v == 0) return referee::Result<DefinitionRecord>::err("type_id is zero");
+  if (def.name.empty()) return referee::Result<DefinitionRecord>::err(
+      referee::ErrorCode::InvalidArgument, "definition name is empty");
+  if (def.type_id.v == 0) return referee::Result<DefinitionRecord>::err(
+      referee::ErrorCode::InvalidArgument, "type_id is zero");
 
   auto normalizedR = normalize_definition(def);
-  if (!normalizedR) return referee::Result<DefinitionRecord>::err(normalizedR.error->message);
+  if (!normalizedR) return referee::Result<DefinitionRecord>::err(normalizedR.error.value());
 
   const auto& normalized = normalizedR.value.value();
   auto payload = encode_definition(normalized);
   auto createR = store_.create_object_with_id(definition_id, kTypeDefinitionType, definition_id,
                                               payload);
-  if (!createR) return referee::Result<DefinitionRecord>::err(createR.error->message);
+  if (!createR) return referee::Result<DefinitionRecord>::err(createR.error.value());
 
   if (normalized.supersedes_definition_id.has_value()) {
     auto priorR = store_.get_latest(normalized.supersedes_definition_id.value());
     if (!priorR) return referee::Result<DefinitionRecord>::err(priorR.error.value());
     auto edgeR = store_.add_edge(createR.value->ref, priorR.value->ref,
                                  "supersedes", "definition", {});
-    if (!edgeR) return referee::Result<DefinitionRecord>::err(edgeR.error->message);
+    if (!edgeR) return referee::Result<DefinitionRecord>::err(edgeR.error.value());
     if (normalized.migration_hook.has_value()) {
       auto hookProps = referee::cbor_from_json_kv("hook", normalized.migration_hook.value());
       auto hookR = store_.add_edge(createR.value->ref, priorR.value->ref,
                                    "migration_hook", "definition", hookProps);
-      if (!hookR) return referee::Result<DefinitionRecord>::err(hookR.error->message);
+      if (!hookR) return referee::Result<DefinitionRecord>::err(hookR.error.value());
     }
   } else if (normalized.migration_hook.has_value()) {
-    return referee::Result<DefinitionRecord>::err("migration_hook requires supersedes_definition_id");
+    return referee::Result<DefinitionRecord>::err(
+        referee::ErrorCode::InvalidArgument, "migration_hook requires supersedes_definition_id");
   }
 
   return record_from_object(createR.value.value());
@@ -1020,7 +1042,8 @@ referee::Result<DefinitionRecord> SchemaRegistry::get_definition_by_id(referee::
 
   const auto& rec = recR.value.value();
   if (rec.type.v != kTypeDefinitionType.v) {
-    return referee::Result<DefinitionRecord>::err("object is not a type definition");
+    return referee::Result<DefinitionRecord>::err(referee::ErrorCode::InvalidArgument,
+                                                  "object is not a type definition");
   }
 
   auto defR = record_from_object(rec);
@@ -1071,14 +1094,14 @@ referee::Result<DefinitionRecord> SchemaRegistry::get_latest_definition_by_type(
 
 referee::Result<std::vector<TypeSummary>> SchemaRegistry::list_types() {
   auto listR = store_.list_by_type(kTypeDefinitionType);
-  if (!listR) return referee::Result<std::vector<TypeSummary>>::err(listR.error->message);
+  if (!listR) return referee::Result<std::vector<TypeSummary>>::err(listR.error.value());
 
   std::vector<TypeSummary> out;
   out.reserve(listR.value->size());
 
   for (const auto& rec : listR.value.value()) {
     auto defR = record_from_object(rec);
-    if (!defR) return referee::Result<std::vector<TypeSummary>>::err(defR.error->message);
+    if (!defR) return referee::Result<std::vector<TypeSummary>>::err(defR.error.value());
 
     TypeSummary summary;
     summary.type_id = defR.value->definition.type_id;
@@ -1100,41 +1123,45 @@ referee::Result<std::vector<SupersedesLink>> SchemaRegistry::list_supersedes_cha
   if (!currentR) return referee::Result<std::vector<SupersedesLink>>::err(currentR.error.value());
   auto current = currentR.value.value();
   if (current.type.v != kTypeDefinitionType.v) {
-    return referee::Result<std::vector<SupersedesLink>>::err("object is not a type definition");
+    return referee::Result<std::vector<SupersedesLink>>::err(
+        referee::ErrorCode::InvalidArgument, "object is not a type definition");
   }
 
   std::vector<SupersedesLink> chain;
 
   while (true) {
     auto edgesR = store_.edges_from(current.ref, "supersedes", "definition");
-    if (!edgesR) return referee::Result<std::vector<SupersedesLink>>::err(edgesR.error->message);
+    if (!edgesR) return referee::Result<std::vector<SupersedesLink>>::err(edgesR.error.value());
     if (edgesR.value->empty()) break;
     if (edgesR.value->size() > 1) {
-      return referee::Result<std::vector<SupersedesLink>>::err("multiple supersedes edges found");
+      return referee::Result<std::vector<SupersedesLink>>::err(
+          referee::ErrorCode::CorruptData, "multiple supersedes edges found");
     }
 
     const auto& edge = edgesR.value->front();
     auto priorRecR = store_.get_object(edge.to);
     if (!priorRecR) return referee::Result<std::vector<SupersedesLink>>::err(priorRecR.error.value());
     if (priorRecR.value->type.v != kTypeDefinitionType.v) {
-      return referee::Result<std::vector<SupersedesLink>>::err("supersedes target is not a type definition");
+      return referee::Result<std::vector<SupersedesLink>>::err(
+          referee::ErrorCode::CorruptData, "supersedes target is not a type definition");
     }
 
     auto priorDefR = record_from_object(priorRecR.value.value());
-    if (!priorDefR) return referee::Result<std::vector<SupersedesLink>>::err(priorDefR.error->message);
+    if (!priorDefR) return referee::Result<std::vector<SupersedesLink>>::err(priorDefR.error.value());
 
     SupersedesLink link;
     link.prior = priorDefR.value.value();
 
     auto hookEdgesR = store_.edges_from(current.ref, "migration_hook", "definition");
-    if (!hookEdgesR) return referee::Result<std::vector<SupersedesLink>>::err(hookEdgesR.error->message);
+    if (!hookEdgesR) return referee::Result<std::vector<SupersedesLink>>::err(hookEdgesR.error.value());
     for (const auto& hookEdge : hookEdgesR.value.value()) {
       if (hookEdge.to != edge.to) continue;
       if (link.migration_hook.has_value()) {
-        return referee::Result<std::vector<SupersedesLink>>::err("multiple migration hooks found");
+        return referee::Result<std::vector<SupersedesLink>>::err(
+            referee::ErrorCode::CorruptData, "multiple migration hooks found");
       }
       auto hookR = migration_hook_from_props(hookEdge.props_cbor);
-      if (!hookR) return referee::Result<std::vector<SupersedesLink>>::err(hookR.error->message);
+      if (!hookR) return referee::Result<std::vector<SupersedesLink>>::err(hookR.error.value());
       link.migration_hook = hookR.value.value();
     }
 
@@ -1172,11 +1199,11 @@ referee::Result<std::vector<referee::TypeID>> SchemaRegistry::list_interface_typ
 
 referee::Result<std::vector<referee::TypeID>> SchemaRegistry::list_supertypes(referee::TypeID type) {
   auto baseR = list_base_types(type);
-  if (!baseR) return referee::Result<std::vector<referee::TypeID>>::err(baseR.error->message);
+  if (!baseR) return referee::Result<std::vector<referee::TypeID>>::err(baseR.error.value());
 
   auto interfaceR = list_interface_types(type);
   if (!interfaceR) {
-    return referee::Result<std::vector<referee::TypeID>>::err(interfaceR.error->message);
+    return referee::Result<std::vector<referee::TypeID>>::err(interfaceR.error.value());
   }
 
   return merge_type_lists(baseR.value.value(), interfaceR.value.value());
@@ -1191,16 +1218,16 @@ referee::Result<GenericInstanceRecord> GenericRegistry::register_instance(
   if (!defR) return referee::Result<GenericInstanceRecord>::err(defR.error.value());
 
   auto keyR = encode_generic_instance_key(instance);
-  if (!keyR) return referee::Result<GenericInstanceRecord>::err(keyR.error->message);
+  if (!keyR) return referee::Result<GenericInstanceRecord>::err(keyR.error.value());
   auto typeR = derive_generic_type_id(instance);
-  if (!typeR) return referee::Result<GenericInstanceRecord>::err(typeR.error->message);
+  if (!typeR) return referee::Result<GenericInstanceRecord>::err(typeR.error.value());
 
   GenericInstance stored = instance;
   stored.instance_type = typeR.value.value();
   auto payload = nlohmann::json::to_cbor(generic_instance_to_json(stored, keyR.value.value()));
 
   auto createR = store_.create_object(kTypeGenericInstanceType, defR.value->ref.id, payload);
-  if (!createR) return referee::Result<GenericInstanceRecord>::err(createR.error->message);
+  if (!createR) return referee::Result<GenericInstanceRecord>::err(createR.error.value());
 
   GenericInstanceRecord record{};
   record.ref = createR.value->ref;
@@ -1244,7 +1271,7 @@ referee::Result<GenericInstanceRecord> ScopedTypeRegistry::resolve_or_register(
     const GenericInstance& instance,
     PromotionPolicy policy) {
   auto typeR = derive_generic_type_id(instance);
-  if (!typeR) return referee::Result<GenericInstanceRecord>::err(typeR.error->message);
+  if (!typeR) return referee::Result<GenericInstanceRecord>::err(typeR.error.value());
 
   auto foundR = find(typeR.value.value());
   if (foundR) {

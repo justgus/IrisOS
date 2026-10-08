@@ -16,6 +16,10 @@ START_TEST(test_spawn_and_parent_child)
   auto missing = registry.get_task(TaskID{9999});
   ck_assert_msg(!missing, "expected missing task lookup to fail");
   ck_assert_int_eq((int)missing.error->code, (int)referee::ErrorCode::NotFound);
+  auto missing_transition = registry.wait_task(TaskID{9999});
+  ck_assert_msg(!missing_transition, "expected missing task transition to fail");
+  ck_assert_int_eq((int)missing_transition.error->code,
+                   (int)referee::ErrorCode::NotFound);
 
   auto root = registry.spawn_task(referee::ObjectID::random(), std::nullopt, "root");
   ck_assert_msg(root, "spawn root failed");
@@ -73,6 +77,8 @@ START_TEST(test_state_transitions)
 
   auto resume_before_wait = registry.resume_task(task.value->id);
   ck_assert_msg(!resume_before_wait, "expected invalid resume to fail");
+  ck_assert_int_eq((int)resume_before_wait.error->code,
+                   (int)referee::ErrorCode::FailedPrecondition);
 
   ck_assert_msg(registry.cancel_task(task.value->id), "cancel failed");
   auto canceled = registry.mark_canceled(task.value->id);
@@ -80,6 +86,7 @@ START_TEST(test_state_transitions)
 
   auto again = registry.kill_task(task.value->id);
   ck_assert_msg(!again, "expected terminal transition to fail");
+  ck_assert_int_eq((int)again.error->code, (int)referee::ErrorCode::FailedPrecondition);
 }
 END_TEST
 

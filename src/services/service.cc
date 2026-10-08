@@ -269,18 +269,29 @@ referee::Result<MessageEnvelope> MemoryService::handle_message(const MessageEnve
 
 referee::Result<void> ServiceRegistry::register_service(const ServiceDescriptor& desc,
                                                         ServiceObject* handler) {
-  if (!handler) return referee::Result<void>::err("handler is null");
+  if (!handler) {
+    return referee::Result<void>::err(referee::ErrorCode::InvalidArgument, "handler is null");
+  }
 
   auto key = id_key(desc.id);
-  if (by_id_.find(key) != by_id_.end()) return referee::Result<void>::err("service id already registered");
+  if (by_id_.find(key) != by_id_.end()) {
+    return referee::Result<void>::err(referee::ErrorCode::AlreadyExists,
+                                      "service id already registered");
+  }
 
   if (!desc.name.empty()) {
     auto name_it = by_name_.find(desc.name);
-    if (name_it != by_name_.end()) return referee::Result<void>::err("service name already registered");
+    if (name_it != by_name_.end()) {
+      return referee::Result<void>::err(referee::ErrorCode::AlreadyExists,
+                                        "service name already registered");
+    }
   }
 
   auto type_it = by_type_.find(desc.type.v);
-  if (type_it != by_type_.end()) return referee::Result<void>::err("service type already registered");
+  if (type_it != by_type_.end()) {
+    return referee::Result<void>::err(referee::ErrorCode::AlreadyExists,
+                                      "service type already registered");
+  }
 
   by_id_.emplace(key, Entry{desc, handler});
   if (!desc.name.empty()) by_name_[desc.name] = key;
@@ -292,7 +303,9 @@ referee::Result<void> ServiceRegistry::register_service(const ServiceDescriptor&
 referee::Result<void> ServiceRegistry::unregister_service(const referee::ObjectID& id) {
   auto key = id_key(id);
   auto it = by_id_.find(key);
-  if (it == by_id_.end()) return referee::Result<void>::err("service id not registered");
+  if (it == by_id_.end()) {
+    return referee::Result<void>::err(referee::ErrorCode::NotFound, "service id not registered");
+  }
 
   if (!it->second.desc.name.empty()) {
     auto name_it = by_name_.find(it->second.desc.name);
@@ -425,29 +438,47 @@ std::optional<IpcService::ResolvedService> IpcService::resolve_service(
 
 referee::Result<MessageEnvelope> IpcService::send_request(const MessageEnvelope& request,
                                                           std::chrono::milliseconds timeout) {
-  if (timeout.count() <= 0) return referee::Result<MessageEnvelope>::err("timeout");
-
-  auto resolved = resolve_service(request);
-  if (!resolved.has_value()) return referee::Result<MessageEnvelope>::err("service not found");
-
-  if (authorizer_) {
-    auto authR = authorizer_->authorize(request, resolved->descriptor, resolved->endpoint);
-    if (!authR) return referee::Result<MessageEnvelope>::err(authR.error.value());
+  if (timeout.count() <= 0) {
+    return referee::Result<MessageEnvelope>::err(referee::ErrorCode::InvalidArgument, "timeout");
   }
 
-  auto start = std::chrono::steady_clock::now();
-  auto response = resolved->handler->handle_message(request);
-  auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
+  try {
+    auto resolved = resolve_service(request);
+    if (!resolved.has_value()) {
+      return referee::Result<MessageEnvelope>::err(referee::ErrorCode::NotFound,
+                                                   "service not found");
+    }
 
-  if (elapsed > timeout) return referee::Result<MessageEnvelope>::err("timeout");
-  if (!response) return response;
-  if (!response.value.has_value()) return referee::Result<MessageEnvelope>::err("empty response");
+    if (authorizer_) {
+      auto authR = authorizer_->authorize(request, resolved->descriptor, resolved->endpoint);
+      if (!authR) return referee::Result<MessageEnvelope>::err(authR.error.value());
+    }
 
-  if (response.value->correlation_id != request.correlation_id) {
-    return referee::Result<MessageEnvelope>::err("correlation id mismatch");
+    auto start = std::chrono::steady_clock::now();
+    auto response = resolved->handler->handle_message(request);
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - start);
+
+    if (elapsed > timeout) {
+      return referee::Result<MessageEnvelope>::err(referee::ErrorCode::Timeout, "timeout");
+    }
+    if (!response) return response;
+    if (!response.value.has_value()) {
+      return referee::Result<MessageEnvelope>::err(referee::ErrorCode::Internal, "empty response");
+    }
+
+    if (response.value->correlation_id != request.correlation_id) {
+      return referee::Result<MessageEnvelope>::err(referee::ErrorCode::CorruptData,
+                                                   "correlation id mismatch");
+    }
+
+    return response;
+  } catch (const std::exception& ex) {
+    return referee::Result<MessageEnvelope>::err(referee::ErrorCode::Internal, ex.what());
+  } catch (...) {
+    return referee::Result<MessageEnvelope>::err(referee::ErrorCode::Internal,
+                                                 "service boundary failed");
   }
-
-  return response;
 }
 
 } // namespace iris::service

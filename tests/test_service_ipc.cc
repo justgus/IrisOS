@@ -59,6 +59,24 @@ private:
   TypeID ack_type_{};
 };
 
+class ThrowingService final : public ServiceObject {
+public:
+  explicit ThrowingService(ObjectID id) {
+    desc_.id = id;
+    desc_.type = TypeID{0x9007ULL};
+    desc_.name = "throwing-service";
+  }
+
+  ServiceDescriptor descriptor() const override { return desc_; }
+
+  Result<MessageEnvelope> handle_message(const MessageEnvelope&) override {
+    throw 7;
+  }
+
+private:
+  ServiceDescriptor desc_{};
+};
+
 CapabilityContext make_context(ObjectID id, ObjectID subject, std::vector<std::string> grants) {
   CapabilityContext context;
   context.id = id;
@@ -128,6 +146,31 @@ START_TEST(test_ipc_send_receive_ack_and_timeout)
   auto timeoutR = ipc.send_request(request, std::chrono::milliseconds(0));
   ck_assert_msg(!timeoutR, "expected timeout error");
   ck_assert_msg(timeoutR.error.has_value(), "expected timeout error details");
+  ck_assert_int_eq(static_cast<int>(timeoutR.error->code),
+                   static_cast<int>(ErrorCode::InvalidArgument));
+
+  request.endpoint->name = "missing-service";
+  auto missing_service = ipc.send_request(request, std::chrono::milliseconds(5));
+  ck_assert_msg(!missing_service, "expected missing service error");
+  ck_assert_int_eq(static_cast<int>(missing_service.error->code),
+                   static_cast<int>(ErrorCode::NotFound));
+}
+END_TEST
+
+START_TEST(test_ipc_translates_service_exceptions)
+{
+  ServiceRegistry registry;
+  ThrowingService svc(ObjectID::random());
+  ck_assert_msg(registry.register_service(svc.descriptor(), &svc), "register_service failed");
+
+  IpcService ipc(registry);
+  auto request = make_request_to_endpoint(ObjectID::random(),
+                                         Endpoint{"throwing-service", std::nullopt, {}},
+                                         TypeID{0xE100ULL}, {});
+  auto response = ipc.send_request(request, std::chrono::milliseconds(10));
+  ck_assert_msg(!response, "expected thrown service failure to become a Result error");
+  ck_assert_int_eq(static_cast<int>(response.error->code), static_cast<int>(ErrorCode::Internal));
+  ck_assert_str_eq(response.error->message.c_str(), "service boundary failed");
 }
 END_TEST
 
@@ -402,6 +445,7 @@ Suite* service_ipc_suite(void) {
 
   tcase_add_test(tc, test_service_registry_register_resolve_unregister);
   tcase_add_test(tc, test_ipc_send_receive_ack_and_timeout);
+  tcase_add_test(tc, test_ipc_translates_service_exceptions);
   tcase_add_test(tc, test_ipc_preserves_sandbox_identity_hook);
   tcase_add_test(tc, test_ipc_enforces_descriptor_required_grants);
   tcase_add_test(tc, test_ipc_enforces_endpoint_required_grants_for_declared_endpoint);

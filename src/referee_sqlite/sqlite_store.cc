@@ -158,20 +158,22 @@ Result<void> SqliteStore::open() {
 
   std::error_code ec;
   std::filesystem::create_directories(segments_dir, ec);
-  if (ec) return Result<void>::err("failed to create segments directory");
+  if (ec) return Result<void>::err(ErrorCode::IoError, "failed to create segments directory");
   std::filesystem::create_directories(indexes_dir, ec);
-  if (ec) return Result<void>::err("failed to create indexes directory");
+  if (ec) return Result<void>::err(ErrorCode::IoError, "failed to create indexes directory");
 
   const auto obj_path = segments_dir / "objects.seg";
   const auto edge_path = segments_dir / "edges.seg";
   const auto graph_change_path = segments_dir / "graph_changes.seg";
 
   object_seg_.open(obj_path, std::ios::binary | std::ios::app);
-  if (!object_seg_) return Result<void>::err("failed to open objects.seg");
+  if (!object_seg_) return Result<void>::err(ErrorCode::IoError, "failed to open objects.seg");
   edge_seg_.open(edge_path, std::ios::binary | std::ios::app);
-  if (!edge_seg_) return Result<void>::err("failed to open edges.seg");
+  if (!edge_seg_) return Result<void>::err(ErrorCode::IoError, "failed to open edges.seg");
   graph_change_seg_.open(graph_change_path, std::ios::binary | std::ios::app);
-  if (!graph_change_seg_) return Result<void>::err("failed to open graph_changes.seg");
+  if (!graph_change_seg_) {
+    return Result<void>::err(ErrorCode::IoError, "failed to open graph_changes.seg");
+  }
 
   idx_objects_by_id_.open(indexes_dir / "objects_by_id.idx", std::ios::app);
   idx_objects_by_type_.open(indexes_dir / "objects_by_type.idx", std::ios::app);
@@ -205,7 +207,7 @@ Result<void> SqliteStore::ensure_schema() {
 }
 
 Result<void> SqliteStore::begin() {
-  if (in_txn_) return Result<void>::err("transaction already open");
+  if (in_txn_) return Result<void>::err(ErrorCode::FailedPrecondition, "transaction already open");
   in_txn_ = true;
   pending_objects_.clear();
   pending_edges_.clear();
@@ -254,7 +256,7 @@ Result<ObjectRecord> SqliteStore::create_object(TypeID type, ObjectID definition
 Result<ObjectRecord> SqliteStore::create_object_with_id(ObjectID object_id, TypeID type,
                                                         ObjectID definition_id,
                                                         const Bytes& payload_cbor) {
-  if (!open_) return Result<ObjectRecord>::err("store not open");
+  if (!open_) return Result<ObjectRecord>::err(ErrorCode::FailedPrecondition, "store not open");
 
   ObjectRecord rec;
   rec.ref.id = object_id;
@@ -271,11 +273,11 @@ Result<ObjectRecord> SqliteStore::create_object_with_id(ObjectID object_id, Type
                           rec, std::nullopt});
   } else {
     auto r = append_object(rec);
-    if (!r) return Result<ObjectRecord>::err(r.error->message);
+    if (!r) return Result<ObjectRecord>::err(r.error.value());
     index_object(rec);
     index_graph_object(rec);
     r = append_graph_change(graph_changes_.back());
-    if (!r) return Result<ObjectRecord>::err(r.error->message);
+    if (!r) return Result<ObjectRecord>::err(r.error.value());
   }
 
   return Result<ObjectRecord>::ok(std::move(rec));
@@ -321,7 +323,9 @@ Result<ObjectRecord> SqliteStore::get_latest(ObjectID id) {
 }
 
 Result<std::vector<ObjectRecord>> SqliteStore::list_by_type(TypeID type) {
-  if (!open_) return Result<std::vector<ObjectRecord>>::err("store not open");
+  if (!open_) {
+    return Result<std::vector<ObjectRecord>>::err(ErrorCode::FailedPrecondition, "store not open");
+  }
   std::vector<ObjectRecord> out;
   auto it = objects_by_type_.find(type);
   if (it != objects_by_type_.end()) {
@@ -342,7 +346,7 @@ Result<std::vector<ObjectRecord>> SqliteStore::list_by_type(TypeID type) {
 
 Result<void> SqliteStore::add_edge(ObjectRef from, ObjectRef to, std::string name, std::string role,
                                    const Bytes& props_cbor) {
-  if (!open_) return Result<void>::err("store not open");
+  if (!open_) return Result<void>::err(ErrorCode::FailedPrecondition, "store not open");
 
   EdgeRecord rec;
   rec.from = from;
@@ -372,7 +376,9 @@ Result<void> SqliteStore::add_edge(ObjectRef from, ObjectRef to, std::string nam
 Result<std::vector<EdgeRecord>> SqliteStore::edges_from(ObjectRef from,
                                                         std::optional<std::string> name_filter,
                                                         std::optional<std::string> role_filter) {
-  if (!open_) return Result<std::vector<EdgeRecord>>::err("store not open");
+  if (!open_) {
+    return Result<std::vector<EdgeRecord>>::err(ErrorCode::FailedPrecondition, "store not open");
+  }
   ObjectRefKey key{from.id, from.ver};
   std::vector<EdgeRecord> out;
   auto it = edges_from_.find(key);
@@ -397,7 +403,9 @@ Result<std::vector<EdgeRecord>> SqliteStore::edges_from(ObjectRef from,
 Result<std::vector<EdgeRecord>> SqliteStore::edges_to(ObjectRef to,
                                                       std::optional<std::string> name_filter,
                                                       std::optional<std::string> role_filter) {
-  if (!open_) return Result<std::vector<EdgeRecord>>::err("store not open");
+  if (!open_) {
+    return Result<std::vector<EdgeRecord>>::err(ErrorCode::FailedPrecondition, "store not open");
+  }
   ObjectRefKey key{to.id, to.ver};
   std::vector<EdgeRecord> out;
   auto it = edges_to_.find(key);
@@ -420,14 +428,19 @@ Result<std::vector<EdgeRecord>> SqliteStore::edges_to(ObjectRef to,
 }
 
 Result<GraphChangeCursor> SqliteStore::graph_cursor() {
-  if (!open_) return Result<GraphChangeCursor>::err("store not open");
+  if (!open_) {
+    return Result<GraphChangeCursor>::err(ErrorCode::FailedPrecondition, "store not open");
+  }
   return Result<GraphChangeCursor>::ok(GraphChangeCursor(next_graph_sequence_ - 1));
 }
 
 Result<std::vector<GraphChangeRecord>> SqliteStore::graph_changes_after(
     GraphChangeCursor cursor,
     GraphChangeFilter filter) {
-  if (!open_) return Result<std::vector<GraphChangeRecord>>::err("store not open");
+  if (!open_) {
+    return Result<std::vector<GraphChangeRecord>>::err(ErrorCode::FailedPrecondition,
+                                                       "store not open");
+  }
 
   std::vector<GraphChangeRecord> out;
   for (const auto& rec : graph_changes_) {
@@ -459,7 +472,8 @@ Result<std::vector<GraphChangeRecord>> SqliteStore::graph_changes_after(
 
 Result<void> SqliteStore::append_object(const ObjectRecord& rec) {
   if (memory_only_) return Result<void>::ok();
-  if (!object_seg_.is_open()) return Result<void>::err("objects segment not open");
+  if (!object_seg_.is_open()) return Result<void>::err(ErrorCode::FailedPrecondition,
+                                                       "objects segment not open");
 
   const auto offset = static_cast<std::uint64_t>(object_seg_.tellp());
 
@@ -485,7 +499,8 @@ Result<void> SqliteStore::append_object(const ObjectRecord& rec) {
 
 Result<void> SqliteStore::append_edge(const EdgeRecord& rec) {
   if (memory_only_) return Result<void>::ok();
-  if (!edge_seg_.is_open()) return Result<void>::err("edges segment not open");
+  if (!edge_seg_.is_open()) return Result<void>::err(ErrorCode::FailedPrecondition,
+                                                     "edges segment not open");
 
   const auto offset = static_cast<std::uint64_t>(edge_seg_.tellp());
 
@@ -514,12 +529,16 @@ Result<void> SqliteStore::append_edge(const EdgeRecord& rec) {
 
 Result<void> SqliteStore::append_graph_change(const GraphChangeRecord& rec) {
   if (memory_only_) return Result<void>::ok();
-  if (!graph_change_seg_.is_open()) return Result<void>::err("graph_changes segment not open");
+  if (!graph_change_seg_.is_open()) {
+    return Result<void>::err(ErrorCode::FailedPrecondition, "graph_changes segment not open");
+  }
 
   write_u32(graph_change_seg_, kGraphChangeTag);
   write_u64(graph_change_seg_, rec.cursor.sequence_);
   if (rec.kind == GraphChangeKind::ObjectCreated) {
-    if (!rec.object.has_value()) return Result<void>::err("object graph change missing record");
+    if (!rec.object.has_value()) {
+      return Result<void>::err(ErrorCode::CorruptData, "object graph change missing record");
+    }
     const auto& obj = rec.object.value();
     write_u8(graph_change_seg_, kGraphChangeObjectCreated);
     write_u32(graph_change_seg_, static_cast<std::uint32_t>(obj.payload_cbor.size()));
@@ -535,7 +554,9 @@ Result<void> SqliteStore::append_graph_change(const GraphChangeRecord& rec) {
                               static_cast<std::streamsize>(obj.payload_cbor.size()));
     }
   } else if (rec.kind == GraphChangeKind::EdgeCreated) {
-    if (!rec.edge.has_value()) return Result<void>::err("edge graph change missing record");
+    if (!rec.edge.has_value()) {
+      return Result<void>::err(ErrorCode::CorruptData, "edge graph change missing record");
+    }
     const auto& edge = rec.edge.value();
     write_u8(graph_change_seg_, kGraphChangeEdgeCreated);
     write_u32(graph_change_seg_, static_cast<std::uint32_t>(edge.name.size()));
@@ -559,7 +580,7 @@ Result<void> SqliteStore::append_graph_change(const GraphChangeRecord& rec) {
                               static_cast<std::streamsize>(edge.props_cbor.size()));
     }
   } else {
-    return Result<void>::err("unknown graph change kind");
+    return Result<void>::err(ErrorCode::Unsupported, "unknown graph change kind");
   }
 
   graph_change_seg_.flush();
@@ -606,7 +627,8 @@ Result<void> SqliteStore::load_segments() {
     while (in.good()) {
       std::uint32_t tag = 0;
       if (!read_u32(in, &tag)) break;
-      if (tag != kObjTag) return Result<void>::err("invalid object segment tag");
+      if (tag != kObjTag) return Result<void>::err(ErrorCode::CorruptData,
+                                                   "invalid object segment tag");
 
       std::uint32_t payload_size = 0;
       std::uint64_t ver = 0;
@@ -636,7 +658,8 @@ Result<void> SqliteStore::load_segments() {
     while (in.good()) {
       std::uint32_t tag = 0;
       if (!read_u32(in, &tag)) break;
-      if (tag != kEdgeTag) return Result<void>::err("invalid edge segment tag");
+      if (tag != kEdgeTag) return Result<void>::err(ErrorCode::CorruptData,
+                                                    "invalid edge segment tag");
 
       std::uint32_t name_len = 0;
       std::uint32_t role_len = 0;
@@ -679,7 +702,9 @@ Result<void> SqliteStore::load_segments() {
     while (in.good()) {
       std::uint32_t tag = 0;
       if (!read_u32(in, &tag)) break;
-      if (tag != kGraphChangeTag) return Result<void>::err("invalid graph change segment tag");
+      if (tag != kGraphChangeTag) {
+        return Result<void>::err(ErrorCode::CorruptData, "invalid graph change segment tag");
+      }
 
       std::uint64_t sequence = 0;
       std::uint8_t kind = 0;
@@ -743,7 +768,7 @@ Result<void> SqliteStore::load_segments() {
             GraphChangeRecord{GraphChangeKind::EdgeCreated, GraphChangeCursor(sequence),
                               std::nullopt, rec});
       } else {
-        return Result<void>::err("invalid graph change kind");
+        return Result<void>::err(ErrorCode::CorruptData, "invalid graph change kind");
       }
 
       if (sequence >= next_graph_sequence_) next_graph_sequence_ = sequence + 1;
@@ -769,7 +794,7 @@ Result<void> SqliteStore::rebuild_indexes() {
   idx_edges_to_.open(indexes_dir / "edges_to.idx", std::ios::trunc);
 
   if (!idx_objects_by_id_ || !idx_objects_by_type_ || !idx_edges_from_ || !idx_edges_to_) {
-    return Result<void>::err("failed to rebuild index files");
+    return Result<void>::err(ErrorCode::IoError, "failed to rebuild index files");
   }
 
   const auto segments_dir = std::filesystem::path(base) / "segments";
