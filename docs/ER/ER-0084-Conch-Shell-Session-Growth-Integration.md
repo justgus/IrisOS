@@ -95,7 +95,7 @@ ER-Dependencies: ER-0066, ER-0081, ER-0082, ER-0083
 - `make -C tests test_conch_authoring test_conch_session_growth AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-gnu-zero-variadic-macro-arguments -Wno-dangling-gsl'` passed.
 - `DYLD_LIBRARY_PATH=/Users/justgus/Xcode-Projects/IrisOS/src/.libs TMPDIR=/private/tmp make check AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-gnu-zero-variadic-macro-arguments -Wno-dangling-gsl'` passed all 29 tests.
 - Independent review: Pass. Reviewer derived the AR/ER matrix independently, inspected command-loop control paths and startup cursor ordering, and freshly passed the focused two-test suite. The first subsequent read-only update is asserted to create zero Conchos.
-- Live Pass (Human): Pending as required.
+- Live Pass (Human): Pass reported by the System Engineer on 2026-10-08.
 
 ## Verification Plan
 
@@ -112,7 +112,7 @@ ER-Dependencies: ER-0066, ER-0081, ER-0082, ER-0083
 - Build / environment / target: Built `bin/conch` in a terminal with an interactive TTY.
 - Steps: Start `./bin/conch --db :memory:`; enter `demo v1`; inspect the Conch update output and object graph for the active session's Conchos; enter `objects` or `debug graph <session-id>` to inspect links; enter `objects` again and confirm no duplicate Conchos are reported; exit.
 - Expected observations: the shell reports newly created Conchos after the demo produces routed artifacts; the active session links to those Conchos; a subsequent read-only command reports no newly created duplicates.
-- Observed results: Pending human test.
-- Result: Pending
-- Performed by: Pending
-- Date: Pending
+- Observed results: The System Engineer confirmed the required live pass is complete.
+- Result: Pass
+- Performed by: System Engineer
+- Date: 2026-10-08
