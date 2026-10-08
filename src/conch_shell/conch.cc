@@ -5,6 +5,7 @@
 #include "ceo/io_reactor.h"
 #include "ceo/task_registry.h"
 #include "comms/primitives.h"
+#include "conch/session_growth.h"
 #include "refract/bootstrap.h"
 #include "refract/dispatch.h"
 #include "refract/schema_registry.h"
@@ -57,6 +58,28 @@ using referee::SqliteStore;
 using referee::TypeID;
 
 namespace {
+
+class SessionGrowthCommandBoundary {
+ public:
+  SessionGrowthCommandBoundary(SchemaRegistry& registry, SqliteStore& store,
+                              iris::conch::SessionState& session)
+      : registry_(registry), store_(store), session_(session) {}
+
+  ~SessionGrowthCommandBoundary() {
+    auto updateR = iris::conch::update_session_from_graph(registry_, store_, session_);
+    if (!updateR) {
+      std::cout << "error: session update failed: " << updateR.error->message << "\n";
+      return;
+    }
+    std::cout << "session update: created " << updateR.value->conchos_created
+              << " reused " << updateR.value->conchos_reused << "\n";
+  }
+
+ private:
+  SchemaRegistry& registry_;
+  SqliteStore& store_;
+  iris::conch::SessionState& session_;
+};
 
 struct TaskEntry {
   std::string id;
@@ -5932,6 +5955,18 @@ int main(int argc, char** argv) {
     std::cout << "error: bootstrap catalog failed: " << catalogR.error->message << "\n";
     return 1;
   }
+  auto cursorR = store.graph_cursor();
+  if (!cursorR) {
+    std::cout << "error: session cursor failed: " << cursorR.error->message << "\n";
+    return 1;
+  }
+  auto sessionR = iris::conch::create_session(registry, store, "Conch", cursorR.value.value());
+  if (!sessionR) {
+    std::cout << "error: session creation failed: " << sessionR.error->message << "\n";
+    return 1;
+  }
+  auto session = sessionR.value.value();
+  std::cout << "session " << session.session.id.to_hex() << "\n";
 #if !defined(HAVE_READLINE)
   if (::isatty(STDIN_FILENO)) {
     std::cout << "note: readline not available; history disabled\n";
@@ -5947,6 +5982,7 @@ int main(int argc, char** argv) {
   std::unordered_map<std::string, iris::conduit::IoHandle> io_handle_aliases;
   std::uint64_t next_io_handle_id = 1;
   std::unordered_map<std::string, ObjectID> session_aliases;
+  session_aliases["session"] = session.session.id;
   std::set<std::string> session_caps;
   std::string current_namespace;
   std::uint64_t next_task_id = 1;
@@ -5954,6 +5990,7 @@ int main(int argc, char** argv) {
   load_io_aliases(store, registry, io_handle_aliases);
 
   for (;;) {
+    SessionGrowthCommandBoundary session_growth_boundary(registry, store, session);
     auto prompt = make_prompt(current_namespace);
     auto line_opt = read_line(prompt.c_str());
     if (!line_opt.has_value()) break;

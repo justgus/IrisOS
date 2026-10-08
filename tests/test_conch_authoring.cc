@@ -9,6 +9,7 @@ extern "C" {
 #include "refract/schema_registry.h"
 #include "referee/referee.h"
 #include "referee_sqlite/sqlite_store.h"
+#include "viz/artifacts.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -16,6 +17,7 @@ extern "C" {
 #include <filesystem>
 #include <fstream>
 #include <nlohmann/json.hpp>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <unistd.h>
@@ -163,6 +165,45 @@ void prepare_migration_db(const std::string& db_path) {
   auto cbor = nlohmann::json::to_cbor(payload);
   auto createR = store.create_object(def_v1.type_id, reg_v1.value->ref.id, cbor);
   ck_assert_msg(createR, "create_object failed: %s", result_message(createR));
+
+  ck_assert_msg(store.close(), "close failed");
+}
+
+void prepare_historical_routable_db(const std::string& db_path) {
+  SqliteStore store(SqliteConfig{ .filename=db_path, .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+  auto boot = bootstrap_core_schema(registry);
+  ck_assert_msg(boot, "bootstrap failed: %s", result_message(boot));
+
+  auto typesR = registry.list_types();
+  ck_assert_msg(typesR, "list_types failed: %s", result_message(typesR));
+  std::optional<TypeSummary> demo_type;
+  for (const auto& type : typesR.value.value()) {
+    if (type.namespace_name == "Demo" && type.name == "PropulsionSynth") {
+      demo_type = type;
+      break;
+    }
+  }
+  ck_assert_msg(demo_type.has_value(), "expected Demo::PropulsionSynth type");
+
+  nlohmann::json payload;
+  payload["name"] = "historical";
+  auto demoR = store.create_object(demo_type->type_id, demo_type->definition_id,
+                                   nlohmann::json::to_cbor(payload));
+  ck_assert_msg(demoR, "create historical demo failed: %s", result_message(demoR));
+
+  iris::viz::TextLog log;
+  log.lines = {"historical artifact"};
+  auto logR = iris::viz::create_text_log(registry, store, log);
+  ck_assert_msg(logR, "create historical artifact failed: %s", result_message(logR));
+  auto logRecordR = store.get_latest(logR.value.value());
+  ck_assert_msg(logRecordR, "load historical artifact failed: %s", result_message(logRecordR));
+  auto edgeR = store.add_edge(demoR.value->ref, logRecordR.value->ref,
+                              "produced", "artifact", Bytes{});
+  ck_assert_msg(edgeR, "create historical relationship failed: %s", result_message(edgeR));
 
   ck_assert_msg(store.close(), "close failed");
 }
@@ -480,6 +521,49 @@ START_TEST(test_conch_namespace_navigation)
 }
 END_TEST
 
+START_TEST(test_conch_session_growth_in_command_loop)
+{
+  auto db_path = make_temp_path("/tmp/iris-conch-session-growth-XXXXXX");
+  prepare_historical_routable_db(db_path);
+
+  auto output = run_conch_script_with_db(
+      "debug graph session\ndemo v1\ndebug graph session\ndebug graph session\nexit\n", db_path);
+  auto session_line = output.find("session ");
+  ck_assert_msg(session_line != std::string::npos, "expected active session identifier");
+  auto session_end = output.find('\n', session_line);
+  auto session_id = output.substr(session_line + 8, session_end - (session_line + 8));
+  const auto empty_session_graph = "edges from " + session_id + "\n  (none)";
+  ck_assert_msg(output.find(empty_session_graph) != std::string::npos,
+                "expected startup cursor to exclude historical graph relationships");
+  ck_assert_msg(output.find("name=contains role=concho") != std::string::npos,
+                "expected session graph to contain routed Concho links");
+  ck_assert_msg(output.find("type=Conch::Concho") != std::string::npos,
+                "expected session graph to link Conch::Concho objects");
+
+  std::vector<std::size_t> created_counts;
+  std::istringstream lines(output);
+  std::string line;
+  const std::string update_marker = "session update: created ";
+  while (std::getline(lines, line)) {
+    auto marker = line.find(update_marker);
+    if (marker == std::string::npos) continue;
+    auto count_start = marker + update_marker.size();
+    auto count_end = line.find(' ', count_start);
+    ck_assert_msg(count_end != std::string::npos, "expected complete session update result");
+    created_counts.push_back(static_cast<std::size_t>(std::stoul(
+        line.substr(count_start, count_end - count_start))));
+  }
+  ck_assert_msg(created_counts.size() >= 5, "expected one session update per shell command");
+  ck_assert_uint_eq(created_counts.front(), 0U);
+  ck_assert_msg(created_counts[1] > 0, "expected demo command to grow the active session");
+  ck_assert_uint_eq(created_counts[2], 0U);
+  ck_assert_uint_eq(created_counts[3], 0U);
+
+  std::filesystem::remove_all(db_path + ".segments");
+  ::unlink(db_path.c_str());
+}
+END_TEST
+
 START_TEST(test_conch_show_type_displays_inheritance_metadata)
 {
   auto db_path = make_temp_path("/tmp/iris-conch-show-type-XXXXXX");
@@ -638,6 +722,7 @@ Suite* conch_authoring_suite(void) {
   tcase_add_test(tc, test_conch_migration_tools);
   tcase_add_test(tc, test_conch_v2_demo_script);
   tcase_add_test(tc, test_conch_namespace_navigation);
+  tcase_add_test(tc, test_conch_session_growth_in_command_loop);
   tcase_add_test(tc, test_conch_show_type_displays_inheritance_metadata);
   tcase_add_test(tc, test_conch_constraint_metadata_display_and_validation);
   tcase_add_test(tc, test_conch_caliper_commands);
