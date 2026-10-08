@@ -6,6 +6,7 @@
 #include <cstdint>
 #include <optional>
 #include <string>
+#include <vector>
 
 namespace iris::vizier {
 
@@ -23,9 +24,19 @@ struct RelationshipRouteDecision {
   std::optional<std::string> task_state{};
 };
 
+struct EmittedArtifactRoute {
+  std::string operation_name;
+  std::string declared_target;
+  std::optional<referee::TypeID> artifact_type{};
+  std::optional<Route> route{};
+};
+
 std::optional<Route> route_for_type(const iris::refract::TypeSummary& summary);
 std::optional<Route> route_for_type_id(iris::refract::SchemaRegistry& registry,
                                        referee::TypeID type_id);
+referee::Result<std::vector<EmittedArtifactRoute>> emitted_artifact_routes(
+    iris::refract::SchemaRegistry& registry,
+    referee::TypeID producer_type);
 std::optional<RelationshipRouteDecision> route_for_relationship(
     const referee::EdgeRecord& edge,
     const iris::refract::TypeSummary& target_type);

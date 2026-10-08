@@ -2,7 +2,7 @@
 
 - Requested ARs: AR-0001, AR-0011, AR-0012
 - Started: 2026-10-07
-- Current state: Planning PR #330 CI stalled at dependency installation; local workflow fix prepared but not pushed
+- Current state: ER-0081 and ER-0087 are implemented, reviewed, and validated locally; ER-0087 PR #331 is open and awaiting required CI
 - Goal/thread reference: 01a1120b-578d-7563-8735-2de39aeeee44
 
 ## AR Queue
@@ -17,31 +17,35 @@
 
 | ER | Parent AR | Dependencies | Branch / PR | State | Last verified checkpoint |
 |---|---|---|---|---|---|
-| ER-0081 | AR-0001 | None | PR #330 | Approved | Independent planning review passed; storage lookup criteria mapped to focused tests. |
+| ER-0081 | AR-0001 | None | `codex/er-0081-referee-notfound` (local; no PR yet) | In Progress | Commits `8efa326`, `9593a66`; 29 local tests pass with documented Clang warning suppressions; independent review passed; push blocked by DNS/Git Credential Manager. |
 | ER-0082 | AR-0001 | ER-0081 | PR #330 | Approved | Independent planning review passed; Refract lookup and propagation criteria mapped. |
 | ER-0083 | AR-0001, AR-0011 | ER-0081, ER-0082 | PR #330 | Approved | Independent planning review passed; runtime lookup and normal empty-result distinctions mapped. |
 | ER-0084 | AR-0011, AR-0012 | ER-0066, ER-0081, ER-0082, ER-0083 | PR #330 | Approved | Independent planning review passed; shell subprocess integration and human live pass specified. |
 | ER-0085 | AR-0012 | ER-0084 | PR #330 | Approved | Independent planning review passed; tiling/nesting model, Automake target, and human live pass specified. |
 | ER-0086 | AR-0001 | ER-0081, ER-0082, ER-0083 | PR #330 | Approved | Independent planning review passed; API ownership groups and focused test mappings enumerated. |
-| ER-0087 | AR-0011 | ER-0009, ER-0064 | PR #330 | Approved | Independent planning review passed; canonical type target and opaque target semantics specified. |
+| ER-0087 | AR-0011 | ER-0009, ER-0064 | `codex/er-0087-vizier-operation-metadata` / [PR #331](https://github.com/justgus/IrisOS/pull/331) | In Progress | Commits `6ac2673`, `734f35a`; full suite 29/29 passed with documented local Clang warning suppressions; independent review passed; PR opened 2026-10-08, CI pending. |
 
 ## Current Item
 
-- Next action: Publish the local `.github/workflows/ci.yml` fix after GitHub write access is restored, then wait for its CI run; merge the planning PR only after all required checks pass. Synchronize issues where credentials permit before implementation.
-- Last completed action: Independent read-only review passed the `.github/workflows/ci.yml` correction; committed it locally as `dbc8e093fe1bf612ccf412218a3fbee94a6d8c39`. The existing remote run remains on the previous head.
-- Exact validation results: `git diff --check` and `git diff --cached --check` passed. Independent review confirmed GitHub Actions timeout syntax and apt options; no tests were run. CI run 37673963672 remains in progress at dependency installation; active logs return 404. Local workflow change awaits CI validation.
-- Independent review result: Passed in separate read-only Codex reviewer context after four review/fix cycles; final finding about TaskRegistry/TaskComms/IoReactor/IoExecutor API ownership was corrected. No remaining material findings.
-- CI result: PR #330, run 37673963672, `ci-linux` in progress over 20 minutes at `Install dependencies`; logs unavailable during execution.
+- Next action: Wait for PR #331 required CI checks to reach final states; then publish ER-0081 if no ER-0087 gate fails.
+- Last completed action: On 2026-10-08, ER-0087 branch `codex/er-0087-vizier-operation-metadata` was pushed and PR #331 was opened against `main`. ER-0087 implementation is committed as `6ac2673`; independent review passed with no open findings. ER-0081 remains committed locally as `8efa326`.
+- Exact validation results: ER-0087 `make -j` completed successfully after its sources were built with local Clang warning suppressions. `make -C tests test_vizier_routing test_refract_registry` passed. `make check AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-gnu-zero-variadic-macro-arguments -Wno-dangling-gsl'` passed all 29 tests. Suppressions cover existing local Clang diagnostics in CEO unused symbols, Check's GNU variadic macro, and a pre-existing dangling `c_str()` warning in `test_conch_authoring.cc`. ER-0081's focused and full suite also passed with its documented warning suppressions.
+- Independent review result: ER-0081 and ER-0087 passed in separate read-only Codex contexts with no remaining findings.
+- CI result: PR #330 merged; run 37688293301 succeeded. Earlier run 37673963672 was canceled after 104 minutes at `Install dependencies`.
 - Live pass requirement and human-reported result: ER-0084 and ER-0085 require human live passes; both are pending. Other drafted ERs mark live pass not required.
-- Merge result: PR #330 open and mergeable; not merged while CI is running.
+- Merge result: PR #330 merged at 2026-10-07T21:52:33Z; merge commit `e42f3a9e5cd404534fbac51a8d10687f232f4da7`.
 
 ## Decisions and Blockers
 
 - The user's selected set is exactly AR-0001, AR-0011, and AR-0012; intervening AR IDs are out of scope.
 - GitHub issue synchronization for AR issues #65, #75, and #76 failed with HTTP 403 `Resource not accessible by integration`. The connected GitHub integration can read these issues but does not have permission to update them. Local AR statuses are In Progress; issue labels and bodies remain stale.
 - Creating the first planned ER issue (#ER-0081) failed with HTTP 403 `Resource not accessible by integration`; no new ER issues were created. The integration permission block still prevents issue synchronization; retry only if credential or app permissions have changed.
-- The local Git credential helper had previously failed with `System.OverflowException` in `GitCredentialManager` (`Interop.Sys.GetGroups`). The user has since created PR #330 from the reviewed branch. Do not start implementation until that planning PR merges.
-- Attempting to update `.github/workflows/ci.yml` on the PR branch through the GitHub connector failed with HTTP 403 `Resource not accessible by integration`. The reviewed fix is committed locally, one commit ahead of PR #330's current remote head; `gh auth status` reports an invalid token. The old CI run remains active and the local fix has not triggered a new run.
+- The local Git credential helper had previously failed with `System.OverflowException` in `GitCredentialManager` (`Interop.Sys.GetGroups`). PR #330 has since been merged by the user and local `main` fast-forwarded.
+- GitHub issue synchronization remains blocked: connector writes returned HTTP 403 `Resource not accessible by integration`, and `gh auth status` reported an invalid token. The CI workflow fix was included in merged PR #330 and its required checks passed.
+- Latest GitHub access check (2026-10-08): GitHub API connectivity works and escalated `gh auth status` reports a valid logged-in `justgus` account with `repo` and `workflow` scopes. Publishing may now be attempted.
+- Publishing ER-0081 was previously blocked locally: normal and escalated pushes failed to resolve `github.com`; using the known address override reached GitHub but Git Credential Manager crashed in `Interop.Sys.GetGroups` with `System.OverflowException`, then Git could not read the HTTPS username. GitHub connectivity and `gh auth status` have since recovered; retry after ER-0087 PR/CI checkpoint.
+- SSH transport retry also failed before authentication with `No user exists for uid 502`; no remote branch or PR was created. ER-0081 remains In Progress; ER-0082, ER-0083, ER-0084, ER-0085, and ER-0086 remain unstarted because they depend on it. ER-0087 is independent and has proceeded locally.
+- ER-0087 HTTPS push previously failed DNS resolution; the address-override retry hit the Git Credential Manager `System.OverflowException`. The branch was subsequently pushed successfully on 2026-10-08 after GitHub access recovered; PR creation and CI remain outstanding. ER statuses remain In Progress until their merge/verification gates pass.
 - ER-0081 through ER-0083 implement AR-0001's documented lookup-absence gap in ordered storage, Refract, and runtime slices. Normal empty datagram and no-route results remain optional because they are not missing-object lookups.
 - AR-0011 and AR-0012's existing ER-0063 through ER-0066 are already Verified. ER-0084 is needed because `bin/conch` does not call the existing `update_session_from_graph` API.
 - First independent reviewer found gaps: parent mismatch for ER-0083, no shell-level automated verification in ER-0084, no AR-0012 layout coverage, and missing parent-requirement evidence mapping. The revised plan now links ER-0083 to AR-0011, adds it as an AR-0011 dependency, uses the existing subprocess-capable `test_conch_authoring` target for ER-0084 shell integration coverage, and adds ER-0085.
