@@ -2,7 +2,7 @@
 
 - Requested ARs: AR-0001, AR-0011, AR-0012
 - Started: 2026-10-07
-- Current state: ER-0081 and ER-0087 are implemented, reviewed, and validated locally; ER-0087 PR #331 is awaiting CI while independent ER-0081 publication proceeds
+- Current state: ER-0081 and ER-0087 are implemented, reviewed, and validated locally; PRs #331 and #332 are open with required CI checks in progress
 - Goal/thread reference: 01a1120b-578d-7563-8735-2de39aeeee44
 
 ## AR Queue
@@ -17,7 +17,7 @@
 
 | ER | Parent AR | Dependencies | Branch / PR | State | Last verified checkpoint |
 |---|---|---|---|---|---|
-| ER-0081 | AR-0001 | None | `codex/er-0081-referee-notfound` (local; PR creation next) | In Progress | Commits `8efa326`, `9593a66`; 29 local tests pass with documented Clang warning suppressions; independent review passed; GitHub authentication recovered 2026-10-08. |
+| ER-0081 | AR-0001 | None | `codex/er-0081-referee-notfound` / [PR #332](https://github.com/justgus/IrisOS/pull/332) | In Progress | Commits `8efa326`, `9593a66`; 29 local tests pass with documented Clang warning suppressions; independent review passed; PR opened 2026-10-08, CI pending. |
 | ER-0082 | AR-0001 | ER-0081 | PR #330 | Approved | Independent planning review passed; Refract lookup and propagation criteria mapped. |
 | ER-0083 | AR-0001, AR-0011 | ER-0081, ER-0082 | PR #330 | Approved | Independent planning review passed; runtime lookup and normal empty-result distinctions mapped. |
 | ER-0084 | AR-0011, AR-0012 | ER-0066, ER-0081, ER-0082, ER-0083 | PR #330 | Approved | Independent planning review passed; shell subprocess integration and human live pass specified. |
@@ -27,11 +27,11 @@
 
 ## Current Item
 
-- Next action: Push `codex/er-0081-referee-notfound` and open its PR while PR #331 CI continues; do not merge either PR until all required checks pass.
-- Last completed action: On 2026-10-08, GitHub connectivity and `gh auth status` recovered; ER-0087 was pushed and opened as PR #331. The two required `ci-linux` checks remain in progress. ER-0081 implementation is committed as `8efa326` on `codex/er-0081-referee-notfound`; no PR existed at last check.
+- Next action: Wait for the required CI checks on PRs #331 and #332 to reach final states; merge only after all checks pass.
+- Last completed action: On 2026-10-08, ER-0081 branch `codex/er-0081-referee-notfound` was pushed and PR #332 was opened against `main`. Both PR #332 `ci-linux` checks are pending in runs 37792695083 and 37792716250; PR #331's checks remain pending in runs 37792280473 and 37792290137.
 - Exact validation results: `make -C tests test_referee_core` passed. `make check AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-gnu-zero-variadic-macro-arguments'` passed all 29 tests. The unsuppressed `make -j` and `make check` stop on pre-existing local Clang `-Werror` diagnostics (`kTypeKernelIo` unused and `IoReactor::registry_` unused); the full check additionally treats Check's GNU variadic macro as an error. The full build succeeded after adding only those warning suppressions; no source changes were made to the unrelated diagnostics.
 - Independent review result: Passed in a separate read-only Codex context; no open findings. The reviewer confirmed typed lookup errors, preserved higher-level optional absence behavior, focused test coverage, and the generated wrapper is absent from the diff.
-- CI result: PR #330 merged; run 37688293301 succeeded. ER-0087 PR #331 checks are pending: runs 37792280473 and 37792290137 are both `in_progress`. Earlier run 37673963672 was canceled after 104 minutes at `Install dependencies`.
+- CI result: PR #330 merged; run 37688293301 succeeded. PR #331 checks are pending in runs 37792280473 and 37792290137; PR #332 checks are pending in runs 37792695083 and 37792716250. Earlier run 37673963672 was canceled after 104 minutes at `Install dependencies`.
 - Live pass requirement and human-reported result: ER-0084 and ER-0085 require human live passes; both are pending. Other drafted ERs mark live pass not required.
 - Merge result: PR #330 merged at 2026-10-07T21:52:33Z; merge commit `e42f3a9e5cd404534fbac51a8d10687f232f4da7`.
 
@@ -42,7 +42,7 @@
 - Creating the first planned ER issue (#ER-0081) failed with HTTP 403 `Resource not accessible by integration`; no new ER issues were created. The integration permission block still prevents issue synchronization; retry only if credential or app permissions have changed.
 - The local Git credential helper had previously failed with `System.OverflowException` in `GitCredentialManager` (`Interop.Sys.GetGroups`). PR #330 has since been merged by the user and local `main` fast-forwarded.
 - GitHub issue synchronization remains blocked: connector writes returned HTTP 403 `Resource not accessible by integration`, and `gh auth status` reported an invalid token. The CI workflow fix was included in merged PR #330 and its required checks passed.
-- Publishing ER-0081 was previously blocked locally: normal and escalated pushes failed to resolve `github.com`; using the known address override reached GitHub but Git Credential Manager crashed in `Interop.Sys.GetGroups` with `System.OverflowException`, then Git could not read the HTTPS username. On 2026-10-08, the same workspace authenticated successfully with `gh auth status`; retry push with the recovered access path.
+- Publishing ER-0081 was previously blocked locally: normal and escalated pushes failed to resolve `github.com`; using the known address override reached GitHub but Git Credential Manager crashed in `Interop.Sys.GetGroups` with `System.OverflowException`, then Git could not read the HTTPS username. On 2026-10-08 the branch pushed successfully and PR #332 was opened after `gh auth status` recovered.
 - SSH transport retry previously failed before authentication with `No user exists for uid 502`; no remote branch or PR was created by that attempt. ER-0081 remains In Progress and dependent ERs remain unstarted pending publication and CI.
 - ER-0081 through ER-0083 implement AR-0001's documented lookup-absence gap in ordered storage, Refract, and runtime slices. Normal empty datagram and no-route results remain optional because they are not missing-object lookups.
 - AR-0011 and AR-0012's existing ER-0063 through ER-0066 are already Verified. ER-0084 is needed because `bin/conch` does not call the existing `update_session_from_graph` API.
