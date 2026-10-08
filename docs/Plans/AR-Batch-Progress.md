@@ -2,7 +2,7 @@
 
 - Requested ARs: AR-0001, AR-0011, AR-0012
 - Started: 2026-10-07
-- Current state: ER-0081 and ER-0087 are implemented, reviewed, and validated locally; ER-0087 is pushed and awaiting PR creation and CI
+- Current state: ER-0081 and ER-0087 are implemented, reviewed, and validated locally; ER-0087 PR #331 is open and awaiting required CI
 - Goal/thread reference: 01a1120b-578d-7563-8735-2de39aeeee44
 
 ## AR Queue
@@ -23,12 +23,12 @@
 | ER-0084 | AR-0011, AR-0012 | ER-0066, ER-0081, ER-0082, ER-0083 | PR #330 | Approved | Independent planning review passed; shell subprocess integration and human live pass specified. |
 | ER-0085 | AR-0012 | ER-0084 | PR #330 | Approved | Independent planning review passed; tiling/nesting model, Automake target, and human live pass specified. |
 | ER-0086 | AR-0001 | ER-0081, ER-0082, ER-0083 | PR #330 | Approved | Independent planning review passed; API ownership groups and focused test mappings enumerated. |
-| ER-0087 | AR-0011 | ER-0009, ER-0064 | `codex/er-0087-vizier-operation-metadata` (pushed; PR creation next) | In Progress | Commits `6ac2673`, `734f35a`; full suite 29/29 passed with documented local Clang warning suppressions; independent review passed; branch pushed on 2026-10-08. |
+| ER-0087 | AR-0011 | ER-0009, ER-0064 | `codex/er-0087-vizier-operation-metadata` / [PR #331](https://github.com/justgus/IrisOS/pull/331) | In Progress | Commits `6ac2673`, `734f35a`; full suite 29/29 passed with documented local Clang warning suppressions; independent review passed; PR opened 2026-10-08, CI pending. |
 
 ## Current Item
 
-- Next action: Open the ER-0087 PR, record its number, and wait for required CI; then publish ER-0081 one branch at a time if the credential helper works.
-- Last completed action: On 2026-10-08, branch `codex/er-0087-vizier-operation-metadata` was pushed successfully to origin after GitHub API connectivity and `gh auth status` recovered. No PR existed before push. ER-0087 implementation is committed as `6ac2673`; independent review passed with no open findings. ER-0081 remains committed locally as `8efa326`.
+- Next action: Wait for PR #331 required CI checks to reach final states; then publish ER-0081 if no ER-0087 gate fails.
+- Last completed action: On 2026-10-08, ER-0087 branch `codex/er-0087-vizier-operation-metadata` was pushed and PR #331 was opened against `main`. ER-0087 implementation is committed as `6ac2673`; independent review passed with no open findings. ER-0081 remains committed locally as `8efa326`.
 - Exact validation results: ER-0087 `make -j` completed successfully after its sources were built with local Clang warning suppressions. `make -C tests test_vizier_routing test_refract_registry` passed. `make check AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-gnu-zero-variadic-macro-arguments -Wno-dangling-gsl'` passed all 29 tests. Suppressions cover existing local Clang diagnostics in CEO unused symbols, Check's GNU variadic macro, and a pre-existing dangling `c_str()` warning in `test_conch_authoring.cc`. ER-0081's focused and full suite also passed with its documented warning suppressions.
 - Independent review result: ER-0081 and ER-0087 passed in separate read-only Codex contexts with no remaining findings.
 - CI result: PR #330 merged; run 37688293301 succeeded. Earlier run 37673963672 was canceled after 104 minutes at `Install dependencies`.
