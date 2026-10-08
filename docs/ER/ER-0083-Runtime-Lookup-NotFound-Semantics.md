@@ -16,7 +16,7 @@ ER-Dependencies: ER-0081, ER-0082
 
 - ER ID: ER-0083
 - Title: Runtime Lookup NotFound Semantics
-- Status: Approved
+- Status: Complete
 - Date: 2026-10-07
 - Owners: Mike
 - Type: Enhancement

@@ -197,24 +197,21 @@ referee::Result<SandboxIdentityRecord> CapabilityContextStore::persist_sandbox(
   return referee::Result<SandboxIdentityRecord>::ok(std::move(out));
 }
 
-referee::Result<std::optional<SandboxIdentityRecord>> CapabilityContextStore::get_sandbox(
+referee::Result<SandboxIdentityRecord> CapabilityContextStore::get_sandbox(
     referee::ObjectID id) {
   auto recR = store_.get_latest(id);
-  if (!recR && recR.error->code == referee::ErrorCode::NotFound) {
-    return referee::Result<std::optional<SandboxIdentityRecord>>::ok(std::nullopt);
-  }
-  if (!recR) return referee::Result<std::optional<SandboxIdentityRecord>>::err(recR.error.value());
+  if (!recR) return referee::Result<SandboxIdentityRecord>::err(recR.error.value());
   if (recR.value->type != kSandboxIdentityType) {
-    return referee::Result<std::optional<SandboxIdentityRecord>>::err(
+    return referee::Result<SandboxIdentityRecord>::err(
         referee::ErrorCode::InvalidArgument,
         "object is not a sandbox identity");
   }
 
   auto recordR = sandbox_record_from_object(recR.value.value());
   if (!recordR) {
-    return referee::Result<std::optional<SandboxIdentityRecord>>::err(recordR.error.value());
+    return referee::Result<SandboxIdentityRecord>::err(recordR.error.value());
   }
-  return referee::Result<std::optional<SandboxIdentityRecord>>::ok(recordR.value.value());
+  return referee::Result<SandboxIdentityRecord>::ok(recordR.value.value());
 }
 
 referee::Result<std::vector<SandboxIdentityRecord>> CapabilityContextStore::list_sandboxes() {
@@ -274,24 +271,21 @@ referee::Result<CapabilityContextRecord> CapabilityContextStore::persist_context
   return referee::Result<CapabilityContextRecord>::ok(std::move(out));
 }
 
-referee::Result<std::optional<CapabilityContextRecord>> CapabilityContextStore::get_context(
+referee::Result<CapabilityContextRecord> CapabilityContextStore::get_context(
     referee::ObjectID id) {
   auto recR = store_.get_latest(id);
-  if (!recR && recR.error->code == referee::ErrorCode::NotFound) {
-    return referee::Result<std::optional<CapabilityContextRecord>>::ok(std::nullopt);
-  }
-  if (!recR) return referee::Result<std::optional<CapabilityContextRecord>>::err(recR.error.value());
+  if (!recR) return referee::Result<CapabilityContextRecord>::err(recR.error.value());
   if (recR.value->type != kCapabilityContextType) {
-    return referee::Result<std::optional<CapabilityContextRecord>>::err(
+    return referee::Result<CapabilityContextRecord>::err(
         referee::ErrorCode::InvalidArgument,
         "object is not a capability context");
   }
 
   auto recordR = record_from_object(recR.value.value());
   if (!recordR) {
-    return referee::Result<std::optional<CapabilityContextRecord>>::err(recordR.error.value());
+    return referee::Result<CapabilityContextRecord>::err(recordR.error.value());
   }
-  return referee::Result<std::optional<CapabilityContextRecord>>::ok(recordR.value.value());
+  return referee::Result<CapabilityContextRecord>::ok(recordR.value.value());
 }
 
 referee::Result<std::vector<CapabilityContextRecord>> CapabilityContextStore::list_contexts() {

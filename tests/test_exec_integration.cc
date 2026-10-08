@@ -12,6 +12,17 @@ extern "C" {
 using namespace iris::ceo;
 using namespace iris::exec;
 
+START_TEST(test_await_propagates_missing_task_not_found)
+{
+  TaskRegistry registry;
+  Event ev(false);
+
+  auto waitR = await_task(ev, registry, TaskID{9999});
+  ck_assert_msg(!waitR, "expected await of missing task to fail");
+  ck_assert_int_eq((int)waitR.error->code, (int)referee::ErrorCode::NotFound);
+}
+END_TEST
+
 START_TEST(test_await_and_cancel)
 {
   TaskRegistry registry;
@@ -32,8 +43,7 @@ START_TEST(test_await_and_cancel)
 
   auto state = registry.get_task(task.value->id);
   ck_assert_msg(state, "get_task failed");
-  ck_assert(state.value->has_value());
-  ck_assert_int_eq((int)state.value->value().state, (int)TaskState::Canceled);
+  ck_assert_int_eq((int)state.value->state, (int)TaskState::Canceled);
 }
 END_TEST
 
@@ -55,8 +65,7 @@ START_TEST(test_await_resume)
 
   auto state = registry.get_task(task.value->id);
   ck_assert_msg(state, "get_task failed");
-  ck_assert(state.value->has_value());
-  ck_assert_int_eq((int)state.value->value().state, (int)TaskState::Running);
+  ck_assert_int_eq((int)state.value->state, (int)TaskState::Running);
 }
 END_TEST
 
@@ -64,6 +73,7 @@ Suite* exec_integration_suite(void) {
   Suite* s = suite_create("ExecIntegration");
   TCase* tc = tcase_create("core");
 
+  tcase_add_test(tc, test_await_propagates_missing_task_not_found);
   tcase_add_test(tc, test_await_and_cancel);
   tcase_add_test(tc, test_await_resume);
 

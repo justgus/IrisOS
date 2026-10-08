@@ -53,8 +53,7 @@ START_TEST(test_reactor_wakes_channel_waiter)
 
   auto taskWaitingR = registry.get_task(taskR.value->id);
   ck_assert_msg(taskWaitingR, "get_task failed");
-  ck_assert_msg(taskWaitingR.value->has_value(), "expected task record");
-  ck_assert_int_eq((int)taskWaitingR.value->value().state, (int)TaskState::Waiting);
+  ck_assert_int_eq((int)taskWaitingR.value->state, (int)TaskState::Waiting);
 
   Bytes payload = {0x01, 0x02, 0x03};
   auto outcome = reactor.send(sender, payload);
@@ -63,8 +62,7 @@ START_TEST(test_reactor_wakes_channel_waiter)
 
   auto taskRunningR = registry.get_task(taskR.value->id);
   ck_assert_msg(taskRunningR, "get_task failed");
-  ck_assert_msg(taskRunningR.value->has_value(), "expected task record");
-  ck_assert_int_eq((int)taskRunningR.value->value().state, (int)TaskState::Running);
+  ck_assert_int_eq((int)taskRunningR.value->state, (int)TaskState::Running);
 
   auto recv = receiver.recv(10);
   ck_assert_uint_eq((unsigned int)recv.size(), 3U);
@@ -135,8 +133,7 @@ START_TEST(test_conduit_channel_flow)
 
   auto task_waiting = registry.get_task(task_b.value->id);
   ck_assert_msg(task_waiting, "get_task failed");
-  ck_assert_msg(task_waiting.value->has_value(), "expected task record");
-  ck_assert_int_eq((int)task_waiting.value->value().state, (int)TaskState::Waiting);
+  ck_assert_int_eq((int)task_waiting.value->state, (int)TaskState::Waiting);
 
   auto send_match = engine.resolve(kTypeKernelIoChannel, "send", OperationScope::Object,
                                    {kTypeBytes}, 1, true);
@@ -203,6 +200,13 @@ START_TEST(test_conduit_datagram_flow)
   ck_assert_msg(waitR, "await_readable failed: %s", result_message(waitR));
   ck_assert_msg(!waitR.value->ready, "expected initial wait to block");
 
+  auto recv_match = engine.resolve(kTypeKernelIoDatagram, "recv", OperationScope::Object, {}, 0, true);
+  ck_assert_msg(recv_match, "recv resolve failed: %s", result_message(recv_match));
+  auto emptyR = executor.recv_datagram(recv_match.value.value(), openR.value->second);
+  ck_assert_msg(emptyR, "empty recv failed: %s", result_message(emptyR));
+  ck_assert_msg(!emptyR.value->has_value(),
+                "expected empty datagram queue to remain a successful empty result");
+
   auto send_match = engine.resolve(kTypeKernelIoDatagram, "send", OperationScope::Object,
                                    {kTypeBytes}, 1, true);
   ck_assert_msg(send_match, "send resolve failed: %s", result_message(send_match));
@@ -211,8 +215,6 @@ START_TEST(test_conduit_datagram_flow)
   ck_assert_msg(sendR, "send failed: %s", result_message(sendR));
   ck_assert_msg(sendR.value->ready, "expected send ready");
 
-  auto recv_match = engine.resolve(kTypeKernelIoDatagram, "recv", OperationScope::Object, {}, 0, true);
-  ck_assert_msg(recv_match, "recv resolve failed: %s", result_message(recv_match));
   auto recvR = executor.recv_datagram(recv_match.value.value(), openR.value->second);
   ck_assert_msg(recvR, "recv failed: %s", result_message(recvR));
   ck_assert_msg(recvR.value->has_value(), "expected datagram payload");
@@ -290,8 +292,7 @@ START_TEST(test_conduit_await_cancel)
   ck_assert_msg(waitR.value->ready, "expected await to be ready due to cancel");
   auto canceled = registry.get_task(task_b.value->id);
   ck_assert_msg(canceled, "get_task failed");
-  ck_assert_msg(canceled.value->has_value(), "expected task record");
-  ck_assert_int_eq((int)canceled.value->value().state, (int)TaskState::Canceled);
+  ck_assert_int_eq((int)canceled.value->state, (int)TaskState::Canceled);
 
   ck_assert_msg(store.close(), "close failed");
 }

@@ -44,13 +44,13 @@ public:
   explicit CapabilityContextStore(referee::SqliteStore& store);
 
   referee::Result<SandboxIdentityRecord> persist_sandbox(const SandboxIdentity& sandbox);
-  referee::Result<std::optional<SandboxIdentityRecord>> get_sandbox(referee::ObjectID id);
+  referee::Result<SandboxIdentityRecord> get_sandbox(referee::ObjectID id);
   referee::Result<std::vector<SandboxIdentityRecord>> list_sandboxes();
   referee::Result<std::vector<SandboxIdentityRecord>> list_sandboxes_for_subject(
       referee::ObjectID subject);
 
   referee::Result<CapabilityContextRecord> persist_context(const CapabilityContext& context);
-  referee::Result<std::optional<CapabilityContextRecord>> get_context(referee::ObjectID id);
+  referee::Result<CapabilityContextRecord> get_context(referee::ObjectID id);
   referee::Result<std::vector<CapabilityContextRecord>> list_contexts();
   referee::Result<std::vector<CapabilityContextRecord>> list_contexts_for_subject(
       referee::ObjectID subject);

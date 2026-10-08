@@ -80,19 +80,25 @@ START_TEST(test_service_registry_register_resolve_unregister)
 
   auto by_name = registry.resolve_by_name("echo-service");
   ck_assert_msg(by_name, "resolve_by_name failed: %s", result_message(by_name));
-  ck_assert_msg(by_name.value->has_value(), "expected service by name");
-  ck_assert(by_name.value->value().id == svc.descriptor().id);
+  ck_assert(by_name.value->id == svc.descriptor().id);
 
   auto by_type = registry.resolve_by_type(svc.descriptor().type);
   ck_assert_msg(by_type, "resolve_by_type failed: %s", result_message(by_type));
-  ck_assert_msg(by_type.value->has_value(), "expected service by type");
-  ck_assert(by_type.value->value().id == svc.descriptor().id);
+  ck_assert(by_type.value->id == svc.descriptor().id);
 
   ck_assert_msg(registry.unregister_service(svc.descriptor().id), "unregister_service failed");
 
   auto after = registry.resolve_by_name("echo-service");
-  ck_assert_msg(after, "resolve_by_name after unregister failed: %s", result_message(after));
-  ck_assert_msg(!after.value->has_value(), "expected no service after unregister");
+  ck_assert_msg(!after, "expected service lookup after unregister to fail");
+  ck_assert_int_eq((int)after.error->code, (int)ErrorCode::NotFound);
+
+  auto missing_type = registry.resolve_by_type(TypeID{0xFFFFULL});
+  ck_assert_msg(!missing_type, "expected missing service type lookup to fail");
+  ck_assert_int_eq((int)missing_type.error->code, (int)ErrorCode::NotFound);
+
+  auto invalid_name = registry.resolve_by_name("");
+  ck_assert_msg(!invalid_name, "expected empty service name to fail");
+  ck_assert_int_eq((int)invalid_name.error->code, (int)ErrorCode::InvalidArgument);
 }
 END_TEST
 
@@ -363,6 +369,30 @@ START_TEST(test_memory_service_lookup_and_mutability_classification)
   ck_assert_str_eq(lookup_kind.c_str(), "read_only");
   ck_assert(!lookup_payload.at("region").at("writable").get<bool>());
   ck_assert(lookup_payload.at("region").at("persistent").get<bool>());
+
+  auto missing_region = memory.lookup_region(ObjectID::random());
+  ck_assert_msg(!missing_region, "expected missing memory region lookup to fail");
+  ck_assert_int_eq((int)missing_region.error->code, (int)ErrorCode::NotFound);
+
+  payload["id"] = ObjectID::random().to_hex();
+  auto missing_request = make_request_to_object(ObjectID::random(),
+                                                memory.descriptor().id,
+                                                kMemoryLookupRegionType,
+                                                nlohmann::json::to_cbor(payload));
+  missing_request.endpoint = Endpoint{"memory.lookup_region", kMemoryLookupRegionType, {}};
+  auto missing_response = ipc.send_request(missing_request, std::chrono::milliseconds(5));
+  ck_assert_msg(!missing_response, "expected IPC memory lookup to preserve NotFound");
+  ck_assert_int_eq((int)missing_response.error->code, (int)ErrorCode::NotFound);
+
+  payload["id"] = "invalid-id";
+  auto invalid_request = make_request_to_object(ObjectID::random(),
+                                                memory.descriptor().id,
+                                                kMemoryLookupRegionType,
+                                                nlohmann::json::to_cbor(payload));
+  invalid_request.endpoint = Endpoint{"memory.lookup_region", kMemoryLookupRegionType, {}};
+  auto invalid_response = ipc.send_request(invalid_request, std::chrono::milliseconds(5));
+  ck_assert_msg(!invalid_response, "expected malformed memory region id to fail");
+  ck_assert_int_eq((int)invalid_response.error->code, (int)ErrorCode::InvalidArgument);
 }
 END_TEST
 
