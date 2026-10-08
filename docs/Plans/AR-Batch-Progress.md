@@ -2,7 +2,7 @@
 
 - Requested ARs: AR-0001, AR-0011, AR-0012
 - Started: 2026-10-07
-- Current state: ER-0081 and ER-0087 are implemented, reviewed, and validated locally; all required CI checks pass and PR #331 is queued for merge
+- Current state: ER-0087 is merged; ER-0081 remains open pending final CI and merge gates
 - Goal/thread reference: 01a1120b-578d-7563-8735-2de39aeeee44
 
 ## AR Queue
@@ -23,17 +23,17 @@
 | ER-0084 | AR-0011, AR-0012 | ER-0066, ER-0081, ER-0082, ER-0083 | PR #330 | Approved | Independent planning review passed; shell subprocess integration and human live pass specified. |
 | ER-0085 | AR-0012 | ER-0084 | PR #330 | Approved | Independent planning review passed; tiling/nesting model, Automake target, and human live pass specified. |
 | ER-0086 | AR-0001 | ER-0081, ER-0082, ER-0083 | PR #330 | Approved | Independent planning review passed; API ownership groups and focused test mappings enumerated. |
-| ER-0087 | AR-0011 | ER-0009, ER-0064 | `codex/er-0087-vizier-operation-metadata` / [PR #331](https://github.com/justgus/IrisOS/pull/331) | In Progress | Both `ci-linux` checks passed in runs 37792280473 and 37792290137; independent review passed; ready to merge. |
+| ER-0087 | AR-0011 | ER-0009, ER-0064 | [PR #331](https://github.com/justgus/IrisOS/pull/331) | In Progress | Merged 2026-10-08 as `a484bd3e279ee9592dc7b71c2a0abcc6c91fca60` after independent review, local validation, and CI runs 37792280473 and 37792290137 passed. |
 
 ## Current Item
 
-- Next action: Merge PR #331, then reconcile `main` and refresh PR #332 checks before its merge.
-- Last completed action: On 2026-10-08, GitHub reports both `ci-linux` checks passed for PR #331 (runs 37792280473, 37792290137) and PR #332 (latest runs 37792879799, 37792886363). Both PRs target `main` and are `MERGEABLE`. The batch's independent reviews and local validation are recorded as passing.
+- Next action: Fetch origin, fast-forward local `main`, delete the merged ER-0087 local branch, and refresh PR #332's mergeability and CI after the base update.
+- Last completed action: PR #331 merged on 2026-10-08 at 15:00:51Z as `a484bd3e279ee9592dc7b71c2a0abcc6c91fca60`. Before merge, both CI runs passed and independent review/local validation were recorded as passing. PR #332's prior CI runs 37792879799 and 37792886363 passed; its final state must be rechecked after `main` advances.
 - Exact validation results: `make -C tests test_referee_core` passed. `make check AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-gnu-zero-variadic-macro-arguments'` passed all 29 tests. The unsuppressed `make -j` and `make check` stop on pre-existing local Clang `-Werror` diagnostics (`kTypeKernelIo` unused and `IoReactor::registry_` unused); the full check additionally treats Check's GNU variadic macro as an error. The full build succeeded after adding only those warning suppressions; no source changes were made to the unrelated diagnostics.
 - Independent review result: Passed in a separate read-only Codex context; no open findings. The reviewer confirmed typed lookup errors, preserved higher-level optional absence behavior, focused test coverage, and the generated wrapper is absent from the diff.
-- CI result: PR #330 merged; run 37688293301 succeeded. PR #331 runs 37792280473 and 37792290137 passed; PR #332 latest runs 37792879799 and 37792886363 passed. Earlier run 37673963672 was canceled after 104 minutes at `Install dependencies`.
+- CI result: PR #330 merged; run 37688293301 succeeded. PR #331 runs 37792280473 and 37792290137 passed and PR #331 merged. PR #332 prior runs 37792879799 and 37792886363 passed; refresh checks after the base branch advances. Earlier run 37673963672 was canceled after 104 minutes at `Install dependencies`.
 - Live pass requirement and human-reported result: ER-0084 and ER-0085 require human live passes; both are pending. Other drafted ERs mark live pass not required.
-- Merge result: PR #330 merged at 2026-10-07T21:52:33Z; merge commit `e42f3a9e5cd404534fbac51a8d10687f232f4da7`.
+- Merge result: PR #330 merged at 2026-10-07T21:52:33Z; merge commit `e42f3a9e5cd404534fbac51a8d10687f232f4da7`. PR #331 merged at 2026-10-08T15:00:51Z; merge commit `a484bd3e279ee9592dc7b71c2a0abcc6c91fca60`.
 
 ## Decisions and Blockers
 
