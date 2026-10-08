@@ -90,10 +90,10 @@
 - ER-0078 — Verified
 - ER-0079 — Verified
 - ER-0080 — Verified
-- ER-0081 — In Progress
-- ER-0082 — In Progress
-- ER-0083 — Complete
+- ER-0081 — Verified
+- ER-0082 — Verified
+- ER-0083 — Verified
 - ER-0084 — Complete
 - ER-0085 — Approved
-- ER-0086 — In Progress
+- ER-0086 — Verified
 - ER-0087 — In Progress
