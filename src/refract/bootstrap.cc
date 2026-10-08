@@ -1132,10 +1132,12 @@ referee::Result<BootstrapResult> bootstrap_core_schema(SchemaRegistry& registry)
   auto defs = core_schema_definitions();
   for (const auto& def : defs) {
     auto existing = registry.get_definition_by_type(def.type_id);
-    if (!existing) return referee::Result<BootstrapResult>::err(existing.error->message);
-    if (existing.value->has_value()) {
+    if (existing) {
       ++out.existing;
       continue;
+    }
+    if (existing.error->code != referee::ErrorCode::NotFound) {
+      return referee::Result<BootstrapResult>::err(existing.error.value());
     }
     auto definition_id = definition_id_for(def.type_id);
     auto reg = registry.register_definition_with_id(def, definition_id);
@@ -1166,9 +1168,8 @@ struct UnitSeed {
 
 referee::Result<DefinitionRecord> require_definition(SchemaRegistry& registry, referee::TypeID type_id) {
   auto defR = registry.get_definition_by_type(type_id);
-  if (!defR) return referee::Result<DefinitionRecord>::err(defR.error->message);
-  if (!defR.value->has_value()) return referee::Result<DefinitionRecord>::err("definition not found");
-  return referee::Result<DefinitionRecord>::ok(defR.value->value());
+  if (!defR) return referee::Result<DefinitionRecord>::err(defR.error.value());
+  return defR;
 }
 
 referee::Result<std::map<std::string, referee::ObjectID>> load_named_objects(
@@ -1453,10 +1454,10 @@ referee::Result<CatalogBootstrapResult> bootstrap_core_catalog(SchemaRegistry& r
   }
 
   auto catalog_def_record = registry.get_definition_by_type(kTypeCaliperCatalog);
-  if (!catalog_def_record) {
-    return referee::Result<CatalogBootstrapResult>::err(catalog_def_record.error->message);
+  if (!catalog_def_record && catalog_def_record.error->code != referee::ErrorCode::NotFound) {
+    return referee::Result<CatalogBootstrapResult>::err(catalog_def_record.error.value());
   }
-  if (!catalog_def_record.value->has_value()) {
+  if (!catalog_def_record) {
     auto def = make_caliper_catalog();
     auto registered = registry.register_definition_with_id(
         def, definition_id_for(kTypeCaliperCatalog));

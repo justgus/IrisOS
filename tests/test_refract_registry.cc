@@ -63,6 +63,38 @@ static TypeDefinition make_definition(TypeID type_id, std::string name, std::str
 
 } // namespace
 
+START_TEST(test_refract_lookups_return_typed_not_found)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+  auto missing_id = registry.get_definition_by_id(ObjectID{});
+  ck_assert_msg(!missing_id, "missing definition id unexpectedly succeeded");
+  ck_assert_int_eq(static_cast<int>(missing_id.error->code),
+                   static_cast<int>(ErrorCode::NotFound));
+
+  auto missing_type = registry.get_definition_by_type(TypeID{0xE001ULL});
+  ck_assert_msg(!missing_type, "missing definition type unexpectedly succeeded");
+  ck_assert_int_eq(static_cast<int>(missing_type.error->code),
+                   static_cast<int>(ErrorCode::NotFound));
+
+  auto missing_latest = registry.get_latest_definition_by_type(TypeID{0xE002ULL});
+  ck_assert_msg(!missing_latest, "missing latest definition unexpectedly succeeded");
+  ck_assert_int_eq(static_cast<int>(missing_latest.error->code),
+                   static_cast<int>(ErrorCode::NotFound));
+
+  auto unrelated = store.create_object(TypeID{0xE003ULL}, ObjectID{}, {});
+  ck_assert_msg(unrelated, "create unrelated object failed: %s", result_message(unrelated));
+  auto wrong_kind = registry.get_definition_by_id(unrelated.value->ref.id);
+  ck_assert_msg(!wrong_kind, "non-definition object unexpectedly decoded as a definition");
+  ck_assert_msg(wrong_kind.error->code != ErrorCode::NotFound,
+                "non-definition object was confused with a missing definition");
+  ck_assert_msg(store.close(), "close failed");
+}
+END_TEST
+
 START_TEST(test_schema_registry_roundtrip)
 {
   SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
@@ -82,13 +114,11 @@ START_TEST(test_schema_registry_roundtrip)
 
   auto byId = registry.get_definition_by_id(regA.value->ref.id);
   ck_assert_msg(byId, "get_definition_by_id failed: %s", result_message(byId));
-  ck_assert_msg(byId.value->has_value(), "expected definition by id");
-  ck_assert_str_eq(byId.value->value().definition.name.c_str(), "Widget");
+  ck_assert_str_eq(byId.value.value().definition.name.c_str(), "Widget");
 
   auto byType = registry.get_definition_by_type(defB.type_id);
   ck_assert_msg(byType, "get_definition_by_type failed: %s", result_message(byType));
-  ck_assert_msg(byType.value->has_value(), "expected definition by type");
-  ck_assert_str_eq(byType.value->value().definition.name.c_str(), "Gadget");
+  ck_assert_str_eq(byType.value.value().definition.name.c_str(), "Gadget");
 
   auto listR = registry.list_types();
   ck_assert_msg(listR, "list_types failed: %s", result_message(listR));
@@ -155,11 +185,10 @@ START_TEST(test_schema_registry_structured_metadata_roundtrip)
 
   auto enum_back = registry.get_definition_by_type(enum_def.type_id);
   ck_assert_msg(enum_back, "get enum failed: %s", result_message(enum_back));
-  ck_assert_msg(enum_back.value->has_value(), "enum definition missing");
-  ck_assert_str_eq(enum_back.value->value().definition.kind->c_str(), "enum");
-  ck_assert_msg(enum_back.value->value().definition.has_enum_value_type,
+  ck_assert_str_eq(enum_back.value.value().definition.kind->c_str(), "enum");
+  ck_assert_msg(enum_back.value.value().definition.has_enum_value_type,
                 "enum value type missing");
-  ck_assert_int_eq((int)enum_back.value->value().definition.enum_values.size(), 2);
+  ck_assert_int_eq((int)enum_back.value.value().definition.enum_values.size(), 2);
 
   TypeDefinition packet_def{};
   packet_def.type_id = TypeID{0xE2ULL};
@@ -176,10 +205,9 @@ START_TEST(test_schema_registry_structured_metadata_roundtrip)
 
   auto packet_back = registry.get_definition_by_type(packet_def.type_id);
   ck_assert_msg(packet_back, "get packet failed: %s", result_message(packet_back));
-  ck_assert_msg(packet_back.value->has_value(), "packet definition missing");
-  ck_assert_str_eq(packet_back.value->value().definition.kind->c_str(), "packet");
-  ck_assert_int_eq((int)packet_back.value->value().definition.packet_fields.size(), 2);
-  ck_assert_str_eq(packet_back.value->value().definition.packet_fields[0].name.c_str(), "magic");
+  ck_assert_str_eq(packet_back.value.value().definition.kind->c_str(), "packet");
+  ck_assert_int_eq((int)packet_back.value.value().definition.packet_fields.size(), 2);
+  ck_assert_str_eq(packet_back.value.value().definition.packet_fields[0].name.c_str(), "magic");
 }
 END_TEST
 
@@ -217,12 +245,11 @@ START_TEST(test_schema_registry_collection_metadata_roundtrip)
 
   auto array_back = registry.get_definition_by_type(array_def.type_id);
   ck_assert_msg(array_back, "get array failed: %s", result_message(array_back));
-  ck_assert_msg(array_back.value->has_value(), "array definition missing");
-  ck_assert_msg(array_back.value->value().definition.collection_kind.has_value(),
+  ck_assert_msg(array_back.value.value().definition.collection_kind.has_value(),
                 "collection kind missing");
-  ck_assert_str_eq(array_back.value->value().definition.collection_kind->c_str(), "array");
-  ck_assert_int_eq((int)array_back.value->value().definition.collection_elements.size(), 1);
-  ck_assert_uint_eq(array_back.value->value().definition.collection_elements[0].type.v,
+  ck_assert_str_eq(array_back.value.value().definition.collection_kind->c_str(), "array");
+  ck_assert_int_eq((int)array_back.value.value().definition.collection_elements.size(), 1);
+  ck_assert_uint_eq(array_back.value.value().definition.collection_elements[0].type.v,
                     struct_def.type_id.v);
 }
 END_TEST
@@ -249,11 +276,10 @@ START_TEST(test_schema_registry_inheritance_metadata_roundtrip)
 
   auto byType = registry.get_definition_by_type(derived.type_id);
   ck_assert_msg(byType, "get derived failed: %s", result_message(byType));
-  ck_assert_msg(byType.value->has_value(), "expected derived definition");
-  ck_assert_int_eq((int)byType.value->value().definition.base_types.size(), 1);
-  ck_assert_uint_eq(byType.value->value().definition.base_types[0].v, base.type_id.v);
-  ck_assert_int_eq((int)byType.value->value().definition.interface_types.size(), 1);
-  ck_assert_uint_eq(byType.value->value().definition.interface_types[0].v, iface.type_id.v);
+  ck_assert_int_eq((int)byType.value.value().definition.base_types.size(), 1);
+  ck_assert_uint_eq(byType.value.value().definition.base_types[0].v, base.type_id.v);
+  ck_assert_int_eq((int)byType.value.value().definition.interface_types.size(), 1);
+  ck_assert_uint_eq(byType.value.value().definition.interface_types[0].v, iface.type_id.v);
 
   auto basesR = registry.list_base_types(derived.type_id);
   ck_assert_msg(basesR, "list_base_types failed: %s", result_message(basesR));
@@ -303,15 +329,14 @@ START_TEST(test_schema_registry_constraint_metadata_roundtrip)
 
   auto byType = registry.get_definition_by_type(def.type_id);
   ck_assert_msg(byType, "get constrained definition failed: %s", result_message(byType));
-  ck_assert_msg(byType.value->has_value(), "expected constrained definition");
 
-  const auto& stored_field = byType.value->value().definition.fields.at(0);
+  const auto& stored_field = byType.value.value().definition.fields.at(0);
   ck_assert_msg(stored_field.required, "required field flag should be normalized");
   ck_assert_int_eq((int)stored_field.constraints.size(), 2);
   ck_assert_int_eq((int)stored_field.constraints[0].kind, (int)FieldConstraintKind::Required);
   ck_assert_int_eq((int)stored_field.constraints[1].kind, (int)FieldConstraintKind::NonEmpty);
 
-  const auto& stored_rel = byType.value->value().definition.relationships.at(0);
+  const auto& stored_rel = byType.value.value().definition.relationships.at(0);
   ck_assert_int_eq((int)stored_rel.constraints.size(), 2);
   ck_assert_int_eq((int)stored_rel.constraints[0].kind,
                    (int)RelationshipConstraintKind::MinOccurs);
@@ -326,14 +351,13 @@ START_TEST(test_schema_registry_constraint_metadata_roundtrip)
 
   auto legacy_back = registry.get_definition_by_type(legacy.type_id);
   ck_assert_msg(legacy_back, "get legacy definition failed: %s", result_message(legacy_back));
-  ck_assert_msg(legacy_back.value->has_value(), "expected legacy definition");
-  ck_assert_int_eq((int)legacy_back.value->value().definition.fields[0].constraints.size(), 1);
-  ck_assert_int_eq((int)legacy_back.value->value().definition.fields[0].constraints[0].kind,
+  ck_assert_int_eq((int)legacy_back.value.value().definition.fields[0].constraints.size(), 1);
+  ck_assert_int_eq((int)legacy_back.value.value().definition.fields[0].constraints[0].kind,
                    (int)FieldConstraintKind::Required);
-  ck_assert_int_eq((int)legacy_back.value->value().definition.relationships[0].constraints.size(), 2);
-  ck_assert_int_eq((int)legacy_back.value->value().definition.relationships[0].constraints[0].kind,
+  ck_assert_int_eq((int)legacy_back.value.value().definition.relationships[0].constraints.size(), 2);
+  ck_assert_int_eq((int)legacy_back.value.value().definition.relationships[0].constraints[0].kind,
                    (int)RelationshipConstraintKind::MinOccurs);
-  ck_assert_int_eq((int)legacy_back.value->value().definition.relationships[0].constraints[1].kind,
+  ck_assert_int_eq((int)legacy_back.value.value().definition.relationships[0].constraints[1].kind,
                    (int)RelationshipConstraintKind::MaxOccurs);
 }
 END_TEST
@@ -380,9 +404,8 @@ START_TEST(test_schema_registry_effects_and_documentation_roundtrip)
 
   auto byType = registry.get_definition_by_type(def.type_id);
   ck_assert_msg(byType, "get documented definition failed: %s", result_message(byType));
-  ck_assert_msg(byType.value->has_value(), "expected documented definition");
 
-  const auto& stored = byType.value->value().definition;
+  const auto& stored = byType.value.value().definition;
   ck_assert_msg(stored.documentation.has_value(), "type documentation missing");
   ck_assert_str_eq(stored.documentation->summary->c_str(), "A documented test type.");
   ck_assert_int_eq((int)stored.documentation->examples.size(), 1);
@@ -536,9 +559,48 @@ START_TEST(test_generic_instance_registry_roundtrip)
 
   auto lookupR = generics.get_instance_by_type(regR.value->instance.instance_type);
   ck_assert_msg(lookupR, "lookup instance failed: %s", result_message(lookupR));
-  ck_assert_msg(lookupR.value->has_value(), "instance missing");
-  ck_assert_uint_eq(lookupR.value->value().instance.instance_type.v,
+  ck_assert_uint_eq(lookupR.value.value().instance.instance_type.v,
                     regR.value->instance.instance_type.v);
+
+  auto missing = generics.get_instance_by_type(TypeID{0xE004ULL});
+  ck_assert_msg(!missing, "missing generic instance unexpectedly succeeded");
+  ck_assert_int_eq(static_cast<int>(missing.error->code),
+                   static_cast<int>(ErrorCode::NotFound));
+}
+END_TEST
+
+START_TEST(test_resolve_or_register_propagates_corrupt_registry_data)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+  auto boot = bootstrap_core_schema(registry);
+  ck_assert_msg(boot, "bootstrap failed: %s", result_message(boot));
+
+  auto instance_type = registry.get_definition_by_type(kTypeGenericInstanceType);
+  ck_assert_msg(instance_type, "generic instance type missing: %s", result_message(instance_type));
+  auto corrupt = store.create_object(kTypeGenericInstanceType, instance_type.value->ref.id,
+                                     Bytes{0xFF});
+  ck_assert_msg(corrupt, "create corrupt generic record failed: %s", result_message(corrupt));
+
+  GenericRegistry generics(registry, store);
+  ScopedTypeRegistry scoped(ScopedTypeRegistry::Scope::Operation, generics);
+  GenericInstance instance{};
+  instance.base_type = TypeID{0x4352415400000001ULL};
+  instance.args.push_back(GenericArg{ GenericArgKind::Type, TypeID{0xE005ULL}, {}, "", {} });
+
+  auto resolved = scoped.resolve_or_register(
+      instance, ScopedTypeRegistry::PromotionPolicy::LocalOnly);
+  ck_assert_msg(!resolved, "corrupt registry data unexpectedly registered an instance");
+  ck_assert_int_eq(static_cast<int>(resolved.error->code),
+                   static_cast<int>(ErrorCode::CorruptData));
+
+  auto records = store.list_by_type(kTypeGenericInstanceType);
+  ck_assert_msg(records, "list generic instance records failed: %s", result_message(records));
+  ck_assert_uint_eq(records.value->size(), 1U);
+  ck_assert_msg(store.close(), "close failed");
 }
 END_TEST
 
@@ -744,6 +806,7 @@ Suite* refract_registry_suite(void) {
   Suite* s = suite_create("RefractRegistry");
   TCase* tc = tcase_create("core");
 
+  tcase_add_test(tc, test_refract_lookups_return_typed_not_found);
   tcase_add_test(tc, test_schema_registry_roundtrip);
   tcase_add_test(tc, test_schema_registry_supersedes_chain);
   tcase_add_test(tc, test_schema_registry_structured_metadata_roundtrip);
@@ -755,6 +818,7 @@ Suite* refract_registry_suite(void) {
   tcase_add_test(tc, test_schema_registry_legacy_relationship_inheritance_fallback);
   tcase_add_test(tc, test_generic_instance_type_id_deterministic);
   tcase_add_test(tc, test_generic_instance_registry_roundtrip);
+  tcase_add_test(tc, test_resolve_or_register_propagates_corrupt_registry_data);
   tcase_add_test(tc, test_scoped_type_registry_promotion);
   tcase_add_test(tc, test_operation_registry_scope_and_inheritance);
   tcase_add_test(tc, test_dispatch_resolution);

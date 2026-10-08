@@ -327,18 +327,17 @@ START_TEST(test_task_state_relationship_ignores_unknown_or_incomplete_task_metad
 
   auto taskDefR = registry.get_definition_by_type(iris::viz::kTypeVizTaskView);
   ck_assert_msg(taskDefR, "get_definition_by_type failed: %s", result_message(taskDefR));
-  ck_assert_msg(taskDefR.value->has_value(), "expected task view definition");
 
   nlohmann::json unknown_payload;
   unknown_payload["task_id"] = 8;
   unknown_payload["state"] = "Paused";
-  auto unknownR = store.create_object(iris::viz::kTypeVizTaskView, taskDefR.value->value().ref.id,
+  auto unknownR = store.create_object(iris::viz::kTypeVizTaskView, taskDefR.value.value().ref.id,
                                       nlohmann::json::to_cbor(unknown_payload));
   ck_assert_msg(unknownR, "create unknown task view failed: %s", result_message(unknownR));
 
   nlohmann::json incomplete_payload;
   incomplete_payload["task_id"] = 9;
-  auto incompleteR = store.create_object(iris::viz::kTypeVizTaskView, taskDefR.value->value().ref.id,
+  auto incompleteR = store.create_object(iris::viz::kTypeVizTaskView, taskDefR.value.value().ref.id,
                                          nlohmann::json::to_cbor(incomplete_payload));
   ck_assert_msg(incompleteR, "create incomplete task view failed: %s", result_message(incompleteR));
 

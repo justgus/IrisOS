@@ -837,16 +837,15 @@ referee::Result<std::vector<TypeSummary>> latest_type_summaries(SchemaRegistry& 
   for (const auto& summary : typesR.value.value()) {
     if (latest.find(summary.type_id.v) != latest.end()) continue;
     auto defR = registry.get_latest_definition_by_type(summary.type_id);
-    if (!defR) return referee::Result<std::vector<TypeSummary>>::err(defR.error->message);
-    if (!defR.value->has_value()) continue;
+    if (!defR) return referee::Result<std::vector<TypeSummary>>::err(defR.error.value());
 
     TypeSummary latest_summary;
     latest_summary.type_id = summary.type_id;
-    latest_summary.definition_id = defR.value->value().ref.id;
-    latest_summary.name = defR.value->value().definition.name;
-    latest_summary.namespace_name = defR.value->value().definition.namespace_name;
-    latest_summary.preferred_renderer = defR.value->value().definition.preferred_renderer;
-    latest_summary.documentation = defR.value->value().definition.documentation;
+    latest_summary.definition_id = defR.value->ref.id;
+    latest_summary.name = defR.value->definition.name;
+    latest_summary.namespace_name = defR.value->definition.namespace_name;
+    latest_summary.preferred_renderer = defR.value->definition.preferred_renderer;
+    latest_summary.documentation = defR.value->definition.documentation;
     latest[summary.type_id.v] = std::move(latest_summary);
   }
 
@@ -1015,50 +1014,46 @@ referee::Result<DefinitionRecord> SchemaRegistry::register_definition_with_id(
   return record_from_object(createR.value.value());
 }
 
-referee::Result<std::optional<DefinitionRecord>> SchemaRegistry::get_definition_by_id(referee::ObjectID id) {
+referee::Result<DefinitionRecord> SchemaRegistry::get_definition_by_id(referee::ObjectID id) {
   auto recR = store_.get_latest(id);
-  if (!recR) {
-    if (recR.error->code == referee::ErrorCode::NotFound) {
-      return referee::Result<std::optional<DefinitionRecord>>::ok(std::optional<DefinitionRecord>{});
-    }
-    return referee::Result<std::optional<DefinitionRecord>>::err(recR.error.value());
-  }
+  if (!recR) return referee::Result<DefinitionRecord>::err(recR.error.value());
 
   const auto& rec = recR.value.value();
   if (rec.type.v != kTypeDefinitionType.v) {
-    return referee::Result<std::optional<DefinitionRecord>>::err("object is not a type definition");
+    return referee::Result<DefinitionRecord>::err("object is not a type definition");
   }
 
   auto defR = record_from_object(rec);
-  if (!defR) return referee::Result<std::optional<DefinitionRecord>>::err(defR.error->message);
+  if (!defR) return referee::Result<DefinitionRecord>::err(defR.error.value());
 
-  return referee::Result<std::optional<DefinitionRecord>>::ok(defR.value.value());
+  return defR;
 }
 
-referee::Result<std::optional<DefinitionRecord>> SchemaRegistry::get_definition_by_type(referee::TypeID type) {
+referee::Result<DefinitionRecord> SchemaRegistry::get_definition_by_type(referee::TypeID type) {
   auto listR = store_.list_by_type(kTypeDefinitionType);
-  if (!listR) return referee::Result<std::optional<DefinitionRecord>>::err(listR.error->message);
+  if (!listR) return referee::Result<DefinitionRecord>::err(listR.error.value());
 
   for (const auto& rec : listR.value.value()) {
     auto defR = record_from_object(rec);
-    if (!defR) return referee::Result<std::optional<DefinitionRecord>>::err(defR.error->message);
+    if (!defR) return referee::Result<DefinitionRecord>::err(defR.error.value());
     if (defR.value->definition.type_id == type) {
-      return referee::Result<std::optional<DefinitionRecord>>::ok(defR.value.value());
+      return defR;
     }
   }
 
-  return referee::Result<std::optional<DefinitionRecord>>::ok(std::optional<DefinitionRecord>{});
+  return referee::Result<DefinitionRecord>::err(
+      referee::ErrorCode::NotFound, "type definition not found");
 }
 
-referee::Result<std::optional<DefinitionRecord>> SchemaRegistry::get_latest_definition_by_type(
+referee::Result<DefinitionRecord> SchemaRegistry::get_latest_definition_by_type(
     referee::TypeID type) {
   auto listR = store_.list_by_type(kTypeDefinitionType);
-  if (!listR) return referee::Result<std::optional<DefinitionRecord>>::err(listR.error->message);
+  if (!listR) return referee::Result<DefinitionRecord>::err(listR.error.value());
 
   std::optional<DefinitionRecord> latest;
   for (const auto& rec : listR.value.value()) {
     auto defR = record_from_object(rec);
-    if (!defR) return referee::Result<std::optional<DefinitionRecord>>::err(defR.error->message);
+    if (!defR) return referee::Result<DefinitionRecord>::err(defR.error.value());
     if (defR.value->definition.type_id != type) continue;
 
     if (!latest.has_value()
@@ -1067,7 +1062,11 @@ referee::Result<std::optional<DefinitionRecord>> SchemaRegistry::get_latest_defi
     }
   }
 
-  return referee::Result<std::optional<DefinitionRecord>>::ok(std::move(latest));
+  if (!latest.has_value()) {
+    return referee::Result<DefinitionRecord>::err(
+        referee::ErrorCode::NotFound, "type definition not found");
+  }
+  return referee::Result<DefinitionRecord>::ok(std::move(latest.value()));
 }
 
 referee::Result<std::vector<TypeSummary>> SchemaRegistry::list_types() {
@@ -1148,12 +1147,9 @@ referee::Result<std::vector<SupersedesLink>> SchemaRegistry::list_supersedes_cha
 
 referee::Result<std::vector<referee::TypeID>> SchemaRegistry::list_base_types(referee::TypeID type) {
   auto defR = get_latest_definition_by_type(type);
-  if (!defR) return referee::Result<std::vector<referee::TypeID>>::err(defR.error->message);
-  if (!defR.value->has_value()) {
-    return referee::Result<std::vector<referee::TypeID>>::err("definition not found");
-  }
+  if (!defR) return referee::Result<std::vector<referee::TypeID>>::err(defR.error.value());
 
-  const auto& def = defR.value->value().definition;
+  const auto& def = defR.value->definition;
   if (!def.base_types.empty()) {
     return referee::Result<std::vector<referee::TypeID>>::ok(def.base_types);
   }
@@ -1162,14 +1158,11 @@ referee::Result<std::vector<referee::TypeID>> SchemaRegistry::list_base_types(re
 }
 
 referee::Result<std::vector<referee::TypeID>> SchemaRegistry::list_interface_types(
-    referee::TypeID type) {
+  referee::TypeID type) {
   auto defR = get_latest_definition_by_type(type);
-  if (!defR) return referee::Result<std::vector<referee::TypeID>>::err(defR.error->message);
-  if (!defR.value->has_value()) {
-    return referee::Result<std::vector<referee::TypeID>>::err("definition not found");
-  }
+  if (!defR) return referee::Result<std::vector<referee::TypeID>>::err(defR.error.value());
 
-  const auto& def = defR.value->value().definition;
+  const auto& def = defR.value->definition;
   if (!def.interface_types.empty()) {
     return referee::Result<std::vector<referee::TypeID>>::ok(def.interface_types);
   }
@@ -1195,10 +1188,7 @@ GenericRegistry::GenericRegistry(SchemaRegistry& schema, referee::SqliteStore& s
 referee::Result<GenericInstanceRecord> GenericRegistry::register_instance(
     const GenericInstance& instance) {
   auto defR = schema_.get_definition_by_type(kTypeGenericInstanceType);
-  if (!defR) return referee::Result<GenericInstanceRecord>::err(defR.error->message);
-  if (!defR.value->has_value()) {
-    return referee::Result<GenericInstanceRecord>::err("generic instance definition missing");
-  }
+  if (!defR) return referee::Result<GenericInstanceRecord>::err(defR.error.value());
 
   auto keyR = encode_generic_instance_key(instance);
   if (!keyR) return referee::Result<GenericInstanceRecord>::err(keyR.error->message);
@@ -1209,7 +1199,7 @@ referee::Result<GenericInstanceRecord> GenericRegistry::register_instance(
   stored.instance_type = typeR.value.value();
   auto payload = nlohmann::json::to_cbor(generic_instance_to_json(stored, keyR.value.value()));
 
-  auto createR = store_.create_object(kTypeGenericInstanceType, defR.value->value().ref.id, payload);
+  auto createR = store_.create_object(kTypeGenericInstanceType, defR.value->ref.id, payload);
   if (!createR) return referee::Result<GenericInstanceRecord>::err(createR.error->message);
 
   GenericInstanceRecord record{};
@@ -1218,27 +1208,27 @@ referee::Result<GenericInstanceRecord> GenericRegistry::register_instance(
   return referee::Result<GenericInstanceRecord>::ok(std::move(record));
 }
 
-referee::Result<std::optional<GenericInstanceRecord>> GenericRegistry::get_instance_by_type(
+referee::Result<GenericInstanceRecord> GenericRegistry::get_instance_by_type(
     referee::TypeID type_id) {
   auto listR = store_.list_by_type(kTypeGenericInstanceType);
-  if (!listR) return referee::Result<std::optional<GenericInstanceRecord>>::err(listR.error->message);
+  if (!listR) return referee::Result<GenericInstanceRecord>::err(listR.error.value());
   for (const auto& rec : listR.value.value()) {
     try {
       auto j = nlohmann::json::from_cbor(rec.payload_cbor);
       auto instR = generic_instance_from_json(j);
-      if (!instR) return referee::Result<std::optional<GenericInstanceRecord>>::err(instR.error->message);
+      if (!instR) return referee::Result<GenericInstanceRecord>::err(instR.error.value());
       if (instR.value->instance_type == type_id) {
         GenericInstanceRecord record{};
         record.ref = rec.ref;
         record.instance = instR.value.value();
-        return referee::Result<std::optional<GenericInstanceRecord>>::ok(record);
+        return referee::Result<GenericInstanceRecord>::ok(std::move(record));
       }
     } catch (const std::exception& ex) {
-      return referee::Result<std::optional<GenericInstanceRecord>>::err(ex.what());
+      return referee::Result<GenericInstanceRecord>::err(referee::ErrorCode::CorruptData, ex.what());
     }
   }
-  return referee::Result<std::optional<GenericInstanceRecord>>::ok(
-      std::optional<GenericInstanceRecord>{});
+  return referee::Result<GenericInstanceRecord>::err(
+      referee::ErrorCode::NotFound, "generic instance not found");
 }
 
 ScopedTypeRegistry::ScopedTypeRegistry(Scope scope,
@@ -1257,9 +1247,11 @@ referee::Result<GenericInstanceRecord> ScopedTypeRegistry::resolve_or_register(
   if (!typeR) return referee::Result<GenericInstanceRecord>::err(typeR.error->message);
 
   auto foundR = find(typeR.value.value());
-  if (!foundR) return referee::Result<GenericInstanceRecord>::err(foundR.error->message);
-  if (foundR.value->has_value()) {
-    return referee::Result<GenericInstanceRecord>::ok(foundR.value->value());
+  if (foundR) {
+    return foundR;
+  }
+  if (foundR.error->code != referee::ErrorCode::NotFound) {
+    return referee::Result<GenericInstanceRecord>::err(foundR.error.value());
   }
 
   auto regR = registry_.register_instance(instance);
@@ -1279,16 +1271,16 @@ referee::Result<GenericInstanceRecord> ScopedTypeRegistry::resolve_or_register(
   return regR;
 }
 
-referee::Result<std::optional<GenericInstanceRecord>> ScopedTypeRegistry::find(
+referee::Result<GenericInstanceRecord> ScopedTypeRegistry::find(
     referee::TypeID type_id) {
   auto local = find_local(type_id);
   if (local.has_value()) {
-    return referee::Result<std::optional<GenericInstanceRecord>>::ok(local);
+    return referee::Result<GenericInstanceRecord>::ok(std::move(local.value()));
   }
   if (parent_) {
     auto parentR = parent_->find(type_id);
-    if (!parentR) return parentR;
-    if (parentR.value->has_value()) return parentR;
+    if (parentR) return parentR;
+    if (parentR.error->code != referee::ErrorCode::NotFound) return parentR;
   }
   return registry_.get_instance_by_type(type_id);
 }

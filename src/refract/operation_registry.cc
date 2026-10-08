@@ -53,12 +53,9 @@ referee::Result<std::vector<OperationDefinition>> OperationRegistry::list_operat
     queue.pop_front();
 
     auto defR = registry_.get_latest_definition_by_type(current);
-    if (!defR) return referee::Result<std::vector<OperationDefinition>>::err(defR.error->message);
-    if (!defR.value->has_value()) {
-      return referee::Result<std::vector<OperationDefinition>>::err("definition not found");
-    }
+    if (!defR) return referee::Result<std::vector<OperationDefinition>>::err(defR.error.value());
 
-    const auto& def = defR.value->value().definition;
+    const auto& def = defR.value->definition;
     for (const auto& op : def.operations) {
       if (op.scope == scope) out.push_back(op);
     }

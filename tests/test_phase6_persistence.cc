@@ -311,8 +311,7 @@ START_TEST(test_phase6_definition_migration)
 
   auto latest = registry.get_latest_definition_by_type(v1.type_id);
   ck_assert_msg(latest, "get_latest_definition_by_type failed: %s", result_message(latest));
-  ck_assert_msg(latest.value->has_value(), "expected latest definition");
-  ck_assert_uint_eq(latest.value->value().definition.version, 2U);
+  ck_assert_uint_eq(latest.value.value().definition.version, 2U);
 
   ck_assert_msg(store.close(), "close failed");
   cleanup_db_files(db_path);

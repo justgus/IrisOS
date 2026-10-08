@@ -2,7 +2,7 @@
 
 - Requested ARs: AR-0001, AR-0011, AR-0012
 - Started: 2026-10-07
-- Current state: ER-0087 is merged; ER-0081 is synced with `main` in merge commit `bb40863` and PR #332 needs a fresh CI pass
+- Current state: ER-0081 and ER-0087 are merged; ER-0082 implementation, independent review, and CI have passed; merge pending
 - Goal/thread reference: 01a1120b-578d-7563-8735-2de39aeeee44
 
 ## AR Queue
@@ -17,23 +17,23 @@
 
 | ER | Parent AR | Dependencies | Branch / PR | State | Last verified checkpoint |
 |---|---|---|---|---|---|
-| ER-0081 | AR-0001 | None | `codex/er-0081-referee-notfound` / [PR #332](https://github.com/justgus/IrisOS/pull/332) | In Progress | Commits `8efa326`, `9593a66`, merge `bb40863`; local validation and independent review passed; conflict with updated `main` resolved and pushed checkpoint/CI pending. |
-| ER-0082 | AR-0001 | ER-0081 | PR #330 | Approved | Independent planning review passed; Refract lookup and propagation criteria mapped. |
+| ER-0081 | AR-0001 | None | [PR #332](https://github.com/justgus/IrisOS/pull/332) | In Progress | Merged 2026-10-08 as `7c1ee212d5793c1625493f287fe12ab825bab89b`; independent review and local validation passed; fresh CI runs 37809738189 and 37809744722 passed. Awaiting batch reconciliation. |
+| ER-0082 | AR-0001 | ER-0081 | [PR #333](https://github.com/justgus/IrisOS/pull/333) | In Progress | Implementation commit `b8eac2a` and independent review passed. PR #333 checks 37814653767 and 37814647162 both passed; merge pending. |
 | ER-0083 | AR-0001, AR-0011 | ER-0081, ER-0082 | PR #330 | Approved | Independent planning review passed; runtime lookup and normal empty-result distinctions mapped. |
 | ER-0084 | AR-0011, AR-0012 | ER-0066, ER-0081, ER-0082, ER-0083 | PR #330 | Approved | Independent planning review passed; shell subprocess integration and human live pass specified. |
 | ER-0085 | AR-0012 | ER-0084 | PR #330 | Approved | Independent planning review passed; tiling/nesting model, Automake target, and human live pass specified. |
 | ER-0086 | AR-0001 | ER-0081, ER-0082, ER-0083 | PR #330 | Approved | Independent planning review passed; API ownership groups and focused test mappings enumerated. |
-| ER-0087 | AR-0011 | ER-0009, ER-0064 | [PR #331](https://github.com/justgus/IrisOS/pull/331) | In Progress | Merged 2026-10-08 as `a484bd3e279ee9592dc7b71c2a0abcc6c91fca60` after independent review, local validation, and CI runs 37792280473 and 37792290137 passed. |
+| ER-0087 | AR-0011 | ER-0009, ER-0064 | [PR #331](https://github.com/justgus/IrisOS/pull/331) | In Progress | Merged 2026-10-08 as `a484bd3e279ee9592dc7b71c2a0abcc6c91fca60`; independent review, local validation, and CI runs 37792280473 and 37792290137 passed. Awaiting batch reconciliation. |
 
 ## Current Item
 
-- Next action: Commit and push this post-merge checkpoint, then confirm PR #332 is mergeable and its fresh required CI passes.
-- Last completed action: PR #331 merged on 2026-10-08 at 15:00:51Z as `a484bd3e279ee9592dc7b71c2a0abcc6c91fca60`; local `main` fast-forwarded to that commit. The local ER-0087 branch was already absent; deleting its origin ref returned “remote ref does not exist,” confirming the remote branch was already removed. PR #332 became `CONFLICTING` after `main` advanced. Merging `origin/main` into the ER-0081 branch auto-merged ER-0087 code and tests; only the ledger conflicted. The ledger was reconciled and merge commit `bb40863` created.
-- Exact validation results: ER-0081 `make -C tests test_referee_core` passed. `make check AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-gnu-zero-variadic-macro-arguments'` passed all 29 tests. The unsuppressed `make -j` and `make check` stop on pre-existing local Clang `-Werror` diagnostics (`kTypeKernelIo` unused and `IoReactor::registry_` unused); the full check additionally treats Check's GNU variadic macro as an error. ER-0087 `make -j`, focused routing/registry tests, and the full 29-test suite passed with documented local Clang warning suppressions.
-- Independent review result: Passed in a separate read-only Codex context; no open findings. The reviewer confirmed typed lookup errors, preserved higher-level optional absence behavior, focused test coverage, and the generated wrapper is absent from the diff.
-- CI result: PR #330 merged; run 37688293301 succeeded. PR #331 runs 37792280473 and 37792290137 passed and PR #331 merged. PR #332 prior runs 37792879799 and 37792886363 passed; fresh checks are required after merge commit `bb40863` and the checkpoint push. Earlier run 37673963672 was canceled after 104 minutes at `Install dependencies`.
+- Next action: Merge PR #333 after recording this completed-CI checkpoint, then synchronize local `main` and continue with ER-0083.
+- Last completed action: Both PR #333 `ci-linux` checks passed: 37814653767 at 17:21:34Z and 37814647162 at 17:21:48Z. Implementation commit `b8eac2a` and independent review passed. Reviewer full suite passed (29 executables). A separate local `make check` invocation associated with PR creation failed across all 29 tests because the sandbox lacked `/usr/local/lib/libreferee.0.dylib` and Check could not create its temporary communication file; this is an environment failure, not a code assertion failure. PR #332 merged on 2026-10-08 at 16:44:38Z as `7c1ee212d5793c1625493f287fe12ab825bab89b`; local `main` synchronized to origin/main and stale tracking refs for both feature branches were pruned.
+- Exact validation results: ER-0082 `make -j` initially failed on the expected Refract API migration compile errors; those call sites were updated. The subsequent unsuppressed `make -j` then reached only pre-existing local Clang `-Werror` diagnostics (`kTypeKernelIo` unused and `IoReactor::registry_` unused). `make -j AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-dangling-gsl'` passed. The focused target build `make -C tests test_refract_registry test_refract_bootstrap test_conch_authoring` passed, and `make check AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-gnu-zero-variadic-macro-arguments -Wno-dangling-gsl'` passed all 29 test executables.
+- Independent review result: Pass; reviewer found no acceptance-criteria or correctness findings. Coverage gaps noted (without blocking): no dedicated storage-failure test for `resolve_or_register`, no regression test for parent `NotFound` fallback, and no focused malformed-definition/storage-error test for every lookup. Reviewer freshly reran the full suite successfully.
+- CI result: PR #330 merged; run 37688293301 succeeded. PR #331 runs 37792280473 and 37792290137 passed; PR #332 fresh runs 37809738189 and 37809744722 passed. PR #333 runs 37814653767 and 37814647162 passed. Earlier run 37673963672 was canceled after 104 minutes at `Install dependencies`.
 - Live pass requirement and human-reported result: ER-0084 and ER-0085 require human live passes; both are pending. Other drafted ERs mark live pass not required.
-- Merge result: PR #330 merged at 2026-10-07T21:52:33Z; merge commit `e42f3a9e5cd404534fbac51a8d10687f232f4da7`. PR #331 merged at 2026-10-08T15:00:51Z; merge commit `a484bd3e279ee9592dc7b71c2a0abcc6c91fca60`. PR #332 remains open.
+- Merge result: PR #330 merged at 2026-10-07T21:52:33Z; merge commit `e42f3a9e5cd404534fbac51a8d10687f232f4da7`. PR #331 merged at 2026-10-08T15:00:51Z; merge commit `a484bd3e279ee9592dc7b71c2a0abcc6c91fca60`. PR #332 merged at 2026-10-08T16:44:38Z; merge commit `7c1ee212d5793c1625493f287fe12ab825bab89b`.
 
 ## Decisions and Blockers
 

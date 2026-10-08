@@ -142,9 +142,8 @@ START_TEST(test_bootstrap_crate_collections)
 
   auto defR = registry.get_definition_by_type(array_type->type_id);
   ck_assert_msg(defR, "get_definition_by_type failed: %s", result_message(defR));
-  ck_assert_msg(defR.value->has_value(), "Crate::Array definition missing");
 
-  const auto& record = defR.value->value();
+  const auto& record = defR.value.value();
   ck_assert_msg(type_has_operation(record, "size"), "Crate::Array missing size op");
   ck_assert_msg(type_has_operation(record, "iterate"), "Crate::Array missing iterate op");
   ck_assert_msg(type_has_operation(record, "index"), "Crate::Array missing index op");
@@ -175,19 +174,17 @@ START_TEST(test_bootstrap_core_ops_on_primitives)
 
   auto string_def = registry.get_definition_by_type(string_type->type_id);
   ck_assert_msg(string_def, "String definition lookup failed: %s", result_message(string_def));
-  ck_assert_msg(string_def.value->has_value(), "String definition missing");
-  ck_assert_msg(type_has_operation(string_def.value->value(), "to_string"), "String missing to_string");
-  ck_assert_msg(type_has_operation(string_def.value->value(), "print"), "String missing print");
-  ck_assert_msg(type_has_operation(string_def.value->value(), "render"), "String missing render");
-  ck_assert_msg(type_has_operation(string_def.value->value(), "compare"), "String missing compare");
+  ck_assert_msg(type_has_operation(string_def.value.value(), "to_string"), "String missing to_string");
+  ck_assert_msg(type_has_operation(string_def.value.value(), "print"), "String missing print");
+  ck_assert_msg(type_has_operation(string_def.value.value(), "render"), "String missing render");
+  ck_assert_msg(type_has_operation(string_def.value.value(), "compare"), "String missing compare");
 
   auto u64_def = registry.get_definition_by_type(u64_type->type_id);
   ck_assert_msg(u64_def, "U64 definition lookup failed: %s", result_message(u64_def));
-  ck_assert_msg(u64_def.value->has_value(), "U64 definition missing");
-  ck_assert_msg(type_has_operation(u64_def.value->value(), "to_string"), "U64 missing to_string");
-  ck_assert_msg(type_has_operation(u64_def.value->value(), "print"), "U64 missing print");
-  ck_assert_msg(type_has_operation(u64_def.value->value(), "render"), "U64 missing render");
-  ck_assert_msg(type_has_operation(u64_def.value->value(), "compare"), "U64 missing compare");
+  ck_assert_msg(type_has_operation(u64_def.value.value(), "to_string"), "U64 missing to_string");
+  ck_assert_msg(type_has_operation(u64_def.value.value(), "print"), "U64 missing print");
+  ck_assert_msg(type_has_operation(u64_def.value.value(), "render"), "U64 missing render");
+  ck_assert_msg(type_has_operation(u64_def.value.value(), "compare"), "U64 missing compare");
 
   ck_assert_msg(store.close(), "close failed");
 }
@@ -244,20 +241,17 @@ START_TEST(test_bootstrap_astra_math_types)
 
   auto vector_def = registry.get_definition_by_type(vector_type->type_id);
   ck_assert_msg(vector_def, "Astra::Vector definition lookup failed: %s", result_message(vector_def));
-  ck_assert_msg(vector_def.value->has_value(), "Astra::Vector definition missing");
-  ck_assert_msg(type_params_match(vector_def.value->value(), {"T", "N"}),
+  ck_assert_msg(type_params_match(vector_def.value.value(), {"T", "N"}),
                 "Astra::Vector type params missing");
 
   auto matrix_def = registry.get_definition_by_type(matrix_type->type_id);
   ck_assert_msg(matrix_def, "Astra::Matrix definition lookup failed: %s", result_message(matrix_def));
-  ck_assert_msg(matrix_def.value->has_value(), "Astra::Matrix definition missing");
-  ck_assert_msg(type_params_match(matrix_def.value->value(), {"T", "R", "C"}),
+  ck_assert_msg(type_params_match(matrix_def.value.value(), {"T", "R", "C"}),
                 "Astra::Matrix type params missing");
 
   auto tensor_def = registry.get_definition_by_type(tensor_type->type_id);
   ck_assert_msg(tensor_def, "Astra::Tensor definition lookup failed: %s", result_message(tensor_def));
-  ck_assert_msg(tensor_def.value->has_value(), "Astra::Tensor definition missing");
-  ck_assert_msg(type_params_match(tensor_def.value->value(), {"T", "Dims..."}),
+  ck_assert_msg(type_params_match(tensor_def.value.value(), {"T", "Dims..."}),
                 "Astra::Tensor type params missing");
 
   ck_assert_msg(store.close(), "close failed");
@@ -529,29 +523,26 @@ START_TEST(test_bootstrap_kernel_io_ops)
 
   auto io_def = registry.get_definition_by_type(io_type->type_id);
   ck_assert_msg(io_def, "Kernel::Io definition lookup failed: %s", result_message(io_def));
-  ck_assert_msg(io_def.value->has_value(), "Kernel::Io definition missing");
-  ck_assert_msg(type_has_operation(io_def.value->value(), "open_channel"), "Kernel::Io missing open_channel");
-  ck_assert_msg(type_has_operation(io_def.value->value(), "open_datagram"), "Kernel::Io missing open_datagram");
+  ck_assert_msg(type_has_operation(io_def.value.value(), "open_channel"), "Kernel::Io missing open_channel");
+  ck_assert_msg(type_has_operation(io_def.value.value(), "open_datagram"), "Kernel::Io missing open_datagram");
 
   auto channel_def = registry.get_definition_by_type(channel_type->type_id);
   ck_assert_msg(channel_def, "Kernel::IoChannel definition lookup failed: %s", result_message(channel_def));
-  ck_assert_msg(channel_def.value->has_value(), "Kernel::IoChannel definition missing");
-  ck_assert_msg(type_has_operation(channel_def.value->value(), "send"), "Kernel::IoChannel missing send");
-  ck_assert_msg(type_has_operation(channel_def.value->value(), "recv"), "Kernel::IoChannel missing recv");
-  ck_assert_msg(type_has_operation(channel_def.value->value(), "await_readable"),
+  ck_assert_msg(type_has_operation(channel_def.value.value(), "send"), "Kernel::IoChannel missing send");
+  ck_assert_msg(type_has_operation(channel_def.value.value(), "recv"), "Kernel::IoChannel missing recv");
+  ck_assert_msg(type_has_operation(channel_def.value.value(), "await_readable"),
                 "Kernel::IoChannel missing await_readable");
-  ck_assert_msg(type_has_operation(channel_def.value->value(), "close"), "Kernel::IoChannel missing close");
+  ck_assert_msg(type_has_operation(channel_def.value.value(), "close"), "Kernel::IoChannel missing close");
 
   auto datagram_def = registry.get_definition_by_type(datagram_type->type_id);
   ck_assert_msg(datagram_def, "Kernel::IoDatagram definition lookup failed: %s", result_message(datagram_def));
-  ck_assert_msg(datagram_def.value->has_value(), "Kernel::IoDatagram definition missing");
-  ck_assert_msg(type_has_operation(datagram_def.value->value(), "send"), "Kernel::IoDatagram missing send");
-  ck_assert_msg(type_has_operation(datagram_def.value->value(), "recv"), "Kernel::IoDatagram missing recv");
-  ck_assert_msg(type_has_operation(datagram_def.value->value(), "await_readable"),
+  ck_assert_msg(type_has_operation(datagram_def.value.value(), "send"), "Kernel::IoDatagram missing send");
+  ck_assert_msg(type_has_operation(datagram_def.value.value(), "recv"), "Kernel::IoDatagram missing recv");
+  ck_assert_msg(type_has_operation(datagram_def.value.value(), "await_readable"),
                 "Kernel::IoDatagram missing await_readable");
-  ck_assert_msg(type_has_operation(datagram_def.value->value(), "close"), "Kernel::IoDatagram missing close");
+  ck_assert_msg(type_has_operation(datagram_def.value.value(), "close"), "Kernel::IoDatagram missing close");
 
-  const auto* open_channel_op = find_operation(io_def.value->value(), "open_channel");
+  const auto* open_channel_op = find_operation(io_def.value.value(), "open_channel");
   ck_assert_msg(open_channel_op != nullptr, "Kernel::Io open_channel not found");
   ck_assert_int_eq((int)open_channel_op->scope, (int)OperationScope::Class);
   ck_assert_int_eq((int)open_channel_op->signature.params.size(), 2);
