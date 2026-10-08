@@ -107,7 +107,7 @@ START_TEST(test_lookup_errors_distinguish_closed_store)
   auto closed = store.get_latest(ObjectID::random());
   ck_assert(!closed);
   ck_assert_msg(closed.error.has_value(), "expected closed-store error");
-  ck_assert(closed.error->code != ErrorCode::NotFound);
+  ck_assert(closed.error->code == ErrorCode::FailedPrecondition);
 }
 END_TEST
 

@@ -16,7 +16,7 @@ ER-Dependencies: ER-0081, ER-0082, ER-0083
 
 - ER ID: ER-0086
 - Title: Error Boundary Conformance
-- Status: Approved
+- Status: In Progress
 - Date: 2026-10-07
 - Owners: Mike
 - Type: Enhancement
@@ -82,7 +82,7 @@ The implementation audit records the public declarations in `referee_sqlite/sqli
 ## Acceptance Criteria
 
 - The implementation inventory names each in-scope public boundary, its expected failure cases, its typed result, and the focused test that exercises those cases.
-- Tests for every in-scope boundary in the inventory exercise its applicable invalid-input, missing-object, storage, or decoding failure and prove no exception escapes that boundary.
+- Focused tests cover each inventory group with its applicable invalid-input, missing-object, storage, or decoding result; callback-capable boundaries also prove standard and non-standard exceptions are translated to `Internal`, and persisted schema decoding proves malformed data is translated to `CorruptData`.
 - Tests prove expected lookup absence is represented by `ErrorCode::NotFound` and optional no-data/no-route remains a successful empty result where applicable.
 - Existing focused tests for Referee, Refract, service/capability/task APIs, and Vizier routing pass.
 
@@ -102,13 +102,16 @@ The implementation audit records the public declarations in `referee_sqlite/sqli
 
 - Do not treat exceptions used internally by a dependency as violations when the owning public API catches and translates them.
 - Preserve typed errors rather than converting them to `Unknown` during propagation.
+- Implementation audit: public callback exceptions in Refract dispatch/operation inheritance and service request handling are translated to `Internal`; Vizier route lookup now returns and propagates schema listing failures; typed errors are preserved through the audited Referee SQLite, Refract, service, CEO, and Vizier call paths. Task and I/O boundary failures now distinguish invalid arguments, missing records, failed preconditions, and internal/storage errors.
+- Test evidence: the focused service test covers timeout, missing service, and a non-standard thrown exception; Refract registry covers standard and non-standard inheritance resolver exceptions; task and I/O reactor tests assert `NotFound` and `FailedPrecondition` distinctions; phase 3 integration asserts a closed schema store returns `FailedPrecondition` through Vizier route lookup.
+- Boundary evidence map: `test_referee_core` covers absent records and closed-store state; `test_refract_registry` covers missing/wrong-kind definitions, invalid registration, malformed stored definitions, and callback exceptions; `test_refract_bootstrap` covers schema bootstrap propagation; `test_service_ipc` covers registry absence/invalid input, authorization denial, memory absence, timeout, and callback exceptions; `test_capability_context` covers absent/wrong-kind contexts and invalid/duplicate payloads; `test_ceo_tasks` covers absent tasks, invalid transitions, and missing communication endpoints; `test_ceo_io_reactor` and `test_comms_transport_session` cover missing handles, no-data, and transport behavior; `test_vizier_routing` and `test_phase3_integration` cover missing artifacts, no-route, and schema storage failure; `test_conch_authoring` covers runtime propagation.
 
 ## Verification Plan
 
 - Tests to run:
-  - `make -j`
-  - `make -C tests test_referee_core test_refract_registry test_refract_bootstrap test_service_ipc test_capability_context test_ceo_tasks test_ceo_io_reactor test_comms_transport_session test_vizier_routing test_conch_authoring`
-  - `make check`
+  - `make -j AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-dangling-gsl'`
+  - `DYLD_LIBRARY_PATH=/Users/justgus/Xcode-Projects/IrisOS/src/.libs TMPDIR=/private/tmp make -C tests check TESTS='test_referee_core test_refract_registry test_refract_bootstrap test_service_ipc test_capability_context test_ceo_tasks test_ceo_io_reactor test_comms_transport_session test_vizier_routing test_conch_authoring'`
+  - `DYLD_LIBRARY_PATH=/Users/justgus/Xcode-Projects/IrisOS/src/.libs TMPDIR=/private/tmp make check AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-gnu-zero-variadic-macro-arguments -Wno-dangling-gsl'`
 - Manual checks: inspect the boundary inventory and verify it names each in-scope API and representative expected-failure test.
 
 ### Live Pass (Human)

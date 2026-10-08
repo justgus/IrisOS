@@ -86,17 +86,17 @@ referee::Result<void> validate_operation(const refract::OperationDefinition& op,
                                          std::initializer_list<ExpectedParam> expected_params,
                                          std::initializer_list<ExpectedParam> expected_outputs) {
   if (op.name != expected_name) {
-    return referee::Result<void>::err("unexpected operation name");
+    return referee::Result<void>::err(referee::ErrorCode::InvalidArgument, "unexpected operation name");
   }
   if (op.scope != expected_scope) {
-    return referee::Result<void>::err("unexpected operation scope");
+    return referee::Result<void>::err(referee::ErrorCode::InvalidArgument, "unexpected operation scope");
   }
   std::string err;
   if (!params_match(op.signature.params, expected_params, &err)) {
-    return referee::Result<void>::err(err);
+    return referee::Result<void>::err(referee::ErrorCode::InvalidArgument, err);
   }
   if (!params_match(op.signature.outputs, expected_outputs, &err)) {
-    return referee::Result<void>::err(err);
+    return referee::Result<void>::err(referee::ErrorCode::InvalidArgument, err);
   }
   return referee::Result<void>::ok();
 }
@@ -165,10 +165,10 @@ referee::Result<IoHandlePair> IoExecutor::open_channel(const refract::DispatchMa
   auto valid = validate_operation(match.operation, "open_channel", refract::OperationScope::Class,
                                   { {kTypeU64, false}, {kTypeU64, false} },
                                   { {kTypeKernelIoChannel, false}, {kTypeKernelIoChannel, false} });
-  if (!valid) return referee::Result<IoHandlePair>::err(valid.error->message);
+  if (!valid) return referee::Result<IoHandlePair>::err(valid.error.value());
 
   auto openR = comms_.open_channel(a, b);
-  if (!openR) return referee::Result<IoHandlePair>::err(openR.error->message);
+  if (!openR) return referee::Result<IoHandlePair>::err(openR.error.value());
   IoHandlePair out;
   out.first = handles_.store(std::move(openR.value->first));
   out.second = handles_.store(std::move(openR.value->second));
@@ -181,10 +181,10 @@ referee::Result<IoHandlePair> IoExecutor::open_datagram(const refract::DispatchM
   auto valid = validate_operation(match.operation, "open_datagram", refract::OperationScope::Class,
                                   { {kTypeU64, false}, {kTypeU64, false} },
                                   { {kTypeKernelIoDatagram, false}, {kTypeKernelIoDatagram, false} });
-  if (!valid) return referee::Result<IoHandlePair>::err(valid.error->message);
+  if (!valid) return referee::Result<IoHandlePair>::err(valid.error.value());
 
   auto openR = comms_.open_datagram(a, b);
-  if (!openR) return referee::Result<IoHandlePair>::err(openR.error->message);
+  if (!openR) return referee::Result<IoHandlePair>::err(openR.error.value());
   IoHandlePair out;
   out.first = handles_.store(std::move(openR.value->first));
   out.second = handles_.store(std::move(openR.value->second));
@@ -197,13 +197,13 @@ referee::Result<IoSendResult> IoExecutor::send_channel(const refract::DispatchMa
   auto valid = validate_operation(match.operation, "send", refract::OperationScope::Object,
                                   { {kTypeBytes, false} },
                                   { {kTypeBool, false} });
-  if (!valid) return referee::Result<IoSendResult>::err(valid.error->message);
+  if (!valid) return referee::Result<IoSendResult>::err(valid.error.value());
   if (match.owner_type.v != kTypeKernelIoChannel.v) {
-    return referee::Result<IoSendResult>::err("unexpected owner type for channel send");
+    return referee::Result<IoSendResult>::err(referee::ErrorCode::InvalidArgument, "unexpected owner type for channel send");
   }
 
   auto* channel = handles_.find_channel(handle);
-  if (!channel) return referee::Result<IoSendResult>::err("channel handle not found");
+  if (!channel) return referee::Result<IoSendResult>::err(referee::ErrorCode::NotFound, "channel handle not found");
   auto wait = channel->send(data);
   IoSendResult out;
   out.ready = wait.ready;
@@ -217,13 +217,13 @@ referee::Result<IoSendResult> IoExecutor::send_datagram(const refract::DispatchM
   auto valid = validate_operation(match.operation, "send", refract::OperationScope::Object,
                                   { {kTypeBytes, false} },
                                   { {kTypeBool, false} });
-  if (!valid) return referee::Result<IoSendResult>::err(valid.error->message);
+  if (!valid) return referee::Result<IoSendResult>::err(valid.error.value());
   if (match.owner_type.v != kTypeKernelIoDatagram.v) {
-    return referee::Result<IoSendResult>::err("unexpected owner type for datagram send");
+    return referee::Result<IoSendResult>::err(referee::ErrorCode::InvalidArgument, "unexpected owner type for datagram send");
   }
 
   auto* port = handles_.find_datagram(handle);
-  if (!port) return referee::Result<IoSendResult>::err("datagram handle not found");
+  if (!port) return referee::Result<IoSendResult>::err(referee::ErrorCode::NotFound, "datagram handle not found");
   auto wait = port->send(data);
   IoSendResult out;
   out.ready = wait.ready;
@@ -237,15 +237,15 @@ referee::Result<IoAwaitResult> IoExecutor::await_channel(const refract::Dispatch
   auto valid = validate_operation(match.operation, "await_readable", refract::OperationScope::Object,
                                   { {kTypeU64, false} },
                                   { {kTypeBool, false} });
-  if (!valid) return referee::Result<IoAwaitResult>::err(valid.error->message);
+  if (!valid) return referee::Result<IoAwaitResult>::err(valid.error.value());
   if (match.owner_type.v != kTypeKernelIoChannel.v) {
-    return referee::Result<IoAwaitResult>::err("unexpected owner type for channel await");
+    return referee::Result<IoAwaitResult>::err(referee::ErrorCode::InvalidArgument, "unexpected owner type for channel await");
   }
 
   auto* channel = handles_.find_channel(handle);
-  if (!channel) return referee::Result<IoAwaitResult>::err("channel handle not found");
+  if (!channel) return referee::Result<IoAwaitResult>::err(referee::ErrorCode::NotFound, "channel handle not found");
   auto waitR = reactor_.await_readable(*channel, task);
-  if (!waitR) return referee::Result<IoAwaitResult>::err(waitR.error->message);
+  if (!waitR) return referee::Result<IoAwaitResult>::err(waitR.error.value());
   IoAwaitResult out;
   out.ready = waitR.value->ready;
   out.outcome = reactor_.handle_result(*waitR.value);
@@ -258,15 +258,15 @@ referee::Result<IoAwaitResult> IoExecutor::await_datagram(const refract::Dispatc
   auto valid = validate_operation(match.operation, "await_readable", refract::OperationScope::Object,
                                   { {kTypeU64, false} },
                                   { {kTypeBool, false} });
-  if (!valid) return referee::Result<IoAwaitResult>::err(valid.error->message);
+  if (!valid) return referee::Result<IoAwaitResult>::err(valid.error.value());
   if (match.owner_type.v != kTypeKernelIoDatagram.v) {
-    return referee::Result<IoAwaitResult>::err("unexpected owner type for datagram await");
+    return referee::Result<IoAwaitResult>::err(referee::ErrorCode::InvalidArgument, "unexpected owner type for datagram await");
   }
 
   auto* port = handles_.find_datagram(handle);
-  if (!port) return referee::Result<IoAwaitResult>::err("datagram handle not found");
+  if (!port) return referee::Result<IoAwaitResult>::err(referee::ErrorCode::NotFound, "datagram handle not found");
   auto waitR = reactor_.await_readable(*port, task);
-  if (!waitR) return referee::Result<IoAwaitResult>::err(waitR.error->message);
+  if (!waitR) return referee::Result<IoAwaitResult>::err(waitR.error.value());
   IoAwaitResult out;
   out.ready = waitR.value->ready;
   out.outcome = reactor_.handle_result(*waitR.value);
@@ -279,13 +279,13 @@ referee::Result<comms::Bytes> IoExecutor::recv_channel(const refract::DispatchMa
   auto valid = validate_operation(match.operation, "recv", refract::OperationScope::Object,
                                   { {kTypeU64, false} },
                                   { {kTypeBytes, false} });
-  if (!valid) return referee::Result<comms::Bytes>::err(valid.error->message);
+  if (!valid) return referee::Result<comms::Bytes>::err(valid.error.value());
   if (match.owner_type.v != kTypeKernelIoChannel.v) {
-    return referee::Result<comms::Bytes>::err("unexpected owner type for channel recv");
+    return referee::Result<comms::Bytes>::err(referee::ErrorCode::InvalidArgument, "unexpected owner type for channel recv");
   }
 
   auto* channel = handles_.find_channel(handle);
-  if (!channel) return referee::Result<comms::Bytes>::err("channel handle not found");
+  if (!channel) return referee::Result<comms::Bytes>::err(referee::ErrorCode::NotFound, "channel handle not found");
   return referee::Result<comms::Bytes>::ok(channel->recv(max_bytes));
 }
 
@@ -295,13 +295,17 @@ referee::Result<std::optional<comms::Bytes>> IoExecutor::recv_datagram(
   auto valid = validate_operation(match.operation, "recv", refract::OperationScope::Object,
                                   {},
                                   { {kTypeBytes, true} });
-  if (!valid) return referee::Result<std::optional<comms::Bytes>>::err(valid.error->message);
+  if (!valid) return referee::Result<std::optional<comms::Bytes>>::err(valid.error.value());
   if (match.owner_type.v != kTypeKernelIoDatagram.v) {
-    return referee::Result<std::optional<comms::Bytes>>::err("unexpected owner type for datagram recv");
+    return referee::Result<std::optional<comms::Bytes>>::err(
+        referee::ErrorCode::InvalidArgument, "unexpected owner type for datagram recv");
   }
 
   auto* port = handles_.find_datagram(handle);
-  if (!port) return referee::Result<std::optional<comms::Bytes>>::err("datagram handle not found");
+  if (!port) {
+    return referee::Result<std::optional<comms::Bytes>>::err(
+        referee::ErrorCode::NotFound, "datagram handle not found");
+  }
   return referee::Result<std::optional<comms::Bytes>>::ok(port->recv());
 }
 
@@ -312,11 +316,11 @@ referee::Result<void> IoExecutor::close_channel(const refract::DispatchMatch& ma
                                   {});
   if (!valid) return valid;
   if (match.owner_type.v != kTypeKernelIoChannel.v) {
-    return referee::Result<void>::err("unexpected owner type for channel close");
+    return referee::Result<void>::err(referee::ErrorCode::InvalidArgument, "unexpected owner type for channel close");
   }
 
   auto* channel = handles_.find_channel(handle);
-  if (!channel) return referee::Result<void>::err("channel handle not found");
+  if (!channel) return referee::Result<void>::err(referee::ErrorCode::NotFound, "channel handle not found");
   channel->close();
   handles_.erase(handle);
   return referee::Result<void>::ok();
@@ -329,11 +333,11 @@ referee::Result<void> IoExecutor::close_datagram(const refract::DispatchMatch& m
                                   {});
   if (!valid) return valid;
   if (match.owner_type.v != kTypeKernelIoDatagram.v) {
-    return referee::Result<void>::err("unexpected owner type for datagram close");
+    return referee::Result<void>::err(referee::ErrorCode::InvalidArgument, "unexpected owner type for datagram close");
   }
 
   auto* port = handles_.find_datagram(handle);
-  if (!port) return referee::Result<void>::err("datagram handle not found");
+  if (!port) return referee::Result<void>::err(referee::ErrorCode::NotFound, "datagram handle not found");
   port->close();
   handles_.erase(handle);
   return referee::Result<void>::ok();

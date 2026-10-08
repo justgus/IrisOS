@@ -5391,11 +5391,15 @@ bool add_edge_named(SqliteStore& store, const ObjectID& from_id, const ObjectID&
 
 void print_route_for(iris::refract::SchemaRegistry& registry, referee::TypeID type_id) {
   auto routeR = iris::vizier::route_for_type_id(registry, type_id);
-  if (!routeR.has_value()) {
+  if (!routeR) {
+    std::cout << "error: " << routeR.error->message << "\n";
+    return;
+  }
+  if (!routeR.value->has_value()) {
     std::cout << "route: none\n";
     return;
   }
-  std::cout << "route: " << routeR->concho << "\n";
+  std::cout << "route: " << routeR.value->value().concho << "\n";
 }
 
 void maybe_spawn_concho(iris::refract::SchemaRegistry& registry,
@@ -5907,12 +5911,16 @@ void cmd_route_object(SchemaRegistry& registry, SqliteStore& store,
     std::cout << "error: " << recR.error->message << "\n";
     return;
   }
-  auto route = iris::vizier::route_for_type_id(registry, recR.value->type);
-  if (!route.has_value()) {
+  auto routeR = iris::vizier::route_for_type_id(registry, recR.value->type);
+  if (!routeR) {
+    std::cout << "error: " << routeR.error->message << "\n";
+    return;
+  }
+  if (!routeR.value->has_value()) {
     std::cout << "route: none\n";
     return;
   }
-  std::cout << "route: " << route->concho << "\n";
+  std::cout << "route: " << routeR.value->value().concho << "\n";
 }
 
 } // namespace

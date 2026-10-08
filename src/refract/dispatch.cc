@@ -13,7 +13,7 @@ referee::Result<std::vector<referee::TypeID>> collect_supertypes(
     referee::TypeID type,
     const DispatchEngine::InheritanceResolver& resolver) {
   auto storedR = registry.list_supertypes(type);
-  if (!storedR) return referee::Result<std::vector<referee::TypeID>>::err(storedR.error->message);
+  if (!storedR) return referee::Result<std::vector<referee::TypeID>>::err(storedR.error.value());
 
   std::vector<referee::TypeID> out = storedR.value.value();
   std::unordered_set<std::uint64_t> seen;
@@ -22,8 +22,16 @@ referee::Result<std::vector<referee::TypeID>> collect_supertypes(
   }
 
   if (resolver) {
-    for (const auto& parent : resolver(type)) {
-      if (seen.insert(parent.v).second) out.push_back(parent);
+    try {
+      for (const auto& parent : resolver(type)) {
+        if (seen.insert(parent.v).second) out.push_back(parent);
+      }
+    } catch (const std::exception& ex) {
+      return referee::Result<std::vector<referee::TypeID>>::err(
+          referee::ErrorCode::Internal, ex.what());
+    } catch (...) {
+      return referee::Result<std::vector<referee::TypeID>>::err(
+          referee::ErrorCode::Internal, "inheritance resolver failed");
     }
   }
 
@@ -61,7 +69,7 @@ referee::Result<bool> has_base_type(referee::TypeID type,
     }
 
     auto parentsR = collect_supertypes(registry, current, resolver);
-    if (!parentsR) return referee::Result<bool>::err(parentsR.error->message);
+    if (!parentsR) return referee::Result<bool>::err(parentsR.error.value());
 
     for (const auto& parent : parentsR.value.value()) {
       if (parent.v == base.v) return referee::Result<bool>::ok(true);
@@ -144,7 +152,7 @@ referee::Result<DispatchMatch> DispatchEngine::resolve(
             continue;
           }
           auto matchR = has_base_type(arg_type, param_type, registry_, resolver_);
-          if (!matchR) return referee::Result<DispatchMatch>::err(matchR.error->message);
+          if (!matchR) return referee::Result<DispatchMatch>::err(matchR.error.value());
           if (matchR.value.value()) {
             cand.type_penalty += 1;
             continue;
@@ -160,7 +168,7 @@ referee::Result<DispatchMatch> DispatchEngine::resolve(
 
     if (include_inherited) {
       auto parentsR = collect_supertypes(registry_, current, resolver_);
-      if (!parentsR) return referee::Result<DispatchMatch>::err(parentsR.error->message);
+      if (!parentsR) return referee::Result<DispatchMatch>::err(parentsR.error.value());
       for (const auto& parent : parentsR.value.value()) {
         if (visited.insert(parent.v).second) {
           queue.push_back({ parent, depth + 1 });
@@ -170,7 +178,8 @@ referee::Result<DispatchMatch> DispatchEngine::resolve(
   }
 
   if (matches.empty()) {
-    return referee::Result<DispatchMatch>::err("no matching operation");
+    return referee::Result<DispatchMatch>::err(referee::ErrorCode::NotFound,
+                                               "no matching operation");
   }
 
   auto better = [](const Candidate& a, const Candidate& b) {

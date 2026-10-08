@@ -32,8 +32,9 @@ struct EmittedArtifactRoute {
 };
 
 std::optional<Route> route_for_type(const iris::refract::TypeSummary& summary);
-std::optional<Route> route_for_type_id(iris::refract::SchemaRegistry& registry,
-                                       referee::TypeID type_id);
+referee::Result<std::optional<Route>> route_for_type_id(
+    iris::refract::SchemaRegistry& registry,
+    referee::TypeID type_id);
 referee::Result<std::vector<EmittedArtifactRoute>> emitted_artifact_routes(
     iris::refract::SchemaRegistry& registry,
     referee::TypeID producer_type);

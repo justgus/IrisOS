@@ -2,7 +2,7 @@
 
 - Requested ARs: AR-0001, AR-0011, AR-0012
 - Started: 2026-10-07
-- Current state: ER-0081, ER-0082, ER-0083, ER-0084, and ER-0087 are merged; ER-0086 is the active implementation item. ER-0085 is waiting on ER-0084's required human live pass.
+- Current state: ER-0081, ER-0082, ER-0083, ER-0084, and ER-0087 are merged; ER-0086 implementation and local validation are complete and independent review is next. ER-0085 is waiting on ER-0084's required human live pass.
 - Goal/thread reference: 01a1120b-578d-7563-8735-2de39aeeee44
 
 ## AR Queue
@@ -22,12 +22,12 @@
 | ER-0083 | AR-0001, AR-0011 | ER-0081, ER-0082 | [PR #334](https://github.com/justgus/IrisOS/pull/334) | Complete | Merged 2026-10-08 as `0448d974b4bd66921f1cb91a53dbe5277bcf92ea`; independent review and local full suite passed 29/29; current-head CI runs 37834406987 and 37834412357 passed. |
 | ER-0084 | AR-0011, AR-0012 | ER-0066, ER-0081, ER-0082, ER-0083 | [PR #335](https://github.com/justgus/IrisOS/pull/335) | Complete | Merged 2026-10-08 as `7861ba58916c5e4d4a2424900e6d72f3a96079c6`; implementation commit `f966f20`; focused 2/2 and full 29/29 pass; independent review passed; current-head CI runs 37836856578 and 37836864015 passed. Required human live pass remains pending. |
 | ER-0085 | AR-0012 | ER-0084 | PR #330 | Approved | Independent planning review passed; tiling/nesting model, Automake target, and human live pass specified. |
-| ER-0086 | AR-0001 | ER-0081, ER-0082, ER-0083 | PR #330 | Approved | Independent planning review passed; API ownership groups and focused test mappings enumerated. |
+| ER-0086 | AR-0001 | ER-0081, ER-0082, ER-0083 | `codex/er-0086-error-boundary-conformance` | In Progress | Implementation done; `make -j` passed with repository warning suppressions, focused suite 10/10 passed before final classification fix, and full suite 29/29 passed after all fixes. Independent code review found no findings; reviewer focused rerun was blocked by Check IPC sandbox limits, so reviewer-side fresh validation remains unverified. |
 | ER-0087 | AR-0011 | ER-0009, ER-0064 | [PR #331](https://github.com/justgus/IrisOS/pull/331) | In Progress | Merged 2026-10-08 as `a484bd3e279ee9592dc7b71c2a0abcc6c91fca60`; independent review, local validation, and CI runs 37792280473 and 37792290137 passed. Awaiting batch reconciliation. |
 
 ## Current Item
 
-- Next action: Inspect ER-0086's boundary inventory and implement its independent conformance audit. ER-0085 remains waiting for ER-0084's human live pass.
+- Next action: Checkpoint and publish ER-0086 for CI; keep ER-0086 In Progress until the reviewer-side fresh validation gate and PR CI are confirmed. ER-0085 remains waiting for ER-0084's human live pass.
 - Last completed action: PR #335 merged at 2026-10-08T20:15:50Z as `7861ba58916c5e4d4a2424900e6d72f3a96079c6`; current-head CI runs 37836856578 and 37836864015 passed (build, unit tests, and distcheck). The ER-0084 branch was deleted and local `main` synchronized. Required human live pass for ER-0084 remains pending, so dependent ER-0085 is not started. Created `codex/er-0086-error-boundary-conformance` from merged `main`; ER-0086 is independent of the pending live pass. Independent review of ER-0084 passed after the test's exact first-read-only no-duplicate assertion was added. PR #334 merged at 2026-10-08T19:55:45Z as `0448d974b4bd66921f1cb91a53dbe5277bcf92ea`; current-head CI runs 37834406987 and 37834412357 passed. Earlier PR #333 merged at 2026-10-08T18:51:56Z as `73aef8f41715af4be37ab34080819408bdb43e2f`; its current-head CI runs 37826234939 and 37826228791 passed.
 - Exact validation results: ER-0084 full build passed with `make -j AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-dangling-gsl'`. Focused tests passed with `DYLD_LIBRARY_PATH=/Users/justgus/Xcode-Projects/IrisOS/src/.libs TMPDIR=/private/tmp make -C tests check TESTS='test_conch_authoring test_conch_session_growth'` (2/2). Full `DYLD_LIBRARY_PATH=/Users/justgus/Xcode-Projects/IrisOS/src/.libs TMPDIR=/private/tmp make check AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-gnu-zero-variadic-macro-arguments -Wno-dangling-gsl'` passed 29/29. The first in-sandbox check invocation failed before tests because Check could not create its temporary communication file; the same focused command passed when rerun with approved filesystem access. Generated tracked wrapper `tests/test_referee_core` was restored; no Autotools source inputs changed.
 - Independent review result: ER-0081, ER-0082, ER-0083, and ER-0084 passed. ER-0084's re-review confirmed the tightened exact first-post-growth zero assertion and freshly passed both focused tests.

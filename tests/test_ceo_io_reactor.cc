@@ -249,6 +249,8 @@ START_TEST(test_conduit_invalid_handle)
   Bytes payload = {0x01};
   auto sendR = executor.send_channel(send_match.value.value(), bad_handle, payload);
   ck_assert_msg(!sendR, "expected invalid handle to fail");
+  ck_assert_int_eq(static_cast<int>(sendR.error->code),
+                   static_cast<int>(referee::ErrorCode::NotFound));
 
   ck_assert_msg(store.close(), "close failed");
 }

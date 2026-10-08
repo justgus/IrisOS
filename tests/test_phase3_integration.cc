@@ -73,10 +73,16 @@ START_TEST(test_phase3_artifact_route)
   ck_assert_msg(recR, "get_latest failed: %s", result_message(recR));
 
   auto route = route_for_type_id(registry, recR.value->type);
-  ck_assert_msg(route.has_value(), "expected route for TextLog");
-  ck_assert_str_eq(route->concho.c_str(), "Log");
+  ck_assert_msg(route, "route_for_type_id failed: %s", result_message(route));
+  ck_assert_msg(route.value->has_value(), "expected route for TextLog");
+  ck_assert_str_eq(route.value->value().concho.c_str(), "Log");
 
   ck_assert_msg(store.close(), "close failed");
+  auto closed_route = route_for_type_id(registry, recR.value->type);
+  ck_assert_msg(!closed_route, "expected closed store error");
+  ck_assert_int_eq(static_cast<int>(closed_route.error->code),
+                   static_cast<int>(ErrorCode::FailedPrecondition));
+
 }
 END_TEST
 

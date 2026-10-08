@@ -13,7 +13,7 @@ referee::Result<std::vector<referee::TypeID>> collect_supertypes(
     referee::TypeID type,
     const OperationRegistry::InheritanceResolver& resolver) {
   auto storedR = registry.list_supertypes(type);
-  if (!storedR) return referee::Result<std::vector<referee::TypeID>>::err(storedR.error->message);
+  if (!storedR) return referee::Result<std::vector<referee::TypeID>>::err(storedR.error.value());
 
   std::vector<referee::TypeID> out = storedR.value.value();
   std::unordered_set<std::uint64_t> seen;
@@ -22,8 +22,16 @@ referee::Result<std::vector<referee::TypeID>> collect_supertypes(
   }
 
   if (resolver) {
-    for (const auto& parent : resolver(type)) {
-      if (seen.insert(parent.v).second) out.push_back(parent);
+    try {
+      for (const auto& parent : resolver(type)) {
+        if (seen.insert(parent.v).second) out.push_back(parent);
+      }
+    } catch (const std::exception& ex) {
+      return referee::Result<std::vector<referee::TypeID>>::err(
+          referee::ErrorCode::Internal, ex.what());
+    } catch (...) {
+      return referee::Result<std::vector<referee::TypeID>>::err(
+          referee::ErrorCode::Internal, "inheritance resolver failed");
     }
   }
 
@@ -63,7 +71,7 @@ referee::Result<std::vector<OperationDefinition>> OperationRegistry::list_operat
     if (include_inherited) {
       auto parentsR = collect_supertypes(registry_, current, resolver_);
       if (!parentsR) {
-        return referee::Result<std::vector<OperationDefinition>>::err(parentsR.error->message);
+        return referee::Result<std::vector<OperationDefinition>>::err(parentsR.error.value());
       }
       for (const auto& base : parentsR.value.value()) {
         if (visited.insert(base.v).second) {

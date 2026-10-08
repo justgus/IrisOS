@@ -81,10 +81,10 @@ referee::Result<TaskRecord> TaskRegistry::create_task(const referee::ObjectID& o
 
 referee::Result<void> TaskRegistry::wait_task(TaskID id) {
   auto* rec = find_task(id);
-  if (!rec) return referee::Result<void>::err("task not found");
-  if (is_terminal(rec->state)) return referee::Result<void>::err("task already terminal");
+  if (!rec) return referee::Result<void>::err(referee::ErrorCode::NotFound, "task not found");
+  if (is_terminal(rec->state)) return referee::Result<void>::err(referee::ErrorCode::FailedPrecondition, "task already terminal");
   if (!can_transition(rec->state, TaskState::Waiting)) {
-    return referee::Result<void>::err("invalid state transition");
+    return referee::Result<void>::err(referee::ErrorCode::FailedPrecondition, "invalid state transition");
   }
   record_state_transition(rec->id, rec->state, TaskState::Waiting);
   rec->state = TaskState::Waiting;
@@ -93,10 +93,10 @@ referee::Result<void> TaskRegistry::wait_task(TaskID id) {
 
 referee::Result<void> TaskRegistry::resume_task(TaskID id) {
   auto* rec = find_task(id);
-  if (!rec) return referee::Result<void>::err("task not found");
-  if (is_terminal(rec->state)) return referee::Result<void>::err("task already terminal");
+  if (!rec) return referee::Result<void>::err(referee::ErrorCode::NotFound, "task not found");
+  if (is_terminal(rec->state)) return referee::Result<void>::err(referee::ErrorCode::FailedPrecondition, "task already terminal");
   if (!can_transition(rec->state, TaskState::Running)) {
-    return referee::Result<void>::err("invalid state transition");
+    return referee::Result<void>::err(referee::ErrorCode::FailedPrecondition, "invalid state transition");
   }
   record_state_transition(rec->id, rec->state, TaskState::Running);
   rec->state = TaskState::Running;
@@ -105,17 +105,17 @@ referee::Result<void> TaskRegistry::resume_task(TaskID id) {
 
 referee::Result<void> TaskRegistry::start_task(TaskID id) {
   auto* rec = find_task(id);
-  if (!rec) return referee::Result<void>::err("task not found");
+  if (!rec) return referee::Result<void>::err(referee::ErrorCode::NotFound, "task not found");
   if (rec->state != TaskState::Created) {
-    return referee::Result<void>::err("task not in Created state");
+    return referee::Result<void>::err(referee::ErrorCode::FailedPrecondition, "task not in Created state");
   }
   return resume_task(id);
 }
 
 referee::Result<void> TaskRegistry::stop_task(TaskID id) {
   auto* rec = find_task(id);
-  if (!rec) return referee::Result<void>::err("task not found");
-  if (is_terminal(rec->state)) return referee::Result<void>::err("task already terminal");
+  if (!rec) return referee::Result<void>::err(referee::ErrorCode::NotFound, "task not found");
+  if (is_terminal(rec->state)) return referee::Result<void>::err(referee::ErrorCode::FailedPrecondition, "task already terminal");
   if (rec->state == TaskState::Created) {
     auto cancelR = cancel_task(id);
     if (!cancelR) return cancelR;
@@ -126,11 +126,11 @@ referee::Result<void> TaskRegistry::stop_task(TaskID id) {
 
 referee::Result<void> TaskRegistry::cancel_task(TaskID id) {
   auto* rec = find_task(id);
-  if (!rec) return referee::Result<void>::err("task not found");
-  if (is_terminal(rec->state)) return referee::Result<void>::err("task already terminal");
+  if (!rec) return referee::Result<void>::err(referee::ErrorCode::NotFound, "task not found");
+  if (is_terminal(rec->state)) return referee::Result<void>::err(referee::ErrorCode::FailedPrecondition, "task already terminal");
   if (rec->state == TaskState::CancelRequested) return referee::Result<void>::ok();
   if (!can_transition(rec->state, TaskState::CancelRequested)) {
-    return referee::Result<void>::err("invalid state transition");
+    return referee::Result<void>::err(referee::ErrorCode::FailedPrecondition, "invalid state transition");
   }
   record_state_transition(rec->id, rec->state, TaskState::CancelRequested);
   rec->state = TaskState::CancelRequested;
@@ -144,10 +144,10 @@ referee::Result<void> TaskRegistry::cancel_task(TaskID id) {
 
 referee::Result<void> TaskRegistry::mark_canceled(TaskID id) {
   auto* rec = find_task(id);
-  if (!rec) return referee::Result<void>::err("task not found");
-  if (is_terminal(rec->state)) return referee::Result<void>::err("task already terminal");
+  if (!rec) return referee::Result<void>::err(referee::ErrorCode::NotFound, "task not found");
+  if (is_terminal(rec->state)) return referee::Result<void>::err(referee::ErrorCode::FailedPrecondition, "task already terminal");
   if (!can_transition(rec->state, TaskState::Canceled)) {
-    return referee::Result<void>::err("invalid state transition");
+    return referee::Result<void>::err(referee::ErrorCode::FailedPrecondition, "invalid state transition");
   }
   record_state_transition(rec->id, rec->state, TaskState::Canceled);
   rec->state = TaskState::Canceled;
@@ -157,10 +157,10 @@ referee::Result<void> TaskRegistry::mark_canceled(TaskID id) {
 
 referee::Result<void> TaskRegistry::kill_task(TaskID id) {
   auto* rec = find_task(id);
-  if (!rec) return referee::Result<void>::err("task not found");
-  if (is_terminal(rec->state)) return referee::Result<void>::err("task already terminal");
+  if (!rec) return referee::Result<void>::err(referee::ErrorCode::NotFound, "task not found");
+  if (is_terminal(rec->state)) return referee::Result<void>::err(referee::ErrorCode::FailedPrecondition, "task already terminal");
   if (!can_transition(rec->state, TaskState::Killed)) {
-    return referee::Result<void>::err("invalid state transition");
+    return referee::Result<void>::err(referee::ErrorCode::FailedPrecondition, "invalid state transition");
   }
   record_state_transition(rec->id, rec->state, TaskState::Killed);
   rec->state = TaskState::Killed;
@@ -170,10 +170,10 @@ referee::Result<void> TaskRegistry::kill_task(TaskID id) {
 
 referee::Result<void> TaskRegistry::complete_task(TaskID id) {
   auto* rec = find_task(id);
-  if (!rec) return referee::Result<void>::err("task not found");
-  if (is_terminal(rec->state)) return referee::Result<void>::err("task already terminal");
+  if (!rec) return referee::Result<void>::err(referee::ErrorCode::NotFound, "task not found");
+  if (is_terminal(rec->state)) return referee::Result<void>::err(referee::ErrorCode::FailedPrecondition, "task already terminal");
   if (!can_transition(rec->state, TaskState::Completed)) {
-    return referee::Result<void>::err("invalid state transition");
+    return referee::Result<void>::err(referee::ErrorCode::FailedPrecondition, "invalid state transition");
   }
   record_state_transition(rec->id, rec->state, TaskState::Completed);
   rec->state = TaskState::Completed;
@@ -183,10 +183,10 @@ referee::Result<void> TaskRegistry::complete_task(TaskID id) {
 
 referee::Result<void> TaskRegistry::fail_task(TaskID id, std::string reason) {
   auto* rec = find_task(id);
-  if (!rec) return referee::Result<void>::err("task not found");
-  if (is_terminal(rec->state)) return referee::Result<void>::err("task already terminal");
+  if (!rec) return referee::Result<void>::err(referee::ErrorCode::NotFound, "task not found");
+  if (is_terminal(rec->state)) return referee::Result<void>::err(referee::ErrorCode::FailedPrecondition, "task already terminal");
   if (!can_transition(rec->state, TaskState::Failed)) {
-    return referee::Result<void>::err("invalid state transition");
+    return referee::Result<void>::err(referee::ErrorCode::FailedPrecondition, "invalid state transition");
   }
   record_state_transition(rec->id, rec->state, TaskState::Failed);
   rec->state = TaskState::Failed;
@@ -199,16 +199,16 @@ referee::Result<void> TaskRegistry::attach_capability_context(
     TaskID id,
     referee::ObjectID capability_context_id) {
   auto* rec = find_task(id);
-  if (!rec) return referee::Result<void>::err("task not found");
-  if (is_terminal(rec->state)) return referee::Result<void>::err("task already terminal");
+  if (!rec) return referee::Result<void>::err(referee::ErrorCode::NotFound, "task not found");
+  if (is_terminal(rec->state)) return referee::Result<void>::err(referee::ErrorCode::FailedPrecondition, "task already terminal");
   rec->capability_context_id = capability_context_id;
   return referee::Result<void>::ok();
 }
 
 referee::Result<void> TaskRegistry::clear_capability_context(TaskID id) {
   auto* rec = find_task(id);
-  if (!rec) return referee::Result<void>::err("task not found");
-  if (is_terminal(rec->state)) return referee::Result<void>::err("task already terminal");
+  if (!rec) return referee::Result<void>::err(referee::ErrorCode::NotFound, "task not found");
+  if (is_terminal(rec->state)) return referee::Result<void>::err(referee::ErrorCode::FailedPrecondition, "task already terminal");
   rec->capability_context_id.reset();
   return referee::Result<void>::ok();
 }
@@ -328,7 +328,7 @@ referee::Result<TaskRecord> TaskRegistry::insert_task(const referee::ObjectID& o
                                                       ChildOwnership ownership,
                                                       TaskState initial_state) {
   if (parent.has_value() && !find_task(*parent)) {
-    return referee::Result<TaskRecord>::err("parent task not found");
+    return referee::Result<TaskRecord>::err(referee::ErrorCode::NotFound, "parent task not found");
   }
 
   TaskRecord rec;
@@ -341,7 +341,7 @@ referee::Result<TaskRecord> TaskRegistry::insert_task(const referee::ObjectID& o
 
   auto insert = tasks_.emplace(rec.id, rec);
   if (!insert.second) {
-    return referee::Result<TaskRecord>::err("failed to insert task");
+    return referee::Result<TaskRecord>::err(referee::ErrorCode::Internal, "failed to insert task");
   }
 
   const auto now = now_ns();
