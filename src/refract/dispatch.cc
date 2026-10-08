@@ -53,8 +53,12 @@ referee::Result<bool> has_base_type(referee::TypeID type,
     queue.pop_front();
 
     auto defR = registry.get_latest_definition_by_type(current);
-    if (!defR) return referee::Result<bool>::err(defR.error->message);
-    if (!defR.value->has_value()) return referee::Result<bool>::ok(false);
+    if (!defR) {
+      if (defR.error->code == referee::ErrorCode::NotFound) {
+        return referee::Result<bool>::ok(false);
+      }
+      return referee::Result<bool>::err(defR.error.value());
+    }
 
     auto parentsR = collect_supertypes(registry, current, resolver);
     if (!parentsR) return referee::Result<bool>::err(parentsR.error->message);
@@ -117,12 +121,9 @@ referee::Result<DispatchMatch> DispatchEngine::resolve(
     queue.pop_front();
 
     auto defR = registry_.get_latest_definition_by_type(current);
-    if (!defR) return referee::Result<DispatchMatch>::err(defR.error->message);
-    if (!defR.value->has_value()) {
-      return referee::Result<DispatchMatch>::err("definition not found");
-    }
+    if (!defR) return referee::Result<DispatchMatch>::err(defR.error.value());
 
-    const auto& def = defR.value->value().definition;
+    const auto& def = defR.value->definition;
     for (const auto& op : def.operations) {
       if (op.scope != scope) continue;
       if (op.name != name) continue;

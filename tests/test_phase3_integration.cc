@@ -144,7 +144,7 @@ START_TEST(test_phase4_demo_schema)
   ck_assert_msg(demoDefR, "get_definition_by_type demo failed: %s", result_message(demoDefR));
   bool start_found = false;
   bool start_cap_found = false;
-  for (const auto& op : demoDefR.value->value().definition.operations) {
+  for (const auto& op : demoDefR.value.value().definition.operations) {
     if (op.name == "start") {
       start_found = true;
       for (const auto& cap : op.required_capabilities) {
@@ -161,7 +161,7 @@ START_TEST(test_phase4_demo_schema)
   auto summaryDefR = registry.get_definition_by_type(summary->type_id);
   ck_assert_msg(summaryDefR, "get_definition_by_type summary failed: %s", result_message(summaryDefR));
   bool expand_found = false;
-  for (const auto& op : summaryDefR.value->value().definition.operations) {
+  for (const auto& op : summaryDefR.value.value().definition.operations) {
     if (op.name == "expand") {
       expand_found = true;
       ck_assert_int_eq((int)op.signature.params.size(), 1);
@@ -176,7 +176,7 @@ START_TEST(test_phase4_demo_schema)
   bool has_title = false;
   bool has_level = false;
   bool has_index = false;
-  for (const auto& field : detailDefR.value->value().definition.fields) {
+  for (const auto& field : detailDefR.value.value().definition.fields) {
     if (field.name == "title") has_title = true;
     if (field.name == "level") has_level = true;
     if (field.name == "index") has_index = true;

@@ -216,9 +216,9 @@ public:
   referee::Result<DefinitionRecord> register_definition(const TypeDefinition& def);
   referee::Result<DefinitionRecord> register_definition_with_id(const TypeDefinition& def,
                                                                 referee::ObjectID definition_id);
-  referee::Result<std::optional<DefinitionRecord>> get_definition_by_id(referee::ObjectID id);
-  referee::Result<std::optional<DefinitionRecord>> get_definition_by_type(referee::TypeID type);
-  referee::Result<std::optional<DefinitionRecord>> get_latest_definition_by_type(referee::TypeID type);
+  referee::Result<DefinitionRecord> get_definition_by_id(referee::ObjectID id);
+  referee::Result<DefinitionRecord> get_definition_by_type(referee::TypeID type);
+  referee::Result<DefinitionRecord> get_latest_definition_by_type(referee::TypeID type);
   referee::Result<std::vector<TypeSummary>> list_types();
   referee::Result<std::vector<SupersedesLink>> list_supersedes_chain(referee::ObjectID definition_id);
   referee::Result<std::vector<referee::TypeID>> list_base_types(referee::TypeID type);
@@ -239,7 +239,7 @@ public:
   GenericRegistry(SchemaRegistry& schema, referee::SqliteStore& store);
 
   referee::Result<GenericInstanceRecord> register_instance(const GenericInstance& instance);
-  referee::Result<std::optional<GenericInstanceRecord>> get_instance_by_type(referee::TypeID type_id);
+  referee::Result<GenericInstanceRecord> get_instance_by_type(referee::TypeID type_id);
 
 private:
   SchemaRegistry& schema_;
@@ -270,7 +270,7 @@ public:
       const GenericInstance& instance,
       PromotionPolicy policy);
 
-  referee::Result<std::optional<GenericInstanceRecord>> find(referee::TypeID type_id);
+  referee::Result<GenericInstanceRecord> find(referee::TypeID type_id);
   std::optional<GenericInstanceRecord> find_local(referee::TypeID type_id) const;
 
   void cache_instance(const GenericInstanceRecord& record);

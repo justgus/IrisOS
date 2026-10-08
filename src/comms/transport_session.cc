@@ -254,10 +254,6 @@ referee::Result<machine::Packet> execute_registered_packet_round_trip(
   if (!packet_definition) {
     return referee::Result<machine::Packet>::err(packet_definition.error.value());
   }
-  if (!packet_definition.value->has_value()) {
-    return referee::Result<machine::Packet>::err(referee::ErrorCode::FailedPrecondition,
-                                                 "Machine::Packet is not registered");
-  }
   if (session.state() != SessionState::Open) {
     return referee::Result<machine::Packet>::err(referee::ErrorCode::FailedPrecondition,
                                                  "Comms session is not open");

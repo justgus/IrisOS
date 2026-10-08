@@ -1554,13 +1554,10 @@ referee::Result<std::vector<OperationListing>> list_operations_with_inheritance(
 
     auto defR = registry.get_latest_definition_by_type(current);
     if (!defR) {
-      return referee::Result<std::vector<OperationListing>>::err(defR.error->message);
-    }
-    if (!defR.value->has_value()) {
-      return referee::Result<std::vector<OperationListing>>::err("definition not found");
+      return referee::Result<std::vector<OperationListing>>::err(defR.error.value());
     }
 
-    const auto& def = defR.value->value().definition;
+    const auto& def = defR.value->definition;
     for (const auto& op : def.operations) {
       OperationListing entry;
       entry.operation = op;
@@ -1666,9 +1663,6 @@ bool has_base_type(TypeID type_id,
     auto defR = registry.get_latest_definition_by_type(current);
     if (!defR) {
       if (err_out) *err_out = defR.error->message;
-      return false;
-    }
-    if (!defR.value->has_value()) {
       return false;
     }
     auto basesR = registry.list_supertypes(current);
@@ -3035,11 +3029,8 @@ referee::Result<MigrationTarget> resolve_migration_target(SchemaRegistry& regist
   auto def_id = parse_object_id(token, &err);
   if (def_id.has_value()) {
     auto defR = registry.get_definition_by_id(def_id.value());
-    if (!defR) return referee::Result<MigrationTarget>::err(defR.error->message);
-    if (!defR.value->has_value()) {
-      return referee::Result<MigrationTarget>::err("definition not found");
-    }
-    const auto& def = defR.value->value();
+    if (!defR) return referee::Result<MigrationTarget>::err(defR.error.value());
+    const auto& def = defR.value.value();
     auto summary = find_type_summary_by_id(typesR.value.value(), def.definition.type_id);
     if (!summary.has_value()) {
       return referee::Result<MigrationTarget>::err("type summary not found");
@@ -3072,16 +3063,15 @@ referee::Result<MigrationTarget> resolve_migration_target(SchemaRegistry& regist
   }
 
   auto defR = registry.get_latest_definition_by_type(type_id);
-  if (!defR) return referee::Result<MigrationTarget>::err(defR.error->message);
-  if (!defR.value->has_value()) return referee::Result<MigrationTarget>::err("definition not found");
+  if (!defR) return referee::Result<MigrationTarget>::err(defR.error.value());
 
   MigrationTarget target;
   target.summary = matches.front();
-  target.summary.definition_id = defR.value->value().ref.id;
-  target.summary.name = defR.value->value().definition.name;
-  target.summary.namespace_name = defR.value->value().definition.namespace_name;
-  target.summary.preferred_renderer = defR.value->value().definition.preferred_renderer;
-  target.latest = defR.value->value();
+  target.summary.definition_id = defR.value->ref.id;
+  target.summary.name = defR.value->definition.name;
+  target.summary.namespace_name = defR.value->definition.namespace_name;
+  target.summary.preferred_renderer = defR.value->definition.preferred_renderer;
+  target.latest = defR.value.value();
   target.display = type_display_name(target.summary);
   return referee::Result<MigrationTarget>::ok(std::move(target));
 }
@@ -4120,12 +4110,12 @@ void cmd_define_type(SchemaRegistry& registry, const std::vector<std::string>& t
   }
 
   auto existing = registry.get_definition_by_type(def.type_id);
-  if (!existing) {
-    std::cout << "error: " << existing.error->message << "\n";
+  if (existing) {
+    std::cout << "error: type already exists\n";
     return;
   }
-  if (existing.value->has_value()) {
-    std::cout << "error: type already exists\n";
+  if (existing.error->code != referee::ErrorCode::NotFound) {
+    std::cout << "error: " << existing.error->message << "\n";
     return;
   }
 
@@ -4258,12 +4248,7 @@ void cmd_show_type(SchemaRegistry& registry, const std::string& name) {
     std::cout << "error: " << defR.error->message << "\n";
     return;
   }
-  if (!defR.value->has_value()) {
-    std::cout << "error: definition not found\n";
-    return;
-  }
-
-  const auto& def = defR.value->value().definition;
+  const auto& def = defR.value->definition;
   std::cout << "type " << type_display_name(*match) << " v" << def.version << "\n";
   if (def.kind.has_value()) {
     std::cout << "kind " << def.kind.value() << "\n";
@@ -4428,12 +4413,7 @@ void cmd_show(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id) 
     std::cout << "refract error: " << defR.error->message << "\n";
     return;
   }
-  if (!defR.value->has_value()) {
-    std::cout << "refract: definition not found\n";
-    return;
-  }
-
-  const auto& def = defR.value->value().definition;
+  const auto& def = defR.value->definition;
   std::cout << "refract " << def.namespace_name << "::" << def.name << " v" << def.version << "\n";
   if (!def.fields.empty()) {
     std::cout << "fields\n";
@@ -4737,12 +4717,7 @@ bool cmd_debug_graph(SchemaRegistry& registry,
     std::cout << "error: " << defR.error->message << "\n";
     return false;
   }
-  if (!defR.value->has_value()) {
-    std::cout << "error: definition not found\n";
-    return false;
-  }
-
-  const auto& def = defR.value->value().definition;
+  const auto& def = defR.value->definition;
   std::cout << "graph " << recR.value->ref.id.to_hex()
             << " type " << type_display_name_for(types, def.type_id)
             << " v" << def.version << "\n";
@@ -4843,11 +4818,7 @@ bool cmd_call(SchemaRegistry& registry, SqliteStore& store, const ObjectID& id,
     std::cout << "error: " << defR.error->message << "\n";
     return false;
   }
-  if (!defR.value->has_value()) {
-    std::cout << "error: definition not found\n";
-    return false;
-  }
-  const auto& def = defR.value->value().definition;
+  const auto& def = defR.value->definition;
   DispatchEngine engine(registry);
   auto matchR = engine.resolve(def.type_id, op_name, OperationScope::Object, {}, args.size(), true);
   if (!matchR) {
@@ -5145,12 +5116,9 @@ referee::Result<ObjectID> create_object(SchemaRegistry& registry, SqliteStore& s
   }
 
   auto defR = registry.get_definition_by_id(type_summary->definition_id);
-  if (!defR) return referee::Result<ObjectID>::err(defR.error->message);
-  if (!defR.value->has_value()) {
-    return referee::Result<ObjectID>::err("definition not found");
-  }
+  if (!defR) return referee::Result<ObjectID>::err(defR.error.value());
 
-  auto validateR = validate_payload_constraints(defR.value->value().definition, payload);
+  auto validateR = validate_payload_constraints(defR.value->definition, payload);
   if (!validateR) return referee::Result<ObjectID>::err(validateR.error->message);
 
   auto cbor = nlohmann::json::to_cbor(payload);

@@ -127,15 +127,13 @@ START_TEST(test_machine_scalar_refract_registration)
 
   auto address = registry.get_definition_by_type(kAddressType);
   ck_assert_msg(address, "Address lookup failed: %s", result_message(address));
-  ck_assert_msg(address.value->has_value(), "Address definition missing");
-  ck_assert_uint_eq(address.value->value().definition.fields.size(), 2U);
-  ck_assert_msg(address.value->value().definition.fields[0].type == kUInt128Type,
+  ck_assert_uint_eq(address.value.value().definition.fields.size(), 2U);
+  ck_assert_msg(address.value.value().definition.fields[0].type == kUInt128Type,
                 "Address value does not reference Machine::UInt128");
 
   auto byte_order = registry.get_definition_by_type(kByteOrderType);
   ck_assert_msg(byte_order, "ByteOrder lookup failed: %s", result_message(byte_order));
-  ck_assert_msg(byte_order.value->has_value(), "ByteOrder definition missing");
-  ck_assert_uint_eq(byte_order.value->value().definition.enum_values.size(), 3U);
+  ck_assert_uint_eq(byte_order.value.value().definition.enum_values.size(), 3U);
 
   ck_assert_msg(store.close(), "store close failed");
 }
@@ -198,9 +196,8 @@ START_TEST(test_machine_buffer_refract_registration)
 
   auto packet = registry.get_definition_by_type(kPacketType);
   ck_assert_msg(packet, "Packet lookup failed: %s", result_message(packet));
-  ck_assert_msg(packet.value->has_value(), "Packet definition missing");
-  ck_assert_uint_eq(packet.value->value().definition.fields.size(), 1U);
-  ck_assert_msg(packet.value->value().definition.fields[0].type == kBlobType,
+  ck_assert_uint_eq(packet.value.value().definition.fields.size(), 1U);
+  ck_assert_msg(packet.value.value().definition.fields[0].type == kBlobType,
                 "Packet payload does not reference Machine::Blob");
   ck_assert_msg(store.close(), "store close failed");
 }

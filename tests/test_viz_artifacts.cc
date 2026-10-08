@@ -110,23 +110,20 @@ START_TEST(test_viz_schema_definitions)
 
   auto logDefR = registry.get_definition_by_type(kTypeVizTextLog);
   ck_assert_msg(logDefR, "get_definition_by_type failed: %s", result_message(logDefR));
-  ck_assert_msg(logDefR.value->has_value(), "expected TextLog definition");
-  ck_assert_int_eq((int)logDefR.value->value().definition.fields.size(), 1);
-  ck_assert_str_eq(logDefR.value->value().definition.fields[0].name.c_str(), "lines");
+  ck_assert_int_eq((int)logDefR.value.value().definition.fields.size(), 1);
+  ck_assert_str_eq(logDefR.value.value().definition.fields[0].name.c_str(), "lines");
 
   auto metricDefR = registry.get_definition_by_type(kTypeVizMetric);
   ck_assert_msg(metricDefR, "get_definition_by_type failed: %s", result_message(metricDefR));
-  ck_assert_msg(metricDefR.value->has_value(), "expected Metric definition");
-  ck_assert_int_eq((int)metricDefR.value->value().definition.fields.size(), 2);
-  ck_assert_str_eq(metricDefR.value->value().definition.fields[0].name.c_str(), "name");
-  ck_assert_str_eq(metricDefR.value->value().definition.fields[1].name.c_str(), "value");
+  ck_assert_int_eq((int)metricDefR.value.value().definition.fields.size(), 2);
+  ck_assert_str_eq(metricDefR.value.value().definition.fields[0].name.c_str(), "name");
+  ck_assert_str_eq(metricDefR.value.value().definition.fields[1].name.c_str(), "value");
 
   auto taskDefR = registry.get_definition_by_type(kTypeVizTaskView);
   ck_assert_msg(taskDefR, "get_definition_by_type failed: %s", result_message(taskDefR));
-  ck_assert_msg(taskDefR.value->has_value(), "expected TaskView definition");
-  ck_assert_int_eq((int)taskDefR.value->value().definition.fields.size(), 5);
-  ck_assert_str_eq(taskDefR.value->value().definition.fields[0].name.c_str(), "task_id");
-  ck_assert_str_eq(taskDefR.value->value().definition.fields[1].name.c_str(), "state");
+  ck_assert_int_eq((int)taskDefR.value.value().definition.fields.size(), 5);
+  ck_assert_str_eq(taskDefR.value.value().definition.fields[0].name.c_str(), "task_id");
+  ck_assert_str_eq(taskDefR.value.value().definition.fields[1].name.c_str(), "state");
 
   ck_assert_msg(store.close(), "close failed");
 }

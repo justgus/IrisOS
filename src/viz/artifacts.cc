@@ -11,11 +11,8 @@ referee::Result<referee::ObjectID> create_with_payload(iris::refract::SchemaRegi
                                                        referee::TypeID type,
                                                        const nlohmann::json& payload) {
   auto defR = registry.get_definition_by_type(type);
-  if (!defR) return referee::Result<referee::ObjectID>::err(defR.error->message);
-  if (!defR.value->has_value()) {
-    return referee::Result<referee::ObjectID>::err("definition not found");
-  }
-  const auto& def = defR.value->value();
+  if (!defR) return referee::Result<referee::ObjectID>::err(defR.error.value());
+  const auto& def = defR.value.value();
   auto cbor = nlohmann::json::to_cbor(payload);
   auto createR = store.create_object(type, def.ref.id, cbor);
   if (!createR) return referee::Result<referee::ObjectID>::err(createR.error->message);

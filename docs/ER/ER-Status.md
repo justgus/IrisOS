@@ -91,7 +91,7 @@
 - ER-0079 — Verified
 - ER-0080 — Verified
 - ER-0081 — In Progress
-- ER-0082 — Approved
+- ER-0082 — In Progress
 - ER-0083 — Approved
 - ER-0084 — Approved
 - ER-0085 — Approved

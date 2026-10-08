@@ -160,10 +160,6 @@ referee::Result<std::vector<EmittedArtifactRoute>> emitted_artifact_routes(
   if (!producerR) {
     return referee::Result<std::vector<EmittedArtifactRoute>>::err(producerR.error.value());
   }
-  if (!producerR.value->has_value()) {
-    return referee::Result<std::vector<EmittedArtifactRoute>>::err(
-        referee::ErrorCode::NotFound, "producer type definition not found");
-  }
 
   auto typesR = registry.list_types();
   if (!typesR) {
@@ -171,7 +167,7 @@ referee::Result<std::vector<EmittedArtifactRoute>> emitted_artifact_routes(
   }
 
   std::vector<EmittedArtifactRoute> out;
-  const auto& definition = producerR.value->value().definition;
+  const auto& definition = producerR.value->definition;
   for (const auto& operation : definition.operations) {
     for (const auto& effect : operation.effects) {
       if (effect.kind != iris::refract::OperationEffectKind::Emits) continue;
