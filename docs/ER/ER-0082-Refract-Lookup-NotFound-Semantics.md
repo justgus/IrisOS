@@ -16,7 +16,7 @@ ER-Dependencies: ER-0081
 
 - ER ID: ER-0082
 - Title: Refract Lookup NotFound Semantics
-- Status: In Progress
+- Status: Verified
 - Date: 2026-10-07
 - Owners: Mike
 - Type: Enhancement

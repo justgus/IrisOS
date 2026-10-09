@@ -15,7 +15,7 @@ AR-Dependencies: AR-0001
 
 - ER ID: ER-0081
 - Title: Referee Object Lookup NotFound Semantics
-- Status: In Progress
+- Status: Verified
 - Date: 2026-10-07
 - Owners: Mike
 - Type: Enhancement

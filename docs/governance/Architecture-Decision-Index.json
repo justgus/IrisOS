@@ -68,13 +68,13 @@
     {
       "id": "AR-0001",
       "name": "Expected-Style Error Model",
-      "status": "In Progress",
+      "status": "Implemented",
       "decision": "Use explicit result-style error propagation and avoid exceptions as normal cross-boundary control flow.",
-      "conformance": "Partial",
+      "conformance": "Implemented",
       "notes": [
         "The AR specifies Result<T> with expected-style semantics and enum class ErrorCode.",
         "The current implementation provides enum class ErrorCode through referee::Result<T>.",
-        "The batch is migrating public lookup absence to ErrorCode::NotFound and auditing exception behavior at affected module boundaries."
+        "ER-0081 through ER-0083 establish typed NotFound behavior across storage, Refract, and runtime lookups; ER-0086 completes the selected public-boundary error propagation audit."
       ]
     },
     {
@@ -303,12 +303,6 @@
     }
   ],
   "known_conformance_gaps": [
-    {
-      "area": "Error model",
-      "source": "AR-0001",
-      "gap": "Lookup absence semantics still need to be settled consistently with the AR's NotFound guidance.",
-      "recommended_resolution": "Amend AR-0001 to accept intentional Result<std::optional<T>> probe APIs, or create an ER to migrate lookup absence to ErrorCode::NotFound."
-    },
     {
       "area": "Service Plane",
       "source": "AR-0005, AR-0022",
