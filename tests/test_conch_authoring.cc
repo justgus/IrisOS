@@ -527,18 +527,49 @@ START_TEST(test_conch_session_growth_in_command_loop)
   prepare_historical_routable_db(db_path);
 
   auto output = run_conch_script_with_db(
-      "debug graph session\ndemo v1\ndebug graph session\ndebug graph session\nexit\n", db_path);
+      "debug graph session\ndemo v1\nworkspace\ndebug graph session\ndebug graph session\nexit\n", db_path);
   auto session_line = output.find("session ");
   ck_assert_msg(session_line != std::string::npos, "expected active session identifier");
   auto session_end = output.find('\n', session_line);
   auto session_id = output.substr(session_line + 8, session_end - (session_line + 8));
-  const auto empty_session_graph = "edges from " + session_id + "\n  (none)";
-  ck_assert_msg(output.find(empty_session_graph) != std::string::npos,
+  const auto session_graph = "edges from " + session_id + "\n";
+  auto graph_start = output.find(session_graph);
+  ck_assert_msg(graph_start != std::string::npos, "expected active session graph output");
+  auto graph_end = output.find("session update:", graph_start);
+  ck_assert_msg(graph_end != std::string::npos, "expected initial session update boundary");
+  const auto initial_graph = output.substr(graph_start, graph_end - graph_start);
+  ck_assert_msg(initial_graph.find("name=workspace role=workspace") != std::string::npos,
+                "expected a persistent workspace root for the active session");
+  ck_assert_msg(initial_graph.find("name=observed") == std::string::npos,
                 "expected startup cursor to exclude historical graph relationships");
   ck_assert_msg(output.find("name=contains role=concho") != std::string::npos,
                 "expected session graph to contain routed Concho links");
   ck_assert_msg(output.find("type=Conch::Concho") != std::string::npos,
                 "expected session graph to link Conch::Concho objects");
+  auto workspace_start = output.find("Workspace\n");
+  ck_assert_msg(workspace_start != std::string::npos, "expected workspace tree output");
+  auto workspace_end = output.find("session update:", workspace_start);
+  ck_assert_msg(workspace_end != std::string::npos, "expected workspace update boundary");
+  const auto workspace_output = output.substr(workspace_start, workspace_end - workspace_start);
+  ck_assert_msg(workspace_output.find("  - ") != std::string::npos,
+                "expected workspace to show routed Conchos");
+
+  auto reopened_output = run_conch_script_with_db("workspace\nexit\n", db_path);
+  auto reopened_session_line = reopened_output.find("session ");
+  ck_assert_msg(reopened_session_line != std::string::npos,
+                "expected a new active session after reopening");
+  auto reopened_session_end = reopened_output.find('\n', reopened_session_line);
+  auto reopened_session_id = reopened_output.substr(
+      reopened_session_line + 8, reopened_session_end - (reopened_session_line + 8));
+  ck_assert_msg(reopened_session_id != session_id,
+                "expected each shell launch to create a distinct session");
+  auto reopened_start = reopened_output.find("Workspace\n");
+  ck_assert_msg(reopened_start != std::string::npos, "expected workspace tree after reopening");
+  auto reopened_end = reopened_output.find("session update:", reopened_start);
+  ck_assert_msg(reopened_end != std::string::npos, "expected reopened workspace update boundary");
+  ck_assert_msg(reopened_output.substr(reopened_start, reopened_end - reopened_start)
+                    == "Workspace\n",
+                "expected a fresh shell session to start with its own empty workspace");
 
   std::vector<std::size_t> created_counts;
   std::istringstream lines(output);

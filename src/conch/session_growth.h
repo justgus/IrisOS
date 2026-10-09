@@ -31,4 +31,8 @@ referee::Result<SessionUpdateResult> update_session_from_graph(
     referee::SqliteStore& store,
     SessionState& state);
 
+referee::Result<std::string> workspace_tree(iris::refract::SchemaRegistry& registry,
+                                            referee::SqliteStore& store,
+                                            referee::ObjectRef session);
+
 } // namespace iris::conch

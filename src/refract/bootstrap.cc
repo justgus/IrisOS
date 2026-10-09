@@ -68,6 +68,8 @@ constexpr referee::TypeID kTypeConchConcho{0x434F4E4300000002ULL};
 constexpr referee::TypeID kTypeConchAlias{0x434F4E4300000003ULL};
 constexpr referee::TypeID kTypeConchIoHandleAlias{0x434F4E4300000004ULL};
 constexpr referee::TypeID kTypeConchTaskConcho{0x434F4E4300000005ULL};
+constexpr referee::TypeID kTypeConchWorkspace{0x434F4E4300000006ULL};
+constexpr referee::TypeID kTypeConchTile{0x434F4E4300000007ULL};
 
 constexpr referee::TypeID kTypeKernelIo{0x4B494F5000000001ULL};
 constexpr referee::TypeID kTypeKernelIoChannel{0x4B494F5000000002ULL};
@@ -710,6 +712,7 @@ TypeDefinition make_conch_session() {
   add_session_operation(def, "task_list");
   add_session_operation(def, "task_spawn");
   add_session_operation(def, "types_list");
+  add_session_operation(def, "workspace_tree");
   return def;
 }
 
@@ -735,6 +738,27 @@ TypeDefinition make_conch_task_concho() {
   def.fields.push_back(FieldDefinition{ "task_id", kTypeU64, true, std::nullopt });
   def.fields.push_back(FieldDefinition{ "state", kTypeString, true, std::nullopt });
   def.fields.push_back(FieldDefinition{ "task_view_id", kTypeObjectID, true, std::nullopt });
+  return def;
+}
+
+TypeDefinition make_conch_workspace() {
+  TypeDefinition def{};
+  def.type_id = kTypeConchWorkspace;
+  def.name = "Workspace";
+  def.namespace_name = "Conch";
+  def.version = 1;
+  def.fields.push_back(FieldDefinition{ "session_id", kTypeObjectID, false, std::nullopt });
+  return def;
+}
+
+TypeDefinition make_conch_tile() {
+  TypeDefinition def{};
+  def.type_id = kTypeConchTile;
+  def.name = "Tile";
+  def.namespace_name = "Conch";
+  def.version = 1;
+  def.fields.push_back(FieldDefinition{ "concho_id", kTypeObjectID, false, std::nullopt });
+  def.fields.push_back(FieldDefinition{ "title", kTypeString, false, std::nullopt });
   return def;
 }
 
@@ -1084,6 +1108,8 @@ std::vector<TypeDefinition> core_schema_definitions() {
   defs.push_back(make_conch_session());
   defs.push_back(make_conch_concho());
   defs.push_back(make_conch_task_concho());
+  defs.push_back(make_conch_workspace());
+  defs.push_back(make_conch_tile());
   defs.push_back(make_conch_alias());
   defs.push_back(make_conch_io_handle_alias());
   defs.push_back(make_kernel_io());
