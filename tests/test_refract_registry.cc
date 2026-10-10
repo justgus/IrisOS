@@ -12,6 +12,10 @@ extern "C" {
 #include "referee/referee.h"
 #include "referee_sqlite/sqlite_store.h"
 
+#include <nlohmann/json.hpp>
+
+#include <cstdint>
+#include <limits>
 #include <string>
 #include <stdexcept>
 
@@ -60,6 +64,18 @@ static TypeDefinition make_definition(TypeID type_id, std::string name, std::str
   def.relationships.push_back(rel);
 
   return def;
+}
+
+static GenericArg type_arg(std::uint64_t type_id) {
+  return GenericArg{ GenericArgKind::Type, TypeID{type_id}, {}, "", {} };
+}
+
+static GenericArg value_arg(std::uint64_t type_id, std::string value) {
+  return GenericArg{ GenericArgKind::Value, {}, TypeID{type_id}, std::move(value), {} };
+}
+
+static GenericArg variadic_arg(std::vector<GenericArg> items) {
+  return GenericArg{ GenericArgKind::Variadic, {}, {}, "", std::move(items) };
 }
 
 } // namespace
@@ -594,6 +610,347 @@ START_TEST(test_generic_instance_registry_roundtrip)
 }
 END_TEST
 
+START_TEST(test_generic_pack_contracts_validate_before_persistence)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+  auto boot = bootstrap_core_schema(registry);
+  ck_assert_msg(boot, "bootstrap failed: %s", result_message(boot));
+  GenericRegistry generics(registry, store);
+
+  std::vector<GenericInstance> valid;
+  GenericInstance tuple_empty{};
+  tuple_empty.base_type = TypeID{0x4352415400000005ULL};
+  tuple_empty.args.push_back(variadic_arg({}));
+  valid.push_back(tuple_empty);
+
+  GenericInstance tuple_zero_type{};
+  tuple_zero_type.base_type = TypeID{0x4352415400000005ULL};
+  tuple_zero_type.args.push_back(variadic_arg({type_arg(0)}));
+  valid.push_back(tuple_zero_type);
+
+  GenericInstance tuple_one{};
+  tuple_one.base_type = TypeID{0x4352415400000005ULL};
+  tuple_one.args.push_back(variadic_arg({type_arg(0x1001ULL)}));
+  valid.push_back(tuple_one);
+
+  GenericInstance tuple_many{};
+  tuple_many.base_type = TypeID{0x4352415400000005ULL};
+  tuple_many.args.push_back(variadic_arg({type_arg(0x1001ULL), type_arg(0x1002ULL)}));
+  valid.push_back(tuple_many);
+
+  GenericInstance tensor_one{};
+  tensor_one.base_type = TypeID{0x4153545200000005ULL};
+  tensor_one.args.push_back(type_arg(0x1008ULL));
+  tensor_one.args.push_back(variadic_arg({value_arg(0x1002ULL, "3")}));
+  valid.push_back(tensor_one);
+
+  GenericInstance tensor_many{};
+  tensor_many.base_type = TypeID{0x4153545200000005ULL};
+  tensor_many.args.push_back(type_arg(0x1008ULL));
+  tensor_many.args.push_back(variadic_arg({value_arg(0x1002ULL, "2"),
+                                           value_arg(0x1002ULL, "4")}));
+  valid.push_back(tensor_many);
+
+  for (const auto& instance : valid) {
+    auto registered = generics.register_instance(instance);
+    ck_assert_msg(registered, "valid pack rejected: %s", result_message(registered));
+    auto loaded = generics.get_instance_by_type(registered.value->instance.instance_type);
+    ck_assert_msg(loaded, "valid pack did not load: %s", result_message(loaded));
+  }
+
+  ScopedTypeRegistry scoped(ScopedTypeRegistry::Scope::Operation, generics);
+  auto tuple_resolved = scoped.resolve_or_register(
+      tuple_many, ScopedTypeRegistry::PromotionPolicy::LocalOnly);
+  ck_assert_msg(tuple_resolved, "valid Tuple pack did not resolve: %s", result_message(tuple_resolved));
+  auto tensor_resolved = scoped.resolve_or_register(
+      tensor_many, ScopedTypeRegistry::PromotionPolicy::LocalOnly);
+  ck_assert_msg(tensor_resolved, "valid Tensor pack did not resolve: %s", result_message(tensor_resolved));
+
+  std::vector<GenericInstance> invalid;
+  GenericInstance tuple_missing{};
+  tuple_missing.base_type = TypeID{0x4352415400000005ULL};
+  invalid.push_back(tuple_missing);
+  GenericInstance tuple_not_pack{};
+  tuple_not_pack.base_type = TypeID{0x4352415400000005ULL};
+  tuple_not_pack.args.push_back(type_arg(0x1001ULL));
+  invalid.push_back(tuple_not_pack);
+  GenericInstance tuple_nested = tuple_empty;
+  tuple_nested.args[0].items.push_back(variadic_arg({type_arg(0x1001ULL)}));
+  invalid.push_back(tuple_nested);
+  GenericInstance tuple_wrong_item = tuple_empty;
+  tuple_wrong_item.args[0].items.push_back(value_arg(0x1002ULL, "1"));
+  invalid.push_back(tuple_wrong_item);
+  GenericInstance tuple_extra = tuple_one;
+  tuple_extra.args.push_back(type_arg(0x1002ULL));
+  invalid.push_back(tuple_extra);
+
+  GenericInstance tensor_missing{};
+  tensor_missing.base_type = TypeID{0x4153545200000005ULL};
+  invalid.push_back(tensor_missing);
+  GenericInstance tensor_no_pack{};
+  tensor_no_pack.base_type = TypeID{0x4153545200000005ULL};
+  tensor_no_pack.args.push_back(type_arg(0x1008ULL));
+  invalid.push_back(tensor_no_pack);
+  GenericInstance tensor_empty = tensor_one;
+  tensor_empty.args[1] = variadic_arg({});
+  invalid.push_back(tensor_empty);
+  GenericInstance tensor_wrong_element = tensor_one;
+  tensor_wrong_element.args[0] = value_arg(0x1002ULL, "1");
+  invalid.push_back(tensor_wrong_element);
+  GenericInstance tensor_wrong_extent_kind = tensor_one;
+  tensor_wrong_extent_kind.args[1] = variadic_arg({type_arg(0x1002ULL)});
+  invalid.push_back(tensor_wrong_extent_kind);
+  GenericInstance tensor_wrong_extent_type = tensor_one;
+  tensor_wrong_extent_type.args[1] = variadic_arg({value_arg(0x1001ULL, "1")});
+  invalid.push_back(tensor_wrong_extent_type);
+  GenericInstance tensor_zero = tensor_one;
+  tensor_zero.args[1] = variadic_arg({value_arg(0x1002ULL, "0")});
+  invalid.push_back(tensor_zero);
+  GenericInstance tensor_negative = tensor_one;
+  tensor_negative.args[1] = variadic_arg({value_arg(0x1002ULL, "-1")});
+  invalid.push_back(tensor_negative);
+  GenericInstance tensor_fraction = tensor_one;
+  tensor_fraction.args[1] = variadic_arg({value_arg(0x1002ULL, "1.5")});
+  invalid.push_back(tensor_fraction);
+  GenericInstance tensor_invalid_json = tensor_one;
+  tensor_invalid_json.args[1] = variadic_arg({value_arg(0x1002ULL, "one")});
+  invalid.push_back(tensor_invalid_json);
+  GenericInstance tensor_overflow = tensor_one;
+  tensor_overflow.args[1] = variadic_arg({value_arg(0x1002ULL, "18446744073709551616")});
+  invalid.push_back(tensor_overflow);
+  GenericInstance tensor_nested = tensor_one;
+  tensor_nested.args[1] = variadic_arg({variadic_arg({value_arg(0x1002ULL, "1")})});
+  invalid.push_back(tensor_nested);
+  GenericInstance tensor_extra = tensor_one;
+  tensor_extra.args.push_back(type_arg(0x1001ULL));
+  invalid.push_back(tensor_extra);
+
+  for (const auto& instance : invalid) {
+    auto rejected = generics.register_instance(instance);
+    ck_assert_msg(!rejected, "malformed pack unexpectedly registered");
+    ck_assert_int_eq(static_cast<int>(rejected.error->code),
+                     static_cast<int>(ErrorCode::InvalidArgument));
+  }
+
+  auto rejected_resolution = scoped.resolve_or_register(
+      tensor_zero, ScopedTypeRegistry::PromotionPolicy::LocalOnly);
+  ck_assert_msg(!rejected_resolution, "malformed pack unexpectedly resolved");
+  ck_assert_int_eq(static_cast<int>(rejected_resolution.error->code),
+                   static_cast<int>(ErrorCode::InvalidArgument));
+
+  GenericInstance fixed_arity{};
+  fixed_arity.base_type = TypeID{0x4352415400000001ULL};
+  fixed_arity.args.push_back(type_arg(0x1001ULL));
+  auto fixed_registered = generics.register_instance(fixed_arity);
+  ck_assert_msg(fixed_registered, "fixed-arity Array compatibility failed: %s",
+                result_message(fixed_registered));
+
+  auto records = store.list_by_type(kTypeGenericInstanceType);
+  ck_assert_msg(records, "list generic instances failed: %s", result_message(records));
+  ck_assert_uint_eq(records.value->size(), valid.size() + 1);
+  ck_assert_msg(store.close(), "close failed");
+}
+END_TEST
+
+START_TEST(test_generic_pack_contracts_reject_corrupt_stored_instance)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+  auto boot = bootstrap_core_schema(registry);
+  ck_assert_msg(boot, "bootstrap failed: %s", result_message(boot));
+  auto defR = registry.get_definition_by_type(kTypeGenericInstanceType);
+  ck_assert_msg(defR, "generic instance definition missing: %s", result_message(defR));
+
+  GenericRegistry generics(registry, store);
+  std::vector<nlohmann::json> malformed_args;
+  malformed_args.push_back(nlohmann::json::array({
+      {{"kind", "variadic"}, {"items", nlohmann::json::array({
+          {{"kind", "value"}, {"value_type_id", 0x1002ULL}, {"value_json", "1"}}
+      })}}
+  }));
+  malformed_args.push_back(nlohmann::json::array({
+      {{"kind", "variadic"}, {"items", nlohmann::json::array({
+          {{"kind", "bogus"}, {"type_id", 0x1001ULL}}
+      })}}
+  }));
+  malformed_args.push_back(nlohmann::json::array({
+      {{"kind", "variadic"}, {"items", nlohmann::json::array({nlohmann::json::object()})}}
+  }));
+  malformed_args.push_back(nlohmann::json::array({
+      {{"kind", "variadic"}, {"items", nlohmann::json::array({{{"kind", "type"}}})}}
+  }));
+
+  for (std::size_t i = 0; i < malformed_args.size(); ++i) {
+    nlohmann::json payload;
+    payload["base_type_id"] = 0x4352415400000005ULL;
+    payload["instance_type_id"] = 0xEE001ULL + i;
+    payload["args"] = nlohmann::json::binary(nlohmann::json::to_cbor(malformed_args[i]));
+    auto created = store.create_object(kTypeGenericInstanceType, defR.value->ref.id,
+                                       nlohmann::json::to_cbor(payload));
+    ck_assert_msg(created, "create malformed generic record failed: %s", result_message(created));
+
+    auto loaded = generics.get_instance_by_type(TypeID{0xEE001ULL + i});
+    ck_assert_msg(!loaded, "malformed stored pack unexpectedly loaded");
+    ck_assert_int_eq(static_cast<int>(loaded.error->code),
+                     static_cast<int>(ErrorCode::CorruptData));
+  }
+  ck_assert_msg(store.close(), "close failed");
+}
+END_TEST
+
+START_TEST(test_astra_shape_contracts_validate_and_roundtrip)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+  auto boot = bootstrap_core_schema(registry);
+  ck_assert_msg(boot, "bootstrap failed: %s", result_message(boot));
+  GenericRegistry generics(registry, store);
+
+  const std::string max_u64 = std::to_string(std::numeric_limits<std::uint64_t>::max());
+  std::vector<GenericInstance> valid;
+  GenericInstance vector_one{};
+  vector_one.base_type = TypeID{0x4153545200000003ULL};
+  vector_one.args = {type_arg(0x1008ULL), value_arg(0x1002ULL, "1")};
+  valid.push_back(vector_one);
+
+  GenericInstance vector_max{};
+  vector_max.base_type = TypeID{0x4153545200000003ULL};
+  vector_max.args = {type_arg(0x1008ULL), value_arg(0x1002ULL, max_u64)};
+  valid.push_back(vector_max);
+
+  GenericInstance matrix_max{};
+  matrix_max.base_type = TypeID{0x4153545200000004ULL};
+  matrix_max.args = {type_arg(0x1008ULL), value_arg(0x1002ULL, "1"),
+                     value_arg(0x1002ULL, max_u64)};
+  valid.push_back(matrix_max);
+
+  GenericInstance tensor_one{};
+  tensor_one.base_type = TypeID{0x4153545200000005ULL};
+  tensor_one.args = {type_arg(0x1008ULL),
+                     variadic_arg({value_arg(0x1002ULL, max_u64)})};
+  valid.push_back(tensor_one);
+
+  GenericInstance tensor_many{};
+  tensor_many.base_type = TypeID{0x4153545200000005ULL};
+  tensor_many.args = {type_arg(0x1008ULL),
+                      variadic_arg({value_arg(0x1002ULL, "2"),
+                                    value_arg(0x1002ULL, "3")})};
+  valid.push_back(tensor_many);
+
+  for (const auto& instance : valid) {
+    auto registered = generics.register_instance(instance);
+    ck_assert_msg(registered, "valid Astra shape rejected: %s", result_message(registered));
+    auto loaded = generics.get_instance_by_type(registered.value->instance.instance_type);
+    ck_assert_msg(loaded, "valid Astra shape did not load: %s", result_message(loaded));
+    ck_assert_uint_eq(loaded.value->instance.instance_type.v,
+                      registered.value->instance.instance_type.v);
+  }
+
+  std::vector<GenericInstance> invalid;
+  GenericInstance vector_missing = vector_one;
+  vector_missing.args.pop_back();
+  invalid.push_back(vector_missing);
+  GenericInstance vector_extra = vector_one;
+  vector_extra.args.push_back(value_arg(0x1002ULL, "1"));
+  invalid.push_back(vector_extra);
+  GenericInstance vector_zero = vector_one;
+  vector_zero.args[1] = value_arg(0x1002ULL, "0");
+  invalid.push_back(vector_zero);
+  GenericInstance vector_negative = vector_one;
+  vector_negative.args[1] = value_arg(0x1002ULL, "-1");
+  invalid.push_back(vector_negative);
+  GenericInstance vector_wrong_kind = vector_one;
+  vector_wrong_kind.args[1] = type_arg(0x1002ULL);
+  invalid.push_back(vector_wrong_kind);
+  GenericInstance vector_wrong_value_type = vector_one;
+  vector_wrong_value_type.args[1] = value_arg(0x1001ULL, "1");
+  invalid.push_back(vector_wrong_value_type);
+
+  GenericInstance matrix_missing = matrix_max;
+  matrix_missing.args.pop_back();
+  invalid.push_back(matrix_missing);
+  GenericInstance matrix_extra = matrix_max;
+  matrix_extra.args.push_back(value_arg(0x1002ULL, "1"));
+  invalid.push_back(matrix_extra);
+  GenericInstance matrix_overflow = matrix_max;
+  matrix_overflow.args[1] = value_arg(0x1002ULL, "2");
+  invalid.push_back(matrix_overflow);
+
+  GenericInstance tensor_overflow = tensor_many;
+  tensor_overflow.args[1] = variadic_arg({value_arg(0x1002ULL, max_u64),
+                                          value_arg(0x1002ULL, "2")});
+  invalid.push_back(tensor_overflow);
+
+  for (const auto& instance : invalid) {
+    auto derived = derive_generic_type_id(instance);
+    ck_assert_msg(!derived, "invalid Astra shape unexpectedly derived a type ID");
+    ck_assert_int_eq(static_cast<int>(derived.error->code),
+                     static_cast<int>(ErrorCode::InvalidArgument));
+    auto rejected = generics.register_instance(instance);
+    ck_assert_msg(!rejected, "invalid Astra shape unexpectedly registered");
+    ck_assert_int_eq(static_cast<int>(rejected.error->code),
+                     static_cast<int>(ErrorCode::InvalidArgument));
+  }
+
+  auto records = store.list_by_type(kTypeGenericInstanceType);
+  ck_assert_msg(records, "list generic instances failed: %s", result_message(records));
+  ck_assert_uint_eq(records.value->size(), valid.size());
+
+  auto defR = registry.get_definition_by_type(kTypeGenericInstanceType);
+  ck_assert_msg(defR, "generic instance definition missing: %s", result_message(defR));
+  nlohmann::json malformed_args = nlohmann::json::array({
+      {{"kind", "type"}, {"type_id", 0x1008ULL}},
+      {{"kind", "value"}, {"value_type_id", 0x1002ULL}, {"value_json", "0"}}
+  });
+  nlohmann::json payload;
+  payload["base_type_id"] = 0x4153545200000003ULL;
+  payload["instance_type_id"] = 0xEE101ULL;
+  payload["args"] = nlohmann::json::binary(nlohmann::json::to_cbor(malformed_args));
+  auto created = store.create_object(kTypeGenericInstanceType, defR.value->ref.id,
+                                     nlohmann::json::to_cbor(payload));
+  ck_assert_msg(created, "create malformed Astra shape failed: %s", result_message(created));
+  auto malformed = generics.get_instance_by_type(TypeID{0xEE101ULL});
+  ck_assert_msg(!malformed, "malformed persisted Astra shape unexpectedly loaded");
+  ck_assert_int_eq(static_cast<int>(malformed.error->code),
+                   static_cast<int>(ErrorCode::CorruptData));
+
+  nlohmann::json malformed_tensor_args = nlohmann::json::array({
+      {{"kind", "type"}, {"type_id", 0x1008ULL}},
+      {{"kind", "variadic"}, {"items", nlohmann::json::array({
+          {{"kind", "value"}, {"value_type_id", 0x1002ULL},
+           {"value_json", max_u64}},
+          {{"kind", "value"}, {"value_type_id", 0x1002ULL},
+           {"value_json", "2"}}
+      })}}
+  });
+  nlohmann::json malformed_tensor_payload;
+  malformed_tensor_payload["base_type_id"] = 0x4153545200000005ULL;
+  malformed_tensor_payload["instance_type_id"] = 0xEE102ULL;
+  malformed_tensor_payload["args"] =
+      nlohmann::json::binary(nlohmann::json::to_cbor(malformed_tensor_args));
+  auto tensor_created = store.create_object(kTypeGenericInstanceType, defR.value->ref.id,
+                                            nlohmann::json::to_cbor(malformed_tensor_payload));
+  ck_assert_msg(tensor_created, "create malformed Tensor shape failed: %s",
+                result_message(tensor_created));
+  auto malformed_tensor = generics.get_instance_by_type(TypeID{0xEE102ULL});
+  ck_assert_msg(!malformed_tensor, "overflowing persisted Tensor shape unexpectedly loaded");
+  ck_assert_int_eq(static_cast<int>(malformed_tensor.error->code),
+                   static_cast<int>(ErrorCode::CorruptData));
+
+  ck_assert_msg(store.close(), "close failed");
+}
+END_TEST
+
 START_TEST(test_resolve_or_register_propagates_corrupt_registry_data)
 {
   SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
@@ -874,6 +1231,9 @@ Suite* refract_registry_suite(void) {
   tcase_add_test(tc, test_schema_registry_legacy_relationship_inheritance_fallback);
   tcase_add_test(tc, test_generic_instance_type_id_deterministic);
   tcase_add_test(tc, test_generic_instance_registry_roundtrip);
+  tcase_add_test(tc, test_generic_pack_contracts_validate_before_persistence);
+  tcase_add_test(tc, test_generic_pack_contracts_reject_corrupt_stored_instance);
+  tcase_add_test(tc, test_astra_shape_contracts_validate_and_roundtrip);
   tcase_add_test(tc, test_resolve_or_register_propagates_corrupt_registry_data);
   tcase_add_test(tc, test_scoped_type_registry_promotion);
   tcase_add_test(tc, test_operation_registry_scope_and_inheritance);

@@ -246,6 +246,29 @@ private:
   referee::SqliteStore& store_;
 };
 
+struct CaliperQuantityValue {
+  referee::ObjectRef ref{};
+  referee::TypeID type{};
+  std::vector<referee::Bytes> components{};
+  std::optional<referee::ObjectID> unit_id;
+};
+
+class CaliperValueRegistry {
+public:
+  CaliperValueRegistry(SchemaRegistry& schema, referee::SqliteStore& store);
+
+  // Range components are [min_value, max_value]; other quantities have one value component.
+  referee::Result<CaliperQuantityValue> create(
+      referee::TypeID quantity_type,
+      const std::vector<referee::Bytes>& components,
+      std::optional<referee::ObjectID> unit_id = std::nullopt);
+  referee::Result<CaliperQuantityValue> get(referee::ObjectRef ref);
+
+private:
+  SchemaRegistry& schema_;
+  referee::SqliteStore& store_;
+};
+
 class ScopedTypeRegistry {
 public:
   enum class Scope {

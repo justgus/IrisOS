@@ -10,20 +10,20 @@ ER-Dependencies: ER-0032, ER-0094
 
 - ER ID: ER-0097
 - Title: Astra Vector, Matrix, and Tensor Shape Contract
-- Status: Proposed
+- Status: Complete
 - Date: 2026-10-10
 - Owners: Mike
 - Type: Enhancement
 
 ## Context and Scope
 
-AR-0017 requires vectors, matrices, and tensors to carry element type and shape/extents. Current definitions contain generic labels but no separately represented runtime shape. This ER defines the shape contract after the System Engineer selects fixed type parameters or dynamic extents on values. Tensor pack encoding is governed by ER-0094.
+AR-0017 requires vectors, matrices, and tensors to carry element type and shape/extents. The accepted contract fixes extents in type arguments; Tensor pack encoding is governed by ER-0094.
 
 ## Requirements
 
-- The selected design defines where extents live, whether they are fixed or dynamic, and the validation boundary for rank and extent values.
+- Extents are fixed type arguments: Vector is `T,N`; Matrix is `T,R,C`; Tensor is `T,Dims...`.
 - Vector, Matrix, and Tensor preserve element type and shape through construction, inspection, and persistence.
-- Invalid rank, negative/zero extents where prohibited, and mismatched element counts fail deterministically according to the selected contract.
+- Vector and Matrix have exactly one and two extents respectively; Tensor has rank at least one. Every extent is a positive U64 Value argument. Checked extent multiplication rejects product overflow before generic type construction or persistence. Current Astra definitions do not define a runtime collection payload, so element-count comparison is outside this ER; values carry the shape through their generic type identity.
 - No hidden default converts between fixed and dynamic shapes.
 
 ## Dependencies
@@ -33,15 +33,21 @@ AR-0017 requires vectors, matrices, and tensors to carry element type and shape/
 
 ## Acceptance Criteria
 
-- Parent AR and tests record the selected fixed-versus-dynamic semantics before implementation approval.
-- Tests cover rank, boundary extents, element-count consistency, and persistence round trips for Vector, Matrix, and Tensor.
+- Tests cover extent 1 and `UINT64_MAX`, zero and negative/wrong-kind rejection, exact Vector/Matrix ranks, Tensor rank 1 and multiple extents, U64 product overflow, and persistence round trips of GenericInstance type identity. They assert invalid arguments are rejected before a write and malformed persisted instances fail on read.
 - `./bootstrap.sh`, `./configure`, `make -j`, `make -C tests check TESTS='test_refract_bootstrap'`, `make check`, and `git diff --check` pass.
 
-## Open Question
+## Decision
 
-Should shape extents be fixed type parameters, or dynamic runtime values attached to each vector/matrix/tensor value?
+Shapes are fixed in type arguments. Extents are positive U64 Value arguments; Tensor uses the
+variadic contract from ER-0094. Values cannot override type-level extents.
 
 ### Live Pass (Human)
 
 - Required: No
 - Reason: Automated schema/value and persistence tests cover shape behavior.
+
+## Completion Record
+
+- Vector and Matrix now require exact ranks and positive U64 extent Values; Tensor applies the ER-0094 pack contract. Checked multiplication rejects product overflow during type derivation, registration, and scoped resolution. Matching persisted shape records are validated on read.
+- Local validation: `make -j CXXFLAGS='-g -O2 -Wno-unused-const-variable -Wno-unused-private-field'`; focused registry suite passed 1/1; full `make check` passed 30/30; `git diff --check` passed.
+- Independent read-only review passed with no findings; reviewer reran the focused registry suite (1/1).
