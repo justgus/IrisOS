@@ -16,7 +16,7 @@ ER-Dependencies: ER-0081, ER-0082, ER-0083
 
 - ER ID: ER-0086
 - Title: Error Boundary Conformance
-- Status: In Progress
+- Status: Verified
 - Date: 2026-10-07
 - Owners: Mike
 - Type: Enhancement
