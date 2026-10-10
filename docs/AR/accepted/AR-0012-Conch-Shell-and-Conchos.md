@@ -6,7 +6,7 @@ DR-Dependencies: DR-0001
 
 # AR-0012 — Conch Shell and Concho Views (Recommendation)
 
-- Status: In Progress
+- Status: Implemented
 - Date: 2026-02-16
 - Owners: Mike
 

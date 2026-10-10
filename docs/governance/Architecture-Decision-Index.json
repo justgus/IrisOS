@@ -154,9 +154,9 @@
     {
       "id": "AR-0011",
       "name": "Vizier Interpretation Layer",
-      "status": "In Progress",
+      "status": "Implemented",
       "decision": "Use Vizier to route object graph and artifact state into view models and Concho growth.",
-      "conformance": "Partial",
+      "conformance": "Implemented",
       "notes": [
         "Triggered artifact routing exists.",
         "Graph routing and session growth have verified library support; this batch integrates session updates into the shell and checks typed missing-artifact errors."
@@ -165,9 +165,9 @@
     {
       "id": "AR-0012",
       "name": "Conch Shell and Concho Views",
-      "status": "In Progress",
+      "status": "Implemented",
       "decision": "Use Conch as the terminal-first shell over object graph state and Conchos as object-backed views.",
-      "conformance": "Staged",
+      "conformance": "Implemented",
       "notes": [
         "Graph observation, relationship routing, and session growth have verified library support.",
         "This batch integrates the running shell with session growth and adds the accepted tiling workspace data model."
@@ -280,7 +280,7 @@
       "conformance": "Staged",
       "notes": [
         "Mode 1 is implemented by verified ERs.",
-        "Mode 2 remains planned under ER-0063 through ER-0066."
+        "Cursor-driven observer growth and Task Conchos are implemented by verified ER-0063 through ER-0066; continuous event-driven notification remains planned."
       ]
     },
     {
@@ -316,7 +316,7 @@
     {
       "area": "Conch and Vizier",
       "source": "AR-0011, AR-0012, AR-0025",
-      "gap": "Observer-driven graph routing and Task Conchos remain planned."
+      "gap": "Continuous event-driven graph notifications remain planned; cursor-driven session growth and Task Conchos are implemented by verified ER-0063 through ER-0066."
     },
     {
       "area": "Refract extended reflection",
