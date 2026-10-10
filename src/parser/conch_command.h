@@ -94,6 +94,8 @@ struct CapsCommand {
   std::vector<std::string> args;
 };
 
+struct HelpCommand {};
+
 struct CaliperCommand {
   std::vector<std::string> args;
 };
@@ -108,6 +110,7 @@ using CommandNode = std::variant<std::monostate,
                                  TaskCommand,
                                  IoCommand,
                                  CapsCommand,
+                                 HelpCommand,
                                  CaliperCommand>;
 
 struct CommandAst {

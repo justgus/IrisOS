@@ -260,6 +260,58 @@ START_TEST(test_conch_parser_namespace_commands_typed)
 }
 END_TEST
 
+START_TEST(test_conch_tokenizer_covers_conch_lexical_forms)
+{
+  ConchTokenizer tokenizer;
+  auto result = tokenizer.tokenize(
+      "Demo::Widget dotted.name -12 := = -- { } [ ] , : "
+      "'it\\'s \"fine\"' \"say \\\"hi\\\"\" 'slash\\\\path' \"slash\\\\path\"");
+  ck_assert_uint_eq(as_uint(result.errors.size()), 0U);
+
+  std::vector<Token> tokens;
+  for (const auto& token : result.tokens) {
+    if (token.kind != TokenKind::End) tokens.push_back(token);
+  }
+  ck_assert_uint_eq(as_uint(tokens.size()), 16U);
+  ck_assert_int_eq(static_cast<int>(tokens[0].kind), static_cast<int>(TokenKind::Identifier));
+  ck_assert_str_eq(tokens[0].text.c_str(), "Demo::Widget");
+  ck_assert_int_eq(static_cast<int>(tokens[1].kind), static_cast<int>(TokenKind::Identifier));
+  ck_assert_str_eq(tokens[1].text.c_str(), "dotted.name");
+  ck_assert_int_eq(static_cast<int>(tokens[2].kind), static_cast<int>(TokenKind::Number));
+  ck_assert_str_eq(tokens[2].text.c_str(), "-12");
+  ck_assert_str_eq(tokens[3].text.c_str(), ":=");
+  ck_assert_str_eq(tokens[4].text.c_str(), "=");
+  ck_assert_str_eq(tokens[5].text.c_str(), "--");
+  ck_assert_str_eq(tokens[6].text.c_str(), "{");
+  ck_assert_str_eq(tokens[7].text.c_str(), "}");
+  ck_assert_str_eq(tokens[8].text.c_str(), "[");
+  ck_assert_str_eq(tokens[9].text.c_str(), "]");
+  ck_assert_str_eq(tokens[10].text.c_str(), ",");
+  ck_assert_str_eq(tokens[11].text.c_str(), ":");
+  ck_assert_int_eq(static_cast<int>(tokens[12].kind), static_cast<int>(TokenKind::String));
+  ck_assert_str_eq(tokens[12].text.c_str(), "it's \"fine\"");
+  ck_assert_str_eq(tokens[13].text.c_str(), "say \"hi\"");
+  ck_assert_str_eq(tokens[14].text.c_str(), "slash\\path");
+  ck_assert_str_eq(tokens[15].text.c_str(), "slash\\path");
+}
+END_TEST
+
+START_TEST(test_conch_tokenizer_rejects_invalid_identifier_continuations)
+{
+  ConchTokenizer tokenizer;
+  auto result = tokenizer.tokenize("9invalid valid-name");
+  ck_assert_uint_eq(as_uint(result.errors.size()), 1U);
+  bool found_invalid_identifier = false;
+  for (const auto& token : result.tokens) {
+    if (token.text == "9invalid" || token.text == "valid-name") {
+      found_invalid_identifier = true;
+    }
+  }
+  ck_assert_msg(!found_invalid_identifier,
+                "invalid identifier prefixes and hyphens must not form one token");
+}
+END_TEST
+
 START_TEST(test_conch_parser_caliper_commands_typed)
 {
   auto list_ast = parse_conch_command("caliper list");
@@ -302,6 +354,8 @@ Suite* conch_parser_suite(void) {
   tcase_add_test(tc, test_conch_parser_call_command_typed);
   tcase_add_test(tc, test_conch_parser_task_and_io_commands_typed);
   tcase_add_test(tc, test_conch_parser_namespace_commands_typed);
+  tcase_add_test(tc, test_conch_tokenizer_covers_conch_lexical_forms);
+  tcase_add_test(tc, test_conch_tokenizer_rejects_invalid_identifier_continuations);
   tcase_add_test(tc, test_conch_parser_caliper_commands_typed);
   tcase_add_test(tc, test_conch_parser_unterminated);
 

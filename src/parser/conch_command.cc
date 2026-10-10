@@ -529,6 +529,10 @@ CommandAst parse_conch_command(std::string_view input) {
     out.node = TaskCommand{ TaskCommandKind::Ps, out.args };
     return out;
   }
+  if (out.name == "help" && out.args.empty()) {
+    out.node = HelpCommand{};
+    return out;
+  }
   if (out.name == "kill" && out.args.size() == 1) {
     out.node = TaskCommand{ TaskCommandKind::Kill, out.args };
     return out;

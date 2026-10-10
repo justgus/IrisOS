@@ -307,7 +307,7 @@ END_TEST
 START_TEST(test_conch_structured_authoring_execution)
 {
   std::ostringstream script;
-  script << "define type ConchTest::Structured fields count:Integer, label?:String\n";
+  script << "define type ConchTest::Structured fields count:U64, label?:String\n";
   script << "let inline=new ConchTest::Structured count:=9007199254740993 label:='hello world'\n";
   script << "let json=new --json '{\"type\":\"ConchTest::Structured\","
              "\"payload\":{\"count\":9007199254740993,\"label\":\"hello world\"}}'\n";
