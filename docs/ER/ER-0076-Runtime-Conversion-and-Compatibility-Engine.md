@@ -10,13 +10,13 @@ ER-Dependencies: ER-0075
 
 - Implementation Engineer: drafts and implements changes
 - System Engineer: reviews, tests, and verifies
-- Note: Only the System Engineer may mark an ER as Verified.
+- Note: Outside an Autonomous AR Batch, only the System Engineer may mark an ER as Verified. In this batch, Codex may do so only after the workflow's independent review and validation gates pass.
 
 ## ER Metadata
 
 - ER ID: ER-0076
 - Title: Runtime Conversion and Compatibility Engine
-- Status: Complete
+- Status: Proposed
 - Date: 2026-05-28
 - Owners: Mike
 - Type: Enhancement
@@ -63,14 +63,21 @@ ER-Dependencies: ER-0075
 
 ## Acceptance Criteria
 
-- Tests verify direct and chained conversions.
-- Tests verify incompatible units are rejected.
-- Tests verify offset conversions behave deterministically.
+- Tests verify direct and multi-link conversions, including deterministic results after closing and reopening the same store.
+- Tests verify unknown source/target units, incompatible dimensions, malformed decimal and exponent inputs, and missing, cyclic, or dimension-mismatched conversion links return stable errors.
+- Tests verify scale factors must be finite and strictly positive, while offsets must be finite and may be negative, zero, or positive. Arithmetic overflow and supported conversion-range boundaries produce deterministic results or stable errors according to the System Engineer's ruling #10; these tests do not select an arithmetic domain.
+- Tests verify offset conversions, including Fahrenheit/Celsius, behave deterministically and round only once at the public binary64 result boundary using direct IEEE-754 binary64 round-to-nearest, ties-to-even from the exact rational result. The conversion must not route through `long double` or another platform-dependent intermediate.
+- Tests exercise exact halfway values on either side of a representable result and any subnormal/overflow boundaries included in the supported domain selected by ruling #10.
+- Candidate exact rounding vectors for `test_refract_bootstrap`, included only if the selected arithmetic domain supports them:
+  - `1 + 2^-53 - 2^-55` -> `0x3ff0000000000000`; `1 + 2^-53` (tie) -> `0x3ff0000000000000`; `1 + 2^-53 + 2^-55` -> `0x3ff0000000000001`.
+  - `2^-1076` -> `0x0000000000000000`; `2^-1075` (tie) -> `0x0000000000000000`; `3 * 2^-1076` -> `0x0000000000000001`.
+  - `(2^54 - 3) / 2^1076` -> `0x000fffffffffffff`; `(2^54 - 2) / 2^1076` (tie) -> `0x0010000000000000`; `(2^54 - 1) / 2^1076` -> `0x0010000000000000`.
+  - `2^1024 - 2^970 - 2^968` -> `0x7fefffffffffffff`; `2^1024 - 2^970` (tie) and `2^1024 - 2^970 + 2^968` -> the documented stable finite-range error.
 
 ## Risks / Open Questions
 
-- Risk: floating-point precision policy needs clear test tolerances.
-- Question: should rational conversion factors be stored exactly before conversion to runtime numeric types?
+- Risk (pending ruling #10): checked rational intermediates may overflow on valid catalog chains. The selected arithmetic domain must be stated explicitly; do not infer arbitrary precision or claim full-catalog conversion coverage from these candidate vectors.
+- Resolved during batch planning: keep the existing Caliper `scale` and `offset` fields as binary64; changing the persisted numeric schema is outside AR-0019's accepted direction. The conversion engine interprets each factor's shortest round-trip decimal representation as an exact rational intermediate, performs checked exact chain arithmetic, and rounds once to binary64 at the public result boundary.
 
 ## Dependencies
 
@@ -79,18 +86,35 @@ ER-Dependencies: ER-0075
 ## Implementation Notes
 
 - Conversion follows each unit's explicit base-unit chain and composes scale and offset transforms.
-- Decimal input and the shortest round-trip decimal forms of stored binary64 factors are represented as reduced rational values. Checked signed 64-bit arithmetic keeps the intermediate chain exact and returns a deterministic error on overflow instead of approximating.
-- The public result is binary64 and is rounded once at the final conversion. Tests specify tolerances for that final value; the exact coefficient is limited by the existing binary64 catalog representation.
+- Decimal input and the shortest round-trip decimal forms of stored binary64 factors are represented as reduced rational values. Arithmetic range is provisional pending ruling #10: either exact in-tree arbitrary-precision intermediates across the supported catalog domain, or checked signed 64-bit arithmetic with an explicitly bounded conversion domain. Do not approximate when intermediate arithmetic exceeds the selected domain.
+- The public result is IEEE-754 binary64 rounded directly from the exact rational result using round-to-nearest, ties-to-even. Intermediate overflow outside the selected domain returns a deterministic error. Candidate vectors outside the selected arithmetic range are not required; reconcile the final test set with ruling #10 before approval.
 - No new dependency is required.
 
 ## Verification Plan
 
 - Tests to run:
+  - `./bootstrap.sh`
+  - `./configure`
+  - `make -j`
+  - `make -C tests check TESTS='test_refract_bootstrap'`
   - `make check`
+  - `git diff --check`
 - Manual checks:
   - convert representative length, mass, time, and temperature values.
 
 ## Completion Record
 
-- Implementation complete; System Engineer verification remains pending.
+- Prior implementation is merged; batch planning identified acceptance-test gaps that must be closed before this ER can return to Complete. System Engineer verification remains pending.
 - Validation: `make check` passed all 29 test programs on 2026-10-05.
+
+### Live Pass (Human)
+
+- Required: No
+- If no, reason: Conversion and error behavior is fully observable through the runtime API tests and requires no target-specific environment or human-only interaction.
+- Build / environment / target: Not applicable.
+- Steps: Not applicable.
+- Expected observations: Not applicable.
+- Observed results: Not applicable.
+- Result: Not Required
+- Performed by: Not applicable
+- Date: Not applicable

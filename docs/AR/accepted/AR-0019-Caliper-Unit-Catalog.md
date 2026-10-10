@@ -1,11 +1,11 @@
 ---
 GitHub-Issue: #302
-ER-Dependencies: ER-0033
+ER-Dependencies: ER-0033, ER-0075, ER-0076, ER-0077, ER-0089, ER-0095, ER-0099
 ---
 
 # AR-0019 — Caliper Unit Catalog
 
-- Status: Accepted
+- Status: In Progress
 - Date: 2026-02-27
 - Owners: Mike
 
