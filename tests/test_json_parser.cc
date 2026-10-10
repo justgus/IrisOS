@@ -29,6 +29,9 @@ START_TEST(test_json_object)
   ck_assert_uint_eq(as_uint(obj.size()), 2U);
   ck_assert_msg(std::holds_alternative<std::string>(obj.at("name").value), "expected name string");
   ck_assert_str_eq(std::get<std::string>(obj.at("name").value).c_str(), "alpha");
+  ck_assert_msg(std::holds_alternative<std::uint64_t>(obj.at("count").value),
+                "expected non-negative integer kind");
+  ck_assert_uint_eq(std::get<std::uint64_t>(obj.at("count").value), 3U);
 }
 END_TEST
 
@@ -60,6 +63,16 @@ START_TEST(test_json_error)
 }
 END_TEST
 
+START_TEST(test_json_integer_outside_64_bit_range_falls_back_to_double)
+{
+  auto result = parse_json("[18446744073709551616,-9223372036854775809]");
+  ck_assert_uint_eq(as_uint(result.errors.size()), 0U);
+  const auto& values = std::get<ValueArray>(result.value->value);
+  ck_assert_double_eq(std::get<double>(values[0].value), 18446744073709551616.0);
+  ck_assert_double_eq(std::get<double>(values[1].value), -9223372036854775809.0);
+}
+END_TEST
+
 Suite* json_parser_suite(void) {
   Suite* s = suite_create("JsonParser");
   TCase* tc = tcase_create("core");
@@ -68,6 +81,7 @@ Suite* json_parser_suite(void) {
   tcase_add_test(tc, test_json_array);
   tcase_add_test(tc, test_json_string_escapes);
   tcase_add_test(tc, test_json_error);
+  tcase_add_test(tc, test_json_integer_outside_64_bit_range_falls_back_to_double);
 
   suite_add_tcase(s, tc);
   return s;

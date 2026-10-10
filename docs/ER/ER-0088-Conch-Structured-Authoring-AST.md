@@ -16,7 +16,7 @@ ER-Dependencies: ER-0056, ER-0067
 
 - ER ID: ER-0088
 - Title: Conch Structured Authoring AST
-- Status: Approved
+- Status: Complete
 - Date: 2026-10-10
 - Owners: Mike
 - Type: Enhancement

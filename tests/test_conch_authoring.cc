@@ -304,6 +304,36 @@ START_TEST(test_conch_define_and_instantiate)
 }
 END_TEST
 
+START_TEST(test_conch_structured_authoring_execution)
+{
+  std::ostringstream script;
+  script << "define type ConchTest::Structured fields count:Integer, label?:String\n";
+  script << "let inline=new ConchTest::Structured count:=9007199254740993 label:='hello world'\n";
+  script << "let json=new --json '{\"type\":\"ConchTest::Structured\","
+             "\"payload\":{\"count\":9007199254740993,\"label\":\"hello world\"}}'\n";
+  script << "show inline\n";
+  script << "show json\n";
+  script << "exit\n";
+
+  auto output = run_conch_script(script.str());
+  ck_assert_msg(output.find("defined type ConchTest::Structured") != std::string::npos,
+                "expected structured define type to execute");
+  ck_assert_msg(output.find("error:") == std::string::npos,
+                "unexpected authoring error: %s", output.c_str());
+  ck_assert_msg(output.find("9007199254740993") != std::string::npos,
+                "expected exact large integer in persisted payload");
+  ck_assert_msg(output.find("hello world") != std::string::npos,
+                "expected quoted string value in persisted payload");
+  const std::string expected_payload =
+      "payload {\"count\":9007199254740993,\"label\":\"hello world\"}";
+  auto first_payload = output.find(expected_payload);
+  ck_assert_msg(first_payload != std::string::npos, "expected inline object payload");
+  ck_assert_msg(output.find(expected_payload, first_payload + expected_payload.size())
+                    != std::string::npos,
+                "expected JSON alias to persist the same payload as inline alias");
+}
+END_TEST
+
 START_TEST(test_conch_io_commands)
 {
   std::ostringstream script;
@@ -746,6 +776,7 @@ Suite* conch_authoring_suite(void) {
   TCase* tc = tcase_create("core");
 
   tcase_add_test(tc, test_conch_define_and_instantiate);
+  tcase_add_test(tc, test_conch_structured_authoring_execution);
   tcase_add_test(tc, test_conch_io_commands);
   tcase_add_test(tc, test_conch_io_requires_caps);
   tcase_add_test(tc, test_conch_io_datagram);

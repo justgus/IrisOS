@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <map>
 #include <string>
 #include <variant>
@@ -26,7 +27,8 @@ struct ValueNode;
 
 using ValueArray = std::vector<ValueNode>;
 using ValueObject = std::map<std::string, ValueNode>;
-using Value = std::variant<std::monostate, bool, double, std::string, ValueArray, ValueObject>;
+using Value = std::variant<std::monostate, bool, std::int64_t, std::uint64_t, double,
+                           std::string, ValueArray, ValueObject>;
 
 struct ValueNode {
   Value value;
