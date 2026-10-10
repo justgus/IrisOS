@@ -10,13 +10,13 @@ ER-Dependencies: ER-0075, ER-0076
 
 - Implementation Engineer: drafts and implements changes
 - System Engineer: reviews, tests, and verifies
-- Note: Only the System Engineer may mark an ER as Verified.
+- Note: Outside an Autonomous AR Batch, only the System Engineer may mark an ER as Verified. In this batch, Codex may do so only after the workflow's independent review and validation gates pass.
 
 ## ER Metadata
 
 - ER ID: ER-0077
 - Title: Conch Conversion and Inspection Commands
-- Status: Complete
+- Status: Proposed
 - Date: 2026-05-28
 - Owners: Mike
 - Type: Enhancement
@@ -63,14 +63,14 @@ ER-Dependencies: ER-0075, ER-0076
 
 ## Acceptance Criteria
 
-- Tests verify unit listing and lookup commands.
-- Tests verify successful conversion command output.
-- Tests verify unknown and incompatible unit errors.
+- Command tests verify unit listing and inspection by both symbol and name, plus stable errors for unknown units and malformed command arity.
+- Command tests verify successful conversion output, including the numeric result and target symbol, with optional dimension output when requested.
+- Tests verify unknown units, incompatible dimensions, and invalid options produce deterministic command errors.
 
 ## Risks / Open Questions
 
 - Risk: command names may conflict with future parser grammar expansion.
-- Question: should conversion command output include dimension metadata by default or only on inspection commands?
+- Resolved during batch planning by the existing merged command contract: conversion prints the numeric result and target symbol by default; `--dimension` opts into dimension metadata, while `inspect` reports unit metadata. ER-0077 preserves and tests this output contract.
 
 ## Dependencies
 
@@ -86,11 +86,28 @@ ER-Dependencies: ER-0075, ER-0076
 ## Verification Plan
 
 - Tests to run:
+  - `./bootstrap.sh`
+  - `./configure`
+  - `make -j`
+  - `make -C tests check TESTS='test_conch_parser test_conch_authoring'`
   - `make check`
+  - `git diff --check`
 - Manual checks:
   - list units, inspect a unit, convert compatible units, and attempt an incompatible conversion.
 
 ## Completion Record
 
-- Implementation complete; System Engineer verification remains pending.
+- Prior implementation is merged; batch planning identified acceptance-test gaps that must be closed before this ER can return to Complete. System Engineer verification remains pending.
 - Validation: `make check` passed all 29 test programs on 2026-10-05.
+
+### Live Pass (Human)
+
+- Required: No
+- If no, reason: Listing, inspection, conversion output, and error behavior are covered by automated Conch subprocess tests; no target-specific environment or human-only interaction is required.
+- Build / environment / target: Not applicable.
+- Steps: Not applicable.
+- Expected observations: Not applicable.
+- Observed results: Not applicable.
+- Result: Not Required
+- Performed by: Not applicable
+- Date: Not applicable

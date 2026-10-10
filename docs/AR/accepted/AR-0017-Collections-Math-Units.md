@@ -1,11 +1,11 @@
 ---
 GitHub-Issue: #81
-ER-Dependencies: ER-0031, ER-0032, ER-0033, ER-0039
+ER-Dependencies: ER-0031, ER-0032, ER-0033, ER-0039, ER-0090, ER-0093, ER-0094, ER-0096, ER-0097, ER-0098
 ---
 
 # AR-0017 — Collections, Math Types, and Units
 
-- Status: Accepted
+- Status: In Progress
 - Date: 2026-02-21
 - Owners: Mike
 

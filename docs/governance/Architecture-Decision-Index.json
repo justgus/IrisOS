@@ -188,12 +188,13 @@
     {
       "id": "AR-0015",
       "name": "Conch Parser and Syntax",
-      "status": "Accepted",
+      "status": "In Progress",
       "decision": "Move command parsing toward typed ASTs, parser-driven validation, and reusable grammar surfaces.",
       "conformance": "Staged",
       "notes": [
         "AR-0026 defines parser maturity levels.",
-        "Existing parser ER dependencies are verified through ER-0056, but Level 4 reuse remains planned."
+        "Reusable parsing, batch execution, and shared parser regression fixtures are verified through ER-0067/68/69.",
+        "Structured authoring payloads and shell consumption remain planned under ER-0088; grammar-conformance fixtures are planned under ER-0091; unrecognized string escape semantics are isolated under ER-0092."
       ]
     },
     {
@@ -205,12 +206,13 @@
     {
       "id": "AR-0017",
       "name": "Collections, Math Types, and Units",
-      "status": "Accepted",
+      "status": "In Progress",
       "decision": "Provide first-class collection, math, and unit type foundations.",
       "conformance": "Staged",
       "notes": [
         "Collection, math, and starter unit ERs are verified.",
-        "Full runtime unit conversion is tracked separately by AR-0019 planning."
+        "Full runtime unit conversion is tracked separately by AR-0019 planning.",
+        "Batch follow-up contracts cover collection operations (ER-0090/0093), generic packs (ER-0094), Float/Double format (ER-0096), shapes (ER-0097), and unit attachment (ER-0098); decisions remain pending where noted in the batch ledger."
       ]
     },
     {
@@ -222,12 +224,14 @@
     {
       "id": "AR-0019",
       "name": "Caliper Unit Catalog",
-      "status": "Accepted",
+      "status": "In Progress",
       "decision": "Ship a complete, deterministic, versioned unit catalog with conversion metadata and extension rules.",
       "conformance": "Partial",
       "notes": [
         "Starter catalog metadata exists through ER-0033.",
-        "Full catalog expansion and runtime conversion behavior remain planned work."
+        "Runtime conversion and Conch command implementations exist in merged ER-0076/0077 changes but remain Proposed pending added acceptance coverage and fresh validation/review.",
+        "Full catalog expansion, persisted extension/override integration, and dimension-constraint modeling remain unfinished batch work.",
+        "ER-0095 isolates the SI core manifest; ER-0099 isolates dimension constraints. Customary coverage, prefix representation, and canonical naming rulings remain pending."
       ]
     },
     {
@@ -326,7 +330,7 @@
     {
       "area": "Caliper runtime behavior",
       "source": "AR-0019",
-      "gap": "Full catalog expansion and runtime conversion behavior remain planned."
+      "gap": "Full catalog expansion and persisted extension/override integration remain unfinished; conversion and command code is present but unverified."
     }
   ]
 }
