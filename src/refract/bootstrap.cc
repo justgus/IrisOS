@@ -288,6 +288,7 @@ TypeDefinition make_crate_set() {
   def.type_params = { "T" };
   add_size_operation(def);
   add_iterate_operation(def);
+  add_index_operation(def, kTypeU64, kTypeBytes);
   add_contains_operation(def, kTypeBytes);
   return def;
 }
@@ -325,7 +326,8 @@ TypeDefinition make_astra_float() {
   def.type_id = kTypeAstraFloat;
   def.name = "Float";
   def.namespace_name = "Astra";
-  def.version = 1;
+  def.version = 2;
+  def.kind = "ieee754-binary32";
   return def;
 }
 
@@ -334,7 +336,8 @@ TypeDefinition make_astra_double() {
   def.type_id = kTypeAstraDouble;
   def.name = "Double";
   def.namespace_name = "Astra";
-  def.version = 1;
+  def.version = 2;
+  def.kind = "ieee754-binary64";
   return def;
 }
 
@@ -1148,14 +1151,68 @@ referee::Result<BootstrapResult> bootstrap_core_schema(SchemaRegistry& registry)
   auto listR = registry.list_types();
   if (!listR) return referee::Result<BootstrapResult>::err(listR.error->message);
 
+  auto defs = core_schema_definitions();
+
   if (!listR.value->empty()) {
     out.existing = listR.value->size();
+
+    auto prepare_format_migration = [&](referee::TypeID type_id,
+                                       std::string_view expected_kind)
+        -> referee::Result<std::optional<TypeDefinition>> {
+      auto priorR = registry.get_latest_definition_by_type(type_id);
+      if (!priorR) {
+        if (priorR.error->code == referee::ErrorCode::NotFound) {
+          return referee::Result<std::optional<TypeDefinition>>::ok(std::nullopt);
+        }
+        return referee::Result<std::optional<TypeDefinition>>::err(priorR.error.value());
+      }
+
+      const auto& prior = priorR.value.value();
+      if (prior.definition.kind == expected_kind) {
+        return referee::Result<std::optional<TypeDefinition>>::ok(std::nullopt);
+      }
+      if (prior.definition.kind.has_value()) {
+        return referee::Result<std::optional<TypeDefinition>>::err(
+            referee::ErrorCode::InvalidArgument,
+            "unsupported Astra floating format metadata");
+      }
+      if (prior.definition.version >= 2) {
+        return referee::Result<std::optional<TypeDefinition>>::err(
+            referee::ErrorCode::InvalidArgument,
+            "Astra floating format metadata missing from v2 definition");
+      }
+
+      auto target = std::find_if(defs.begin(), defs.end(), [&](const TypeDefinition& def) {
+        return def.type_id == type_id;
+      });
+      if (target == defs.end() || target->version != 2 || target->kind != expected_kind) {
+        return referee::Result<std::optional<TypeDefinition>>::err(
+            referee::ErrorCode::CorruptData,
+            "Astra floating format migration target is invalid");
+      }
+
+      TypeDefinition upgraded = *target;
+      upgraded.supersedes_definition_id = prior.ref.id;
+      return referee::Result<std::optional<TypeDefinition>>::ok(std::move(upgraded));
+    };
+
+    auto floatMigration = prepare_format_migration(kTypeAstraFloat, "ieee754-binary32");
+    if (!floatMigration) return referee::Result<BootstrapResult>::err(floatMigration.error.value());
+    auto doubleMigration = prepare_format_migration(kTypeAstraDouble, "ieee754-binary64");
+    if (!doubleMigration) return referee::Result<BootstrapResult>::err(doubleMigration.error.value());
+
+    for (const auto* migration : {&floatMigration, &doubleMigration}) {
+      if (!migration->value->has_value()) continue;
+      auto registerR = registry.register_definition(migration->value->value());
+      if (!registerR) return referee::Result<BootstrapResult>::err(registerR.error.value());
+      ++out.inserted;
+    }
+
     if (!allow_schema_recovery_reseed()) {
       return referee::Result<BootstrapResult>::ok(out);
     }
   }
 
-  auto defs = core_schema_definitions();
   for (const auto& def : defs) {
     auto existing = registry.get_definition_by_type(def.type_id);
     if (existing) {

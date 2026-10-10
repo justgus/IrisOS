@@ -14,9 +14,11 @@ extern "C" {
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <map>
 #include <optional>
 #include <set>
 #include <string>
+#include <tuple>
 #include <unistd.h>
 #include <vector>
 
@@ -133,23 +135,87 @@ START_TEST(test_bootstrap_crate_collections)
   ck_assert_msg(listR, "list_types failed: %s", result_message(listR));
   const auto& types = listR.value.value();
 
-  auto array_type = find_type(types, "Crate", "Array");
-  ck_assert_msg(array_type.has_value(), "Crate::Array missing");
-  ck_assert_msg(find_type(types, "Crate", "List").has_value(), "Crate::List missing");
-  ck_assert_msg(find_type(types, "Crate", "Set").has_value(), "Crate::Set missing");
-  ck_assert_msg(find_type(types, "Crate", "Map").has_value(), "Crate::Map missing");
-  ck_assert_msg(find_type(types, "Crate", "Tuple").has_value(), "Crate::Tuple missing");
+  struct ExpectedCollection {
+    const char* name;
+    std::vector<std::string> type_params;
+    bool has_index;
+  };
+  const std::vector<ExpectedCollection> expected = {
+    {"Array", {"T"}, true},
+    {"List", {"T"}, true},
+    {"Set", {"T"}, true},
+    {"Map", {"K", "V"}, true},
+    {"Tuple", {"Ts"}, true},
+  };
+  const std::vector<std::string> common_operations = {"size", "iterate", "contains"};
 
-  auto defR = registry.get_definition_by_type(array_type->type_id);
-  ck_assert_msg(defR, "get_definition_by_type failed: %s", result_message(defR));
+  for (const auto& collection : expected) {
+    const std::string collection_name = std::string("Crate::") + collection.name;
+    auto summary = find_type(types, "Crate", collection.name);
+    ck_assert_msg(summary.has_value(), "%s missing", collection_name.c_str());
 
-  const auto& record = defR.value.value();
-  ck_assert_msg(type_has_operation(record, "size"), "Crate::Array missing size op");
-  ck_assert_msg(type_has_operation(record, "iterate"), "Crate::Array missing iterate op");
-  ck_assert_msg(type_has_operation(record, "index"), "Crate::Array missing index op");
-  ck_assert_msg(type_has_operation(record, "contains"), "Crate::Array missing contains op");
+    auto defR = registry.get_definition_by_type(summary->type_id);
+    ck_assert_msg(defR, "%s definition lookup failed: %s",
+                  collection_name.c_str(), result_message(defR));
+
+    const auto& record = defR.value.value();
+    ck_assert_msg(type_params_match(record, collection.type_params),
+                  "%s has unexpected type parameter labels", collection_name.c_str());
+    for (const auto& operation : common_operations) {
+      ck_assert_msg(type_has_operation(record, operation), "%s missing %s operation",
+                    collection_name.c_str(), operation.c_str());
+    }
+    if (collection.has_index) {
+      ck_assert_msg(type_has_operation(record, "index"), "%s missing index operation",
+                    collection_name.c_str());
+    }
+  }
 
   ck_assert_msg(store.close(), "close failed");
+}
+END_TEST
+
+START_TEST(test_bootstrap_crate_set_index_signature_reopen)
+{
+  const std::string path = make_temp_db_path();
+  {
+    SqliteStore store(SqliteConfig{ .filename=path, .enable_wal=false });
+    ck_assert_msg(store.open(), "open failed");
+    ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+    SchemaRegistry registry(store);
+    auto boot = bootstrap_core_schema(registry);
+    ck_assert_msg(boot, "bootstrap failed: %s", result_message(boot));
+    ck_assert_msg(store.close(), "close before reopen failed");
+  }
+
+  {
+    SqliteStore store(SqliteConfig{ .filename=path, .enable_wal=false });
+    ck_assert_msg(store.open(), "reopen failed");
+    SchemaRegistry registry(store);
+    auto listR = registry.list_types();
+    ck_assert_msg(listR, "list_types after reopen failed: %s", result_message(listR));
+    auto set = find_type(listR.value.value(), "Crate", "Set");
+    ck_assert_msg(set.has_value(), "Crate::Set missing after reopen");
+    auto defR = registry.get_definition_by_type(set->type_id);
+    ck_assert_msg(defR, "Set definition after reopen failed: %s", result_message(defR));
+    const auto* index = find_operation(defR.value.value(), "index");
+    ck_assert_msg(index, "Set missing index operation after reopen");
+    ck_assert_msg(index->scope == OperationScope::Object, "Set index has unexpected scope");
+    ck_assert_msg(index->signature.params.size() == 1, "Set index must have one parameter");
+    ck_assert_msg(index->signature.outputs.size() == 1, "Set index must have one output");
+    ck_assert_str_eq(index->signature.params[0].name.c_str(), "index");
+    ck_assert_str_eq(index->signature.outputs[0].name.c_str(), "value");
+
+    auto u64 = find_type(listR.value.value(), "Refract", "U64");
+    auto bytes = find_type(listR.value.value(), "Refract", "Bytes");
+    ck_assert_msg(u64.has_value(), "Refract::U64 missing after reopen");
+    ck_assert_msg(bytes.has_value(), "Refract::Bytes missing after reopen");
+    ck_assert(index->signature.params[0].type == u64->type_id);
+    ck_assert(index->signature.outputs[0].type == bytes->type_id);
+    ck_assert_msg(store.close(), "close after reopen failed");
+  }
+  cleanup_temp_db(path);
 }
 END_TEST
 
@@ -216,7 +282,8 @@ END_TEST
 
 START_TEST(test_bootstrap_astra_math_types)
 {
-  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  const std::string path = make_temp_db_path();
+  SqliteStore store(SqliteConfig{ .filename=path, .enable_wal=false });
   ck_assert_msg(store.open(), "open failed");
   ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
 
@@ -233,8 +300,10 @@ START_TEST(test_bootstrap_astra_math_types)
   auto matrix_type = find_type(types, "Astra", "Matrix");
   auto tensor_type = find_type(types, "Astra", "Tensor");
 
-  ck_assert_msg(find_type(types, "Astra", "Float").has_value(), "Astra::Float missing");
-  ck_assert_msg(find_type(types, "Astra", "Double").has_value(), "Astra::Double missing");
+  auto float_type = find_type(types, "Astra", "Float");
+  auto double_type = find_type(types, "Astra", "Double");
+  ck_assert_msg(float_type.has_value(), "Astra::Float missing");
+  ck_assert_msg(double_type.has_value(), "Astra::Double missing");
   ck_assert_msg(vector_type.has_value(), "Astra::Vector missing");
   ck_assert_msg(matrix_type.has_value(), "Astra::Matrix missing");
   ck_assert_msg(tensor_type.has_value(), "Astra::Tensor missing");
@@ -254,6 +323,183 @@ START_TEST(test_bootstrap_astra_math_types)
   ck_assert_msg(type_params_match(tensor_def.value.value(), {"T", "Dims..."}),
                 "Astra::Tensor type params missing");
 
+  ck_assert_msg(store.close(), "close failed");
+
+  SqliteStore reopened(SqliteConfig{ .filename=path, .enable_wal=false });
+  ck_assert_msg(reopened.open(), "reopen failed");
+  ck_assert_msg(reopened.ensure_schema(), "reopened ensure_schema failed");
+  SchemaRegistry reopened_registry(reopened);
+  auto reopened_float = reopened_registry.get_definition_by_type(float_type->type_id);
+  ck_assert_msg(reopened_float,
+                "reopened Astra::Float definition lookup failed: %s",
+                result_message(reopened_float));
+  ck_assert_msg(reopened_float.value->definition.kind.has_value(),
+                "Astra::Float format metadata missing after reopen");
+  ck_assert_str_eq(reopened_float.value->definition.kind->c_str(), "ieee754-binary32");
+  ck_assert_uint_eq(reopened_float.value->definition.version, 2U);
+
+  auto reopened_double = reopened_registry.get_definition_by_type(double_type->type_id);
+  ck_assert_msg(reopened_double,
+                "reopened Astra::Double definition lookup failed: %s",
+                result_message(reopened_double));
+  ck_assert_msg(reopened_double.value->definition.kind.has_value(),
+                "Astra::Double format metadata missing after reopen");
+  ck_assert_str_eq(reopened_double.value->definition.kind->c_str(), "ieee754-binary64");
+  ck_assert_uint_eq(reopened_double.value->definition.version, 2U);
+
+  ck_assert_msg(reopened.close(), "reopened store close failed");
+  cleanup_temp_db(path);
+}
+END_TEST
+
+START_TEST(test_bootstrap_migrates_astra_float_formats)
+{
+  const std::string path = make_temp_db_path();
+  ObjectID prior_float_id{};
+  ObjectID prior_double_id{};
+
+  {
+    SqliteStore store(SqliteConfig{ .filename=path, .enable_wal=false });
+    ck_assert_msg(store.open(), "open old store failed");
+    ck_assert_msg(store.ensure_schema(), "old store ensure_schema failed");
+    SchemaRegistry registry(store);
+
+    TypeDefinition old_float{};
+    old_float.type_id = TypeID{0x4153545200000001ULL};
+    old_float.name = "Float";
+    old_float.namespace_name = "Astra";
+    old_float.version = 1;
+    auto registered_float = registry.register_definition(old_float);
+    ck_assert_msg(registered_float,
+                  "register old Astra::Float failed: %s",
+                  result_message(registered_float));
+    prior_float_id = registered_float.value->ref.id;
+
+    TypeDefinition old_double{};
+    old_double.type_id = TypeID{0x4153545200000002ULL};
+    old_double.name = "Double";
+    old_double.namespace_name = "Astra";
+    old_double.version = 1;
+    auto registered_double = registry.register_definition(old_double);
+    ck_assert_msg(registered_double,
+                  "register old Astra::Double failed: %s",
+                  result_message(registered_double));
+    prior_double_id = registered_double.value->ref.id;
+    ck_assert_msg(store.close(), "old store close failed");
+  }
+
+  {
+    SqliteStore store(SqliteConfig{ .filename=path, .enable_wal=false });
+    ck_assert_msg(store.open(), "reopen old store failed");
+    ck_assert_msg(store.ensure_schema(), "reopened old store ensure_schema failed");
+    SchemaRegistry registry(store);
+
+    auto migrated = bootstrap_core_schema(registry);
+    ck_assert_msg(migrated, "format migration failed: %s", result_message(migrated));
+    ck_assert_uint_eq(migrated.value->inserted, 2U);
+
+    auto latest_float = registry.get_latest_definition_by_type(TypeID{0x4153545200000001ULL});
+    ck_assert_msg(latest_float,
+                  "latest Astra::Float lookup failed: %s",
+                  result_message(latest_float));
+    ck_assert_uint_eq(latest_float.value->definition.version, 2U);
+    ck_assert_str_eq(latest_float.value->definition.kind->c_str(), "ieee754-binary32");
+    auto float_chain = registry.list_supersedes_chain(latest_float.value->ref.id);
+    ck_assert_msg(float_chain, "Astra::Float supersedes chain lookup failed");
+    ck_assert_uint_eq(float_chain.value->size(), 1U);
+    ck_assert_msg(float_chain.value->front().prior.ref.id == prior_float_id,
+                  "Astra::Float migration does not supersede the v1 definition");
+
+    auto latest_double = registry.get_latest_definition_by_type(TypeID{0x4153545200000002ULL});
+    ck_assert_msg(latest_double,
+                  "latest Astra::Double lookup failed: %s",
+                  result_message(latest_double));
+    ck_assert_uint_eq(latest_double.value->definition.version, 2U);
+    ck_assert_str_eq(latest_double.value->definition.kind->c_str(), "ieee754-binary64");
+    auto double_chain = registry.list_supersedes_chain(latest_double.value->ref.id);
+    ck_assert_msg(double_chain, "Astra::Double supersedes chain lookup failed");
+    ck_assert_uint_eq(double_chain.value->size(), 1U);
+    ck_assert_msg(double_chain.value->front().prior.ref.id == prior_double_id,
+                  "Astra::Double migration does not supersede the v1 definition");
+
+    auto prior_float = registry.get_definition_by_id(prior_float_id);
+    ck_assert_msg(prior_float, "prior Float definition lookup failed");
+    ck_assert_uint_eq(prior_float.value->definition.version, 1U);
+    ck_assert_msg(!prior_float.value->definition.kind.has_value(),
+                  "prior Float definition was modified");
+
+    auto prior_double = registry.get_definition_by_id(prior_double_id);
+    ck_assert_msg(prior_double, "prior Double definition lookup failed");
+    ck_assert_uint_eq(prior_double.value->definition.version, 1U);
+    ck_assert_msg(!prior_double.value->definition.kind.has_value(),
+                  "prior Double definition was modified");
+
+    auto repeated = bootstrap_core_schema(registry);
+    ck_assert_msg(repeated, "repeated format migration failed: %s", result_message(repeated));
+    ck_assert_uint_eq(repeated.value->inserted, 0U);
+    ck_assert_msg(store.close(), "migrated store close failed");
+  }
+
+  {
+    SqliteStore store(SqliteConfig{ .filename=path, .enable_wal=false });
+    ck_assert_msg(store.open(), "reopen migrated store failed");
+    ck_assert_msg(store.ensure_schema(), "reopened migrated store ensure_schema failed");
+    SchemaRegistry registry(store);
+    for (const auto& [type_id, expected_kind, prior_id] : {
+             std::tuple{TypeID{0x4153545200000001ULL}, "ieee754-binary32", prior_float_id},
+             std::tuple{TypeID{0x4153545200000002ULL}, "ieee754-binary64", prior_double_id}}) {
+      auto latest = registry.get_latest_definition_by_type(type_id);
+      ck_assert_msg(latest, "reopened migrated definition lookup failed: %s", result_message(latest));
+      ck_assert_uint_eq(latest.value->definition.version, 2U);
+      ck_assert_str_eq(latest.value->definition.kind->c_str(), expected_kind);
+      auto chain = registry.list_supersedes_chain(latest.value->ref.id);
+      ck_assert_msg(chain, "reopened migration chain lookup failed");
+      ck_assert_uint_eq(chain.value->size(), 1U);
+      ck_assert_msg(chain.value->front().prior.ref.id == prior_id,
+                    "reopened migration chain points to the wrong prior definition");
+    }
+    ck_assert_msg(store.close(), "reopened migrated store close failed");
+  }
+
+  cleanup_temp_db(path);
+}
+END_TEST
+
+START_TEST(test_bootstrap_float_format_migration_rejects_invalid_double_atomically)
+{
+  SqliteStore store(SqliteConfig{ .filename=":memory:", .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+  SchemaRegistry registry(store);
+
+  TypeDefinition old_float{};
+  old_float.type_id = TypeID{0x4153545200000001ULL};
+  old_float.name = "Float";
+  old_float.namespace_name = "Astra";
+  old_float.version = 1;
+  auto registered_float = registry.register_definition(old_float);
+  ck_assert_msg(registered_float, "register old Astra::Float failed");
+
+  TypeDefinition invalid_double{};
+  invalid_double.type_id = TypeID{0x4153545200000002ULL};
+  invalid_double.name = "Double";
+  invalid_double.namespace_name = "Astra";
+  invalid_double.version = 2;
+  invalid_double.kind = "unsupported-format";
+  auto registered_double = registry.register_definition(invalid_double);
+  ck_assert_msg(registered_double, "register invalid Astra::Double failed");
+
+  auto boot = bootstrap_core_schema(registry);
+  ck_assert_msg(!boot, "bootstrap should reject unsupported Astra::Double format metadata");
+  ck_assert_msg(boot.error->code == ErrorCode::InvalidArgument,
+                "unsupported Astra::Double format should return InvalidArgument");
+  ck_assert_str_eq(boot.error->message.c_str(), "unsupported Astra floating format metadata");
+
+  auto latest_float = registry.get_latest_definition_by_type(TypeID{0x4153545200000001ULL});
+  ck_assert_msg(latest_float, "latest Astra::Float lookup failed");
+  ck_assert_uint_eq(latest_float.value->definition.version, 1U);
+  ck_assert_msg(!latest_float.value->definition.kind.has_value(),
+                "failed migration partially inserted Astra::Float v2");
   ck_assert_msg(store.close(), "close failed");
 }
 END_TEST
@@ -340,6 +586,153 @@ START_TEST(test_bootstrap_caliper_units)
                 "Caliper base catalog serialization changed after reload");
 
   ck_assert_msg(store.close(), "close failed");
+}
+END_TEST
+
+START_TEST(test_caliper_quantity_unit_attachment_roundtrip)
+{
+  const std::string path = make_temp_db_path();
+  SqliteStore store(SqliteConfig{ .filename=path, .enable_wal=false });
+  ck_assert_msg(store.open(), "open failed");
+  ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+
+  SchemaRegistry registry(store);
+  auto boot = bootstrap_core_schema(registry);
+  ck_assert_msg(boot, "bootstrap failed: %s", result_message(boot));
+  auto catalog = bootstrap_core_catalog(registry, store);
+  ck_assert_msg(catalog, "catalog bootstrap failed: %s", result_message(catalog));
+
+  auto typesR = registry.list_types();
+  ck_assert_msg(typesR, "list types failed: %s", result_message(typesR));
+  const auto& types = typesR.value.value();
+  const auto angle = find_type(types, "Caliper", "Angle");
+  const auto duration = find_type(types, "Caliper", "Duration");
+  const auto span = find_type(types, "Caliper", "Span");
+  const auto range = find_type(types, "Caliper", "Range");
+  const auto percentage = find_type(types, "Caliper", "Percentage");
+  const auto ratio = find_type(types, "Caliper", "Ratio");
+  const auto unit_type = find_type(types, "Caliper", "Unit");
+  const auto dimension_type = find_type(types, "Caliper", "Dimension");
+  ck_assert_msg(angle && duration && span && range && percentage && ratio && unit_type && dimension_type,
+                "Caliper quantity schemas missing");
+
+  auto unitsR = store.list_by_type(unit_type->type_id);
+  ck_assert_msg(unitsR, "list units failed: %s", result_message(unitsR));
+  std::map<std::string, ObjectID> unit_ids;
+  for (const auto& unit : unitsR.value.value()) {
+    const auto payload = nlohmann::json::from_cbor(unit.payload_cbor);
+    unit_ids[payload.at("symbol").get<std::string>()] = unit.ref.id;
+  }
+  ck_assert_msg(unit_ids.contains("rad") && unit_ids.contains("s") && unit_ids.contains("m") &&
+                unit_ids.contains("%") && unit_ids.contains("1"),
+                "required Caliper units missing");
+
+  CaliperValueRegistry values(registry, store);
+  auto angle_value = values.create(angle->type_id, {{0x01, 0x02}}, unit_ids.at("rad"));
+  auto duration_value = values.create(duration->type_id, {{0x03}}, unit_ids.at("s"));
+  auto span_value = values.create(span->type_id, {{0x04}}, unit_ids.at("m"));
+  auto range_value = values.create(range->type_id, {{0x05}, {0x06}}, unit_ids.at("m"));
+  auto percentage_value = values.create(percentage->type_id, {{0x07}}, unit_ids.at("%"));
+  auto ratio_value = values.create(ratio->type_id, {{0x08}}, unit_ids.at("1"));
+  ck_assert_msg(angle_value, "create Angle failed: %s", result_message(angle_value));
+  ck_assert_msg(duration_value, "create Duration failed: %s", result_message(duration_value));
+  ck_assert_msg(span_value, "create Span failed: %s", result_message(span_value));
+  ck_assert_msg(range_value, "create Range failed: %s", result_message(range_value));
+  ck_assert_msg(percentage_value, "create Percentage failed: %s", result_message(percentage_value));
+  ck_assert_msg(ratio_value, "create Ratio failed: %s", result_message(ratio_value));
+  const std::vector<CaliperQuantityValue> created_values = {
+      angle_value.value.value(), duration_value.value.value(), span_value.value.value(),
+      range_value.value.value(), percentage_value.value.value(), ratio_value.value.value()};
+
+  const auto angle_count_before_rejections = store.list_by_type(angle->type_id).value->size();
+  auto mismatch = values.create(angle->type_id, {{0x09}}, unit_ids.at("m"));
+  ck_assert_msg(!mismatch, "dimension-mismatched Angle unit unexpectedly accepted");
+  ck_assert_msg(mismatch.error->code == ErrorCode::InvalidArgument,
+                "dimension mismatch should return InvalidArgument");
+  auto missing_unit = values.create(angle->type_id, {{0x09}}, ObjectID::random());
+  ck_assert_msg(!missing_unit, "missing unit reference unexpectedly accepted");
+  ck_assert_msg(missing_unit.error->code == ErrorCode::InvalidArgument,
+                "missing unit should return InvalidArgument");
+  auto dimensionsR = store.list_by_type(dimension_type->type_id);
+  ck_assert_msg(dimensionsR, "list dimensions failed: %s", result_message(dimensionsR));
+  auto wrong_type_ref = values.create(angle->type_id, {{0x09}}, dimensionsR.value->front().ref.id);
+  ck_assert_msg(!wrong_type_ref, "non-Unit object reference unexpectedly accepted");
+  ck_assert_msg(wrong_type_ref.error->code == ErrorCode::InvalidArgument,
+                "wrong unit object type should return InvalidArgument");
+  auto dimension_def = registry.get_definition_by_type(dimension_type->type_id);
+  auto unit_def = registry.get_definition_by_type(unit_type->type_id);
+  ck_assert_msg(dimension_def && unit_def, "Caliper Unit/Dimension definitions missing");
+  nlohmann::json forged_dimension_payload{{"name", "Angle"}, {"symbol", "Ang"},
+                                           {"components", {{"Length", 1}}}};
+  auto forged_dimension = store.create_object(dimension_type->type_id, dimension_def.value->ref.id,
+                                               nlohmann::json::to_cbor(forged_dimension_payload));
+  ck_assert_msg(forged_dimension, "create forged dimension fixture failed: %s",
+                result_message(forged_dimension));
+  nlohmann::json forged_unit_payload{{"name", "forged radian"}, {"symbol", "frad"},
+                                      {"dimension_id", forged_dimension.value->ref.id.to_hex()}};
+  auto forged_unit = store.create_object(unit_type->type_id, unit_def.value->ref.id,
+                                          nlohmann::json::to_cbor(forged_unit_payload));
+  ck_assert_msg(forged_unit, "create forged unit fixture failed: %s", result_message(forged_unit));
+  auto forged_mismatch = values.create(angle->type_id, {{0x09}}, forged_unit.value->ref.id);
+  ck_assert_msg(!forged_mismatch, "Angle accepted a same-name dimension with Length components");
+  ck_assert_msg(forged_mismatch.error->code == ErrorCode::InvalidArgument,
+                "forged dimension should return InvalidArgument on create");
+  ck_assert_uint_eq(store.list_by_type(angle->type_id).value->size(), angle_count_before_rejections);
+
+  auto angle_def = registry.get_definition_by_type(angle->type_id);
+  ck_assert_msg(angle_def, "Angle definition lookup failed: %s", result_message(angle_def));
+  nlohmann::json legacy_payload;
+  legacy_payload["value"] = std::vector<std::uint8_t>{0x0A};
+  auto legacy = store.create_object(angle->type_id, angle_def.value->ref.id,
+                                    nlohmann::json::to_cbor(legacy_payload));
+  ck_assert_msg(legacy, "create unitless legacy quantity failed: %s", result_message(legacy));
+  auto legacy_value = values.get(legacy.value->ref);
+  ck_assert_msg(legacy_value, "unitless legacy quantity did not decode: %s", result_message(legacy_value));
+  ck_assert_msg(!legacy_value.value->unit_id.has_value(), "unitless legacy value gained a unit");
+  ck_assert_uint_eq(legacy_value.value->components.size(), 1U);
+  ck_assert_uint_eq(legacy_value.value->components[0].at(0), 0x0A);
+
+  nlohmann::json corrupt_payload;
+  corrupt_payload["value"] = std::vector<std::uint8_t>{0x0B};
+  corrupt_payload["unit_id"] = ObjectID::random().to_hex();
+  auto corrupt = store.create_object(angle->type_id, angle_def.value->ref.id,
+                                     nlohmann::json::to_cbor(corrupt_payload));
+  ck_assert_msg(corrupt, "create corrupt quantity fixture failed: %s", result_message(corrupt));
+  auto corrupt_value = values.get(corrupt.value->ref);
+  ck_assert_msg(!corrupt_value, "malformed persisted unit reference unexpectedly decoded");
+  ck_assert_msg(corrupt_value.error->code == ErrorCode::CorruptData,
+                "malformed persisted unit reference should return CorruptData");
+
+  nlohmann::json forged_corrupt_payload;
+  forged_corrupt_payload["value"] = std::vector<std::uint8_t>{0x0C};
+  forged_corrupt_payload["unit_id"] = forged_unit.value->ref.id.to_hex();
+  auto forged_corrupt = store.create_object(angle->type_id, angle_def.value->ref.id,
+                                             nlohmann::json::to_cbor(forged_corrupt_payload));
+  ck_assert_msg(forged_corrupt, "create forged persisted quantity failed: %s",
+                result_message(forged_corrupt));
+  auto forged_corrupt_value = values.get(forged_corrupt.value->ref);
+  ck_assert_msg(!forged_corrupt_value, "persisted Angle accepted forged dimension components");
+  ck_assert_msg(forged_corrupt_value.error->code == ErrorCode::CorruptData,
+                "forged persisted dimension should return CorruptData");
+
+  ck_assert_msg(store.close(), "close before reopen failed");
+  ck_assert_msg(store.open(), "reopen failed");
+  SchemaRegistry reopened_registry(store);
+  CaliperValueRegistry reopened_values(reopened_registry, store);
+  for (const auto& created : created_values) {
+    auto reopened = reopened_values.get(created.ref);
+    ck_assert_msg(reopened, "quantity failed persistence round trip: %s", result_message(reopened));
+    ck_assert_uint_eq(reopened.value->type.v, created.type.v);
+    ck_assert_msg(reopened.value->unit_id == created.unit_id, "unit reference changed on reopen");
+    ck_assert_uint_eq(reopened.value->components.size(), created.components.size());
+    for (std::size_t i = 0; i < created.components.size(); ++i) {
+      ck_assert_msg(reopened.value->components[i] == created.components[i],
+                    "quantity component changed on reopen");
+    }
+  }
+
+  ck_assert_msg(store.close(), "close failed");
+  cleanup_temp_db(path);
 }
 END_TEST
 
@@ -569,9 +962,13 @@ Suite* refract_bootstrap_suite(void) {
 
   tcase_add_test(tc, test_bootstrap_idempotent);
   tcase_add_test(tc, test_bootstrap_crate_collections);
+  tcase_add_test(tc, test_bootstrap_crate_set_index_signature_reopen);
   tcase_add_test(tc, test_bootstrap_core_ops_on_primitives);
   tcase_add_test(tc, test_bootstrap_conch_types);
   tcase_add_test(tc, test_bootstrap_astra_math_types);
+  tcase_add_test(tc, test_caliper_quantity_unit_attachment_roundtrip);
+  tcase_add_test(tc, test_bootstrap_migrates_astra_float_formats);
+  tcase_add_test(tc, test_bootstrap_float_format_migration_rejects_invalid_double_atomically);
   tcase_add_test(tc, test_bootstrap_caliper_units);
   tcase_add_test(tc, test_compose_caliper_catalog_extension_precedence);
   tcase_add_test(tc, test_caliper_runtime_conversion_and_catalog_loading);

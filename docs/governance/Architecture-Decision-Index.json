@@ -212,7 +212,7 @@
       "notes": [
         "Collection, math, and starter unit ERs are verified.",
         "Full runtime unit conversion is tracked separately by AR-0019 planning.",
-        "Batch follow-up contracts cover collection operations (ER-0090/0093), generic packs (ER-0094), Float/Double format (ER-0096), shapes (ER-0097), and unit attachment (ER-0098); decisions remain pending where noted in the batch ledger."
+        "Batch follow-up contracts cover collection operations (ER-0090/0093), generic packs (ER-0094), Float/Double format (ER-0096), fixed type-level shapes (ER-0097), and value-level unit attachment (ER-0098); System Engineer rulings are recorded in the ERs and batch ledger."
       ]
     },
     {

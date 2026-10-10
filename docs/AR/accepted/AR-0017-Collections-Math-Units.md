@@ -59,13 +59,16 @@ Treat these as first-class Refract types with definitions stored in the Refract 
 Each collection should expose standard operations (size, iterate, index, contains) and support
 type parameterization in Refract (e.g., `List<String>`).
 
+`Set` declares the standard `index` operation as well. This schema declaration does not impose an
+iteration order on an unordered Set.
+
 ### Math Types
 
 - **Float**: 32-bit IEEE.
 - **Double**: 64-bit IEEE.
-- **Vector**: 1-D numeric collection (element type + length).
-- **Matrix**: 2-D numeric collection (element type + rows/cols).
-- **Tensor**: N-D numeric collection (element type + shape).
+- **Vector**: 1-D numeric collection with element type and length fixed in its type arguments.
+- **Matrix**: 2-D numeric collection with element type, rows, and columns fixed in its type arguments.
+- **Tensor**: N-D numeric collection with element type and extents fixed in its type arguments.
 
 ### Quantities
 
@@ -86,9 +89,9 @@ Define quantity types as first-class wrappers to combine values with constraints
 
 ## Open Questions
 
-- How should type parameters be represented in Refract (generic Type IDs vs. parameterized definitions)?
-- Should units be attached at value level, type level, or both?
-- Do we require fixed shapes for Vector/Matrix/Tensor at the type level?
+- Resolved for this batch by ER-0094: retain the existing generic type-parameter labels and represent arguments through existing Type/Value/Variadic forms.
+- Units attach to quantity values, not generic type identity.
+- Vector/Matrix/Tensor shapes are fixed in their type arguments.
 
 ## Next Steps
 

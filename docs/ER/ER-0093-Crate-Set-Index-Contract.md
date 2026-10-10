@@ -10,20 +10,19 @@ ER-Dependencies: ER-0031
 
 - ER ID: ER-0093
 - Title: Crate Set Index Contract
-- Status: Proposed
+- Status: Complete
 - Date: 2026-10-10
 - Owners: Mike
 - Type: Enhancement
 
 ## Context and Scope
 
-AR-0017 describes Set as unordered while listing `index` among the standard collection operations. Existing `Crate::Set` schema declares `index`, but there is no accepted semantic contract for what indexing an unordered set means. This ER is limited to resolving that contract and adding matching schema/runtime tests. It does not assume that `index` means insertion order, sorted order, or internal storage position.
+AR-0017 describes Set as unordered while listing `index` among the standard collection operations. The current Set schema omits `index`; this ER adds and tests the required Refract operation declaration. The repository does not provide a runtime Crate collection implementation, so the schema contract does not define positional behavior or iteration order.
 
 ## Requirements
 
-- The System Engineer's ruling determines whether Set exposes `index`, and if so, the stable semantics and error behavior.
-- Tests verify the selected contract through the public collection API/schema and prove that results do not depend on hash-table iteration order or process-specific layout.
-- If indexing is excluded, tests assert that Set does not advertise it; the parent AR's acceptance mapping must explain the resolved interpretation.
+- `Crate::Set` exposes the standard schema `index` operation with a U64 index parameter and Bytes value result. The signature matches Array/List/Tuple because Set elements are values; it declares operation shape only and does not promise a stable positional lookup.
+- This ER validates the Refract schema contract only; it does not introduce runtime Set indexing or imply an iteration order.
 
 ## Dependencies
 
@@ -31,13 +30,15 @@ AR-0017 describes Set as unordered while listing `index` among the standard coll
 
 ## Acceptance Criteria
 
-- The selected Set index contract is documented in the parent AR or this ER before implementation approval.
-- Focused tests cover empty, singleton, multiple-element, absent-element, and repeated-run behavior applicable to the selected contract.
+- Tests assert the operation's name, scope, parameter type, and output type after bootstrap and store reopen.
 - `./bootstrap.sh`, `./configure`, `make -j`, `make -C tests check TESTS='test_refract_bootstrap'`, `make check`, and `git diff --check` pass.
 
-## Open Question
+## Decision
 
-Should unordered `Crate::Set` expose `index` with a defined stable ordering, or should it omit `index` despite AR-0017's general operation list?
+`Crate::Set` declares the same `index(U64) -> Bytes` operation signature as Array/List/Tuple,
+following those existing schema declarations. For Set the operation is an introspection contract
+only; it does not impose iteration order or promise positional lookup. The repository has no
+runtime Crate collection implementation in this scope.
 
 ### Live Pass (Human)
 

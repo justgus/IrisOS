@@ -5,12 +5,207 @@
 #include <algorithm>
 #include <array>
 #include <cstdio>
+#include <cstdint>
 #include <string_view>
 #include <unordered_set>
 
 namespace iris::refract {
 
 namespace {
+
+constexpr referee::TypeID kTypeCrateTuple{0x4352415400000005ULL};
+constexpr referee::TypeID kTypeAstraVector{0x4153545200000003ULL};
+constexpr referee::TypeID kTypeAstraMatrix{0x4153545200000004ULL};
+constexpr referee::TypeID kTypeAstraTensor{0x4153545200000005ULL};
+constexpr referee::TypeID kTypeU64{0x1002ULL};
+
+referee::Result<void> validate_generic_pack(const GenericInstance& instance,
+                                           referee::ErrorCode error_code) {
+  auto invalid = [error_code](std::string message) {
+    return referee::Result<void>::err(error_code, std::move(message));
+  };
+  auto get_extent = [](const GenericArg& arg, std::uint64_t* extent) {
+    if (arg.kind != GenericArgKind::Value || arg.value_type != kTypeU64) return false;
+    try {
+      const auto value = nlohmann::json::parse(arg.value_json);
+      if (!value.is_number_unsigned()) return false;
+      *extent = value.get<std::uint64_t>();
+      return *extent > 0;
+    } catch (const std::exception&) {
+      return false;
+    }
+  };
+  auto multiply_extent = [](std::uint64_t extent, std::uint64_t* product) {
+    if (extent == 0 || *product > UINT64_MAX / extent) return false;
+    *product *= extent;
+    return true;
+  };
+
+  if (instance.base_type == kTypeCrateTuple) {
+    if (instance.args.size() != 1 ||
+        instance.args[0].kind != GenericArgKind::Variadic) {
+      return invalid("Crate::Tuple requires exactly one Variadic argument pack");
+    }
+    for (const auto& item : instance.args[0].items) {
+      if (item.kind != GenericArgKind::Type) {
+        return invalid("Crate::Tuple pack items must be Type arguments");
+      }
+    }
+  } else if (instance.base_type == kTypeAstraTensor) {
+    if (instance.args.size() != 2 ||
+        instance.args[0].kind != GenericArgKind::Type ||
+        instance.args[1].kind != GenericArgKind::Variadic) {
+      return invalid("Astra::Tensor requires an element Type and one Variadic extent pack");
+    }
+    if (instance.args[1].items.empty()) {
+      return invalid("Astra::Tensor requires at least one extent");
+    }
+    std::uint64_t product = 1;
+    for (const auto& item : instance.args[1].items) {
+      if (item.kind != GenericArgKind::Value || item.value_type != kTypeU64) {
+        return invalid("Astra::Tensor extents must be U64 Value arguments");
+      }
+      std::uint64_t extent = 0;
+      if (!get_extent(item, &extent)) {
+        return invalid("Astra::Tensor extents must be positive U64 values");
+      }
+      if (!multiply_extent(extent, &product)) {
+        return invalid("Astra::Tensor element count overflows U64");
+      }
+    }
+  } else if (instance.base_type == kTypeAstraVector ||
+             instance.base_type == kTypeAstraMatrix) {
+    const bool is_vector = instance.base_type == kTypeAstraVector;
+    const std::size_t expected_args = is_vector ? 2 : 3;
+    if (instance.args.size() != expected_args ||
+        instance.args[0].kind != GenericArgKind::Type) {
+      return invalid(is_vector ? "Astra::Vector requires an element Type and one extent"
+                               : "Astra::Matrix requires an element Type and two extents");
+    }
+    std::uint64_t product = 1;
+    for (std::size_t i = 1; i < instance.args.size(); ++i) {
+      std::uint64_t extent = 0;
+      if (!get_extent(instance.args[i], &extent)) {
+        return invalid("Astra shape extents must be positive U64 values");
+      }
+      if (!multiply_extent(extent, &product)) {
+        return invalid("Astra shape element count overflows U64");
+      }
+    }
+  }
+
+  return referee::Result<void>::ok();
+}
+
+referee::Result<void> validate_generic_pack_payload(const nlohmann::json& payload) {
+  const auto base_it = payload.find("base_type_id");
+  if (base_it == payload.end() || !base_it->is_number_unsigned()) {
+    return referee::Result<void>::ok();
+  }
+  const auto base_type = base_it->get<std::uint64_t>();
+  if (base_type != kTypeCrateTuple.v && base_type != kTypeAstraVector.v &&
+      base_type != kTypeAstraMatrix.v && base_type != kTypeAstraTensor.v) {
+    return referee::Result<void>::ok();
+  }
+
+  auto invalid = [](std::string message) {
+    return referee::Result<void>::err(referee::ErrorCode::CorruptData, std::move(message));
+  };
+  if (!payload.contains("args")) return invalid("generic pack record is missing args");
+
+  nlohmann::json args;
+  const auto& encoded_args = payload.at("args");
+  try {
+    if (encoded_args.is_binary()) {
+      args = nlohmann::json::from_cbor(encoded_args.get_binary());
+    } else {
+      args = encoded_args;
+    }
+  } catch (const std::exception& ex) {
+    return invalid(std::string("generic pack args are malformed: ") + ex.what());
+  }
+  if (!args.is_array()) return invalid("generic pack args must be an array");
+
+  auto has_kind = [](const nlohmann::json& arg, std::string_view kind) {
+    return arg.is_object() && arg.contains("kind") && arg.at("kind").is_string() &&
+           arg.at("kind").get<std::string>() == kind;
+  };
+  auto has_type_id = [](const nlohmann::json& arg) {
+    if (!arg.contains("type_id") || !arg.at("type_id").is_number_integer()) return false;
+    if (arg.at("type_id").is_number_unsigned()) return true;
+    return arg.at("type_id").get<std::int64_t>() >= 0;
+  };
+  auto get_extent = [](const nlohmann::json& arg, std::uint64_t* extent) {
+    if (!arg.is_object() || !arg.contains("kind") || !arg.at("kind").is_string() ||
+        arg.at("kind").get<std::string>() != "value" || !arg.contains("value_type_id") ||
+        !arg.at("value_type_id").is_number_unsigned() ||
+        arg.at("value_type_id").get<std::uint64_t>() != kTypeU64.v ||
+        !arg.contains("value_json") || !arg.at("value_json").is_string()) {
+      return false;
+    }
+    try {
+      const auto value = nlohmann::json::parse(arg.at("value_json").get<std::string>());
+      if (!value.is_number_unsigned()) return false;
+      *extent = value.get<std::uint64_t>();
+      return *extent > 0;
+    } catch (const std::exception&) {
+      return false;
+    }
+  };
+  auto multiply_extent = [](std::uint64_t extent, std::uint64_t* product) {
+    if (extent == 0 || *product > UINT64_MAX / extent) return false;
+    *product *= extent;
+    return true;
+  };
+
+  if (base_type == kTypeCrateTuple.v) {
+    if (args.size() != 1 || !has_kind(args[0], "variadic") ||
+        !args[0].contains("items") || !args[0].at("items").is_array()) {
+      return invalid("stored Crate::Tuple requires one Variadic pack");
+    }
+    for (const auto& item : args[0].at("items")) {
+      if (!has_kind(item, "type") || !has_type_id(item)) {
+        return invalid("stored Crate::Tuple pack item is not a well-formed Type argument");
+      }
+    }
+  } else if (base_type == kTypeAstraTensor.v) {
+    if (args.size() != 2 || !has_kind(args[0], "type") || !has_type_id(args[0]) ||
+        !has_kind(args[1], "variadic") || !args[1].contains("items") ||
+        !args[1].at("items").is_array() || args[1].at("items").empty()) {
+      return invalid("stored Astra::Tensor requires a Type and nonempty Variadic extent pack");
+    }
+    std::uint64_t product = 1;
+    for (const auto& item : args[1].at("items")) {
+      std::uint64_t extent = 0;
+      if (!get_extent(item, &extent)) {
+        return invalid("stored Astra::Tensor extent is not a positive U64 Value argument");
+      }
+      if (!multiply_extent(extent, &product)) {
+        return invalid("stored Astra::Tensor element count overflows U64");
+      }
+    }
+  } else {
+    const bool is_vector = base_type == kTypeAstraVector.v;
+    const std::size_t expected_args = is_vector ? 2 : 3;
+    if (args.size() != expected_args || !has_kind(args[0], "type") ||
+        !has_type_id(args[0])) {
+      return invalid(is_vector ? "stored Astra::Vector has an invalid rank or element Type"
+                               : "stored Astra::Matrix has an invalid rank or element Type");
+    }
+    std::uint64_t product = 1;
+    for (std::size_t i = 1; i < args.size(); ++i) {
+      std::uint64_t extent = 0;
+      if (!get_extent(args[i], &extent)) {
+        return invalid("stored Astra shape extent is not a positive U64 Value argument");
+      }
+      if (!multiply_extent(extent, &product)) {
+        return invalid("stored Astra shape element count overflows U64");
+      }
+    }
+  }
+
+  return referee::Result<void>::ok();
+}
 
 static std::string field_constraint_kind_to_string(FieldConstraintKind kind) {
   switch (kind) {
@@ -957,6 +1152,10 @@ referee::Result<std::string> encode_generic_instance_key(const GenericInstance& 
 }
 
 referee::Result<referee::TypeID> derive_generic_type_id(const GenericInstance& instance) {
+  auto validateR = validate_generic_pack(instance, referee::ErrorCode::InvalidArgument);
+  if (!validateR) {
+    return referee::Result<referee::TypeID>::err(validateR.error.value());
+  }
   auto keyR = encode_generic_instance_key(instance);
   if (!keyR) return referee::Result<referee::TypeID>::err(keyR.error.value());
   return referee::Result<referee::TypeID>::ok(referee::TypeID{fnv1a_64(keyR.value.value())});
@@ -1214,6 +1413,11 @@ GenericRegistry::GenericRegistry(SchemaRegistry& schema, referee::SqliteStore& s
 
 referee::Result<GenericInstanceRecord> GenericRegistry::register_instance(
     const GenericInstance& instance) {
+  auto validateR = validate_generic_pack(instance, referee::ErrorCode::InvalidArgument);
+  if (!validateR) {
+    return referee::Result<GenericInstanceRecord>::err(validateR.error.value());
+  }
+
   auto defR = schema_.get_definition_by_type(kTypeGenericInstanceType);
   if (!defR) return referee::Result<GenericInstanceRecord>::err(defR.error.value());
 
@@ -1245,6 +1449,14 @@ referee::Result<GenericInstanceRecord> GenericRegistry::get_instance_by_type(
       auto instR = generic_instance_from_json(j);
       if (!instR) return referee::Result<GenericInstanceRecord>::err(instR.error.value());
       if (instR.value->instance_type == type_id) {
+        auto raw_validateR = validate_generic_pack_payload(j);
+        if (!raw_validateR) {
+          return referee::Result<GenericInstanceRecord>::err(raw_validateR.error.value());
+        }
+        auto validateR = validate_generic_pack(instR.value.value(), referee::ErrorCode::CorruptData);
+        if (!validateR) {
+          return referee::Result<GenericInstanceRecord>::err(validateR.error.value());
+        }
         GenericInstanceRecord record{};
         record.ref = rec.ref;
         record.instance = instR.value.value();
@@ -1270,6 +1482,11 @@ void ScopedTypeRegistry::set_logger(std::function<void(const std::string&)> logg
 referee::Result<GenericInstanceRecord> ScopedTypeRegistry::resolve_or_register(
     const GenericInstance& instance,
     PromotionPolicy policy) {
+  auto validateR = validate_generic_pack(instance, referee::ErrorCode::InvalidArgument);
+  if (!validateR) {
+    return referee::Result<GenericInstanceRecord>::err(validateR.error.value());
+  }
+
   auto typeR = derive_generic_type_id(instance);
   if (!typeR) return referee::Result<GenericInstanceRecord>::err(typeR.error.value());
 
@@ -1357,6 +1574,201 @@ void ScopedTypeRegistry::log_promotion(Scope from, Scope to, referee::TypeID typ
   std::string msg = "promoted generic instance 0x" + hex_u64(type_id.v)
       + " from " + scope_label(from) + " to " + scope_label(to);
   logger_(msg);
+}
+
+namespace {
+
+constexpr referee::TypeID kTypeCaliperDimension{0x43414C5000000001ULL};
+constexpr referee::TypeID kTypeCaliperUnit{0x43414C5000000002ULL};
+constexpr referee::TypeID kTypeCaliperAngle{0x43414C5000000003ULL};
+constexpr referee::TypeID kTypeCaliperDuration{0x43414C5000000004ULL};
+constexpr referee::TypeID kTypeCaliperSpan{0x43414C5000000005ULL};
+constexpr referee::TypeID kTypeCaliperRange{0x43414C5000000006ULL};
+constexpr referee::TypeID kTypeCaliperPercentage{0x43414C5000000007ULL};
+constexpr referee::TypeID kTypeCaliperRatio{0x43414C5000000008ULL};
+
+struct CaliperQuantityShape {
+  std::size_t component_count;
+  std::optional<std::string_view> dimension;
+};
+
+std::optional<CaliperQuantityShape> caliper_quantity_shape(referee::TypeID type) {
+  if (type == kTypeCaliperAngle) return CaliperQuantityShape{1, "Angle"};
+  if (type == kTypeCaliperDuration) return CaliperQuantityShape{1, "Time"};
+  if (type == kTypeCaliperSpan) return CaliperQuantityShape{1, "Length"};
+  if (type == kTypeCaliperRange) return CaliperQuantityShape{2, std::nullopt};
+  if (type == kTypeCaliperPercentage || type == kTypeCaliperRatio) {
+    return CaliperQuantityShape{1, "Dimensionless"};
+  }
+  return std::nullopt;
+}
+
+using CaliperUnitDimension = std::pair<std::string, nlohmann::json>;
+
+bool caliper_fixed_dimension_matches(const CaliperUnitDimension& dimension,
+                                    std::string_view expected_name) {
+  if (dimension.first != expected_name) return false;
+  nlohmann::json expected_components;
+  if (expected_name == "Dimensionless") {
+    expected_components = nlohmann::json::object();
+  } else if (expected_name == "Angle" || expected_name == "Time" || expected_name == "Length") {
+    expected_components = nlohmann::json{{std::string(expected_name), 1}};
+  } else {
+    return false;
+  }
+  return dimension.second == expected_components;
+}
+
+referee::Result<CaliperUnitDimension> caliper_unit_dimension(
+    referee::SqliteStore& store,
+    referee::ObjectID unit_id,
+    referee::ErrorCode error_code) {
+  auto invalid = [error_code](std::string message) {
+    return referee::Result<CaliperUnitDimension>::err(error_code, std::move(message));
+  };
+  auto unitR = store.get_latest(unit_id);
+  if (!unitR || unitR.value->type != kTypeCaliperUnit) {
+    return invalid("unit_id does not reference a Caliper::Unit");
+  }
+  try {
+    const auto unit = nlohmann::json::from_cbor(unitR.value->payload_cbor);
+    const auto dimension_text = unit.at("dimension_id").get<std::string>();
+    const auto dimension_id = referee::ObjectID::from_hex(dimension_text);
+    auto dimensionR = store.get_latest(dimension_id);
+    if (!dimensionR || dimensionR.value->type != kTypeCaliperDimension) {
+      return invalid("Caliper::Unit has an unresolved dimension reference");
+    }
+    const auto dimension = nlohmann::json::from_cbor(dimensionR.value->payload_cbor);
+    const auto name = dimension.at("name").get<std::string>();
+    if (name.empty()) return invalid("Caliper::Unit has an empty dimension name");
+    const auto components = dimension.at("components");
+    if (!components.is_object()) return invalid("Caliper::Dimension components are malformed");
+    return referee::Result<CaliperUnitDimension>::ok({name, components});
+  } catch (const std::exception&) {
+    return referee::Result<CaliperUnitDimension>::err(error_code,
+        "Caliper::Unit or its dimension payload is malformed");
+  }
+}
+
+referee::Result<referee::Bytes> caliper_value_bytes(const nlohmann::json& value) {
+  if (value.is_binary()) {
+    return referee::Result<referee::Bytes>::ok(value.get_binary());
+  }
+  if (!value.is_array()) {
+    return referee::Result<referee::Bytes>::err(referee::ErrorCode::CorruptData,
+                                                 "Caliper quantity value is not a byte sequence");
+  }
+  referee::Bytes bytes;
+  bytes.reserve(value.size());
+  for (const auto& byte : value) {
+    if (!byte.is_number_integer() || byte.get<std::int64_t>() < 0 ||
+        byte.get<std::uint64_t>() > 255) {
+      return referee::Result<referee::Bytes>::err(referee::ErrorCode::CorruptData,
+                                                   "Caliper quantity value contains a non-byte element");
+    }
+    bytes.push_back(static_cast<std::uint8_t>(byte.get<std::uint64_t>()));
+  }
+  return referee::Result<referee::Bytes>::ok(std::move(bytes));
+}
+
+} // namespace
+
+CaliperValueRegistry::CaliperValueRegistry(SchemaRegistry& schema, referee::SqliteStore& store)
+    : schema_(schema), store_(store) {}
+
+referee::Result<CaliperQuantityValue> CaliperValueRegistry::create(
+    referee::TypeID quantity_type,
+    const std::vector<referee::Bytes>& components,
+    std::optional<referee::ObjectID> unit_id) {
+  const auto shape = caliper_quantity_shape(quantity_type);
+  if (!shape || components.size() != shape->component_count) {
+    return referee::Result<CaliperQuantityValue>::err(
+        referee::ErrorCode::InvalidArgument, "unsupported Caliper quantity type or component count");
+  }
+
+  if (unit_id.has_value()) {
+    auto dimensionR = caliper_unit_dimension(store_, unit_id.value(),
+                                                  referee::ErrorCode::InvalidArgument);
+    if (!dimensionR) {
+      return referee::Result<CaliperQuantityValue>::err(dimensionR.error.value());
+    }
+    if (shape->dimension.has_value() &&
+        !caliper_fixed_dimension_matches(dimensionR.value.value(), shape->dimension.value())) {
+      return referee::Result<CaliperQuantityValue>::err(
+          referee::ErrorCode::InvalidArgument, "unit dimension does not match Caliper quantity type");
+    }
+  }
+
+  auto defR = schema_.get_definition_by_type(quantity_type);
+  if (!defR) return referee::Result<CaliperQuantityValue>::err(defR.error.value());
+  nlohmann::json payload;
+  if (quantity_type == kTypeCaliperRange) {
+    payload["min_value"] = components[0];
+    payload["max_value"] = components[1];
+  } else {
+    payload["value"] = components[0];
+  }
+  if (unit_id.has_value()) payload["unit_id"] = unit_id->to_hex();
+
+  auto created = store_.create_object(quantity_type, defR.value->ref.id,
+                                      nlohmann::json::to_cbor(payload));
+  if (!created) return referee::Result<CaliperQuantityValue>::err(created.error.value());
+  return referee::Result<CaliperQuantityValue>::ok(CaliperQuantityValue{
+      created.value->ref, quantity_type, components, unit_id});
+}
+
+referee::Result<CaliperQuantityValue> CaliperValueRegistry::get(referee::ObjectRef ref) {
+  auto recordR = store_.get_object(ref);
+  if (!recordR) return referee::Result<CaliperQuantityValue>::err(recordR.error.value());
+  const auto shape = caliper_quantity_shape(recordR.value->type);
+  if (!shape) {
+    return referee::Result<CaliperQuantityValue>::err(referee::ErrorCode::CorruptData,
+                                                       "object is not a Caliper quantity value");
+  }
+
+  try {
+    const auto payload = nlohmann::json::from_cbor(recordR.value->payload_cbor);
+    std::vector<referee::Bytes> components;
+    if (recordR.value->type == kTypeCaliperRange) {
+      if (!payload.contains("min_value") || !payload.contains("max_value")) {
+        return referee::Result<CaliperQuantityValue>::err(referee::ErrorCode::CorruptData,
+                                                           "Caliper::Range is missing a bound");
+      }
+      auto minR = caliper_value_bytes(payload.at("min_value"));
+      auto maxR = caliper_value_bytes(payload.at("max_value"));
+      if (!minR) return referee::Result<CaliperQuantityValue>::err(minR.error.value());
+      if (!maxR) return referee::Result<CaliperQuantityValue>::err(maxR.error.value());
+      components.push_back(std::move(minR.value.value()));
+      components.push_back(std::move(maxR.value.value()));
+    } else {
+      if (!payload.contains("value")) {
+        return referee::Result<CaliperQuantityValue>::err(referee::ErrorCode::CorruptData,
+                                                           "Caliper quantity is missing value");
+      }
+      auto valueR = caliper_value_bytes(payload.at("value"));
+      if (!valueR) return referee::Result<CaliperQuantityValue>::err(valueR.error.value());
+      components.push_back(std::move(valueR.value.value()));
+    }
+
+    std::optional<referee::ObjectID> unit_id;
+    if (payload.contains("unit_id")) {
+      const auto unit_text = payload.at("unit_id").get<std::string>();
+      unit_id = referee::ObjectID::from_hex(unit_text);
+      auto dimensionR = caliper_unit_dimension(store_, unit_id.value(),
+                                                    referee::ErrorCode::CorruptData);
+      if (!dimensionR) return referee::Result<CaliperQuantityValue>::err(dimensionR.error.value());
+      if (shape->dimension.has_value() &&
+          !caliper_fixed_dimension_matches(dimensionR.value.value(), shape->dimension.value())) {
+        return referee::Result<CaliperQuantityValue>::err(
+            referee::ErrorCode::CorruptData, "stored unit dimension does not match Caliper quantity type");
+      }
+    }
+    return referee::Result<CaliperQuantityValue>::ok(CaliperQuantityValue{
+        recordR.value->ref, recordR.value->type, std::move(components), unit_id});
+  } catch (const std::exception&) {
+    return referee::Result<CaliperQuantityValue>::err(referee::ErrorCode::CorruptData,
+                                                       "Caliper quantity payload is malformed");
+  }
 }
 
 } // namespace iris::refract
