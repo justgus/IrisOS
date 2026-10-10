@@ -1,6 +1,26 @@
-# status	input	name	kind	args	error
-ok	namespace Demo::Inner	namespace	Namespace	Demo::Inner	
-ok	show type Demo::Widget	show	Schema	type|Demo::Widget	
-ok	call demo expand 2	call	Call	demo|expand|2	
-ok	task spawn demo service	task	Task	spawn|demo|service	
-error	say "oops	say	Unknown		unterminated string
+# status<TAB>input<TAB>name<TAB>kind<TAB>args<TAB>structured<TAB>error<TAB>offset<TAB>line<TAB>column
+ok	ls	ls	TypesList	-	-	-	-	-	-
+ok	ls --regex	ls	TypesList	--regex	-	-	-	-	-
+ok	ls --namespaces	ls	TypesList	--namespaces	-	-	-	-	-
+ok	ls --regex --namespaces	ls	TypesList	--regex|--namespaces	-	-	-	-	-
+ok	ls pattern	ls	TypesList	pattern	-	-	-	-	-
+ok	ls --regex pattern	ls	TypesList	--regex|pattern	-	-	-	-	-
+ok	ls --namespaces pattern	ls	TypesList	--namespaces|pattern	-	-	-	-	-
+ok	ls --regex --namespaces pattern	ls	TypesList	--regex|--namespaces|pattern	-	-	-	-	-
+ok	show type Demo::Widget	show	Schema	type|Demo::Widget	schema_show;ShowType;Demo::Widget	-	-	-	-
+ok	show 0123456789abcdef0123456789abcdef	show	Object	0123456789abcdef0123456789abcdef	object_show;Show;0123456789abcdef0123456789abcdef	-	-	-	-
+ok	define type Demo::Record fields id:U64, label?:String	define	Schema	-	define;Demo::Record;id:U64:required;label:String:optional	-	-	-	-
+ok	define type --json '{"name":"Record","namespace":"Demo","version":1}'	define	Schema	-	jsondefine;Demo::Record;name:string:Record;namespace:string:Demo;version:uint64:1	-	-	-	-
+ok	new Demo::Widget label:='hello world' enabled:=true count:=42	new	Object	-	new;Demo::Widget;label:string:hello world;enabled:bool:true;count:int64:42	-	-	-	-
+ok	new --json '{"type":"Demo::Widget","payload":{"count":9007199254740993}}'	new	Object	-	jsonnew;Demo::Widget;count:uint64:9007199254740993	-	-	-	-
+ok	call 0123456789abcdef0123456789abcdef expand	call	Call	0123456789abcdef0123456789abcdef|expand	-	-	-	-	-
+ok	call 0123456789abcdef0123456789abcdef expand -12	call	Call	0123456789abcdef0123456789abcdef|expand|-12	-	-	-	-	-
+ok	start 0123456789abcdef0123456789abcdef	start	Task	0123456789abcdef0123456789abcdef	task;Start;0123456789abcdef0123456789abcdef	-	-	-	-
+ok	let item=plain	let	AliasAssignment	item=plain	alias_plain;let;item;false;plain	-	-	-	-
+ok	var count=42	var	AliasAssignment	count=42	alias_plain;var;count;true;42	-	-	-	-
+ok	alias item=new Demo::Widget count:=42	alias	AliasAssignment	item=new|Demo::Widget|count:=42	alias;alias;item;false;Demo::Widget;count:int64:42	-	-	-	-
+ok	help	help	Help	-	-	-	-	-	-
+error	new	new	Unknown	-	-	expected type name or --json payload	3	1	4
+error	new Demo::Widget label:=	new	Unknown	-	-	expected field:=value	24	1	25
+error	define type Demo::Record fields id:	define	Unknown	-	-	invalid field specification	32	1	33
+error	say "oops	say	Unknown	-	-	unterminated string	4	1	5

@@ -1,12 +1,28 @@
 #pragma once
 
 #include "parser/tokenizer.h"
+#include "parser/types.h"
 
 #include <string>
+#include <optional>
 #include <variant>
 #include <vector>
 
 namespace iris::parser {
+
+struct AuthoringFieldSpec {
+  std::string name;
+  std::string type_name;
+  bool required{true};
+  Span span;
+};
+
+struct AuthoringCommand {
+  std::string type_name;
+  ValueNode payload;
+  bool json_mode{false};
+  std::vector<AuthoringFieldSpec> fields;
+};
 
 struct AliasAssignmentCommand {
   std::string keyword;
@@ -14,6 +30,7 @@ struct AliasAssignmentCommand {
   bool list_aliases{false};
   std::string name;
   std::string expression;
+  std::optional<AuthoringCommand> authoring;
 };
 
 struct TypesListCommand {
@@ -35,8 +52,8 @@ enum class SchemaCommandKind {
 struct SchemaCommand {
   SchemaCommandKind kind{SchemaCommandKind::FindType};
   std::vector<std::string> args;
-  std::vector<std::string> tokens;
   std::string type_name;
+  std::optional<AuthoringCommand> authoring;
 };
 
 enum class ObjectCommandKind {
@@ -47,8 +64,8 @@ enum class ObjectCommandKind {
 
 struct ObjectCommand {
   ObjectCommandKind kind{ObjectCommandKind::Show};
-  std::string expression;
   std::string target;
+  std::optional<AuthoringCommand> authoring;
 };
 
 struct CallCommand {
@@ -77,6 +94,8 @@ struct CapsCommand {
   std::vector<std::string> args;
 };
 
+struct HelpCommand {};
+
 struct CaliperCommand {
   std::vector<std::string> args;
 };
@@ -91,6 +110,7 @@ using CommandNode = std::variant<std::monostate,
                                  TaskCommand,
                                  IoCommand,
                                  CapsCommand,
+                                 HelpCommand,
                                  CaliperCommand>;
 
 struct CommandAst {

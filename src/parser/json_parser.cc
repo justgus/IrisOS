@@ -1,6 +1,7 @@
 #include "parser/json_parser.h"
 
 #include <cctype>
+#include <charconv>
 #include <cstdint>
 #include <cstdlib>
 #include <string>
@@ -179,7 +180,7 @@ static std::optional<std::string> parse_string(Cursor& cursor) {
   return std::nullopt;
 }
 
-static std::optional<double> parse_number(Cursor& cursor) {
+static std::optional<Value> parse_number(Cursor& cursor) {
   std::size_t start = cursor.index;
   if (cursor.peek() == '-') cursor.advance();
 
@@ -205,10 +206,25 @@ static std::optional<double> parse_number(Cursor& cursor) {
   }
 
   std::string text(cursor.input.substr(start, cursor.index - start));
+  if (text.find_first_of(".eE") == std::string::npos) {
+    if (!text.empty() && text.front() == '-') {
+      std::int64_t value = 0;
+      auto parsed = std::from_chars(text.data(), text.data() + text.size(), value);
+      if (parsed.ec == std::errc{} && parsed.ptr == text.data() + text.size()) {
+        return Value{value};
+      }
+    } else {
+      std::uint64_t value = 0;
+      auto parsed = std::from_chars(text.data(), text.data() + text.size(), value);
+      if (parsed.ec == std::errc{} && parsed.ptr == text.data() + text.size()) {
+        return Value{value};
+      }
+    }
+  }
   char* end = nullptr;
   double value = std::strtod(text.c_str(), &end);
   if (!end || *end != '\0') return std::nullopt;
-  return value;
+  return Value{value};
 }
 
 static bool match_literal(Cursor& cursor, std::string_view literal) {
@@ -329,7 +345,7 @@ static std::optional<ValueNode> parse_value(Cursor& cursor) {
       return std::nullopt;
     }
     ValueNode node;
-    node.value = Value{*num};
+    node.value = std::move(*num);
     node.span = Span{start_offset, start_line, start_col, cursor.index - start_offset};
     return node;
   }

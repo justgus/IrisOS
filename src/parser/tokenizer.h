@@ -45,4 +45,9 @@ private:
   std::string symbols_;
 };
 
+class ConchTokenizer {
+public:
+  TokenizeResult tokenize(std::string_view input) const;
+};
+
 } // namespace iris::parser

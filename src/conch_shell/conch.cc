@@ -233,8 +233,10 @@ bool handle_namespace_family_command(SchemaRegistry& registry,
                                      std::string& current_namespace,
                                      const iris::parser::NamespaceCommand& command);
 void cmd_objects(SchemaRegistry& registry, SqliteStore& store);
-void cmd_define_type(SchemaRegistry& registry, const std::vector<std::string>& tokens);
-void cmd_new_object(SchemaRegistry& registry, SqliteStore& store, const std::string& line);
+void cmd_define_type(SchemaRegistry& registry,
+                     const iris::parser::AuthoringCommand& command);
+void cmd_new_object(SchemaRegistry& registry, SqliteStore& store,
+                    const iris::parser::AuthoringCommand& command);
 void cmd_find_type(SchemaRegistry& registry, const std::string& type_name);
 void cmd_show_type(SchemaRegistry& registry, const std::string& type_name);
 void cmd_ops(SchemaRegistry& registry, const std::vector<std::string>& args);
@@ -870,18 +872,18 @@ bool handle_session_operation(const std::string& line,
     return true;
   }
   if (op == "define_type") {
-    if (parsed.args.size() >= 2 && parsed.args[0] == "type") {
-      std::vector<std::string> tokens;
-      tokens.reserve(parsed.args.size() + 1);
-      tokens.push_back(parsed.name);
-      tokens.insert(tokens.end(), parsed.args.begin(), parsed.args.end());
-      cmd_define_type(registry, tokens);
+    if (auto schema = parsed.get_if<iris::parser::SchemaCommand>();
+        schema && schema->authoring) {
+      cmd_define_type(registry, *schema->authoring);
       return true;
     }
     return false;
   }
   if (op == "new_object") {
-    cmd_new_object(registry, store, line);
+    auto ast = iris::parser::parse_conch_command(line);
+    auto command = ast.get_if<iris::parser::ObjectCommand>();
+    if (command && command->authoring) cmd_new_object(registry, store, *command->authoring);
+    else std::cout << "error: invalid new command AST\n";
     return true;
   }
   if (op == "find_type") {
@@ -1005,7 +1007,7 @@ bool handle_session_operation(const std::string& line,
 }
 
 referee::Result<ObjectID> create_object(SchemaRegistry& registry, SqliteStore& store,
-                                        const std::string& expr);
+                                        const iris::parser::AuthoringCommand& command);
 referee::Result<ObjectID> create_demo_object(SchemaRegistry& registry, SqliteStore& store,
                                              const std::string& type_name,
                                              const nlohmann::json& payload);
@@ -1076,75 +1078,6 @@ std::string trim_copy(std::string value) {
   return value;
 }
 
-bool parse_kv_payload(const std::string& text, nlohmann::json* payload, std::string* err_out) {
-  size_t i = 0;
-  auto fail = [&](const std::string& msg) {
-    if (err_out) *err_out = msg;
-    return false;
-  };
-
-  while (i < text.size()) {
-    while (i < text.size() && std::isspace(static_cast<unsigned char>(text[i]))) ++i;
-    if (i >= text.size()) break;
-
-    size_t name_start = i;
-    while (i < text.size() && !std::isspace(static_cast<unsigned char>(text[i]))
-           && text[i] != ':' && text[i] != '=') {
-      ++i;
-    }
-    if (i == name_start) return fail("expected field:=value");
-    std::string field = text.substr(name_start, i - name_start);
-
-    while (i < text.size() && std::isspace(static_cast<unsigned char>(text[i]))) ++i;
-    if (i >= text.size() || text[i] != ':') return fail("expected field:=value");
-    ++i;
-    while (i < text.size() && std::isspace(static_cast<unsigned char>(text[i]))) ++i;
-    if (i >= text.size() || text[i] != '=') return fail("expected field:=value");
-    ++i;
-
-    while (i < text.size() && std::isspace(static_cast<unsigned char>(text[i]))) ++i;
-    if (i >= text.size()) return fail("expected field:=value");
-
-    std::string value;
-    char quote = text[i];
-    if (quote == '"' || quote == '\'') {
-      ++i;
-      while (i < text.size()) {
-        char c = text[i];
-        if (c == quote) {
-          ++i;
-          break;
-        }
-        if (c == '\\' && i + 1 < text.size()) {
-          value.push_back(text[i + 1]);
-          i += 2;
-          continue;
-        }
-        value.push_back(c);
-        ++i;
-      }
-      if (i > text.size() || (i == text.size() && (text.empty() || text.back() != quote))) {
-        return fail("unterminated quoted value");
-      }
-    } else {
-      size_t value_start = i;
-      while (i < text.size() && !std::isspace(static_cast<unsigned char>(text[i]))) ++i;
-      value = text.substr(value_start, i - value_start);
-    }
-
-    bool b = false;
-    std::int64_t n = 0;
-    if (parse_bool(std::string_view(value), &b)) {
-      (*payload)[field] = b;
-    } else if (parse_int(std::string_view(value), &n)) {
-      (*payload)[field] = n;
-    } else {
-      (*payload)[field] = value;
-    }
-  }
-  return true;
-}
-
 bool value_to_json(const iris::parser::ValueNode& node, nlohmann::json* out,
                    std::string* err_out) {
   if (!out) return false;
@@ -1160,6 +1093,14 @@ bool value_to_json(const iris::parser::ValueNode& node, nlohmann::json* out,
   }
   if (std::holds_alternative<bool>(value)) {
     *out = std::get<bool>(value);
+    return true;
+  }
+  if (std::holds_alternative<std::int64_t>(value)) {
+    *out = std::get<std::int64_t>(value);
+    return true;
+  }
+  if (std::holds_alternative<std::uint64_t>(value)) {
+    *out = std::get<std::uint64_t>(value);
     return true;
   }
   if (std::holds_alternative<double>(value)) {
@@ -1193,66 +1134,6 @@ bool value_to_json(const iris::parser::ValueNode& node, nlohmann::json* out,
     return true;
   }
   return fail("unsupported json value");
-}
-
-referee::Result<void> parse_new_expr(const std::string& expr,
-                                     std::string* type_name_out,
-                                     nlohmann::json* payload_out) {
-  std::string err;
-  auto s = trim_copy(expr);
-  if (s.rfind("new", 0) != 0) {
-    return referee::Result<void>::err("usage: new <TypeName> field:=value ...");
-  }
-  s = trim_copy(s.substr(3));
-  if (s.empty()) {
-    return referee::Result<void>::err("usage: new <TypeName> field:=value ...");
-  }
-
-  if (s.rfind("--json", 0) == 0) {
-    auto json_text = trim_copy(s.substr(6));
-    json_text = strip_quotes(json_text);
-    auto parsed = iris::parser::parse_json(json_text);
-    if (!parsed.errors.empty()) {
-      const auto& err0 = parsed.errors.front();
-      std::ostringstream os;
-      os << "json parse error: " << err0.message
-         << " at " << err0.line << ":" << err0.column;
-      return referee::Result<void>::err(os.str());
-    }
-    if (!parsed.value.has_value()) {
-      return referee::Result<void>::err("json parse error");
-    }
-    nlohmann::json j;
-    if (!value_to_json(parsed.value.value(), &j, &err)) {
-      return referee::Result<void>::err(err.empty() ? "json parse error" : err);
-    }
-    auto type_name = j.value("type", "");
-    if (type_name.empty()) {
-      return referee::Result<void>::err("json missing type");
-    }
-    *type_name_out = type_name;
-    if (j.contains("payload")) {
-      *payload_out = j.at("payload");
-    } else {
-      *payload_out = nlohmann::json::object();
-    }
-    return referee::Result<void>::ok();
-  }
-
-  size_t i = 0;
-  while (i < s.size() && !std::isspace(static_cast<unsigned char>(s[i]))) ++i;
-  *type_name_out = s.substr(0, i);
-  if (type_name_out->empty()) {
-    return referee::Result<void>::err("usage: new <TypeName> field:=value ...");
-  }
-  auto rest = trim_copy(s.substr(i));
-  *payload_out = nlohmann::json::object();
-  if (rest.empty()) return referee::Result<void>::ok();
-
-  if (!parse_kv_payload(rest, payload_out, &err)) {
-    return referee::Result<void>::err(err);
-  }
-  return referee::Result<void>::ok();
 }
 
 bool field_has_constraint(const iris::refract::FieldDefinition& field,
@@ -3822,39 +3703,6 @@ std::string make_prompt(const std::string& current_namespace) {
   return "conch:" + current_namespace + "> ";
 }
 
-std::optional<iris::refract::FieldDefinition> parse_field_spec(
-    SchemaRegistry& registry, const std::string& token, std::string* err_out) {
-  auto pos = token.find(':');
-  if (pos == std::string::npos) {
-    if (err_out) *err_out = "field spec missing ':'";
-    return std::nullopt;
-  }
-  std::string name = token.substr(0, pos);
-  std::string type_name = token.substr(pos + 1);
-  if (name.empty() || type_name.empty()) {
-    if (err_out) *err_out = "field spec missing name or type";
-    return std::nullopt;
-  }
-  bool required = true;
-  if (!name.empty() && name.back() == '?') {
-    required = false;
-    name.pop_back();
-  }
-
-  std::string err;
-  auto type_summary = resolve_type(registry, type_name, &err);
-  if (!type_summary.has_value()) {
-    if (err_out) *err_out = "unknown field type: " + err;
-    return std::nullopt;
-  }
-
-  iris::refract::FieldDefinition field;
-  field.name = name;
-  field.type = type_summary->type_id;
-  field.required = required;
-  return field;
-}
-
 std::optional<iris::refract::FieldConstraint> parse_field_constraint_json(
     const nlohmann::json& item,
     std::string* err_out) {
@@ -3897,59 +3745,9 @@ std::optional<iris::refract::RelationshipConstraint> parse_relationship_constrai
   return constraint;
 }
 
-std::optional<iris::refract::TypeDefinition> parse_define_inline(
-    SchemaRegistry& registry, const std::vector<std::string>& tokens, std::string* err_out) {
-  if (tokens.size() < 5) {
-    if (err_out) *err_out = "usage: define type <TypeName> fields <field>:<type>[?],...";
-    return std::nullopt;
-  }
-  auto type_name = tokens[2];
-  if (tokens[3] != "fields") {
-    if (err_out) *err_out = "missing fields clause";
-    return std::nullopt;
-  }
-  auto field_text = join_tokens(tokens, 4);
-  std::vector<std::string> field_specs;
-  std::string current;
-  for (char c : field_text) {
-    if (c == ',') {
-      if (!current.empty()) field_specs.push_back(current);
-      current.clear();
-      continue;
-    }
-    if (c != ' ' && c != '\t') current.push_back(c);
-  }
-  if (!current.empty()) field_specs.push_back(current);
-  if (field_specs.empty()) {
-    if (err_out) *err_out = "no fields defined";
-    return std::nullopt;
-  }
-
-  auto [ns, name] = split_type_name(type_name);
-  iris::refract::TypeDefinition def{};
-  def.name = name;
-  def.namespace_name = ns;
-  def.version = 1;
-
-  for (const auto& spec : field_specs) {
-    std::string err;
-    auto field = parse_field_spec(registry, spec, &err);
-    if (!field.has_value()) {
-      if (err_out) *err_out = err;
-      return std::nullopt;
-    }
-    def.fields.push_back(field.value());
-  }
-
-  std::string full = ns.empty() ? name : ns + "::" + name;
-  def.type_id = referee::TypeID{fnv1a_64(full)};
-  return def;
-}
-
-std::optional<iris::refract::TypeDefinition> parse_define_json(
-    SchemaRegistry& registry, const std::string& json_text, std::string* err_out) {
+std::optional<iris::refract::TypeDefinition> parse_define_json_value(
+    SchemaRegistry& registry, const nlohmann::json& j, std::string* err_out) {
   try {
-    auto j = nlohmann::json::parse(json_text);
     iris::refract::TypeDefinition def{};
     def.name = j.value("name", "");
     def.namespace_name = j.value("namespace", "");
@@ -4132,29 +3930,41 @@ std::optional<iris::refract::TypeDefinition> parse_define_json(
   }
 }
 
-void cmd_define_type(SchemaRegistry& registry, const std::vector<std::string>& tokens) {
+void cmd_define_type(SchemaRegistry& registry,
+                     const iris::parser::AuthoringCommand& command) {
   std::string err;
   iris::refract::TypeDefinition def{};
-  bool ok = false;
-
-  if (tokens.size() >= 3 && tokens[2] == "--json") {
-    auto json_text = strip_quotes(join_tokens(tokens, 3));
-    auto parsed = parse_define_json(registry, json_text, &err);
-    if (parsed.has_value()) {
-      def = std::move(parsed.value());
-      ok = true;
+  if (command.json_mode) {
+    nlohmann::json json;
+    if (!value_to_json(command.payload, &json, &err) || !json.is_object()) {
+      std::cout << "error: " << (err.empty() ? "JSON schema must be an object" : err) << "\n";
+      return;
     }
+    auto parsed = parse_define_json_value(registry, json, &err);
+    if (!parsed) {
+      std::cout << "error: " << err << "\n";
+      return;
+    }
+    def = std::move(*parsed);
   } else {
-    auto parsed = parse_define_inline(registry, tokens, &err);
-    if (parsed.has_value()) {
-      def = std::move(parsed.value());
-      ok = true;
+    auto [ns, name] = split_type_name(command.type_name);
+    def.name = name;
+    def.namespace_name = ns;
+    def.version = 1;
+    for (const auto& spec : command.fields) {
+      auto type = resolve_type(registry, spec.type_name, &err);
+      if (!type) {
+        std::cout << "error: unknown field type: " << err << "\n";
+        return;
+      }
+      iris::refract::FieldDefinition field;
+      field.name = spec.name;
+      field.type = type->type_id;
+      field.required = spec.required;
+      def.fields.push_back(std::move(field));
     }
-  }
-
-  if (!ok) {
-    std::cout << "error: " << err << "\n";
-    return;
+    std::string full = ns.empty() ? name : ns + "::" + name;
+    def.type_id = referee::TypeID{fnv1a_64(full)};
   }
 
   auto existing = registry.get_definition_by_type(def.type_id);
@@ -4180,9 +3990,10 @@ void cmd_define_type(SchemaRegistry& registry, const std::vector<std::string>& t
             << " def=" << reg.value->ref.id.to_hex() << "\n";
 }
 
-void cmd_new_object(SchemaRegistry& registry, SqliteStore& store, const std::string& line) {
+void cmd_new_object(SchemaRegistry& registry, SqliteStore& store,
+                    const iris::parser::AuthoringCommand& command) {
   try {
-    auto createR = create_object(registry, store, line);
+    auto createR = create_object(registry, store, command);
     if (!createR) {
       std::cout << "error: " << createR.error->message << "\n";
       return;
@@ -4198,7 +4009,8 @@ bool handle_object_command(SchemaRegistry& registry,
                            const std::unordered_map<std::string, ObjectID>& session_aliases,
                            const iris::parser::ObjectCommand& command) {
   if (command.kind == iris::parser::ObjectCommandKind::New) {
-    cmd_new_object(registry, store, command.expression);
+    if (command.authoring) cmd_new_object(registry, store, *command.authoring);
+    else std::cout << "error: invalid new command AST\n";
     return true;
   }
 
@@ -4422,7 +4234,8 @@ bool handle_schema_command(SchemaRegistry& registry,
   (void)store;
   switch (command.kind) {
     case iris::parser::SchemaCommandKind::DefineType:
-      cmd_define_type(registry, command.tokens);
+      if (command.authoring) cmd_define_type(registry, *command.authoring);
+      else std::cout << "error: invalid define type AST\n";
       return true;
     case iris::parser::SchemaCommandKind::FindType:
       cmd_find_type(registry, command.type_name);
@@ -5150,30 +4963,25 @@ bool handle_call_command(SchemaRegistry& registry,
   return true;
 }
 
-referee::Result<ObjectID> create_object(SchemaRegistry& registry, SqliteStore& store,
-                                        const std::string& expr) {
-  std::string type_name;
-  nlohmann::json payload = nlohmann::json::object();
-  auto parseR = parse_new_expr(expr, &type_name, &payload);
-  if (!parseR) return referee::Result<ObjectID>::err(parseR.error->message);
-
-  std::string err;
-  auto type_summary = resolve_type(registry, type_name, &err);
-  if (!type_summary.has_value()) {
-    return referee::Result<ObjectID>::err(err);
+referee::Result<ObjectID> create_object(
+    SchemaRegistry& registry, SqliteStore& store,
+    const iris::parser::AuthoringCommand& command) {
+  nlohmann::json payload;
+  std::string conversion_error;
+  if (!value_to_json(command.payload, &payload, &conversion_error) || !payload.is_object()) {
+    return referee::Result<ObjectID>::err(conversion_error.empty()
+      ? "new payload must be an object" : conversion_error);
   }
-
+  std::string err;
+  auto type_summary = resolve_type(registry, command.type_name, &err);
+  if (!type_summary.has_value()) return referee::Result<ObjectID>::err(err);
   auto defR = registry.get_definition_by_id(type_summary->definition_id);
   if (!defR) return referee::Result<ObjectID>::err(defR.error.value());
-
   auto validateR = validate_payload_constraints(defR.value->definition, payload);
   if (!validateR) return referee::Result<ObjectID>::err(validateR.error->message);
-
   auto cbor = nlohmann::json::to_cbor(payload);
   auto createR = store.create_object(type_summary->type_id, type_summary->definition_id, cbor);
-  if (!createR) {
-    return referee::Result<ObjectID>::err(createR.error->message);
-  }
+  if (!createR) return referee::Result<ObjectID>::err(createR.error->message);
   return referee::Result<ObjectID>::ok(createR.value->ref.id);
 }
 
@@ -5278,7 +5086,13 @@ void cmd_alias_assignment(const std::string& line,
   ObjectID id{};
   if (expr.rfind("new ", 0) == 0) {
     try {
-      auto createR = create_object(registry, store, expr);
+      auto ast = iris::parser::parse_conch_command(expr);
+      auto command = ast.get_if<iris::parser::ObjectCommand>();
+      if (!ast.errors.empty() || !command || !command->authoring) {
+        std::cout << "error: invalid new command AST\n";
+        return;
+      }
+      auto createR = create_object(registry, store, *command->authoring);
       if (!createR) {
         std::cout << "error: " << createR.error->message << "\n";
         return;
@@ -5320,9 +5134,9 @@ bool handle_alias_assignment_command(const iris::parser::AliasAssignmentCommand&
   }
 
   ObjectID id{};
-  if (command.expression.rfind("new ", 0) == 0) {
+  if (command.authoring) {
     try {
-      auto createR = create_object(registry, store, command.expression);
+      auto createR = create_object(registry, store, *command.authoring);
       if (!createR) {
         std::cout << "error: " << createR.error->message << "\n";
         return true;

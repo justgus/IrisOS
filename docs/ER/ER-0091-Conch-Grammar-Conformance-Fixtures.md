@@ -109,3 +109,9 @@ ER-Dependencies: ER-0067, ER-0069, ER-0088
 - Result: Not Required
 - Performed by: Not applicable
 - Date: Not applicable
+
+## Implementation Progress
+
+- Local implementation complete on `codex/ar0015-conch-parser`: added Conch tokenization for the documented token classes, typed `help` parsing, full grammar fixtures, typed variant/payload assertions, and exact parser/API diagnostic location checks.
+- Local validation: `make -j CXXFLAGS='-g -O2 -Wno-unused-const-variable -Wno-unused-private-field'`, `make check CXXFLAGS='-g -O2 -Wno-unused-const-variable -Wno-unused-private-field'` (30/30), and `make distcheck CXXFLAGS='-g -O2 -Wno-unused-const-variable -Wno-unused-private-field'` (30/30) passed. `git diff --check` passed. The narrow warning suppressions are needed for two existing Xcode-beta diagnostics in `src/ceo/io_reactor.cc` and `src/ceo/io_reactor.h`.
+- Independent review initially requested stronger typed-AST expectations; those assertions were added. Independent review approved after adding assertions for `var` persistence, nested alias raw-expression clearing, and inline/JSON define mode. Required PR CI remains pending; the System Engineer reported the current CI run ended with errors, and its details will be inspected during the authorized AR-0015 GitHub handoff.

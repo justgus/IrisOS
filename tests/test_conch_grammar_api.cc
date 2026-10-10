@@ -48,6 +48,20 @@ START_TEST(test_reusable_parser_preserves_parse_errors)
 }
 END_TEST
 
+START_TEST(test_reusable_parser_preserves_authoring_diagnostic_locations)
+{
+  const std::string input = "new Demo::Widget label:=";
+  auto shell_ast = parse_conch_command(input);
+  auto reusable = parse_conch_grammar(input);
+  ck_assert_uint_eq(as_uint(shell_ast.errors.size()), 1U);
+  ck_assert_uint_eq(as_uint(reusable.ast.errors.size()), 1U);
+  ck_assert_str_eq(reusable.ast.errors[0].message.c_str(), shell_ast.errors[0].message.c_str());
+  ck_assert_uint_eq(as_uint(reusable.ast.errors[0].line), as_uint(shell_ast.errors[0].line));
+  ck_assert_uint_eq(as_uint(reusable.ast.errors[0].column),
+                    as_uint(shell_ast.errors[0].column));
+}
+END_TEST
+
 START_TEST(test_batch_executes_supported_commands_in_order)
 {
   auto result = execute_conch_batch(
@@ -152,6 +166,7 @@ Suite* conch_grammar_api_suite(void) {
 
   tcase_add_test(tc, test_reusable_parser_returns_typed_ast);
   tcase_add_test(tc, test_reusable_parser_preserves_parse_errors);
+  tcase_add_test(tc, test_reusable_parser_preserves_authoring_diagnostic_locations);
   tcase_add_test(tc, test_batch_executes_supported_commands_in_order);
   tcase_add_test(tc, test_batch_executor_callback_runs_commands_in_order);
   tcase_add_test(tc, test_batch_stops_on_first_parse_error_with_partial_results);
