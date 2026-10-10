@@ -173,7 +173,8 @@ const std::vector<SessionAlias>& session_command_aliases() {
     { { "show" }, "show_object" },
     { { "start" }, "start" },
     { { "task", "list" }, "task_list" },
-    { { "task", "spawn" }, "task_spawn" }
+    { { "task", "spawn" }, "task_spawn" },
+    { { "workspace" }, "workspace_tree" }
   };
   return aliases;
 }
@@ -827,6 +828,29 @@ bool handle_session_operation(const std::string& line,
   }
   if (op == "objects_list") {
     cmd_objects(registry, store);
+    return true;
+  }
+  if (op == "workspace_tree") {
+    if (!parsed.args.empty()) {
+      std::cout << "error: usage: workspace\n";
+      return true;
+    }
+    auto sessionId = session_aliases.find("session");
+    if (sessionId == session_aliases.end()) {
+      std::cout << "error: active session unavailable\n";
+      return true;
+    }
+    auto sessionR = store.get_latest(sessionId->second);
+    if (!sessionR) {
+      std::cout << "error: " << sessionR.error->message << "\n";
+      return true;
+    }
+    auto treeR = iris::conch::workspace_tree(registry, store, sessionR.value->ref);
+    if (!treeR) {
+      std::cout << "error: " << treeR.error->message << "\n";
+      return true;
+    }
+    std::cout << treeR.value.value();
     return true;
   }
   if (op == "debug_dispatch") {
@@ -3564,6 +3588,7 @@ void print_help() {
   std::cout << "  namespace [<name>|/|.|..]\n";
   std::cout << "  ns [<name>|/|.|..]\n";
   std::cout << "  objects\n";
+  std::cout << "  workspace\n";
   std::cout << "  let <name>=<expr>\n";
   std::cout << "  let .\n";
   std::cout << "  var <name>=<expr>\n";

@@ -16,7 +16,7 @@ ER-Dependencies: ER-0084
 
 - ER ID: ER-0085
 - Title: Conch Tiling Workspace Layout
-- Status: Approved
+- Status: In Progress
 - Date: 2026-10-07
 - Owners: Mike
 - Type: Enhancement
@@ -53,6 +53,8 @@ ER-Dependencies: ER-0084
 ## Requirements
 
 - Functional: each active Conch session has a root workspace tile representation.
+- Functional: different Conch sessions have different workspace roots and tile objects; a new session starts with no tiles from earlier sessions.
+- Functional: when opening a legacy session whose workspace payload belongs to a different session, create and use a session-owned workspace instead of continuing to share it.
 - Functional: newly linked Conchos are added exactly once in stable graph-observation order.
 - Functional: a Concho with child Conchos is represented as a nested tile container with stable child order.
 - Functional: reopening the store reconstructs the same tile tree from persisted objects and relationships.
@@ -60,21 +62,22 @@ ER-Dependencies: ER-0084
 
 ## Proposed Approach
 
-- Summary: define a small recursive tile-tree object model, persist tile membership and parent/child relationships through Referee, and update the tree from the active session's Concho links. Use a documented deterministic split rule for insertion, chosen to keep the first implementation simple and reproducible. Expose a textual tree inspection command.
+- Summary: define a small recursive tile-tree object model, persist session tile membership and nested parent/child relationships through Referee, and update the tree from the active session's Concho links. Workspace membership edges index all of that session's tiles; tile containment edges represent nesting. Reconcile the displayed parent from current Concho ownership so a child linked before its owner can move under that owner when the relationship appears. Preserve graph-observation order and expose the tree through the `workspace` command.
 - Alternatives considered: pixel geometry and a renderer were deferred because AR-0012 requires an expanding tiling workspace but does not require a graphical compositor in this slice.
 
 ## Acceptance Criteria
 
-- Tests verify the workspace root is created for a session and an observed Concho is inserted once.
+- Tests verify every session gets its own workspace root and a new session starts without earlier session tiles; a legacy shared workspace link is repaired idempotently.
+- Tests verify an observed Concho is inserted once in that session's workspace.
 - Tests verify repeated updates preserve stable tile order and do not duplicate tiles.
 - Tests verify nested Concho ownership appears as a nested tile subtree.
-- Tests verify persistence/reopen preserves the same tree.
-- A human live pass confirms the shell displays the growing and nested tile tree in a readable form.
+- Tests verify reopening the store preserves the same tree when inspecting the original persisted session, while creating a new session yields an independent workspace.
+- An independent live pass confirms the shell displays the growing and nested tile tree in a readable form.
 
 ## Risks / Open Questions
 
 - Risk: the deterministic first split policy may need to evolve when a graphical renderer is introduced.
-- Question: none; the first layout is structural and deterministic, leaving visual geometry to a future accepted design.
+- Decision (System Engineer, 2026-10-09): each newly created shell session gets a separate workspace root and its own tiles. A new session starts empty; an existing session's workspace remains persisted and is independently reconstructable from its session object. Sessions do not share a workspace. When an old session edge points at a workspace payload owned by another session, use a new session-owned workspace; the append-only store retains the historical edge but does not treat it as the active workspace.
 
 ## Dependencies
 
@@ -86,6 +89,7 @@ ER-Dependencies: ER-0084
 - Do not invent pixel dimensions or graphics behavior.
 - Preserve stable insertion order across reopen.
 - Keep the tree model separable from a future renderer.
+- Keep workspace membership distinct from tile containment: the object graph is append-only, while the displayed hierarchy follows the selected current parent for each session tile.
 
 ## Verification Plan
 
@@ -93,15 +97,15 @@ ER-Dependencies: ER-0084
   - `make -j`
   - `make -C tests test_conch_layout test_conch_authoring`
   - `make check`
-- Manual checks: inspect a session with multiple routed Conchos and a nested Concho in the textual workspace tree.
+- Manual checks: run `workspace` to inspect a session with multiple routed Conchos and a nested Concho in the textual workspace tree. Restart Conch with the same database and verify the new session reports a distinct ID and an empty workspace; automated persistence coverage verifies the prior session's tree remains stored independently.
 
-### Live Pass (Human)
+### Independent Live Pass
 
 - Required: Yes
 - If no, reason: N/A
 - Build / environment / target: Built `bin/conch` in a terminal with an interactive TTY.
-- Steps: Start Conch with a persistent database; create routed artifacts and a nested Concho; inspect the workspace tree; exit and reopen the same database; inspect again.
-- Expected observations: newly created views appear as stable tiles, nested views appear beneath their owner, and the same tree appears after reopening.
+- Steps: Start Conch with a persistent database; create routed artifacts and a nested Concho; inspect the workspace tree; exit and reopen the same database; inspect the new session's workspace.
+- Expected observations: newly created views appear as stable tiles and nested views appear beneath their owner; the new session has a distinct identity, a distinct empty workspace, and no shared tiles from the earlier session.
 - Observed results: Pending human test.
 - Result: Pending
 - Performed by: Pending
