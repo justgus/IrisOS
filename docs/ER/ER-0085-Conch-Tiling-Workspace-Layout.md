@@ -16,7 +16,7 @@ ER-Dependencies: ER-0084
 
 - ER ID: ER-0085
 - Title: Conch Tiling Workspace Layout
-- Status: In Progress
+- Status: Verified
 - Date: 2026-10-07
 - Owners: Mike
 - Type: Enhancement
@@ -106,7 +106,7 @@ ER-Dependencies: ER-0084
 - Build / environment / target: Built `bin/conch` in a terminal with an interactive TTY.
 - Steps: Start Conch with a persistent database; create routed artifacts and a nested Concho; inspect the workspace tree; exit and reopen the same database; inspect the new session's workspace.
 - Expected observations: newly created views appear as stable tiles and nested views appear beneath their owner; the new session has a distinct identity, a distinct empty workspace, and no shared tiles from the earlier session.
-- Observed results: Pending human test.
-- Result: Pending
-- Performed by: Pending
-- Date: Pending
+- Observed results: In a fresh file-backed database, `demo v1` created nine Conchos. `workspace` showed their tiles; adding a `contains/concho` edge from the first Log Concho to the first Metric Concho made the Metric appear indented under the Log. After exiting and reopening the same database, the session ID changed from `0735b5da2da1412dba311c5dce33b2c2` to `5d886f982976466db2c40cdb912c7f25`, and `workspace` showed only the empty root.
+- Result: Pass
+- Performed by: System Engineer
+- Date: 2026-10-10

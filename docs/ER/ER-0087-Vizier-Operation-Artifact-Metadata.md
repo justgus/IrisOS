@@ -16,7 +16,7 @@ ER-Dependencies: ER-0009, ER-0064
 
 - ER ID: ER-0087
 - Title: Vizier Operation and Emitted-Artifact Metadata
-- Status: In Progress
+- Status: Verified
 - Date: 2026-10-07
 - Owners: Mike
 - Type: Enhancement

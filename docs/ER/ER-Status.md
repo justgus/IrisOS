@@ -93,7 +93,7 @@
 - ER-0081 — Verified
 - ER-0082 — Verified
 - ER-0083 — Verified
-- ER-0084 — Complete
-- ER-0085 — Approved
+- ER-0084 — Verified
+- ER-0085 — Verified
 - ER-0086 — Verified
-- ER-0087 — In Progress
+- ER-0087 — Verified
