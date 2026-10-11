@@ -16,7 +16,7 @@ ER-Dependencies: ER-0031
 
 - ER ID: ER-0090
 - Title: Crate Collection Schema Contract Tests
-- Status: Approved
+- Status: Verified
 - Date: 2026-10-10
 - Owners: Mike
 - Type: Enhancement
@@ -90,7 +90,7 @@ ER-Dependencies: ER-0031
   - `git diff --check`
 - Manual checks: Not required; the Refract definition inspection assertions fully observe the declared collection schema contract.
 
-### Live Pass (Human)
+### Independent Live Pass
 
 - Required: No
 - If no, reason: This ER adds schema assertions that are fully observable in automated bootstrap tests; no target-specific environment or interaction is required.
@@ -108,3 +108,8 @@ ER-Dependencies: ER-0031
 - Local implementation complete on codex/ar0017-collection-contracts. The bootstrap test checks registration, exact existing parameter labels, and settled operation names for all five Crate collections; it does not assert Set index or Tuple pack semantics. No runtime/schema code changed.
 - Validation passed: make -C tests check TESTS='test_refract_bootstrap' CXXFLAGS='-g -O2 -Wno-unused-const-variable -Wno-unused-private-field' (1/1), make check CXXFLAGS='-g -O2 -Wno-unused-const-variable -Wno-unused-private-field' (30/30), make -j with those CXXFLAGS, and git diff --check. The warning suppressions address existing Xcode-beta diagnostics in unrelated src/ceo/io_reactor.cc and .h.
 - Independent review was not required for this localized test-only change; the diff and test evidence provide the scoped review. CI remains required after the single AR-0017 branch update.
+
+
+## Final Batch Verification
+
+- Verified after local validation, independent review where required, PR merge, and PR #346; CI run 38089811858 passing its required CI checks. The detailed evidence is recorded in `docs/Plans/AR-Batch-Progress.md`.

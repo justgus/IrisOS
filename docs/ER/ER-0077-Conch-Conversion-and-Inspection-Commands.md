@@ -16,7 +16,7 @@ ER-Dependencies: ER-0075, ER-0076
 
 - ER ID: ER-0077
 - Title: Conch Conversion and Inspection Commands
-- Status: Complete
+- Status: Verified
 - Date: 2026-05-28
 - Owners: Mike
 - Type: Enhancement
@@ -100,9 +100,9 @@ ER-Dependencies: ER-0075, ER-0076
 - Expanded the existing Conch command tests to inspect units by symbol and name, assert the numeric value and target symbol for exact and offset conversions, verify optional dimension output, and check stable unknown-unit, incompatible-dimension, malformed-arity, and invalid-option errors.
 - The command implementation was already present in merged work; this ER's remaining acceptance gaps were localized to coverage. The diff review traced each new assertion to the existing `caliper` handler and output contract; no separate independent review was required for this test-only, low-risk change.
 - Validation on macOS `aarch64-apple-darwin27.2.0`: `make -j2 CXXFLAGS='-g -O2 -Wno-unused-const-variable -Wno-unused-private-field'` passed; from `tests/`, `make test_conch_authoring test_conch_parser CXXFLAGS='-g -O2 -Wno-unused-const-variable -Wno-unused-private-field'`, `DYLD_LIBRARY_PATH="$PWD/../src/.libs" ./.libs/test_conch_authoring`, and `DYLD_LIBRARY_PATH="$PWD/../src/.libs" ./.libs/test_conch_parser` passed (13/13 and 15/15); full `DYLD_LIBRARY_PATH="$PWD/src/.libs" TMPDIR=/private/tmp make -j1 check CXXFLAGS='-g -O2 -Wno-unused-const-variable -Wno-unused-private-field'` passed (30/30) after `touch tests/test_referee_core.o && make -C tests test_referee_core CXXFLAGS='-g -O2 -Wno-unused-const-variable -Wno-unused-private-field'` relinked the stale tracked launcher. The flags suppress existing Xcode unused-member diagnostics. The tracked test launcher is restored after validation. No Autotools inputs changed and no regeneration was needed.
-- System Engineer verification remains pending final AR-0019 reconciliation after PR CI.
+- Verified after PR #347 merged and CI run 38166633486 passed.
 
-### Live Pass (Human)
+### Independent Live Pass
 
 - Required: No
 - If no, reason: Listing, inspection, conversion output, and error behavior are covered by automated Conch subprocess tests; no target-specific environment or human-only interaction is required.
@@ -113,3 +113,8 @@ ER-Dependencies: ER-0075, ER-0076
 - Result: Not Required
 - Performed by: Not applicable
 - Date: Not applicable
+
+
+## Final Batch Verification
+
+- Verified after local validation, independent review where required, PR merge, and PR #347; CI run 38166633486 passing its required CI checks. The detailed evidence is recorded in `docs/Plans/AR-Batch-Progress.md`.

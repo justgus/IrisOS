@@ -16,7 +16,7 @@ ER-Dependencies: ER-0056, ER-0067
 
 - ER ID: ER-0088
 - Title: Conch Structured Authoring AST
-- Status: Complete
+- Status: Verified
 - Date: 2026-10-10
 - Owners: Mike
 - Type: Enhancement
@@ -103,7 +103,7 @@ ER-Dependencies: ER-0056, ER-0067
   - `git diff --check`
 - Manual checks: Not required; scripted shell integration tests cover both supported authoring modes and error behavior.
 
-### Live Pass (Human)
+### Independent Live Pass
 
 - Required: No
 - If no, reason: The parser representation and shell behavior are fully observable in automated parser and subprocess integration tests; no target-specific environment or interaction is required.
@@ -114,3 +114,8 @@ ER-Dependencies: ER-0056, ER-0067
 - Result: Not Required
 - Performed by: Not applicable
 - Date: Not applicable
+
+
+## Final Batch Verification
+
+- Verified after local validation, independent review where required, PR merge, and PR #345; CI run 38083766880 passing its required CI checks. The detailed evidence is recorded in `docs/Plans/AR-Batch-Progress.md`.

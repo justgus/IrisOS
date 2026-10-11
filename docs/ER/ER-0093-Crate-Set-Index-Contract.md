@@ -10,7 +10,7 @@ ER-Dependencies: ER-0031
 
 - ER ID: ER-0093
 - Title: Crate Set Index Contract
-- Status: Complete
+- Status: Verified
 - Date: 2026-10-10
 - Owners: Mike
 - Type: Enhancement
@@ -40,7 +40,12 @@ following those existing schema declarations. For Set the operation is an intros
 only; it does not impose iteration order or promise positional lookup. The repository has no
 runtime Crate collection implementation in this scope.
 
-### Live Pass (Human)
+### Independent Live Pass
 
 - Required: No
 - Reason: Automated schema and repeatability tests cover the selected contract.
+
+
+## Final Batch Verification
+
+- Verified after local validation, independent review where required, PR merge, and PR #346; CI run 38089811858 passing its required CI checks. The detailed evidence is recorded in `docs/Plans/AR-Batch-Progress.md`.

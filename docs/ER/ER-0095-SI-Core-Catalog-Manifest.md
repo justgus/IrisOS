@@ -10,7 +10,7 @@ ER-Dependencies: ER-0033
 
 - ER ID: ER-0095
 - Title: SI Core Catalog Manifest
-- Status: Complete
+- Status: Verified
 - Date: 2026-10-10
 - Owners: Mike
 - Type: Enhancement
@@ -52,9 +52,14 @@ The existing catalog contains 67 unit records but omits seven of the 22 named SI
 - Automated coverage asserts all 29 names, symbols, dimensions, normalized factors and offsets, selected derived-dimension component maps, repeat bootstrap, store reopen, v1/v2 coexistence, and preservation of legacy catalog, Unit, and Dimension object refs, definition refs, and payload bytes.
 - Independent read-only review found no blocking findings after the loader and migration coverage updates.
 - Validation passed on macOS `aarch64-apple-darwin27.2.0`: `./bootstrap.sh`; `./configure`; `make -j2 CXXFLAGS='-g -O2 -Wno-unused-const-variable -Wno-unused-private-field'`; `make -C tests check TESTS='test_refract_bootstrap' CXXFLAGS='-g -O2 -Wno-unused-const-variable -Wno-unused-private-field'` (1/1); full `make check` (30/30); `git diff --check`. The first full-suite run hit the stale `test_referee_core` install-name issue; after rebuilding that test against the worktree library, all 30 tests passed. Autotools-generated tracked helpers and the generated test binary were restored.
-- This ER is Complete locally and remains pending final batch reconciliation for Verified status after the AR-0019 delivery PR and required CI.
+- This ER is Verified after PR #347 merged and CI run 38166633486 passed.
 
-### Live Pass (Human)
+### Independent Live Pass
 
 - Required: No
 - Reason: Automated catalog manifest and factor tests cover the fixed data set.
+
+
+## Final Batch Verification
+
+- Verified after local validation, independent review where required, PR merge, and PR #347; CI run 38166633486 passing its required CI checks. The detailed evidence is recorded in `docs/Plans/AR-Batch-Progress.md`.

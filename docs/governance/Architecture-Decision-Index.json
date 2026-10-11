@@ -194,7 +194,7 @@
       "notes": [
         "AR-0026 defines parser maturity levels.",
         "Reusable parsing, batch execution, and shared parser regression fixtures are verified through ER-0067/68/69.",
-        "Structured authoring payloads and shell consumption remain planned under ER-0088; grammar-conformance fixtures are planned under ER-0091; unrecognized string escape semantics are isolated under ER-0092."
+        "ER-0088 structured authoring payloads and ER-0091 grammar-conformance fixtures are Verified. ER-0092 unrecognized string escape semantics remain Proposed and block completion of AR-0015 under the one-PR-per-AR delivery rule."
       ]
     },
     {
@@ -206,13 +206,13 @@
     {
       "id": "AR-0017",
       "name": "Collections, Math Types, and Units",
-      "status": "In Progress",
+      "status": "Implemented",
       "decision": "Provide first-class collection, math, and unit type foundations.",
-      "conformance": "Staged",
+      "conformance": "Implemented",
       "notes": [
-        "Collection, math, and starter unit ERs are verified.",
-        "Full runtime unit conversion is tracked separately by AR-0019 planning.",
-        "Batch follow-up contracts cover collection operations (ER-0090/0093), generic packs (ER-0094), Float/Double format (ER-0096), fixed type-level shapes (ER-0097), and value-level unit attachment (ER-0098); System Engineer rulings are recorded in the ERs and batch ledger."
+        "Collection, math, and starter unit ERs are Verified.",
+        "Batch contracts for collection operations, generic packs, numeric formats, type-level shapes, and value-level units are Verified through ER-0090/0093/0094/0096/0097/0098.",
+        "Implementation and validation completed in PR #346; the Caliper catalog follow-up is implemented under AR-0019."
       ]
     },
     {
@@ -224,14 +224,12 @@
     {
       "id": "AR-0019",
       "name": "Caliper Unit Catalog",
-      "status": "In Progress",
+      "status": "Implemented",
       "decision": "Ship a complete, deterministic, versioned unit catalog with conversion metadata and extension rules.",
-      "conformance": "Partial",
+      "conformance": "Implemented",
       "notes": [
-        "Starter catalog metadata exists through ER-0033.",
-        "ER-0075/0076/0077 catalog expansion, conversion engine, and Conch command coverage are complete locally and await AR-0019 delivery and CI reconciliation.",
-        "ER-0089 persisted extension/override integration is in progress; ER-0099 intrinsic dimension constraints remain approved and unfinished.",
-        "ER-0095 and ER-0075 implement the named SI core, selected customary inventory, and all 24 prefix metadata records under the approved immutable catalog v2 design."
+        "ER-0075/0076/0077/0089/0095/0099 are Verified after PR #347 merged and its required CI passed.",
+        "The immutable CALIPER-BASE-002 catalog preserves the historical CALIPER-BASE-001 identity and records."
       ]
     },
     {

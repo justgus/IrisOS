@@ -10,7 +10,7 @@ ER-Dependencies: ER-0032
 
 - ER ID: ER-0096
 - Title: Astra Float and Double Format Contract
-- Status: Complete
+- Status: Verified
 - Date: 2026-10-10
 - Owners: Mike
 - Type: Enhancement
@@ -48,7 +48,12 @@ The v2 definitions migrate pre-existing metadata-less v1 records without rewriti
 - New stores register Float/Double format definitions as v2. Normal bootstrap on an existing store appends a v2 definition that supersedes each metadata-less v1 definition; old definitions remain readable and unchanged.
 - This ER describes the schema's format contract. It does not add a numeric value codec, which is outside the existing Astra bootstrap behavior.
 
-### Live Pass (Human)
+### Independent Live Pass
 
 - Required: No
 - Reason: Automated schema and persistence tests verify format identity.
+
+
+## Final Batch Verification
+
+- Verified after local validation, independent review where required, PR merge, and PR #346; CI run 38089811858 passing its required CI checks. The detailed evidence is recorded in `docs/Plans/AR-Batch-Progress.md`.

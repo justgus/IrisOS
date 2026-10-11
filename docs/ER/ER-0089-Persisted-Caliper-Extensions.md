@@ -16,7 +16,7 @@ ER-Dependencies: ER-0075, ER-0076, ER-0077
 
 - ER ID: ER-0089
 - Title: Persisted Caliper Extensions and Overrides
-- Status: In Progress
+- Status: Verified
 - Date: 2026-10-10
 - Owners: Mike
 - Type: Enhancement
@@ -107,7 +107,7 @@ ER-Dependencies: ER-0075, ER-0076, ER-0077
   - `git diff --check`
 - Manual checks: Not required; persistence, layer precedence, and Conch visibility are covered by file-backed store-reopen and subprocess integration tests.
 
-### Live Pass (Human)
+### Independent Live Pass
 
 - Required: No
 - If no, reason: Persisted API and Conch command behavior is covered by file-backed automated tests; no target-specific environment or interaction is required.
@@ -118,3 +118,8 @@ ER-Dependencies: ER-0075, ER-0076, ER-0077
 - Result: Not Required
 - Performed by: Not applicable
 - Date: Not applicable
+
+
+## Final Batch Verification
+
+- Verified after local validation, independent review where required, PR merge, and PR #347; CI run 38166633486 passing its required CI checks. The detailed evidence is recorded in `docs/Plans/AR-Batch-Progress.md`.
