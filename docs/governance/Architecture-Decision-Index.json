@@ -229,9 +229,9 @@
       "conformance": "Partial",
       "notes": [
         "Starter catalog metadata exists through ER-0033.",
-        "Runtime conversion and Conch command implementations exist in merged ER-0076/0077 changes but remain Proposed pending added acceptance coverage and fresh validation/review.",
-        "Full catalog expansion, persisted extension/override integration, and dimension-constraint modeling remain unfinished batch work.",
-        "ER-0095 isolates the SI core manifest; ER-0099 isolates dimension constraints. Customary coverage, prefix representation, and canonical naming rulings remain pending."
+        "ER-0075/0076/0077 catalog expansion, conversion engine, and Conch command coverage are complete locally and await AR-0019 delivery and CI reconciliation.",
+        "ER-0089 persisted extension/override integration is in progress; ER-0099 intrinsic dimension constraints remain approved and unfinished.",
+        "ER-0095 and ER-0075 implement the named SI core, selected customary inventory, and all 24 prefix metadata records under the approved immutable catalog v2 design."
       ]
     },
     {

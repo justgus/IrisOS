@@ -2,9 +2,11 @@
 
 #include "refract/schema_registry.h"
 
+#include <cstdint>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace iris::refract {
@@ -19,7 +21,30 @@ struct CatalogBootstrapResult {
   std::size_t existing{0};
 };
 
+struct CaliperRational {
+  std::int64_t numerator{0};
+  std::int64_t denominator{1};
+};
+
 struct CaliperCatalogUnit {
+  CaliperCatalogUnit() = default;
+  CaliperCatalogUnit(std::string name_,
+                     std::string symbol_,
+                     std::string dimension_,
+                     std::vector<std::string> systems_,
+                     std::optional<std::string> base_symbol_,
+                     std::optional<double> scale_,
+                     std::optional<double> offset_,
+                     bool override_base_ = false)
+      : name(std::move(name_)),
+        symbol(std::move(symbol_)),
+        dimension(std::move(dimension_)),
+        systems(std::move(systems_)),
+        base_symbol(std::move(base_symbol_)),
+        scale(scale_),
+        offset(offset_),
+        override_base(override_base_) {}
+
   std::string name;
   std::string symbol;
   std::string dimension;
@@ -28,6 +53,13 @@ struct CaliperCatalogUnit {
   std::optional<double> scale;
   std::optional<double> offset;
   bool override_base{false};
+  std::optional<referee::ObjectID> object_id;
+  std::optional<referee::ObjectID> base_object_id;
+  bool hidden{false};
+  bool base_unit{false};
+  std::optional<CaliperRational> exact_scale;
+  std::optional<CaliperRational> exact_offset;
+  std::optional<CaliperRational> minimum_root_value;
 };
 
 struct CaliperConversionResult {
@@ -57,6 +89,13 @@ referee::Result<std::vector<CaliperCatalogUnit>> compose_caliper_catalog(
 referee::Result<std::vector<CaliperCatalogUnit>> load_caliper_catalog(
     SchemaRegistry& registry,
     referee::SqliteStore& store);
+
+// Persists a new Caliper extension record after validating its effective-layer intent.
+// A base reference must be supplied as base_object_id; symbol-only links are rejected.
+referee::Result<referee::ObjectRecord> write_caliper_extension_unit(
+    SchemaRegistry& registry,
+    referee::SqliteStore& store,
+    CaliperCatalogUnit unit);
 
 // Converts a decimal input without rounding between catalog conversion steps.
 // Rational intermediate operations are bounded to signed 64-bit numerator and denominator values.

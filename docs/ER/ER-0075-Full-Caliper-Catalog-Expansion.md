@@ -16,7 +16,7 @@ ER-Dependencies: ER-0033, ER-0095
 
 - ER ID: ER-0075
 - Title: Full Caliper Catalog Expansion
-- Status: Proposed
+- Status: Complete
 - Date: 2026-05-28
 - Owners: Mike
 - Type: Enhancement
@@ -55,6 +55,10 @@ ER-Dependencies: ER-0033, ER-0095
 - Functional: canonical catalog includes common imperial/US customary units.
 - Functional: duplicate symbols or ambiguous unit definitions are rejected.
 - Non-functional: catalog ordering and serialization are deterministic.
+- Functional: catalog metadata stores all 24 BIPM SI prefixes by name, symbol, and decimal exponent; eligible SI units are composed from that metadata algorithmically rather than requiring a record for every prefix-unit pair.
+- Functional: prefix composition applies to the 29 SI named units except kilogram; gram is the mass composition base. Prefix composition preserves dimension and applies scale through the unprefixed base unit.
+- Functional: the finite customary manifest includes the general-use entries retained in the project catalog plus the selected additions asserted by the acceptance manifest: inch, foot, yard, mile, mil thickness, square inch/foot/yard/mile, acre, cubic inch/foot/yard, U.S. liquid minim/fluid dram/fluid ounce/gill/cup/pint/quart/gallon, U.S. dry pint/quart/peck/bushel, avoirdupois ounce/dram/pound/short hundredweight/short ton, psi/mmHg/inH2O, Fahrenheit, ounce-force/pound-force/kip/short-ton force, foot-pound-force per second, and mechanical horsepower. Sources are the relevant current general-use tables in NIST Handbook 44 (2026), Appendix C, Section 4, or the cited NIST SP 811 Appendix B.9 entries for force/power. Exclude survey-chain categories and retired survey-foot equivalents, apothecaries and troy systems, British Imperial measures, acre-foot volume, and entries marked legacy or not in general current use. Keep colliding capacity symbols system-qualified.
+- Functional: include the general engineering force entries ounce-force, pound-force, kip, and short-ton force; include foot-pound-force per second and mechanical horsepower for power. Do not include CGS dyne or FPS poundal, specialized boiler/electric/metric/water/U.K. horsepower variants, or force per unit mass.
 
 ## Proposed Approach
 
@@ -66,6 +70,7 @@ ER-Dependencies: ER-0033, ER-0095
 - The 29-unit BIPM SI core manifest is owned by ER-0095 and is a prerequisite to this catalog expansion.
 - A checked-in or generated manifest test enumerates every selected customary unit and prefix and asserts its canonical name, symbol, dimension, base-unit link, scale/offset metadata, and authoritative source table or section. Every conversion factor has a cited source. Prefix inventory and representation follow the System Engineer's ruling.
 - Prefix behavior matches the selected representation (metadata with algorithmic composition or separately materialized records) and the accepted SI prefix scope.
+- The exact customary unit list is finite and asserted by name, symbol, dimension, base symbol, scale, offset, and source table/section. Exact factors use the international foot, exact SI definitions, NIST Handbook 44 tables, or a documented NIST SP 811 Appendix B.9 entry as specified per manifest row.
 - Repeated bootstrap and store reload preserve the selected catalog identity/version and produce deterministic serialized catalog payloads and ordering.
 - Tests verify duplicate symbols or ambiguous unit definitions are rejected.
 - Existing Caliper starter catalog tests continue to pass.
@@ -74,6 +79,7 @@ ER-Dependencies: ER-0033, ER-0095
 
 - Risk: catalog coverage can become subjective without an explicit source list.
 - Resolved during batch planning: use the current BIPM SI Brochure and its SI Prefixes reference for SI definitions, named derived units, and prefix definitions. Use NIST Handbook 44 (2026), Appendix C, for covered U.S. customary conversions; use NIST SP 811 only as a supplemental factor source after checking that the definition remains current. Record the source and table or section for every non-obvious conversion factor.
+- Resolved during batch planning (2026-10-10): catalog coverage uses the finite general-engineering list above, includes force and power, preserves project unit names, stores all 24 SI prefixes as metadata, and composes eligible prefixed units algorithmically. Dry and liquid capacity forms use system-qualified symbols where NIST reuses a symbol.
 
 ## Dependencies
 
@@ -87,6 +93,9 @@ ER-Dependencies: ER-0033, ER-0095
   - BIPM, [SI Brochure](https://www.bipm.org/en/publications/si-brochure) and [SI prefixes](https://www.bipm.org/en/measurement-units/si-prefixes).
   - NIST, [Handbook 44 (2026), Appendix C](https://www.nist.gov/document/2026-nist-handbook-44-appendix-c), for current U.S. customary conversion tables.
   - NIST, [SP 811](https://www.nist.gov/pml/special-publication-811), as a supplemental source only where the relevant factor is confirmed to remain applicable.
+  - NIST SP 811, [Appendix B.9](https://www.nist.gov/pml/special-publication-811/nist-guide-si-appendix-b-conversion-factors/nist-guide-si-appendix-b9), for the selected force and power entries; its factors are cross-checked against exact unit definitions where available.
+- Implementation result: catalog v2 stores the exact 24-prefix metadata set and the finite customary manifest with source section strings. Prefix composition is generated by the runtime loader from the prefix records and SI base-unit catalog; existing entries are accepted as collisions only when their dimensions, links, factors, offsets, and systems match the generated definition.
+- Validation result: the bootstrap manifest test asserts the full customary symbol set and each entry's name, dimension, base, scale, offset, and exact source label; runtime tests cover generated SI prefixes and a `1000 mg` to `g` conversion. Independent review passed with no open findings.
 
 ## Verification Plan
 

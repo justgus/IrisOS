@@ -4,6 +4,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <cstring>
@@ -412,6 +413,13 @@ TypeDefinition make_caliper_unit() {
   def.fields.push_back(FieldDefinition{ "base_unit_id", kTypeObjectID, false, std::nullopt });
   add_compatible_operation(def, kTypeCaliperUnit);
   add_convert_operation(def, kTypeBytes, kTypeCaliperUnit);
+  return def;
+}
+
+TypeDefinition make_caliper_unit_v2() {
+  auto def = make_caliper_unit();
+  def.version = 2;
+  def.fields.push_back(FieldDefinition{ "override_base", kTypeBool, false, std::nullopt });
   return def;
 }
 
@@ -1201,7 +1209,24 @@ referee::Result<BootstrapResult> bootstrap_core_schema(SchemaRegistry& registry)
     auto doubleMigration = prepare_format_migration(kTypeAstraDouble, "ieee754-binary64");
     if (!doubleMigration) return referee::Result<BootstrapResult>::err(doubleMigration.error.value());
 
-    for (const auto* migration : {&floatMigration, &doubleMigration}) {
+    auto unitMigration = [&]() -> referee::Result<std::optional<TypeDefinition>> {
+      auto prior = registry.get_latest_definition_by_type(kTypeCaliperUnit);
+      if (!prior) {
+        if (prior.error->code == referee::ErrorCode::NotFound) {
+          return referee::Result<std::optional<TypeDefinition>>::ok(std::nullopt);
+        }
+        return referee::Result<std::optional<TypeDefinition>>::err(prior.error.value());
+      }
+      if (prior.value->definition.version >= 2) {
+        return referee::Result<std::optional<TypeDefinition>>::ok(std::nullopt);
+      }
+      auto upgraded = make_caliper_unit_v2();
+      upgraded.supersedes_definition_id = prior.value->ref.id;
+      return referee::Result<std::optional<TypeDefinition>>::ok(std::move(upgraded));
+    }();
+    if (!unitMigration) return referee::Result<BootstrapResult>::err(unitMigration.error.value());
+
+    for (const auto* migration : {&floatMigration, &doubleMigration, &unitMigration}) {
       if (!migration->value->has_value()) continue;
       auto registerR = registry.register_definition(migration->value->value());
       if (!registerR) return referee::Result<BootstrapResult>::err(registerR.error.value());
@@ -1228,6 +1253,16 @@ referee::Result<BootstrapResult> bootstrap_core_schema(SchemaRegistry& registry)
     ++out.inserted;
   }
 
+  auto latest_unit = registry.get_latest_definition_by_type(kTypeCaliperUnit);
+  if (!latest_unit) return referee::Result<BootstrapResult>::err(latest_unit.error.value());
+  if (latest_unit.value->definition.version < 2) {
+    auto unit_v2 = make_caliper_unit_v2();
+    unit_v2.supersedes_definition_id = latest_unit.value->ref.id;
+    auto unit_migration = registry.register_definition(unit_v2);
+    if (!unit_migration) return referee::Result<BootstrapResult>::err(unit_migration.error.value());
+    ++out.inserted;
+  }
+
   return referee::Result<BootstrapResult>::ok(out);
 }
 
@@ -1249,8 +1284,21 @@ struct UnitSeed {
   std::optional<double> offset;
 };
 
+struct PrefixSeed {
+  std::string name;
+  std::string symbol;
+  int exponent;
+};
+
 referee::Result<DefinitionRecord> require_definition(SchemaRegistry& registry, referee::TypeID type_id) {
   auto defR = registry.get_definition_by_type(type_id);
+  if (!defR) return referee::Result<DefinitionRecord>::err(defR.error.value());
+  return defR;
+}
+
+referee::Result<DefinitionRecord> require_latest_definition(SchemaRegistry& registry,
+                                                             referee::TypeID type_id) {
+  auto defR = registry.get_latest_definition_by_type(type_id);
   if (!defR) return referee::Result<DefinitionRecord>::err(defR.error.value());
   return defR;
 }
@@ -1266,6 +1314,7 @@ referee::Result<std::map<std::string, referee::ObjectID>> load_named_objects(
     try {
       auto j = nlohmann::json::from_cbor(rec.payload_cbor);
       if (!j.contains(key)) continue;
+      if (key == "symbol" && j.value("override_base", false)) continue;
       auto name = j.at(key).get<std::string>();
       if (name.empty()) continue;
       if (key == "symbol" && name == "C" && j.value("name", "") == "celsius") {
@@ -1296,7 +1345,7 @@ referee::Bytes cbor_from_json(const nlohmann::json& j) {
 referee::ObjectID base_caliper_catalog_id() {
   referee::ObjectID id{};
   constexpr std::array<std::uint8_t, 16> bytes = {
-    'C', 'A', 'L', 'I', 'P', 'E', 'R', '-', 'B', 'A', 'S', 'E', '-', '0', '0', '1'
+    'C', 'A', 'L', 'I', 'P', 'E', 'R', '-', 'B', 'A', 'S', 'E', '-', '0', '0', '2'
   };
   id.bytes = bytes;
   return id;
@@ -1310,7 +1359,7 @@ referee::Result<CatalogBootstrapResult> bootstrap_core_catalog(SchemaRegistry& r
 
   auto dim_def = require_definition(registry, kTypeCaliperDimension);
   if (!dim_def) return referee::Result<CatalogBootstrapResult>::err(dim_def.error->message);
-  auto unit_def = require_definition(registry, kTypeCaliperUnit);
+  auto unit_def = require_latest_definition(registry, kTypeCaliperUnit);
   if (!unit_def) return referee::Result<CatalogBootstrapResult>::err(unit_def.error->message);
 
   auto dimensionsR = load_named_objects(store, kTypeCaliperDimension, "name");
@@ -1346,9 +1395,13 @@ referee::Result<CatalogBootstrapResult> bootstrap_core_catalog(SchemaRegistry& r
     { "Capacitance", "I2*T4/M/L2", nlohmann::json{ { "Mass", -1 }, { "Length", -2 }, { "Time", 4 }, { "ElectricCurrent", 2 } } },
     { "Resistance", "M*L2/T3/I2", nlohmann::json{ { "Mass", 1 }, { "Length", 2 }, { "Time", -3 }, { "ElectricCurrent", -2 } } },
     { "Conductance", "T3*I2/M/L2", nlohmann::json{ { "Mass", -1 }, { "Length", -2 }, { "Time", 3 }, { "ElectricCurrent", 2 } } },
+    { "Inductance", "M*L2/T2/I2", nlohmann::json{ { "Mass", 1 }, { "Length", 2 }, { "Time", -2 }, { "ElectricCurrent", -2 } } },
     { "MagneticFlux", "M*L2/T2/I", nlohmann::json{ { "Mass", 1 }, { "Length", 2 }, { "Time", -2 }, { "ElectricCurrent", -1 } } },
     { "MagneticFluxDensity", "M/T2/I", nlohmann::json{ { "Mass", 1 }, { "Time", -2 }, { "ElectricCurrent", -1 } } },
     { "Illuminance", "J/L2", nlohmann::json{ { "LuminousIntensity", 1 }, { "Length", -2 } } },
+    { "CatalyticActivity", "N/T", nlohmann::json{ { "AmountOfSubstance", 1 }, { "Time", -1 } } },
+    { "AbsorbedDose", "L2/T2", nlohmann::json{ { "Length", 2 }, { "Time", -2 } } },
+    { "EquivalentDose", "L2/T2", nlohmann::json{ { "Length", 2 }, { "Time", -2 } } },
   };
 
   for (const auto& seed : dimension_seeds) {
@@ -1389,9 +1442,10 @@ referee::Result<CatalogBootstrapResult> bootstrap_core_catalog(SchemaRegistry& r
     { "millimeter", "mm", "Length", "si", std::string("m"), 0.001, 0.0 },
     { "centimeter", "cm", "Length", "si", std::string("m"), 0.01, 0.0 },
     { "kilometer", "km", "Length", "si", std::string("m"), 1000.0, 0.0 },
-    { "micrometer", "um", "Length", "si", std::string("m"), 0.000001, 0.0 },
+    { "micrometer", "µm", "Length", "si", std::string("m"), 0.000001, 0.0 },
     { "nanometer", "nm", "Length", "si", std::string("m"), 0.000000001, 0.0 },
     { "inch", "in", "Length", "imperial", std::string("m"), 0.0254, 0.0 },
+    { "mil", "mil", "Length", "us_customary", std::string("m"), 0.0000254, 0.0 },
     { "foot", "ft", "Length", "imperial", std::string("m"), 0.3048, 0.0 },
     { "yard", "yd", "Length", "imperial", std::string("m"), 0.9144, 0.0 },
     { "mile", "mi", "Length", "imperial", std::string("m"), 1609.344, 0.0 },
@@ -1450,18 +1504,58 @@ referee::Result<CatalogBootstrapResult> bootstrap_core_catalog(SchemaRegistry& r
     { "coulomb", "C", "ElectricCharge", "si", std::nullopt, std::nullopt, std::nullopt },
     { "volt", "V", "Voltage", "si", std::nullopt, std::nullopt, std::nullopt },
     { "farad", "F", "Capacitance", "si", std::nullopt, std::nullopt, std::nullopt },
-    { "ohm", "ohm", "Resistance", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "ohm", "Ω", "Resistance", "si", std::nullopt, std::nullopt, std::nullopt },
     { "siemens", "S", "Conductance", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "steradian", "sr", "Dimensionless", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "henry", "H", "Inductance", "si", std::nullopt, std::nullopt, std::nullopt },
     { "weber", "Wb", "MagneticFlux", "si", std::nullopt, std::nullopt, std::nullopt },
     { "tesla", "T", "MagneticFluxDensity", "si", std::nullopt, std::nullopt, std::nullopt },
     { "lux", "lx", "Illuminance", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "lumen", "lm", "LuminousIntensity", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "becquerel", "Bq", "Frequency", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "gray", "Gy", "AbsorbedDose", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "sievert", "Sv", "EquivalentDose", "si", std::nullopt, std::nullopt, std::nullopt },
+    { "katal", "kat", "CatalyticActivity", "si", std::nullopt, std::nullopt, std::nullopt },
     { "us_gallon", "gal", "Volume", "us_customary", std::string("m^3"), 0.003785411784, 0.0 },
+    { "us_minim", "minim", "Volume", "us_customary", std::string("m^3"), 0.000000061611519921875, 0.0 },
     { "us_fluid_ounce", "fl_oz", "Volume", "us_customary", std::string("m^3"), 0.0000295735295625, 0.0 },
     { "us_cup", "cup", "Volume", "us_customary", std::string("m^3"), 0.0002365882365, 0.0 },
     { "us_pint", "pt", "Volume", "us_customary", std::string("m^3"), 0.000473176473, 0.0 },
     { "us_quart", "qt", "Volume", "us_customary", std::string("m^3"), 0.000946352946, 0.0 },
     { "nautical_mile", "nmi", "Length", "international", std::string("m"), 1852.0, 0.0 },
     { "knot", "kn", "Velocity", "international", std::string("m/s"), 0.5144444444444445, 0.0 },
+    { "square_inch", "in^2", "Area", "imperial", std::string("m^2"), 0.00064516, 0.0 },
+    { "square_yard", "yd^2", "Area", "imperial", std::string("m^2"), 0.83612736, 0.0 },
+    { "square_mile", "mi^2", "Area", "imperial", std::string("m^2"), 2589988.110336, 0.0 },
+    { "acre", "ac", "Area", "us_customary", std::string("m^2"), 4046.8564224, 0.0 },
+    { "cubic_inch", "in^3", "Volume", "imperial", std::string("m^3"), 0.000016387064, 0.0 },
+    { "cubic_yard", "yd^3", "Volume", "imperial", std::string("m^3"), 0.764554857984, 0.0 },
+    { "us_gill", "gi", "Volume", "us_customary", std::string("m^3"), 0.00011829411825, 0.0 },
+    { "us_fluid_dram", "fl_dr", "Volume", "us_customary", std::string("m^3"), 0.0000036966911953125, 0.0 },
+    { "us_dry_pint", "dry_pt", "Volume", "us_customary", std::string("m^3"), 0.0005506104713575, 0.0 },
+    { "us_dry_quart", "dry_qt", "Volume", "us_customary", std::string("m^3"), 0.001101220942715, 0.0 },
+    { "us_peck", "pk", "Volume", "us_customary", std::string("m^3"), 0.00880976754172, 0.0 },
+    { "us_bushel", "bu", "Volume", "us_customary", std::string("m^3"), 0.03523907016688, 0.0 },
+    { "avoirdupois_dram", "dr", "Mass", "us_customary", std::string("kg"), 0.0017718451953125, 0.0 },
+    { "short_hundredweight", "cwt", "Mass", "us_customary", std::string("kg"), 45.359237, 0.0 },
+    { "short_ton", "tn", "Mass", "us_customary", std::string("kg"), 907.18474, 0.0 },
+    { "millimeter_mercury", "mmHg", "Pressure", "us_customary", std::string("Pa"), 133.3224, 0.0 },
+    { "inch_water", "inH2O", "Pressure", "us_customary", std::string("Pa"), 249.082, 0.0 },
+    { "ounce_force", "ozf", "Force", "us_customary", std::string("N"), 0.27801385095378125, 0.0 },
+    { "kip", "kip", "Force", "us_customary", std::string("N"), 4448.2216152605, 0.0 },
+    { "short_ton_force", "tonf", "Force", "us_customary", std::string("N"), 8896.443230521, 0.0 },
+    { "foot_pound_force_per_second", "ft·lbf/s", "Power", "us_customary", std::string("W"), 1.3558179483314004, 0.0 },
+  };
+
+  const std::vector<PrefixSeed> prefix_seeds = {
+    { "quetta", "Q", 30 }, { "ronna", "R", 27 }, { "yotta", "Y", 24 },
+    { "zetta", "Z", 21 }, { "exa", "E", 18 }, { "peta", "P", 15 },
+    { "tera", "T", 12 }, { "giga", "G", 9 }, { "mega", "M", 6 },
+    { "kilo", "k", 3 }, { "hecto", "h", 2 }, { "deca", "da", 1 },
+    { "deci", "d", -1 }, { "centi", "c", -2 }, { "milli", "m", -3 },
+    { "micro", "µ", -6 }, { "nano", "n", -9 }, { "pico", "p", -12 },
+    { "femto", "f", -15 }, { "atto", "a", -18 }, { "zepto", "z", -21 },
+    { "yocto", "y", -24 }, { "ronto", "r", -27 }, { "quecto", "q", -30 },
   };
 
   std::set<std::string> seeded_names;
@@ -1553,9 +1647,60 @@ referee::Result<CatalogBootstrapResult> bootstrap_core_catalog(SchemaRegistry& r
 
   nlohmann::json catalog;
   catalog["name"] = "Caliper Base Catalog";
-  catalog["catalog_version"] = 1;
+  catalog["catalog_version"] = 2;
   catalog["dimensions"] = nlohmann::json::array();
   catalog["units"] = nlohmann::json::array();
+  catalog["prefixes"] = nlohmann::json::array();
+
+  const std::map<std::string, std::string> unit_sources = {
+    { "in", "NIST HB44 (2026), Appendix C §4, Units of Length" },
+    { "mil", "NIST HB44 (2026), Appendix C §4, Units of Length – Thickness Measurement" },
+    { "ft", "NIST HB44 (2026), Appendix C §4, Units of Length" },
+    { "yd", "NIST HB44 (2026), Appendix C §4, Units of Length" },
+    { "mi", "NIST HB44 (2026), Appendix C §4, Units of Length" },
+    { "lb", "NIST HB44 (2026), Appendix C §4, Units of Mass" },
+    { "oz", "NIST HB44 (2026), Appendix C §4, Units of Mass" },
+    { "ft^2", "NIST HB44 (2026), Appendix C §4, Units of Area" },
+    { "ft^3", "NIST HB44 (2026), Appendix C §4, Units of Volume" },
+    { "gal", "NIST HB44 (2026), Appendix C §4, Units of Liquid Capacity" },
+    { "minim", "Derived as 1/60 U.S. fluid dram; NIST HB44 (2026), Appendix C §4, Units of Liquid Capacity" },
+    { "fl_oz", "NIST HB44 (2026), Appendix C §4, Units of Liquid Capacity" },
+    { "cup", "Derived as 8 U.S. fluid ounces; NIST HB44 (2026), Appendix C §4, Units of Liquid Capacity" },
+    { "pt", "NIST HB44 (2026), Appendix C §4, Units of Liquid Capacity" },
+    { "qt", "NIST HB44 (2026), Appendix C §4, Units of Liquid Capacity" },
+    { "mph", "NIST HB44 (2026), Appendix C §4, Units of Velocity" },
+    { "psi", "NIST HB44 (2026), Appendix C §4, Units of Pressure" },
+    { "°F", "NIST HB44 (2026), Appendix C §4, Units of Temperature" },
+    { "hp", "NIST SP 811, Appendix B.9, power (mechanical horsepower)" },
+    { "bar", "NIST SP 811, Appendix B.9, pressure" },
+    { "cal", "NIST SP 811, Appendix B.9, energy" },
+    { "deg", "NIST SP 811, Appendix B.9, plane angle" },
+    { "%", "NIST SP 811, Appendix B.9, dimensionless quantities" },
+    { "nmi", "NIST SP 811, Appendix B.9, nautical mile" },
+    { "kn", "NIST SP 811, Appendix B.9, knot" },
+    { "in^2", "NIST HB44 (2026), Appendix C §4, Units of Area" },
+    { "yd^2", "NIST HB44 (2026), Appendix C §4, Units of Area" },
+    { "mi^2", "NIST HB44 (2026), Appendix C §4, Units of Area" },
+    { "ac", "NIST HB44 (2026), Appendix C §4, Units of Area" },
+    { "in^3", "NIST HB44 (2026), Appendix C §4, Units of Volume" },
+    { "yd^3", "NIST HB44 (2026), Appendix C §4, Units of Volume" },
+    { "gi", "Derived as 1/32 U.S. gallon; NIST HB44 (2026), Appendix C §4, Units of Liquid Capacity" },
+    { "fl_dr", "Derived as 1/8 U.S. fluid ounce; NIST HB44 (2026), Appendix C §4, Units of Liquid Capacity" },
+    { "dry_pt", "NIST HB44 (2026), Appendix C §4, Units of Dry Capacity" },
+    { "dry_qt", "NIST HB44 (2026), Appendix C §4, Units of Dry Capacity" },
+    { "pk", "NIST HB44 (2026), Appendix C §4, Units of Dry Capacity" },
+    { "bu", "NIST HB44 (2026), Appendix C §4, Units of Dry Capacity" },
+    { "dr", "NIST HB44 (2026), Appendix C §4, Units of Mass" },
+    { "cwt", "NIST HB44 (2026), Appendix C §4, Units of Mass" },
+    { "tn", "NIST HB44 (2026), Appendix C §4, Units of Mass" },
+    { "mmHg", "NIST HB44 (2026), Appendix C §4, Units of Pressure" },
+    { "inH2O", "NIST HB44 (2026), Appendix C §4, Units of Pressure" },
+    { "ozf", "NIST SP 811, Appendix B.9, force" },
+    { "lbf", "NIST SP 811, Appendix B.9, force" },
+    { "kip", "NIST SP 811, Appendix B.9, force" },
+    { "tonf", "NIST SP 811, Appendix B.9, force" },
+    { "ft·lbf/s", "NIST SP 811, Appendix B.9, power" },
+  };
 
   for (const auto& [name, id] : dimensions_by_name) {
     const bool is_shipped_dimension = std::any_of(
@@ -1564,7 +1709,26 @@ referee::Result<CatalogBootstrapResult> bootstrap_core_catalog(SchemaRegistry& r
     if (!is_shipped_dimension) continue;
     auto recordR = store.get_latest(id);
     if (!recordR) return referee::Result<CatalogBootstrapResult>::err(recordR.error.value());
-    catalog["dimensions"].push_back(nlohmann::json::from_cbor(recordR.value->payload_cbor));
+    auto dimension = nlohmann::json::from_cbor(recordR.value->payload_cbor);
+    dimension["dimension_id"] = id.to_hex();
+    if (name == "Temperature") {
+      const auto kelvin = units_by_symbol.find("K");
+      const auto fahrenheit = units_by_symbol.find("°F");
+      if (kelvin == units_by_symbol.end() || fahrenheit == units_by_symbol.end()) {
+        return referee::Result<CatalogBootstrapResult>::err(
+            "temperature catalog is missing its canonical or Fahrenheit Unit");
+      }
+      dimension["constraints"] = nlohmann::json::array({
+          {{"kind", "minimum"}, {"scope", "absolute_point"},
+           {"unit_id", kelvin->second.to_hex()}, {"value", "0"}}
+      });
+      dimension["exact_transforms"] = nlohmann::json::array({
+          {{"unit_id", fahrenheit->second.to_hex()},
+           {"scale", {{"numerator", 5}, {"denominator", 9}}},
+           {"offset", {{"numerator", 45967}, {"denominator", 180}}}}
+      });
+    }
+    catalog["dimensions"].push_back(std::move(dimension));
   }
   std::map<std::string, std::string> dimension_name_by_id;
   for (const auto& [name, id] : dimensions_by_name) {
@@ -1583,6 +1747,7 @@ referee::Result<CatalogBootstrapResult> bootstrap_core_catalog(SchemaRegistry& r
     auto recordR = store.get_latest(id);
     if (!recordR) return referee::Result<CatalogBootstrapResult>::err(recordR.error.value());
     auto unit = nlohmann::json::from_cbor(recordR.value->payload_cbor);
+    unit["unit_id"] = id.to_hex();
     if (unit.contains("dimension_id")) {
       const auto dimension_id = unit.at("dimension_id").get<std::string>();
       auto dimension_name = dimension_name_by_id.find(dimension_id);
@@ -1591,7 +1756,6 @@ referee::Result<CatalogBootstrapResult> bootstrap_core_catalog(SchemaRegistry& r
             "unit references a dimension outside the shipped Caliper catalog: " + symbol);
       }
       unit["dimension"] = dimension_name->second;
-      unit.erase("dimension_id");
     }
     if (unit.contains("base_unit_id")) {
       const auto base_id = unit.at("base_unit_id").get<std::string>();
@@ -1601,14 +1765,21 @@ referee::Result<CatalogBootstrapResult> bootstrap_core_catalog(SchemaRegistry& r
             "unit references an unknown base unit: " + symbol);
       }
       unit["base_symbol"] = base_symbol->second;
-      unit.erase("base_unit_id");
     }
     if (unit.contains("system") && !unit.contains("systems")) {
       unit["systems"] = nlohmann::json::array({ unit.at("system") });
     }
     if (!unit.contains("scale")) unit["scale"] = 1.0;
     if (!unit.contains("offset")) unit["offset"] = 0.0;
+    auto source = unit_sources.find(symbol);
+    if (source != unit_sources.end()) unit["source"] = source->second;
     catalog["units"].push_back(std::move(unit));
+  }
+
+  for (const auto& prefix : prefix_seeds) {
+    catalog["prefixes"].push_back({
+      { "name", prefix.name }, { "symbol", prefix.symbol }, { "exponent", prefix.exponent }
+    });
   }
 
   const auto catalog_id = base_caliper_catalog_id();
