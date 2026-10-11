@@ -309,10 +309,12 @@ END_TEST
 START_TEST(test_conch_structured_authoring_execution)
 {
   std::ostringstream script;
-  script << "define type ConchTest::Structured fields count:U64, label?:String\n";
-  script << "let inline=new ConchTest::Structured count:=9007199254740993 label:='hello world'\n";
+  script << "define type ConchTest::Structured fields count:U64, label?:String, escapes?:String, path?:String\n";
+  script << "let inline=new ConchTest::Structured count:=9007199254740993 label:='hello world' "
+             "escapes:=\"\\q \\t\" path:=\"C:\\temp\"\n";
   script << "let json=new --json '{\"type\":\"ConchTest::Structured\","
-             "\"payload\":{\"count\":9007199254740993,\"label\":\"hello world\"}}'\n";
+             "\"payload\":{\"count\":9007199254740993,\"label\":\"hello world\","
+             "\"escapes\":\"\\\\q \\\\t\",\"path\":\"C:\\\\temp\"}}'\n";
   script << "show inline\n";
   script << "show json\n";
   script << "exit\n";
@@ -326,8 +328,11 @@ START_TEST(test_conch_structured_authoring_execution)
                 "expected exact large integer in persisted payload");
   ck_assert_msg(output.find("hello world") != std::string::npos,
                 "expected quoted string value in persisted payload");
+  ck_assert_msg(output.find("C:\\\\temp") != std::string::npos,
+                "expected path backslash in persisted payload");
   const std::string expected_payload =
-      "payload {\"count\":9007199254740993,\"label\":\"hello world\"}";
+      "payload {\"count\":9007199254740993,\"escapes\":\"\\\\q \\\\t\","
+      "\"label\":\"hello world\",\"path\":\"C:\\\\temp\"}";
   auto first_payload = output.find(expected_payload);
   ck_assert_msg(first_payload != std::string::npos, "expected inline object payload");
   ck_assert_msg(output.find(expected_payload, first_payload + expected_payload.size())

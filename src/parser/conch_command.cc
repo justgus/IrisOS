@@ -82,8 +82,12 @@ std::optional<ValueNode> parse_inline_value(std::string_view text, std::size_t o
     for (; i < text.size(); ++i) {
       char c = text[i];
       if (c == quote) break;
-      if (c == '\\' && i + 1 < text.size()) c = text[++i];
-      value.push_back(c);
+      if (c == '\\' && i + 1 < text.size() &&
+          (text[i + 1] == quote || text[i + 1] == '\\')) {
+        value.push_back(text[++i]);
+      } else {
+        value.push_back(c);
+      }
     }
     if (i + 1 != text.size()) {
       if (error) *error = ParseError{"unterminated quoted value", offset, line, column};

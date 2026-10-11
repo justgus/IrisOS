@@ -108,5 +108,5 @@ value        := string | number | "true" | "false" | identifier
 
 ## Implementation Progress
 
-- ER-0088 and ER-0091 were delivered in PR #345, merged as `63ae7f2a0d9279e23619417d5106b10cc60fb490`, and Verified after CI run `38083766880` passed. ER-0092's unknown-escape rule is settled, but its implementation remains Proposed because the single AR-0015 implementation PR has already been used. AR-0015 remains In Progress until ER-0092 can be delivered under a future authorization that permits another AR-0015 PR.
+- ER-0088 and ER-0091 were delivered in PR #345, merged as `63ae7f2a0d9279e23619417d5106b10cc60fb490`, and Verified after CI run `38083766880` passed. ER-0092 is Complete locally on `codex/ar0015-unknown-escapes` under the System Engineer's explicit authorization for this delivery; local build, focused and full tests, and independent review passed. AR-0015 remains In Progress pending this PR's CI, merge, and final reconciliation.
 - The batch ledger records the acceptance coverage, review, validation, and delivery evidence.
