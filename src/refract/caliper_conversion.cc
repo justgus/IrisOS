@@ -888,6 +888,10 @@ referee::Result<std::vector<CaliperCatalogUnit>> load_caliper_catalog(
       unit.override_base = item.value("override_base", false);
       extensions.push_back(std::move(unit));
     }
+    std::sort(extensions.begin(), extensions.end(), [](const auto& left, const auto& right) {
+      if (left.name != right.name) return left.name < right.name;
+      return left.symbol < right.symbol;
+    });
     auto composed = compose_caliper_catalog(result, extensions);
     if (!composed) return composed;
 
