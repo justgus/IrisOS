@@ -377,9 +377,16 @@ TokenizeResult ConchTokenizer::tokenize(std::string_view input) const {
           break;
         }
         if (character == '\\' && i + 1 < input.size() && input[i + 1] != '\n') {
-          value.push_back(input[i + 1]);
-          i += 2;
-          column += 2;
+          const char escaped = input[i + 1];
+          if (escaped == quote || escaped == '\\') {
+            value.push_back(escaped);
+            i += 2;
+            column += 2;
+            continue;
+          }
+          value.push_back('\\');
+          ++i;
+          ++column;
           continue;
         }
         value.push_back(character);
