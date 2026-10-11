@@ -49,6 +49,15 @@ START_TEST(test_tokenizer_basic)
 }
 END_TEST
 
+START_TEST(test_generic_tokenizer_escape_behavior_remains_unchanged)
+{
+  Tokenizer tokenizer;
+  auto result = tokenizer.tokenize("\"\\q \\t\"");
+  ck_assert_uint_eq(as_uint(result.errors.size()), 0U);
+  ck_assert_str_eq(result.tokens[0].text.c_str(), "q t");
+}
+END_TEST
+
 START_TEST(test_tokenizer_error)
 {
   Tokenizer tokenizer;
@@ -79,6 +88,7 @@ Suite* parser_core_suite(void) {
   TCase* tc = tcase_create("core");
 
   tcase_add_test(tc, test_tokenizer_basic);
+  tcase_add_test(tc, test_generic_tokenizer_escape_behavior_remains_unchanged);
   tcase_add_test(tc, test_tokenizer_error);
   tcase_add_test(tc, test_parser_expect);
 
