@@ -323,11 +323,6 @@
       "area": "Refract extended reflection",
       "source": "AR-0007, AR-0023",
       "gap": "Constraints, operation effects, and documentation metadata are not fully verified."
-    },
-    {
-      "area": "Caliper runtime behavior",
-      "source": "AR-0019",
-      "gap": "Full catalog expansion and persisted extension/override integration remain unfinished; conversion and command code is present but unverified."
     }
   ]
 }
