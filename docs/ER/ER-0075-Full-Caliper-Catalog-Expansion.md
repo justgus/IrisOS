@@ -16,7 +16,7 @@ ER-Dependencies: ER-0033, ER-0095
 
 - ER ID: ER-0075
 - Title: Full Caliper Catalog Expansion
-- Status: Complete
+- Status: Verified
 - Date: 2026-05-28
 - Owners: Mike
 - Type: Enhancement
@@ -109,7 +109,7 @@ ER-Dependencies: ER-0033, ER-0095
 - Manual checks:
   - inspect catalog coverage for SI base, SI derived, metric prefixes, and common imperial units.
 
-### Live Pass (Human)
+### Independent Live Pass
 
 - Required: No
 - If no, reason: The exact catalog manifest, metadata, serialization, and conversions are observable in automated bootstrap and catalog tests; no target-specific environment or interaction is required.
@@ -120,3 +120,8 @@ ER-Dependencies: ER-0033, ER-0095
 - Result: Not Required
 - Performed by: Not applicable
 - Date: Not applicable
+
+
+## Final Batch Verification
+
+- Verified after local validation, independent review where required, PR merge, and PR #347; CI run 38166633486 passing its required CI checks. The detailed evidence is recorded in `docs/Plans/AR-Batch-Progress.md`.

@@ -16,7 +16,7 @@ ER-Dependencies: ER-0067, ER-0069, ER-0088
 
 - ER ID: ER-0091
 - Title: Conch Grammar Conformance Fixtures
-- Status: Approved
+- Status: Verified
 - Date: 2026-10-10
 - Owners: Mike
 - Type: Enhancement
@@ -98,7 +98,7 @@ ER-Dependencies: ER-0067, ER-0069, ER-0088
   - `git diff --check`
 - Manual checks: Not required; fixture-based parser/API parity is fully observable in automated tests.
 
-### Live Pass (Human)
+### Independent Live Pass
 
 - Required: No
 - If no, reason: Grammar conformance and parser API parity are fully testable in the local parser and scripted shell harnesses.
@@ -114,4 +114,9 @@ ER-Dependencies: ER-0067, ER-0069, ER-0088
 
 - Local implementation complete on `codex/ar0015-conch-parser`: added Conch tokenization for the documented token classes, typed `help` parsing, full grammar fixtures, typed variant/payload assertions, and exact parser/API diagnostic location checks.
 - Local validation: `make -j CXXFLAGS='-g -O2 -Wno-unused-const-variable -Wno-unused-private-field'`, `make check CXXFLAGS='-g -O2 -Wno-unused-const-variable -Wno-unused-private-field'` (30/30), and `make distcheck CXXFLAGS='-g -O2 -Wno-unused-const-variable -Wno-unused-private-field'` (30/30) passed. `git diff --check` passed. The narrow warning suppressions are needed for two existing Xcode-beta diagnostics in `src/ceo/io_reactor.cc` and `src/ceo/io_reactor.h`.
-- Independent review initially requested stronger typed-AST expectations; those assertions were added. Independent review approved after adding assertions for `var` persistence, nested alias raw-expression clearing, and inline/JSON define mode. Required PR CI remains pending; the System Engineer reported the current CI run ended with errors, and its details will be inspected during the authorized AR-0015 GitHub handoff.
+- Independent review initially requested stronger typed-AST expectations; those assertions were added. Independent review approved after adding assertions for `var` persistence, nested alias raw-expression clearing, and inline/JSON define mode. PR #345 merged and CI run 38083766880 passed Bootstrap, Configure, Build, Unit tests, and Distcheck.
+
+
+## Final Batch Verification
+
+- Verified after local validation, independent review where required, PR merge, and PR #345; CI run 38083766880 passing its required CI checks. The detailed evidence is recorded in `docs/Plans/AR-Batch-Progress.md`.

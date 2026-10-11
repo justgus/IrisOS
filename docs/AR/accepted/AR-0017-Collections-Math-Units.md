@@ -5,7 +5,7 @@ ER-Dependencies: ER-0031, ER-0032, ER-0033, ER-0039, ER-0090, ER-0093, ER-0094, 
 
 # AR-0017 — Collections, Math Types, and Units
 
-- Status: In Progress
+- Status: Implemented
 - Date: 2026-02-21
 - Owners: Mike
 
@@ -98,3 +98,8 @@ Define quantity types as first-class wrappers to combine values with constraints
 - Draft ERs for collections, math types, and units.
 - Define Refract schemas for parameterized types.
 - Identify which operations are required for v1.
+
+## Implementation Progress
+
+- Implemented through PR #346, merged as `304d7bfa72c239037796614f5c2d7cbb6877f573`; all listed ER dependencies are Verified in the final batch reconciliation. PR #347 completed the Caliper catalog work under AR-0019 and merged as `e1648b79efdc2fd3a7e55089d444968fee7407f9`.
+- PR #346 CI run `38089811858` and PR #347 CI run `38166633486` passed their required checks. Local validation and individual ER evidence are recorded in `docs/Plans/AR-Batch-Progress.md`.

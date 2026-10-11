@@ -16,7 +16,7 @@ ER-Dependencies: ER-0075
 
 - ER ID: ER-0076
 - Title: Runtime Conversion and Compatibility Engine
-- Status: Complete
+- Status: Verified
 - Date: 2026-05-28
 - Owners: Mike
 - Type: Enhancement
@@ -108,9 +108,9 @@ ER-Dependencies: ER-0075
 - Independent review examined rounding, parser bounds, conversion-chain failures, and root factors. Findings on reducible decimals and root-unit validation were fixed and the reviewer confirmed closure. No independent-review finding remains open.
 - A follow-up absolute-zero boundary probe exposed a negative-decimal sign regression in the denominator-reduction path. Fixed it and added negative reducible decimal, `INT64_MIN`, and exact `-273.15 °C -> 0 K` bit-pattern checks; the updated focused and full suites pass.
 - Validation on macOS `aarch64-apple-darwin27.2.0`: `make -j2 CXXFLAGS='-g -O2 -Wno-unused-const-variable -Wno-unused-private-field'` passed; `make -C tests test_refract_bootstrap CXXFLAGS='-g -O2 -Wno-unused-const-variable -Wno-unused-private-field'` plus `DYLD_LIBRARY_PATH="$PWD/src/.libs" ./tests/.libs/test_refract_bootstrap` passed (14/14); `DYLD_LIBRARY_PATH="$PWD/src/.libs" TMPDIR=/private/tmp make -j1 check CXXFLAGS='-g -O2 -Wno-unused-const-variable -Wno-unused-private-field'` passed (30/30); `git diff --check` passed. The flags suppress existing Xcode unused-member diagnostics. `make check` modified the tracked `tests/test_referee_core` executable; it was restored. No Autotools inputs changed and no regeneration was needed.
-- System Engineer verification remains pending final AR-0019 reconciliation after PR CI.
+- Verified after PR #347 merged and CI run 38166633486 passed.
 
-### Live Pass (Human)
+### Independent Live Pass
 
 - Required: No
 - If no, reason: Conversion and error behavior is fully observable through the runtime API tests and requires no target-specific environment or human-only interaction.
@@ -121,3 +121,8 @@ ER-Dependencies: ER-0075
 - Result: Not Required
 - Performed by: Not applicable
 - Date: Not applicable
+
+
+## Final Batch Verification
+
+- Verified after local validation, independent review where required, PR merge, and PR #347; CI run 38166633486 passing its required CI checks. The detailed evidence is recorded in `docs/Plans/AR-Batch-Progress.md`.

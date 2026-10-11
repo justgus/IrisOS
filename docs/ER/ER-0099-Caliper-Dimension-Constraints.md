@@ -10,7 +10,7 @@ ER-Dependencies: ER-0075, ER-0076
 
 - ER ID: ER-0099
 - Title: Caliper Dimension Constraint Contract
-- Status: In Progress
+- Status: Verified
 - Date: 2026-10-10
 - Owners: Mike
 - Type: Enhancement
@@ -50,10 +50,15 @@ AR-0019 requires constraints such as absolute zero across Kelvin, Celsius, and F
 
 ## Implementation Note
 
-- Ruling (2026-10-11): the System Engineer approved immutable catalog v2. `CALIPER-BASE-002` has not been published; this branch finalizes its payload before its first publication. After release, the v2 identity and payload remain immutable. The legacy `CALIPER-BASE-001` identity and payload are unchanged.
+- Ruling (2026-10-11): the System Engineer approved immutable catalog v2. `CALIPER-BASE-002` was published in PR #347 and is immutable. The legacy `CALIPER-BASE-001` identity and payload remain unchanged. The legacy `CALIPER-BASE-001` identity and payload are unchanged.
 - The current Fahrenheit scale and offset are rounded binary64 values. Interpreted as exact shortest decimal rationals, they do not map `-459.67 °F` to exactly zero kelvin and can overflow the selected signed-64-bit rational domain for ordinary Fahrenheit inputs. Catalog v2 therefore records the exact factors `5/9` and `45967/180` for Fahrenheit. Conversion uses those factors and the physical-domain check uses the same exact root; the implementation does not hide the discrepancy with a tolerance.
 
-### Live Pass (Human)
+### Independent Live Pass
 
 - Required: No
 - Reason: Automated conversion and constraint boundary tests cover the selected scope.
+
+
+## Final Batch Verification
+
+- Verified after local validation, independent review where required, PR merge, and PR #347; CI run 38166633486 passing its required CI checks. The detailed evidence is recorded in `docs/Plans/AR-Batch-Progress.md`.

@@ -105,3 +105,8 @@ value        := string | number | "true" | "false" | identifier
 - Implement `ConchParser` with unit tests for tokenization and parsing.
 - Migrate `conch.cc` to use the parser output rather than raw token vectors.
 - Add validation against Refract definitions for `new` and `define type` inputs.
+
+## Implementation Progress
+
+- ER-0088 and ER-0091 were delivered in PR #345, merged as `63ae7f2a0d9279e23619417d5106b10cc60fb490`, and Verified after CI run `38083766880` passed. ER-0092's unknown-escape rule is settled, but its implementation remains Proposed because the single AR-0015 implementation PR has already been used. AR-0015 remains In Progress until ER-0092 can be delivered under a future authorization that permits another AR-0015 PR.
+- The batch ledger records the acceptance coverage, review, validation, and delivery evidence.

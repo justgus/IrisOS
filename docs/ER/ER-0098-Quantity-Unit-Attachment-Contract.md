@@ -10,7 +10,7 @@ ER-Dependencies: ER-0033
 
 - ER ID: ER-0098
 - Title: Quantity Unit Attachment Contract
-- Status: Complete
+- Status: Verified
 - Date: 2026-10-10
 - Owners: Mike
 - Type: Enhancement
@@ -39,7 +39,7 @@ AR-0017 requires units and dimension metadata for quantities. Current quantity s
 
 Units attach to individual values. Existing unitless values remain valid; a present `unit_id` must resolve and match the quantity's dimension.
 
-### Live Pass (Human)
+### Independent Live Pass
 
 - Required: No
 - Reason: Automated schema/value and persistence tests cover unit attachment.
@@ -49,4 +49,9 @@ Units attach to individual values. Existing unitless values remain valid; a pres
 - Implementation: `CaliperValueRegistry` persists value-level unit references and quantity components. Fixed quantity dimensions validate canonical dimension names and components. Unitless legacy records remain readable; malformed or mismatched references fail with the specified error codes.
 - Local validation: `make -j2`; `make -C tests test_refract_bootstrap CXXFLAGS='-g -O2 -Wno-unused-const-variable -Wno-unused-private-field'`; `DYLD_LIBRARY_PATH="$PWD/src/.libs" ./tests/test_refract_bootstrap` (14 checks, 0 failures); `DYLD_LIBRARY_PATH="$PWD/src/.libs" TMPDIR=/private/tmp make -j1 check CXXFLAGS='-g -O2 -Wno-unused-const-variable -Wno-unused-private-field'` (30/30); `git diff --check`.
 - Independent review: initial finding that fixed dimension names could spoof their meaning was resolved by checking canonical components; follow-up review found no remaining issue.
-- Delivery state: locally complete; AR-0017 PR/CI and final batch verification pending.
+- Delivery state: Verified after PR #346 merged and CI run 38089811858 passed.
+
+
+## Final Batch Verification
+
+- Verified after local validation, independent review where required, PR merge, and PR #346; CI run 38089811858 passing its required CI checks. The detailed evidence is recorded in `docs/Plans/AR-Batch-Progress.md`.

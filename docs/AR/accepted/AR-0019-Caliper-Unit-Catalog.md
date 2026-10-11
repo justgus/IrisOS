@@ -5,7 +5,7 @@ ER-Dependencies: ER-0033, ER-0075, ER-0076, ER-0077, ER-0089, ER-0095, ER-0099
 
 # AR-0019 — Caliper Unit Catalog
 
-- Status: In Progress
+- Status: Implemented
 - Date: 2026-02-27
 - Owners: Mike
 
@@ -71,7 +71,9 @@ Define and ship a full Caliper unit catalog that:
 
 ## Next Steps
 
-- Draft a Phased approach and ERs per Phase to define full catalog contents and 
-  data format.
-- Decide on storage and update mechanism (bootstrap vs external catalog file).
-- Add comprehensive tests for catalog coverage and conversion correctness.
+- Implementation and validation are complete through PR #347.
+
+## Implementation Progress
+
+- PR #347 merged as `e1648b79efdc2fd3a7e55089d444968fee7407f9`. The approved immutable `CALIPER-BASE-002` catalog contains the selected SI and customary units, all 24 SI prefixes, exact temperature metadata, and source labels. Existing `CALIPER-BASE-001` remains unchanged.
+- All listed ER dependencies are Verified. Local macOS and Ubuntu 24.04 builds passed; the full Linux suite passed 30/30 and `make distcheck` passed. PR CI run `38166633486` passed Bootstrap, Configure, Build, Unit tests, and Distcheck. Detailed validation and review evidence is in `docs/Plans/AR-Batch-Progress.md`.
