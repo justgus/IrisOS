@@ -16,7 +16,7 @@ ER-Dependencies: ER-0067, ER-0088
 
 - ER ID: ER-0092
 - Title: Conch Unrecognized String Escapes
-- Status: Complete
+- Status: Verified
 - Date: 2026-10-10
 - Owners: Mike
 - Type: Enhancement
@@ -110,4 +110,6 @@ ER-Dependencies: ER-0067, ER-0088
 
 - Independent review: Pass. The read-only reviewer checked each acceptance criterion, counterexamples for both quote forms and all required unknown escapes, parity through both public parser APIs, persisted authoring values, and unchanged generic Tokenizer behavior; no findings remain.
 - Fresh independent validation: focused command passed 5/5, including `test_parser_core`; `git diff --check` passed.
-- CI / merge / final verification: Pending the authorized AR-0015 delivery PR and final batch reconciliation.
+- CI: PR #349 run `38171360284` passed Bootstrap, Configure, Build, Unit tests, and Distcheck.
+- Merge: PR #349 merged as `a27da21d48823cc93758c3256973c2a5b2977b55`.
+- Final verification: ER-0092 Verified in batch reconciliation PR #350 after local validation, independent review, passing CI, and merge.

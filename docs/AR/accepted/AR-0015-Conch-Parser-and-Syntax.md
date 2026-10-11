@@ -5,7 +5,7 @@ ER-Dependencies: ER-0022, ER-0023, ER-0024, ER-0025, ER-0026, ER-0027, ER-0054, 
 
 # AR-0015 — Conch Parser and Syntax
 
-- Status: In Progress
+- Status: Implemented
 - Date: 2026-02-21
 - Owners: Mike
 
@@ -102,11 +102,9 @@ value        := string | number | "true" | "false" | identifier
 
 ## Next Steps
 
-- Implement `ConchParser` with unit tests for tokenization and parsing.
-- Migrate `conch.cc` to use the parser output rather than raw token vectors.
-- Add validation against Refract definitions for `new` and `define type` inputs.
+- Implementation and validation are complete through PR #349.
 
 ## Implementation Progress
 
-- ER-0088 and ER-0091 were delivered in PR #345, merged as `63ae7f2a0d9279e23619417d5106b10cc60fb490`, and Verified after CI run `38083766880` passed. ER-0092 is Complete locally on `codex/ar0015-unknown-escapes` under the System Engineer's explicit authorization for this delivery; local build, focused and full tests, and independent review passed. AR-0015 remains In Progress pending this PR's CI, merge, and final reconciliation.
+- ER-0088 and ER-0091 were delivered in PR #345, merged as `63ae7f2a0d9279e23619417d5106b10cc60fb490`, and Verified after CI run `38083766880` passed. ER-0092 was Verified in the final reconciliation after PR #349 merged as `a27da21d48823cc93758c3256973c2a5b2977b55` and CI run `38171360284` passed Bootstrap, Configure, Build, Unit tests, and Distcheck. All listed ER dependencies are Verified.
 - The batch ledger records the acceptance coverage, review, validation, and delivery evidence.
