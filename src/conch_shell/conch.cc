@@ -408,6 +408,7 @@ bool handle_caliper_command(SchemaRegistry& registry,
       return true;
     }
     for (const auto& unit : *catalog.value) {
+      if (unit.hidden) continue;
       std::cout << unit.symbol << "  " << unit.name << "  " << unit.dimension << "  ";
       for (std::size_t i = 0; i < unit.systems.size(); ++i) {
         if (i != 0) std::cout << ",";
@@ -425,6 +426,7 @@ bool handle_caliper_command(SchemaRegistry& registry,
     }
     const iris::refract::CaliperCatalogUnit* match = nullptr;
     for (const auto& unit : *catalog.value) {
+      if (unit.hidden) continue;
       if (unit.symbol == args[1]) {
         match = &unit;
         break;
@@ -432,6 +434,7 @@ bool handle_caliper_command(SchemaRegistry& registry,
     }
     if (match == nullptr) {
       for (const auto& unit : *catalog.value) {
+        if (unit.hidden) continue;
         if (unit.name == args[1]) {
           match = &unit;
           break;

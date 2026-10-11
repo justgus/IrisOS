@@ -16,7 +16,7 @@ ER-Dependencies: ER-0075
 
 - ER ID: ER-0076
 - Title: Runtime Conversion and Compatibility Engine
-- Status: Proposed
+- Status: Complete
 - Date: 2026-05-28
 - Owners: Mike
 - Type: Enhancement
@@ -65,19 +65,17 @@ ER-Dependencies: ER-0075
 
 - Tests verify direct and multi-link conversions, including deterministic results after closing and reopening the same store.
 - Tests verify unknown source/target units, incompatible dimensions, malformed decimal and exponent inputs, and missing, cyclic, or dimension-mismatched conversion links return stable errors.
-- Tests verify scale factors must be finite and strictly positive, while offsets must be finite and may be negative, zero, or positive. Arithmetic overflow and supported conversion-range boundaries produce deterministic results or stable errors according to the System Engineer's ruling #10; these tests do not select an arithmetic domain.
+- Tests verify scale factors must be finite and strictly positive, while offsets must be finite and may be negative, zero, or positive. The arithmetic domain is checked signed 64-bit rational numerator and positive denominator after reduction; any intermediate outside this domain returns a stable overflow error. Decimal input and catalog factors must be representable in that domain. Conversion results are rounded to finite binary64 values; subnormal and overflow-boundary results are outside this domain.
 - Tests verify offset conversions, including Fahrenheit/Celsius, behave deterministically and round only once at the public binary64 result boundary using direct IEEE-754 binary64 round-to-nearest, ties-to-even from the exact rational result. The conversion must not route through `long double` or another platform-dependent intermediate.
-- Tests exercise exact halfway values on either side of a representable result and any subnormal/overflow boundaries included in the supported domain selected by ruling #10.
-- Candidate exact rounding vectors for `test_refract_bootstrap`, included only if the selected arithmetic domain supports them:
+- Tests exercise exact halfway values on either side of a representable result. Subnormal and binary64 overflow boundaries are excluded because the selected signed 64-bit rational domain cannot represent them.
+- Candidate exact rounding vectors for `test_refract_bootstrap` within the selected domain:
   - `1 + 2^-53 - 2^-55` -> `0x3ff0000000000000`; `1 + 2^-53` (tie) -> `0x3ff0000000000000`; `1 + 2^-53 + 2^-55` -> `0x3ff0000000000001`.
-  - `2^-1076` -> `0x0000000000000000`; `2^-1075` (tie) -> `0x0000000000000000`; `3 * 2^-1076` -> `0x0000000000000001`.
-  - `(2^54 - 3) / 2^1076` -> `0x000fffffffffffff`; `(2^54 - 2) / 2^1076` (tie) -> `0x0010000000000000`; `(2^54 - 1) / 2^1076` -> `0x0010000000000000`.
-  - `2^1024 - 2^970 - 2^968` -> `0x7fefffffffffffff`; `2^1024 - 2^970` (tie) and `2^1024 - 2^970 + 2^968` -> the documented stable finite-range error.
 
 ## Risks / Open Questions
 
-- Risk (pending ruling #10): checked rational intermediates may overflow on valid catalog chains. The selected arithmetic domain must be stated explicitly; do not infer arbitrary precision or claim full-catalog conversion coverage from these candidate vectors.
+- Risk: checked rational intermediates may overflow on catalog chains with large or small scales; these return a stable error rather than an approximation.
 - Resolved during batch planning: keep the existing Caliper `scale` and `offset` fields as binary64; changing the persisted numeric schema is outside AR-0019's accepted direction. The conversion engine interprets each factor's shortest round-trip decimal representation as an exact rational intermediate, performs checked exact chain arithmetic, and rounds once to binary64 at the public result boundary.
+- Superseded for the Fahrenheit affine transform by the 2026-10-11 AR-0019 ruling: Unit `scale`/`offset` payload fields remain binary64 and unchanged, while immutable catalog v2's Temperature dimension entry carries supplemental exact rational factors for Fahrenheit. Runtime conversion uses those exact factors where present. This also keeps ordinary Fahrenheit conversions within the accepted signed-64-bit rational domain.
 
 ## Dependencies
 
@@ -86,8 +84,9 @@ ER-Dependencies: ER-0075
 ## Implementation Notes
 
 - Conversion follows each unit's explicit base-unit chain and composes scale and offset transforms.
-- Decimal input and the shortest round-trip decimal forms of stored binary64 factors are represented as reduced rational values. Arithmetic range is provisional pending ruling #10: either exact in-tree arbitrary-precision intermediates across the supported catalog domain, or checked signed 64-bit arithmetic with an explicitly bounded conversion domain. Do not approximate when intermediate arithmetic exceeds the selected domain.
-- The public result is IEEE-754 binary64 rounded directly from the exact rational result using round-to-nearest, ties-to-even. Intermediate overflow outside the selected domain returns a deterministic error. Candidate vectors outside the selected arithmetic range are not required; reconcile the final test set with ruling #10 before approval.
+- Decimal input and the shortest round-trip decimal forms of stored binary64 factors are represented as reduced rationals with signed 64-bit numerator and positive signed 64-bit denominator. Every arithmetic intermediate is checked; overflow returns a stable error.
+- An exact rational transform in the versioned base catalog takes precedence over binary64 factors for that unit; the current catalog uses this for Fahrenheit-to-kelvin conversion.
+- The public result is IEEE-754 binary64 rounded directly from the exact rational result using round-to-nearest, ties-to-even, without a floating-point intermediate. The rational range is many orders of magnitude narrower than binary64, so subnormal and binary64 overflow boundaries are out of scope.
 - No new dependency is required.
 
 ## Verification Plan
@@ -104,8 +103,12 @@ ER-Dependencies: ER-0075
 
 ## Completion Record
 
-- Prior implementation is merged; batch planning identified acceptance-test gaps that must be closed before this ER can return to Complete. System Engineer verification remains pending.
-- Validation: `make check` passed all 29 test programs on 2026-10-05.
+- Replaced the platform-dependent `long double` result path with integer-only IEEE-754 binary64 round-to-nearest, ties-to-even. The signed 64-bit rational domain is explicit; decimal parsing reduces decimal powers before enforcing the domain, including `INT64_MIN`.
+- Added exact rounding tie vectors, reducible long-decimal and signed-boundary vectors, stable error assertions for malformed values and invalid conversion graphs/factors, root-factor validation, and conversion-after-store-reopen bit stability.
+- Independent review examined rounding, parser bounds, conversion-chain failures, and root factors. Findings on reducible decimals and root-unit validation were fixed and the reviewer confirmed closure. No independent-review finding remains open.
+- A follow-up absolute-zero boundary probe exposed a negative-decimal sign regression in the denominator-reduction path. Fixed it and added negative reducible decimal, `INT64_MIN`, and exact `-273.15 °C -> 0 K` bit-pattern checks; the updated focused and full suites pass.
+- Validation on macOS `aarch64-apple-darwin27.2.0`: `make -j2 CXXFLAGS='-g -O2 -Wno-unused-const-variable -Wno-unused-private-field'` passed; `make -C tests test_refract_bootstrap CXXFLAGS='-g -O2 -Wno-unused-const-variable -Wno-unused-private-field'` plus `DYLD_LIBRARY_PATH="$PWD/src/.libs" ./tests/.libs/test_refract_bootstrap` passed (14/14); `DYLD_LIBRARY_PATH="$PWD/src/.libs" TMPDIR=/private/tmp make -j1 check CXXFLAGS='-g -O2 -Wno-unused-const-variable -Wno-unused-private-field'` passed (30/30); `git diff --check` passed. The flags suppress existing Xcode unused-member diagnostics. `make check` modified the tracked `tests/test_referee_core` executable; it was restored. No Autotools inputs changed and no regeneration was needed.
+- System Engineer verification remains pending final AR-0019 reconciliation after PR CI.
 
 ### Live Pass (Human)
 

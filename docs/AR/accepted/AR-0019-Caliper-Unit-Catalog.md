@@ -61,12 +61,13 @@ Define and ship a full Caliper unit catalog that:
   (area), `m^3` (volume).
 - Base constraints should be defined at the dimension level. Example: temperature
   has an absolute zero bound that applies to Kelvin, Celsius, and Fahrenheit.
-- Higher-level constraints may be context-dependent (e.g., area bounded by a surface).
+- V1 supports intrinsic dimension constraints, including absolute zero for temperature;
+  context-dependent constraints (e.g., area bounded by a surface) are deferred.
+- Temperature values are absolute points; interval semantics are outside v1. Intrinsic constraints and exact Fahrenheit factors are stored in the immutable catalog v2 dimension metadata.
 
 ## Open Questions
 
 - Precedence rules for user overrides vs base catalog entries.
-- Constraint representation model and how context-dependent constraints are expressed.
 
 ## Next Steps
 

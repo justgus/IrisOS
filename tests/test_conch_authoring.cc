@@ -1,6 +1,7 @@
 extern "C" {
 #include <check.h>
 }
+#include <algorithm>
 #ifdef fail
 #undef fail
 #endif
@@ -12,6 +13,7 @@ extern "C" {
 #include "viz/artifacts.h"
 
 #include <cstdio>
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <filesystem>
@@ -741,8 +743,14 @@ START_TEST(test_conch_caliper_commands)
   const std::string script =
       "caliper list\n"
       "caliper inspect °C\n"
+      "caliper inspect celsius\n"
+      "caliper inspect unknown\n"
+      "caliper list unexpected\n"
+      "caliper inspect\n"
       "caliper convert 0 °C °F\n"
       "caliper convert 0 °C °F --dimension\n"
+      "caliper convert 1 m cm\n"
+      "caliper convert 1 m\n"
       "caliper convert 1 m kg\n"
       "caliper convert 1 unknown m\n"
       "caliper convert 1 m kg --invalid\n"
@@ -752,20 +760,106 @@ START_TEST(test_conch_caliper_commands)
                 "expected Caliper list output");
   ck_assert_msg(output.find("Name: celsius") != std::string::npos,
                 "expected Caliper unit inspection");
+  ck_assert_msg(output.find("Symbol: °C") != std::string::npos,
+                "expected inspection by unit name");
   ck_assert_msg(output.find("Dimension: Temperature") != std::string::npos,
                 "expected inspected dimension");
-  ck_assert_msg(output.find(" °F\n") != std::string::npos,
-                "expected default conversion output without dimension metadata");
-  ck_assert_msg(output.find(" °F [Temperature]\n") != std::string::npos,
-                "expected opt-in conversion dimension metadata");
+  ck_assert_msg(output.find("error: unknown Caliper unit: unknown") != std::string::npos,
+                "expected deterministic unknown-unit inspection error");
+  ck_assert_msg(output.find("error: usage: caliper list\n") != std::string::npos,
+                "expected malformed list arity error");
+  ck_assert_msg(output.find("error: usage: caliper inspect <symbol-or-name>\n") != std::string::npos,
+                "expected malformed inspection arity error");
+  ck_assert_msg(output.find("32 °F\n") != std::string::npos,
+                "expected round-trip offset conversion output and target symbol");
+  ck_assert_msg(output.find("32 °F [Temperature]\n") != std::string::npos,
+                "expected round-trip output with opt-in dimension metadata");
+  ck_assert_msg(output.find("100 cm\n") != std::string::npos,
+                "expected exact numeric conversion output and target symbol");
   ck_assert_msg(output.find("error: incompatible Caliper dimensions: Length and Mass")
                     != std::string::npos,
                 "expected deterministic incompatible-dimension error");
   ck_assert_msg(output.find("error: unknown Caliper unit: unknown") != std::string::npos,
                 "expected deterministic unknown-unit error");
+  ck_assert_msg(output.find("error: usage: caliper convert <value> <from-unit> <to-unit> [--dimension]")
+                    != std::string::npos,
+                "expected malformed conversion arity error");
   ck_assert_msg(output.find("usage: caliper convert <value> <from-unit> <to-unit> [--dimension]")
                     != std::string::npos,
                 "expected invalid-option usage error");
+  std::filesystem::remove_all(db_path + ".segments");
+  ::unlink(db_path.c_str());
+}
+END_TEST
+
+START_TEST(test_conch_caliper_persisted_extension_and_override)
+{
+  auto db_path = make_temp_path("/tmp/iris-conch-caliper-ext-XXXXXX");
+  double api_conversion_value = 0.0;
+  {
+    SqliteStore store(SqliteConfig{ .filename=db_path, .enable_wal=false });
+    ck_assert_msg(store.open(), "open failed");
+    ck_assert_msg(store.ensure_schema(), "ensure_schema failed");
+    SchemaRegistry registry(store);
+    auto schema = bootstrap_core_schema(registry);
+    ck_assert_msg(schema, "schema bootstrap failed: %s", result_message(schema));
+    auto boot = bootstrap_core_catalog(registry, store);
+    ck_assert_msg(boot, "catalog bootstrap failed: %s", result_message(boot));
+    auto catalog = load_caliper_catalog(registry, store);
+    ck_assert_msg(catalog, "catalog load failed: %s", result_message(catalog));
+    auto meter = std::find_if(catalog.value->begin(), catalog.value->end(),
+        [](const CaliperCatalogUnit& unit) { return unit.symbol == "m" && !unit.hidden; });
+    ck_assert_msg(meter != catalog.value->end() && meter->object_id,
+                  "canonical meter direct ID is missing");
+    CaliperCatalogUnit furlong{
+      "furlong", "fur", "Length", { "user" }, std::string("m"), 201.168, 0.0, false
+    };
+    furlong.base_object_id = *meter->object_id;
+    auto furlong_record = write_caliper_extension_unit(registry, store, furlong);
+    ck_assert_msg(furlong_record, "persist extension failed: %s", result_message(furlong_record));
+    CaliperCatalogUnit replacement_meter{
+      "custom meter", "m", "Length", { "user" }, std::string("m"), 2.0, 0.0, true
+    };
+    replacement_meter.base_object_id = *meter->object_id;
+    auto override_record = write_caliper_extension_unit(registry, store, replacement_meter);
+    ck_assert_msg(override_record, "persist base override failed: %s", result_message(override_record));
+    auto effective_catalog = load_caliper_catalog(registry, store);
+    ck_assert_msg(effective_catalog, "load effective API catalog failed: %s",
+                  result_message(effective_catalog));
+    auto api_conversion = convert_caliper_value(*effective_catalog.value, "1", "fur", "m");
+    ck_assert_msg(api_conversion, "API conversion failed: %s", result_message(api_conversion));
+    api_conversion_value = api_conversion.value->value;
+    ck_assert(std::abs(api_conversion_value - 100.584) < 1e-12);
+    ck_assert_msg(store.close(), "close before Conch execution failed");
+  }
+
+  const auto list_output = run_conch_script_with_db("caliper list\nexit\n", db_path);
+  ck_assert_msg(list_output.find("fur  furlong  Length") != std::string::npos,
+                "Conch list omitted the persisted extension");
+  ck_assert_msg(list_output.find("m  meter  Length") == std::string::npos,
+                "Conch list exposed the displaced base unit");
+  const auto inspect_output = run_conch_script_with_db("caliper inspect m\nexit\n", db_path);
+  ck_assert_msg(inspect_output.find("Name: custom meter") != std::string::npos,
+                "Conch inspect omitted the effective override");
+  const auto old_name_output = run_conch_script_with_db("caliper inspect meter\nexit\n", db_path);
+  ck_assert_msg(old_name_output.find("error: unknown Caliper unit: meter") != std::string::npos,
+                "Conch inspection exposed the displaced base name");
+  const auto conversion_output = run_conch_script_with_db(
+      "caliper convert 1 fur m\nexit\n", db_path);
+  std::istringstream conversion_lines(conversion_output);
+  std::string conversion_line;
+  bool conch_matches_api = false;
+  while (std::getline(conversion_lines, conversion_line)) {
+    if (!conversion_line.ends_with(" m")) continue;
+    std::istringstream fields(conversion_line);
+    double conch_value = 0.0;
+    if (fields >> conch_value) {
+      conch_matches_api = std::abs(conch_value - api_conversion_value) < 1e-12;
+    }
+  }
+  ck_assert_msg(conch_matches_api,
+                "Conch conversion did not use the effective catalog after reopen: %s",
+                conversion_output.c_str());
   std::filesystem::remove_all(db_path + ".segments");
   ::unlink(db_path.c_str());
 }
@@ -788,6 +882,7 @@ Suite* conch_authoring_suite(void) {
   tcase_add_test(tc, test_conch_show_type_displays_inheritance_metadata);
   tcase_add_test(tc, test_conch_constraint_metadata_display_and_validation);
   tcase_add_test(tc, test_conch_caliper_commands);
+  tcase_add_test(tc, test_conch_caliper_persisted_extension_and_override);
 
   suite_add_tcase(s, tc);
   return s;
