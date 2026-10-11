@@ -79,7 +79,8 @@ START_TEST(test_conch_parser_authoring_values_are_structured_and_lossless)
   auto ast = parse_conch_command(
       "new Demo::Widget low:=-9223372036854775808 high:=9223372036854775807 "
       "single:='it\\'s fine' double:=\"escaped \\\"quote\\\"\" "
-      "slash:=\"back\\\\slash\" compat:=\"\\q \\t C:\\temp\"");
+      "slash:=\"back\\\\slash\" compat:=\"\\q \\t C:\\temp\" "
+      "single_compat:='\\q \\t' double_compat:=\"\\q \\t\"");
   ck_assert_uint_eq(as_uint(ast.errors.size()), 0U);
   auto command = ast.get_if<ObjectCommand>();
   ck_assert_ptr_nonnull(command);
@@ -89,7 +90,9 @@ START_TEST(test_conch_parser_authoring_values_are_structured_and_lossless)
   ck_assert_str_eq(std::get<std::string>(fields.at("single").value).c_str(), "it's fine");
   ck_assert_str_eq(std::get<std::string>(fields.at("double").value).c_str(), "escaped \"quote\"");
   ck_assert_str_eq(std::get<std::string>(fields.at("slash").value).c_str(), "back\\slash");
-  ck_assert_str_eq(std::get<std::string>(fields.at("compat").value).c_str(), "q t C:temp");
+  ck_assert_str_eq(std::get<std::string>(fields.at("compat").value).c_str(), "\\q \\t C:\\temp");
+  ck_assert_str_eq(std::get<std::string>(fields.at("single_compat").value).c_str(), "\\q \\t");
+  ck_assert_str_eq(std::get<std::string>(fields.at("double_compat").value).c_str(), "\\q \\t");
 
   const std::string json_input =
       "new --json '{\"type\":\"Demo::Widget\",\"payload\":{\"n\":9007199254740993}}'";
@@ -265,14 +268,15 @@ START_TEST(test_conch_tokenizer_covers_conch_lexical_forms)
   ConchTokenizer tokenizer;
   auto result = tokenizer.tokenize(
       "Demo::Widget dotted.name -12 := = -- { } [ ] , : "
-      "'it\\'s \"fine\"' \"say \\\"hi\\\"\" 'slash\\\\path' \"slash\\\\path\"");
+      "'it\\'s \"fine\"' \"say \\\"hi\\\"\" 'slash\\\\path' \"slash\\\\path\" "
+      "'unknown \\q and \\t' \"path C:\\temp and \\q and \\t\"");
   ck_assert_uint_eq(as_uint(result.errors.size()), 0U);
 
   std::vector<Token> tokens;
   for (const auto& token : result.tokens) {
     if (token.kind != TokenKind::End) tokens.push_back(token);
   }
-  ck_assert_uint_eq(as_uint(tokens.size()), 16U);
+  ck_assert_uint_eq(as_uint(tokens.size()), 18U);
   ck_assert_int_eq(static_cast<int>(tokens[0].kind), static_cast<int>(TokenKind::Identifier));
   ck_assert_str_eq(tokens[0].text.c_str(), "Demo::Widget");
   ck_assert_int_eq(static_cast<int>(tokens[1].kind), static_cast<int>(TokenKind::Identifier));
@@ -293,6 +297,8 @@ START_TEST(test_conch_tokenizer_covers_conch_lexical_forms)
   ck_assert_str_eq(tokens[13].text.c_str(), "say \"hi\"");
   ck_assert_str_eq(tokens[14].text.c_str(), "slash\\path");
   ck_assert_str_eq(tokens[15].text.c_str(), "slash\\path");
+  ck_assert_str_eq(tokens[16].text.c_str(), "unknown \\q and \\t");
+  ck_assert_str_eq(tokens[17].text.c_str(), "path C:\\temp and \\q and \\t");
 }
 END_TEST
 
