@@ -188,13 +188,12 @@
     {
       "id": "AR-0015",
       "name": "Conch Parser and Syntax",
-      "status": "In Progress",
+      "status": "Implemented",
       "decision": "Move command parsing toward typed ASTs, parser-driven validation, and reusable grammar surfaces.",
-      "conformance": "Staged",
+      "conformance": "Implemented",
       "notes": [
-        "AR-0026 defines parser maturity levels.",
-        "Reusable parsing, batch execution, and shared parser regression fixtures are verified through ER-0067/68/69.",
-        "ER-0088 structured authoring payloads and ER-0091 grammar-conformance fixtures are Verified. ER-0092 unrecognized string escape semantics remain Proposed and block completion of AR-0015 under the one-PR-per-AR delivery rule."
+        "ER-0067/68/69 and ER-0088/0091/0092 are Verified; all listed AR-0015 ER dependencies are Verified.",
+        "ER-0092's unknown-string escape behavior was delivered in PR #349, merged after CI run 38171360284 passed."
       ]
     },
     {
