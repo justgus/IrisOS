@@ -45,11 +45,11 @@
 | ER-0098 | AR-0017 | ER-0033 | PR #346 (merged as 304d7bf) | Verified; merged; independent review, local validation, CI passed | Value-level unit attachment validates canonical dimensions; unitless legacy records remain readable. |
 | ER-0099 | AR-0019 | ER-0075, ER-0076 | PR #347 (merged as `e1648b7`) | Verified; independent review, local validation, repaired CI passed | Absolute-zero boundaries apply to absolute temperature points in K/°C/°F; context-dependent constraints and interval semantics are outside v1. |
 
-## Preliminary Requirement-to-Test Matrix
+## Final Requirement-to-Test Matrix
 
-This is the implementation plan's coverage map. The independent planning reviewer must derive and
-reconcile its own matrix before implementation. The System Engineer's answers in the current
-conversation resolve the previously open design rulings; the ER drafts record those decisions.
+This matrix records batch-start evidence and final ER coverage. The independent planning review
+confirmed the requirement mapping, and implementation, local validation, independent reviews, and
+required PR CI have passed for the completed batch.
 
 ## Batch Decisions and Blockers
 
@@ -57,7 +57,7 @@ conversation resolve the previously open design rulings; the ER drafts record th
 - ER-0092: the earlier one-PR deferral was superseded by the System Engineer's explicit authorization to complete AR-0015; implementation and final verification are complete.
 - User rulings (2026-10-10): Set exposes `index` without imposing iteration order; Tuple/Tensor use the existing generic labels and Type/Value/Variadic argument forms; shapes are fixed in types; units attach to quantity values; v1 constraints are intrinsic only; Caliper extension writes use a public API and direct object references; conversion uses signed 64-bit rationals over a restricted domain; names retain current project spelling; all 24 prefixes are stored as metadata and composed algorithmically. Catalog coverage follows ER-0075's finite general-engineering recommendation, including force and power.
 
-| Parent AR requirement | Existing evidence | Batch ER / planned validation | Coverage state |
+| Parent AR requirement | Batch-start evidence / initial gap | Completed ER evidence | Final coverage state |
 |---|---|---|---|
 | AR-0015: quoted strings, escapes, and flexible whitespace around operators | ER-0023 and ER-0069 parser tests/fixtures | ER-0091 grammar fixtures and ER-0092 unknown-escape tests through parser and authoring paths | Verified in PR #345, ER-0092 Verified in PR #350 |
 | AR-0015: tokenizer recognizes identifiers, numbers, strings, operators, and delimiters; strings allow either quote form and quote/backslash escapes | Existing parser tests cover the prior grammar surface | ER-0088 and ER-0091 cover both quote forms, token classes, and command ASTs; ER-0092 covers unknown escapes in both quote styles and both public APIs | Verified: local full suite 30/30, independent review passed, and PR #349 CI passed |
