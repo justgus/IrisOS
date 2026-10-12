@@ -126,7 +126,7 @@ public:
                                        const IoHandle& handle);
 
 private:
-  ceo::TaskRegistry& registry_;
+  [[maybe_unused]] ceo::TaskRegistry& registry_;
   ceo::TaskComms& comms_;
   ceo::IoReactor& reactor_;
   IoHandleStore& handles_;
