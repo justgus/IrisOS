@@ -95,7 +95,7 @@ ER-Dependencies: ER-0009, ER-0064
   - `make check`
 - Manual checks: none; this read-only interpretation API is fully observable through deterministic tests.
 
-### Live Pass (Human)
+### Independent Live Pass
 
 - Required: No
 - If no, reason: The API returns deterministic metadata descriptors and does not change visible shell or device behavior.

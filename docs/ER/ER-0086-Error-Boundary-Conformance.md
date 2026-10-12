@@ -114,7 +114,7 @@ The implementation audit records the public declarations in `referee_sqlite/sqli
   - `DYLD_LIBRARY_PATH=/Users/justgus/Xcode-Projects/IrisOS/src/.libs TMPDIR=/private/tmp make check AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-gnu-zero-variadic-macro-arguments -Wno-dangling-gsl'`
 - Manual checks: inspect the boundary inventory and verify it names each in-scope API and representative expected-failure test.
 
-### Live Pass (Human)
+### Independent Live Pass
 
 - Required: No
 - If no, reason: This work changes error propagation at API boundaries and is fully observable through deterministic automated tests; no visual or hardware behavior changes.

@@ -213,17 +213,20 @@ A task is done when:
 - Work through eligible ERs in dependency order, one implementation branch at a time. Do not begin
   dependent ERs before prerequisites pass. An unresolved dependency outside the selected AR range
   blocks only work that needs it; record the reason and continue independent eligible work.
-- Run an independent, read-only Codex review for each ER, in a separate reviewer context. Require a
-  criterion-by-criterion evidence table, comparison against an independently derived test matrix,
-  counterexample search, and fresh execution of relevant validation. `Unverified` is not a pass.
-  Fix findings and repeat review. The reviewer must not author the implementation or rely on the
-  implementer's reasoning as evidence.
-- Require a `Live Pass (Human)` entry in each ER. If acceptance criteria require user observation or
-  a target environment Codex cannot faithfully validate, leave it Pending until the human performs
-  and reports it. Never infer or record a human pass. Continue independent ERs while waiting.
+- Decide before implementation whether an ER needs a separate independent review. Require one for
+  changes to public APIs, persisted data or formats, security/capability boundaries, concurrency or
+  lifetime behavior, architecture semantics, or broad cross-module behavior. For a localized,
+  low-risk change, use the implementation diff, targeted tests, CI, and a clear review summary
+  instead of creating a separate reviewer run. When an independent review is required, use a
+  read-only context and record criterion-level evidence, counterexample checks, and fresh validation.
+  Do not claim a review that did not occur.
+- Require an `Independent Live Pass` entry in each ER. If acceptance criteria require user
+  observation or a target environment Codex cannot faithfully validate, leave it Pending until the
+  System Engineer performs and reports it. Never infer or record a pass. Continue independent ERs
+  while waiting.
 - Mark an ER Verified only when its acceptance criteria pass, its required local validation passes,
-  independent review has no open findings, and required CI checks pass. If CI is unavailable or
-  inconclusive, or a required human live pass is pending, leave the ER unverified and record the
+  any required independent review has no open findings, and required CI checks pass. If CI is unavailable or
+  inconclusive, or a required independent live pass is pending, leave the ER unverified and record the
   exact state.
 - Mark an AR Implemented only when every ER listed as its dependency is Verified and the AR's
   acceptance criteria are met. Update implementation progress with its implementation commit;
@@ -239,3 +242,23 @@ A task is done when:
 - A batch is finished only when every eligible in-range AR is Implemented or has a documented
   blocker, all mergeable ER work has completed the required workflow, and the progress ledger is
   finalized with evidence and remaining blockers.
+
+### Midstream and Reviewability Adjustments
+
+- When the System Engineer changes the batch procedure midstream, apply it to unfinished work
+  immediately. Preserve completed implementation and review evidence; do not restart passed gates
+  or reopen merged work solely to adopt the new procedure.
+- Keep an already-started ER on its active branch. For related, sequential ERs that have not
+  started, use one implementation branch per AR by default. Keep separate ER branches when they
+  can merge independently, need parallel work, or need failure isolation.
+- Keep planning in the progress ledger and ER documents. Do not create a planning-only PR unless
+  requested or needed to resolve a real dependency or scope decision before implementation.
+- At each implementation checkpoint and PR handoff, report the files touched, diff summary, commit
+  IDs, exact validation results, and status transitions with their evidence. Link directly to the
+  PR's Files changed view when a PR exists, so the System Engineer can inspect the code without
+  reconstructing prior states from memory.
+- Prefer builds and tests inside the sandbox, directing temporary files to a writable workspace or
+  temporary directory. Request escalation only after a concrete sandbox failure identifies the
+  blocked access; explain that access in the request. Do not explicitly request escalation for
+  routine commands that run in the sandbox.
+- Call the user-observed gate `Independent Live Pass` in new and updated documentation.
