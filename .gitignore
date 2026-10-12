@@ -44,3 +44,4 @@ config.status
 *.xcodeproj/project.xcworkspace/
 *.xcodeproj/xcuserdata/
 .airframe/agilecockpit-*-cache.json
+.worktrees

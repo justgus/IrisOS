@@ -64,23 +64,24 @@ Before implementation begins:
 2. Break the eligible AR work into the smallest independently implementable ERs that can be
    reviewed and validated. Order them by dependencies and avoid bundling unrelated changes.
 3. Draft each ER from `docs/ER/ER-Template.md`. Include the parent AR, concrete acceptance criteria,
-   exact local validation commands, dependency IDs, a completed `Live Pass (Human)` applicability
-   decision, and any required documentation or migration. Require a human live pass when observable
+   exact local validation commands, dependency IDs, a completed `Independent Live Pass` applicability
+   decision, and any required documentation or migration. Require an Independent Live Pass when observable
    behavior or the target environment cannot be faithfully validated by Codex.
 4. The user-selected AR range authorizes these derived ERs. Set them to `Approved` after checking
    that their scope implements the accepted AR without extending it. Update parent AR dependency
    lists and the ER Status Ledger.
-5. Run a separate, read-only Codex planning review against the parent ARs. It must check coverage,
-   scope, dependencies, acceptance criteria, and whether the validation commands can prove those
-   criteria. Have the reviewer derive a requirement-to-test matrix from the ARs and ERs before
-   implementation. Fix its findings before implementation. If no separate reviewer context is
-   available, leave the batch in Planning and record the blocker; do not treat self-review as
-   equivalent.
+5. Use a separate, read-only planning review when the AR has substantial design ambiguity,
+   cross-module impact, or safety-critical behavior. It must check coverage, scope, dependencies,
+   acceptance criteria, and whether validation can prove those criteria. For a clear, localized AR,
+   record the scope and requirement-to-test mapping in the ledger without a separate planning-review
+   run.
 6. Synchronize each ER with GitHub using the repository's established issue workflow. Record issue
    IDs and links in the progress file.
-7. Commit the coherent ER-planning changes, open a planning PR, wait for required CI, and merge it
-   before starting implementation. This preserves the authorized work definition if a session
-   ends or implementation needs to resume later.
+7. Commit coherent ER-planning changes with the first implementation change. Do not create a
+   planning-only PR by default. Use one implementation branch per AR for related, sequential ERs
+   that have not started; retain separate ER branches when work can merge independently, needs
+   parallel work, or needs failure isolation. For a batch already underway, keep the active branch
+   and apply this grouping only to work that has not started.
 
 ## Implementation and Validation Loop
 
@@ -98,16 +99,19 @@ Process one ER at a time, in dependency order:
    ledger, and move to independent eligible work. Never invent a `Blocked` ER status or weaken a
    test to make the batch pass.
 
-## Independent Review Gate
+## Risk-Based Independent Review
 
-After local validation and before opening the PR, run a separate Codex review in a fresh reviewer
-context. Use a reviewer/subagent with read-only access to source and documentation; it may run the
-specified validation commands but must not edit implementation files. Give it the parent AR, ER,
-independently derived requirement-to-test matrix, full diff, test output, and exact commands. Do not
-provide the implementer's explanation or conclusions. The reviewer must inspect the artifacts and
-run the relevant validation itself; summaries are not evidence. If the active Codex surface cannot
-provide a separate reviewer context, do not claim the gate passed or mark work Verified; record the
-limitation in the batch ledger.
+Before implementation, decide whether the ER warrants an independent review. Require one for public
+API changes, persisted data or format changes, security/capability boundaries, concurrency or
+lifetime behavior, architecture semantics, or broad cross-module behavior. For localized, low-risk
+changes, the implementation diff, targeted validation, CI, and a clear review summary are the review
+record; do not create a separate reviewer run by default.
+
+When required, run a separate Codex review in a fresh reviewer context after local validation and
+before opening the PR. Give the read-only reviewer the parent AR, ER, requirement-to-test mapping,
+full diff, test output, and exact commands. The reviewer must inspect artifacts and run relevant
+validation; summaries alone are not evidence. If the surface cannot provide a separate reviewer
+context, record that limitation and do not claim the independent review passed.
 
 The review result is a criterion-by-criterion table with only these verdicts: `Pass`, `Fail`, or
 `Unverified`. Every `Pass` must cite concrete implementation evidence and a test or other
@@ -121,7 +125,7 @@ independent validation result. `Unverified` is not a pass. The reviewer must:
 - identify checks it could not perform and residual risks, without treating absence of a discovered
   bug as proof of correctness.
 
-A review cannot pass with missing evidence, a failing command, a criterion labeled `Unverified`, or
+A required independent review cannot pass with missing evidence, a failing command, a criterion labeled `Unverified`, or
 an unaddressed credible finding. Fix findings and repeat the review and affected tests. A disagreement
 is resolved against the AR, ER, code, and observed validation results, not the implementer's
 confidence. After three repair cycles, leave the ER incomplete with the unresolved finding and
@@ -129,9 +133,9 @@ continue independent eligible work. A fresh Codex context reduces anchoring on t
 discussion, but is not a guarantee against shared model blind spots; executable tests and CI are
 required gates, not optional corroboration.
 
-## Human Live Pass Gate
+## Independent Live Pass Gate
 
-For an ER whose `Live Pass (Human)` is Required, automation can build and stage the implementation,
+For an ER whose `Independent Live Pass` is Required, automation can build and stage the implementation,
 prepare exact steps and expected observations, run automated checks, and leave the ER in `Complete`
 while awaiting the human. It cannot perform or attest to the live pass. The human records the
 observed result and date in the ER. On `Continue`, Codex checks that report, handles any failure, and
@@ -171,6 +175,17 @@ the required human observation.
 If a required GitHub action cannot be completed because credentials, permissions, network, CI, or
 repository policy prevents it, record exact evidence and leave affected statuses honest. Continue
 other in-range ERs that do not depend on the blocked action.
+
+## Change Visibility
+
+At every implementation checkpoint and PR handoff, report the files touched, a concise diff summary,
+commit IDs, exact validation commands and results, and status transitions with their evidence. Link
+directly to the PR's Files changed view. Keep the progress ledger as a checkpoint, not as a substitute
+for presenting the actual code diff for review.
+
+For a batch already underway, apply procedure changes to unfinished work without restarting passed
+gates or reopening merged changes. Record the change in the progress ledger. Keep any active ER on
+its current branch; use revised branch grouping for ERs that have not started.
 
 ## Checkpointing and Resume
 

@@ -95,7 +95,7 @@ ER-Dependencies: ER-0066, ER-0081, ER-0082, ER-0083
 - `make -C tests test_conch_authoring test_conch_session_growth AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-gnu-zero-variadic-macro-arguments -Wno-dangling-gsl'` passed.
 - `DYLD_LIBRARY_PATH=/Users/justgus/Xcode-Projects/IrisOS/src/.libs TMPDIR=/private/tmp make check AM_CXXFLAGS='-Wall -Wextra -Wpedantic -Werror -Wno-unused-const-variable -Wno-unused-private-field -Wno-gnu-zero-variadic-macro-arguments -Wno-dangling-gsl'` passed all 29 tests.
 - Independent review: Pass. Reviewer derived the AR/ER matrix independently, inspected command-loop control paths and startup cursor ordering, and freshly passed the focused two-test suite. The first subsequent read-only update is asserted to create zero Conchos.
-- Live Pass (Human): Pass reported by the System Engineer on 2026-10-08.
+- Independent Live Pass: Pass reported by the System Engineer on 2026-10-08.
 
 ## Verification Plan
 
@@ -105,7 +105,7 @@ ER-Dependencies: ER-0066, ER-0081, ER-0082, ER-0083
   - `make check`
 - Manual checks: run `./bin/conch --db :memory:`, enter `demo v1`, inspect the session-growth message and the created Concho/session relationships with the shell's object/graph inspection commands, then issue a read-only command and confirm no duplicate view is reported.
 
-### Live Pass (Human)
+### Independent Live Pass
 
 - Required: Yes
 - If no, reason: N/A

@@ -79,7 +79,7 @@ AR-Dependencies: AR-XXXX
 - Tests to run:
 - Manual checks:
 
-### Live Pass (Human)
+### Independent Live Pass
 
 - Required: Yes | No
 - If no, reason:

@@ -89,7 +89,7 @@ ER-Dependencies: ER-0081
   - `make check`
 - Manual checks: none; focused tests exercise the Refract API boundary.
 
-### Live Pass (Human)
+### Independent Live Pass
 
 - Required: No
 - If no, reason: Unit and integration tests fully cover this non-visual registry API contract.

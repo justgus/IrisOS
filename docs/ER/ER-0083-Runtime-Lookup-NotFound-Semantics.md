@@ -90,7 +90,7 @@ ER-Dependencies: ER-0081, ER-0082
   - `make check`
 - Manual checks: none; automated tests cover the in-scope API and its callers.
 
-### Live Pass (Human)
+### Independent Live Pass
 
 - Required: No
 - If no, reason: Unit and integration tests cover API errors; no visible or target-device behavior changes.
