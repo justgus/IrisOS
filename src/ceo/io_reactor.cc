@@ -49,7 +49,7 @@ constexpr referee::TypeID kTypeU64{0x1002ULL};
 constexpr referee::TypeID kTypeBool{0x1003ULL};
 constexpr referee::TypeID kTypeBytes{0x1007ULL};
 
-constexpr referee::TypeID kTypeKernelIo{0x4B494F5000000001ULL};
+[[maybe_unused]] constexpr referee::TypeID kTypeKernelIo{0x4B494F5000000001ULL};
 constexpr referee::TypeID kTypeKernelIoChannel{0x4B494F5000000002ULL};
 constexpr referee::TypeID kTypeKernelIoDatagram{0x4B494F5000000003ULL};
 
