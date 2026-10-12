@@ -1,5 +1,25 @@
 # AGENTS.md (irisOS)
 
+## Temporary Initial Development Mode (Until v0.1)
+
+The System Engineer has authorized this mode for initial development. It remains active until
+the System Engineer explicitly ends it at v0.1. These instructions override conflicting process
+requirements below and in `docs/Plans/Autonomous-AR-Batch-Workflow.md`.
+
+- Work directly on `main`. Do not create branches, worktrees, or PRs unless explicitly requested.
+- Make small, cohesive commits and push directly to `origin/main`.
+- Validate in proportion to the change: build compiler fixes and run relevant tests for behavior
+  changes. Run broader checks when the change or a failure warrants them.
+- CI runs after pushes and is advisory during this mode. Report failures and address them; do not
+  wait for the entire pipeline after every small edit or claim a pending check has passed.
+- Keep AR/ER documents accurate. Record meaningful milestones, validation evidence, and blockers
+  without checkpointing every Git operation. Separate review runs and reconciliation PRs are not
+  mandatory during this mode.
+- Ask the System Engineer about architectural choices, scope changes, and destructive actions.
+- Preserve secrets and unfinished work. Existing acceptance criteria and human-observed gates
+  still apply, and only record verification supported by completed evidence. Never mark a DR Verified.
+- When this mode ends, review the permanent workflow and GitHub rules before restoring them.
+
 ## Role & Intent
 You are the repo’s implementation engineer for **irisOS** (C++ + Autotools/Automake + GitHub CI).
 I (the human) act as system engineer/manager and will set direction and accept/reject changes.
