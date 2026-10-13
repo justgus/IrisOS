@@ -44,12 +44,14 @@
 - The connected GitHub API confirmed the base, uploaded SHA-matching blobs, created the exact local
   tree, and advanced main with an expected-head check. The exact commit object was SHA-verified and
   imported locally; local main fast-forwarded to the same published commit without a history rewrite.
-- Service implementation CI run `38423872082` is advisory. At the last check, bootstrap, configure,
-  and Linux build had passed; unit tests were running and distcheck had not started. Do not record
-  the run as passed until a completed result is available.
+- Service implementation CI run `38423872082` completed successfully, including bootstrap,
+  configure, Linux build, unit tests, and distcheck. Its automated result does not establish any
+  Pending Independent Live Pass or System Engineer verification.
 - Documentation reconciliation is recorded with this ledger update. Validation confirms all 27
   AR/index statuses match, ER ledger statuses match, linked ER documents exist, and repaired
   ledger/snapshots have no conflict markers. No ER or DR verification is claimed by these corrections.
+- Documentation reconciliation was published as `8350d9c7a35da6f5976bcf8128bb90721697bc1d`;
+  its advisory CI run `38425762095` was still running at the last check.
 
 ## Preserved Historical Records
 

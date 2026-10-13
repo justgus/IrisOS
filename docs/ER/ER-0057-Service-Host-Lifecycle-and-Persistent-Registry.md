@@ -138,6 +138,9 @@ That historical status is not evidence that the acceptance criteria currently pa
 - The previous Verified label is replaced with Complete. Independent Live Pass and System Engineer
   verification remain Pending; no historical verification is used to infer either gate.
 - Operating limits and a runnable Conch sequence are documented in `docs/Service-Hosts.md`.
+- Published implementation commit: `2d524d0b4456d6c4cae93d1cfd35e98f8be1fca8`. Advisory Linux
+  CI run `38423872082` completed successfully, including bootstrap, configure, build, unit tests,
+  and distcheck. This completed automated evidence does not establish the Pending Independent Live Pass.
 
 ## Verification Plan
 
