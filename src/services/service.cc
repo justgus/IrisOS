@@ -273,6 +273,13 @@ referee::Result<void> ServiceRegistry::register_service(const ServiceDescriptor&
     return referee::Result<void>::err(referee::ErrorCode::InvalidArgument, "handler is null");
   }
 
+  auto registered = register_descriptor(desc);
+  if (!registered) return registered;
+  by_id_.at(id_key(desc.id)).handler = handler;
+  return referee::Result<void>::ok();
+}
+
+referee::Result<void> ServiceRegistry::register_descriptor(const ServiceDescriptor& desc) {
   auto key = id_key(desc.id);
   if (by_id_.find(key) != by_id_.end()) {
     return referee::Result<void>::err(referee::ErrorCode::AlreadyExists,
@@ -293,11 +300,30 @@ referee::Result<void> ServiceRegistry::register_service(const ServiceDescriptor&
                                       "service type already registered");
   }
 
-  by_id_.emplace(key, Entry{desc, handler});
+  by_id_.emplace(key, Entry{desc, nullptr});
   if (!desc.name.empty()) by_name_[desc.name] = key;
   by_type_[desc.type.v] = key;
 
   return referee::Result<void>::ok();
+}
+
+referee::Result<void> ServiceRegistry::bind_handler(const referee::ObjectID& id,
+                                                  ServiceObject* handler) {
+  auto it = by_id_.find(id_key(id));
+  if (it == by_id_.end()) {
+    return referee::Result<void>::err(referee::ErrorCode::NotFound, "service id not registered");
+  }
+  it->second.handler = handler;
+  return referee::Result<void>::ok();
+}
+
+referee::Result<ServiceDescriptor> ServiceRegistry::resolve_by_id(const referee::ObjectID& id) const {
+  auto it = by_id_.find(id_key(id));
+  if (it == by_id_.end()) {
+    return referee::Result<ServiceDescriptor>::err(referee::ErrorCode::NotFound,
+                                                   "service id not registered");
+  }
+  return referee::Result<ServiceDescriptor>::ok(it->second.desc);
 }
 
 referee::Result<void> ServiceRegistry::unregister_service(const referee::ObjectID& id) {
@@ -399,17 +425,18 @@ referee::Result<void> CapabilityContextAuthorizer::authorize(
   return referee::Result<void>::ok();
 }
 
-IpcService::IpcService(ServiceRegistry& registry) : registry_(registry) {}
+IpcService::IpcService(const ServiceRegistry& registry) : registry_(registry) {}
 
-IpcService::IpcService(ServiceRegistry& registry, ServiceBoundaryAuthorizer* authorizer)
+IpcService::IpcService(const ServiceRegistry& registry, ServiceBoundaryAuthorizer* authorizer)
     : registry_(registry), authorizer_(authorizer) {}
 
 std::optional<IpcService::ResolvedService> IpcService::resolve_service(
     const MessageEnvelope& request) const {
   if (request.recipient.has_value()) {
+    auto resolved = registry_.resolve_by_id(request.recipient.value());
+    if (!resolved) return std::nullopt;
     auto* handler = registry_.handler_for(request.recipient.value());
-    if (!handler) return std::nullopt;
-    auto descriptor = handler->descriptor();
+    auto descriptor = resolved.value.value();
     return ResolvedService{descriptor, find_declared_endpoint(descriptor, request.endpoint), handler};
   }
   if (!request.endpoint.has_value()) return std::nullopt;
@@ -420,7 +447,6 @@ std::optional<IpcService::ResolvedService> IpcService::resolve_service(
     if (!resolved) return std::nullopt;
     const auto& descriptor = resolved.value.value();
     auto* handler = registry_.handler_for(descriptor.id);
-    if (!handler) return std::nullopt;
     return ResolvedService{descriptor, find_declared_endpoint(descriptor, request.endpoint), handler};
   }
 
@@ -429,7 +455,6 @@ std::optional<IpcService::ResolvedService> IpcService::resolve_service(
     if (!resolved) return std::nullopt;
     const auto& descriptor = resolved.value.value();
     auto* handler = registry_.handler_for(descriptor.id);
-    if (!handler) return std::nullopt;
     return ResolvedService{descriptor, find_declared_endpoint(descriptor, request.endpoint), handler};
   }
 
@@ -452,6 +477,11 @@ referee::Result<MessageEnvelope> IpcService::send_request(const MessageEnvelope&
     if (authorizer_) {
       auto authR = authorizer_->authorize(request, resolved->descriptor, resolved->endpoint);
       if (!authR) return referee::Result<MessageEnvelope>::err(authR.error.value());
+    }
+
+    if (!resolved->handler) {
+      return referee::Result<MessageEnvelope>::err(referee::ErrorCode::FailedPrecondition,
+                                                   "service host is not running");
     }
 
     auto start = std::chrono::steady_clock::now();

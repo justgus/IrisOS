@@ -98,11 +98,12 @@
     {
       "id": "AR-0005",
       "name": "Service Plane Model",
-      "status": "Implemented",
+      "status": "In Progress",
       "decision": "Model long-running services as stable service objects with lifecycle, discovery, messaging, and isolation.",
-      "conformance": "Implemented with future stages",
+      "conformance": "Implementation complete; verification pending",
       "notes": [
         "Later staged delivery is defined by AR-0022.",
+        "ER-0057 now implements persistent discovery and CEO-backed hosts with explicit binding/start after recovery; Independent Live Pass and System Engineer verification remain Pending.",
         "Persistent capability context, service boundary enforcement, isolation hooks, and expanded service classes remain planned work."
       ]
     },

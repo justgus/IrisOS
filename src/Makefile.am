@@ -59,6 +59,12 @@ libreferee_la_SOURCES = \
    services/capability_context.cc \
    services/service.h \
    services/service.cc \
+   services/host_records.h \
+   services/host_records.cc \
+   services/service_host.h \
+   services/service_host.cc \
+   services/service_commands.h \
+   services/service_commands.cc \
    refract/bootstrap.h \
    refract/bootstrap.cc \
    refract/caliper_conversion.cc \
@@ -75,6 +81,8 @@ libreferee_la_CPPFLAGS = $(SQLITE_CFLAGS) $(NLOHMANN_JSON_CFLAGS)
 libreferee_la_LIBADD = $(SQLITE_LIBS)
 
 nobase_include_HEADERS = referee/referee.h \
+   services/host_records.h \
+   services/service_host.h \
    services/service.h \
    refract/dispatch.h \
    refract/operation_registry.h \

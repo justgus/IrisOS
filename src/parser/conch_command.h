@@ -100,6 +100,10 @@ struct CaliperCommand {
   std::vector<std::string> args;
 };
 
+struct ServiceCommand {
+  std::vector<std::string> args;
+};
+
 using CommandNode = std::variant<std::monostate,
                                  AliasAssignmentCommand,
                                  TypesListCommand,
@@ -111,7 +115,8 @@ using CommandNode = std::variant<std::monostate,
                                  IoCommand,
                                  CapsCommand,
                                  HelpCommand,
-                                 CaliperCommand>;
+                                 CaliperCommand,
+                                 ServiceCommand>;
 
 struct CommandAst {
   std::string raw_input;

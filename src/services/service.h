@@ -18,6 +18,7 @@ struct Endpoint {
   std::string name;
   std::optional<referee::TypeID> type;
   std::vector<std::string> required_grants;
+  friend bool operator==(const Endpoint&, const Endpoint&) = default;
 };
 
 struct MessageEnvelope {
@@ -54,6 +55,7 @@ struct ServiceDescriptor {
   std::string name;
   std::vector<std::string> required_grants;
   std::vector<Endpoint> endpoints;
+  friend bool operator==(const ServiceDescriptor&, const ServiceDescriptor&) = default;
 };
 
 class ServiceObject {
@@ -65,11 +67,14 @@ public:
 
 class ServiceRegistry {
 public:
+  referee::Result<void> register_descriptor(const ServiceDescriptor& desc);
+  referee::Result<void> bind_handler(const referee::ObjectID& id, ServiceObject* handler);
   referee::Result<void> register_service(const ServiceDescriptor& desc, ServiceObject* handler);
   referee::Result<void> unregister_service(const referee::ObjectID& id);
 
   referee::Result<ServiceDescriptor> resolve_by_name(std::string_view name) const;
   referee::Result<ServiceDescriptor> resolve_by_type(referee::TypeID type) const;
+  referee::Result<ServiceDescriptor> resolve_by_id(const referee::ObjectID& id) const;
 
   ServiceObject* handler_for(const referee::ObjectID& id) const;
 
@@ -106,8 +111,8 @@ private:
 
 class IpcService {
 public:
-  explicit IpcService(ServiceRegistry& registry);
-  IpcService(ServiceRegistry& registry, ServiceBoundaryAuthorizer* authorizer);
+  explicit IpcService(const ServiceRegistry& registry);
+  IpcService(const ServiceRegistry& registry, ServiceBoundaryAuthorizer* authorizer);
 
   referee::Result<MessageEnvelope> send_request(const MessageEnvelope& request,
                                                 std::chrono::milliseconds timeout);
@@ -121,7 +126,7 @@ private:
 
   std::optional<ResolvedService> resolve_service(const MessageEnvelope& request) const;
 
-  ServiceRegistry& registry_;
+  const ServiceRegistry& registry_;
   ServiceBoundaryAuthorizer* authorizer_{nullptr};
 };
 

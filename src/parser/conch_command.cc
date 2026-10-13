@@ -553,6 +553,10 @@ CommandAst parse_conch_command(std::string_view input) {
     out.node = CapsCommand{ out.args };
     return out;
   }
+  if (out.name == "service") {
+    out.node = ServiceCommand{out.args};
+    return out;
+  }
 
   return out;
 }

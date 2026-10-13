@@ -14,7 +14,7 @@ GitHub-Issue: #264
 
 - ER ID: ER-0057
 - Title: Service Host Lifecycle and Persistent Registry
-- Status: Verified
+- Status: Complete
 - Date: 2026-03-14
 - Owners: Mike
 - Type: Epic
@@ -72,7 +72,8 @@ GitHub-Issue: #264
 ## Risks / Open Questions
 
 - Risk: persistence and in-memory runtime state may diverge if lifecycle transitions are not modeled carefully.
-- Question: should restart policy be a field on the service host record in this ER or in a follow-on policy ER?
+- Resolved by the System Engineer on 2026-10-13: recover descriptors with stopped, unbound hosts;
+  binding and start are explicit. Automatic restart policy is deferred.
 
 ## Dependencies
 
@@ -84,6 +85,59 @@ GitHub-Issue: #264
 ## Implementation Notes
 
 - Notes for implementer: keep the first host lifecycle state machine minimal and explicit; do not couple restart semantics to Conch session state.
+
+### Implementation Design (2026-10-13)
+
+The System Engineer authorized implementation of the missing lifecycle and persistent registry
+after the repository audit found no matching implementation for the existing Verified status.
+That historical status is not evidence that the acceptance criteria currently pass.
+
+- Add local service-record and service-host modules under `src/services/`, using the existing
+  Referee storage API and CEO `TaskMode::Service` tasks.
+- Persist the complete descriptor, including endpoint identities and required grants. Runtime
+  handler pointers and process-local task IDs must not be treated as durable executable bindings.
+- Keep service identity stable through create, start, stop, restart, and store reopen.
+- Record lifecycle changes as new immutable records. The current store's
+  `create_object_with_id` always uses version 1, so it must not be used to overwrite lifecycle
+  history under a reused ObjectID.
+- Expose persisted discovery and host state through Conch, with control paths consuming the
+  command AST. Keep implementation details outside command output unless needed for inspection.
+- The System Engineer selected explicit binding and start. Recovery restores descriptors with
+  stopped, unbound hosts. Automatic restart policy is deferred.
+
+### Validation Targets
+
+- Close and reopen a file-backed store; verify name/type discovery, stable identity, endpoint
+  metadata, and required grants survive.
+- Verify legal create/start/stop/restart transitions and rejection of invalid transitions.
+- Verify requests are routed only to a live host and resume after restart.
+- Verify reopened hosts cannot reuse a stale task ID or handler pointer.
+- Verify duplicate identities/names/types, malformed records, and storage failures return typed
+  errors without publishing a partially recovered runtime registry.
+- Verify Conch inspection and lifecycle commands across separate shell processes.
+- Run the focused service, capability, CEO, parser, and shell tests, followed by `make check`.
+- Independent Live Pass: Pending; the System Engineer must observe service lifecycle and
+  rediscovery through Conch before verification is recorded.
+
+### Implementation and Validation Evidence (2026-10-13)
+
+- `src/services/host_records.{h,cc}` persists full descriptors and immutable, predecessor-linked
+  lifecycle history. `service_host.{h,cc}` implements CEO service tasks, explicit recovery/binding,
+  lifecycle controls, and health checks. `service_commands.{h,cc}` exposes the built-in memory
+  service through typed Conch commands; existing IPC capability enforcement remains in the path.
+- `tests/test_service_host.cc` passes all six tests, including file-backed recovery, name/type
+  routing, illegal transitions, rejected bindings, duplicate descriptors, corruption, externally
+  terminated tasks, capability enforcement, and failed storage writes. The Conch authoring suite
+  passes the new two-process recovery/binding/start/request test.
+- `./bootstrap.sh`, `./configure`, and `make -j4` passed. Regeneration was necessary to include the
+  new source modules and test target. Generated tracked outputs are excluded from the change.
+- The focused eight-program suite passed with
+  `TMPDIR=/private/tmp make -C tests check TESTS='test_service_host test_service_ipc test_capability_context test_ceo_tasks test_conch_parser test_conch_grammar_api test_conch_parser_regression test_conch_authoring'`.
+- `TMPDIR=/private/tmp make check` passed 31/31. Both suites required execution outside the sandbox:
+  sandbox runs failed before assertions because Check could not create its communication files.
+- The previous Verified label is replaced with Complete. Independent Live Pass and System Engineer
+  verification remain Pending; no historical verification is used to infer either gate.
+- Operating limits and a runnable Conch sequence are documented in `docs/Service-Hosts.md`.
 
 ## Verification Plan
 

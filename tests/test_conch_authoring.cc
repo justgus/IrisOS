@@ -870,6 +870,42 @@ START_TEST(test_conch_caliper_persisted_extension_and_override)
 }
 END_TEST
 
+START_TEST(test_conch_service_lifecycle_across_process_restart)
+{
+  auto directory = make_temp_dir("/tmp/iris-conch-service-XXXXXX");
+  auto db = directory + "/registry";
+  auto first = run_conch_script_with_db(
+      "service create memory\nservice show memory\nservice start memory\n"
+      "service bind memory\nservice start memory\nservice show memory\n"
+      "service request memory memory.list_regions\nservice restart memory\n"
+      "service show memory\nexit\n", db);
+  ck_assert_msg(first.find("state=created bound=no healthy=no generation=0") != std::string::npos,
+                "missing created state: %s", first.c_str());
+  ck_assert_msg(first.find("has no bound handler") != std::string::npos,
+                "start must require binding: %s", first.c_str());
+  ck_assert_msg(first.find("state=running bound=yes healthy=yes generation=2") != std::string::npos,
+                "missing restart state: %s", first.c_str());
+  ck_assert_msg(first.find("{\"regions\":[]}") != std::string::npos,
+                "missing routed response: %s", first.c_str());
+  auto second = run_conch_script_with_db(
+      "service list\nservice request memory memory.list_regions\n"
+      "service bind memory\nservice request memory memory.list_regions\n"
+      "service start memory\nservice show memory\nservice request memory memory.list_regions\n"
+      "service stop memory\nservice unbind memory\nservice show memory\nexit\n", db);
+  ck_assert_msg(second.find("state=stopped bound=no healthy=no generation=2") != std::string::npos,
+                "recovery must restore stopped/unbound host: %s", second.c_str());
+  ck_assert_msg(second.find("service host is not running") != std::string::npos,
+                "recovered service must reject requests: %s", second.c_str());
+  ck_assert_msg(second.find("state=running bound=yes healthy=yes generation=3") != std::string::npos,
+                "missing explicit start: %s", second.c_str());
+  ck_assert_msg(second.find("{\"regions\":[]}") != std::string::npos,
+                "missing response after recovery/start: %s", second.c_str());
+  ck_assert_msg(second.find("state=stopped bound=no healthy=no generation=3") != std::string::npos,
+                "missing stop/unbind: %s", second.c_str());
+  std::filesystem::remove_all(directory);
+}
+END_TEST
+
 Suite* conch_authoring_suite(void) {
   Suite* s = suite_create("ConchAuthoring");
   TCase* tc = tcase_create("core");
@@ -888,6 +924,7 @@ Suite* conch_authoring_suite(void) {
   tcase_add_test(tc, test_conch_constraint_metadata_display_and_validation);
   tcase_add_test(tc, test_conch_caliper_commands);
   tcase_add_test(tc, test_conch_caliper_persisted_extension_and_override);
+  tcase_add_test(tc, test_conch_service_lifecycle_across_process_restart);
 
   suite_add_tcase(s, tc);
   return s;

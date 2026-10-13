@@ -19,6 +19,7 @@ std::string command_node_kind(const CommandAst& ast) {
   if (ast.get_if<IoCommand>()) return "Io";
   if (ast.get_if<CapsCommand>()) return "Caps";
   if (ast.get_if<HelpCommand>()) return "Help";
+  if (ast.get_if<ServiceCommand>()) return "Service";
   return "Unknown";
 }
 

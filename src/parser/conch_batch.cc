@@ -29,7 +29,8 @@ bool is_supported_batch_command(const CommandAst& ast) {
       || ast.get_if<CallCommand>() != nullptr
       || ast.get_if<TaskCommand>() != nullptr
       || ast.get_if<IoCommand>() != nullptr
-      || ast.get_if<CapsCommand>() != nullptr;
+      || ast.get_if<CapsCommand>() != nullptr
+      || ast.get_if<ServiceCommand>() != nullptr;
 }
 
 void push_command(BatchExecutionResult& out, BatchCommandResult result) {

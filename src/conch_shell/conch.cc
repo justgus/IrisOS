@@ -11,6 +11,7 @@
 #include "refract/schema_registry.h"
 #include "referee/referee.h"
 #include "referee_sqlite/sqlite_store.h"
+#include "services/service_commands.h"
 #include "viz/artifacts.h"
 #include "vizier/routing.h"
 
@@ -3458,6 +3459,9 @@ bool read_bytes_value(const nlohmann::json& payload, std::string* out, std::stri
 
 void print_help() {
   std::cout << "Commands:\n";
+  std::cout << "  service list | create memory\n";
+  std::cout << "  service show/bind/unbind/start/stop/restart <name>\n";
+  std::cout << "  service request <name> <endpoint> [quoted-json]\n";
   std::cout << "  ls\n";
   std::cout << "  ls --objects [pattern]\n";
   std::cout << "  ls --recursive [pattern]\n";
@@ -5824,6 +5828,13 @@ int main(int argc, char** argv) {
 #endif
   std::vector<TaskEntry> tasks;
   iris::ceo::TaskRegistry ceo_registry;
+  iris::service::ServiceHostManager service_hosts(store, ceo_registry);
+  auto recovered_services = service_hosts.recover();
+  if (!recovered_services) {
+    std::cout << "error: service recovery failed: " << recovered_services.error->message << "\n";
+    return 1;
+  }
+  iris::service::ServiceCommands service_commands(service_hosts);
   iris::ceo::TaskComms ceo_comms(ceo_registry);
   iris::ceo::IoReactor ceo_reactor(ceo_registry);
   iris::conduit::IoHandleStore io_handle_store;
@@ -5864,6 +5875,10 @@ int main(int argc, char** argv) {
     auto session_op = resolve_session_operation(parsed);
 
     const auto& cmd = parsed.name;
+    if (auto service_command = parsed.get_if<iris::parser::ServiceCommand>()) {
+      service_commands.execute(*service_command, store, session.session.id, std::cout);
+      continue;
+    }
     if (auto alias_command = parsed.get_if<iris::parser::AliasAssignmentCommand>()) {
       handle_alias_assignment_command(*alias_command, registry, store, session_aliases);
       continue;
