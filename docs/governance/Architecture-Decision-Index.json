@@ -110,8 +110,11 @@
     {
       "id": "AR-0006",
       "name": "CEO/Exec Runtime Model",
-      "status": "Implemented",
-      "decision": "Use CEO/Exec as the core task, waitable, message, and resource coordination substrate."
+      "status": "In Progress",
+      "decision": "Use CEO/Exec as the core task, waitable, message, and resource coordination substrate.",
+      "notes": [
+        "The core runtime is implemented; explicitly linked ER-0057 is Complete with passing automated validation, but its Independent Live Pass and System Engineer verification are Pending."
+      ]
     },
     {
       "id": "AR-0007",

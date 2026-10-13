@@ -11,7 +11,7 @@
 
 | Order | Item | Current state | Evidence / remaining gate |
 |---|---|---|---|
-| 1 | ER-0057 / AR-0005 | Implementation published; ER Complete, AR In Progress | Commit `2d524d0b4456d6c4cae93d1cfd35e98f8be1fca8`; local build passed, focused suite 8/8, full suite 31/31. Independent Live Pass and System Engineer verification Pending. |
+| 1 | ER-0057 / AR-0005 / AR-0006 | Implementation published; ER Complete, both ARs In Progress | Commit `2d524d0b4456d6c4cae93d1cfd35e98f8be1fca8`; local build passed, focused suite 8/8, full suite 31/31. Independent Live Pass and System Engineer verification Pending. AR-0006 explicitly lists ER-0057 and cannot remain Implemented while that dependency is unverified. |
 | 2 | AR-0023 / AR-0025 / AR-0026 | AR-0025 and AR-0026 reconciled as Implemented; AR-0023 remains Accepted | Linked Verified ERs and code cover interaction modes and parser Levels 1–4. AR-0023's extended policy metadata scope awaits System Engineer clarification; existing operation required_capabilities metadata is present. |
 | 3 | AR-0024 | In Progress; ER-0070–0074 Complete | Source exists for all four tracks; relevant suites pass 8 primitive, 6 inventory, 6 authority, and 13 transport/session checks. Independent Live Pass and System Engineer verification Pending. |
 | 4 | Governance index | Reconciled to canonical statuses and current source | Corrected stale service, Machine/Comms, reflection, shell, and parser conformance notes. AR-0022 remains Accepted with unfinished Stage E scope. |
