@@ -81,6 +81,13 @@ ER-Dependencies: ER-0070
 
 ## Verification Plan
 
+### Reconciliation Evidence (2026-10-13)
+
+- `src/machine/definitions.cc`, `topology.cc`, and `inventory.cc` implement descriptive machine facts. `test_machine_inventory` passes 6 checks for definitions, containment/overlap validation, reference/query behavior, and Refract registration.
+- Fresh `TMPDIR=/private/tmp make check` passed 31/31 programs outside the sandbox.
+- Status remains Complete. Independent Live Pass and System Engineer verification remain Pending;
+  automated tests do not establish a human-observed pass.
+
 - Tests to run:
   - `make check`
 - Manual checks:

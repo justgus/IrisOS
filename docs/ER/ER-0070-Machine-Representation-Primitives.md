@@ -15,7 +15,7 @@ AR-Dependencies: AR-0008, AR-0010, AR-0024
 
 - ER ID: ER-0070
 - Title: Machine Representation Primitives
-- Status: Proposed
+- Status: Complete
 - Date: 2026-05-28
 - Owners: Mike
 - Type: Enhancement
@@ -77,6 +77,15 @@ AR-Dependencies: AR-0008, AR-0010, AR-0024
 ## Implementation Notes
 
 - Notes for implementer: keep this ER below descriptor and policy semantics.
+
+### Reconciliation Evidence (2026-10-13)
+
+- The previous Proposed label did not reflect the existing implementation in
+  `src/machine/scalars.h`, `primitives.cc`, `buffers.{h,cc}`, and `refract.{h,cc}`.
+- `test_machine_primitives` passes all 8 construction, equality, alignment/address validation,
+  buffer bounds, and Refract registration checks. Existing Comms primitive and transport/session
+  suites also pass in fresh `TMPDIR=/private/tmp make check` (31/31 programs, outside the sandbox).
+- Status is Complete; Independent Live Pass and System Engineer verification remain Pending.
 
 ## Verification Plan
 

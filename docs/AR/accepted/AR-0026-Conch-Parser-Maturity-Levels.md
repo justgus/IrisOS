@@ -1,11 +1,11 @@
 ---
 GitHub-Issue: #294
-ER-Dependencies: ER-0056
+ER-Dependencies: ER-0056, ER-0067, ER-0068, ER-0069, ER-0088, ER-0091, ER-0092
 ---
 
 # AR-0026 — Conch Parser Maturity Levels
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-03-14
 - Owners: Mike
 
@@ -64,4 +64,16 @@ Define parser maturity levels for Conch.
 
 ## Next Steps
 
-- Draft ER-0056 to implement Level 2 and begin Level 3.
+- Levels 1 through 4 are implemented for the documented command-family scope. Full scripting and
+  arbitrary expressions remain outside v1.
+
+## Implementation Progress
+
+- `src/parser/tokenizer.cc` and `conch_command.{h,cc}` implement quote-aware tokenization,
+  location-aware diagnostics, typed command families, and structured authoring AST data.
+- The major command-family handlers consume that typed AST in `src/conch_shell/conch.cc`.
+  ER-0088 removes authoring payload reconstruction; ER-0091/0092 cover grammar and escape behavior.
+- ER-0067 provides `parse_conch_grammar`, ER-0068 provides noninteractive batch execution, and
+  ER-0069 compares reusable/shell parser behavior through shared regression fixtures.
+- All listed ER dependencies are Verified. Fresh `TMPDIR=/private/tmp make check` passed 31/31
+  outside the sandbox on 2026-10-13, including parser, grammar, regression, and shell suites.

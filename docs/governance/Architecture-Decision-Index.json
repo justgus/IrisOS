@@ -104,7 +104,7 @@
       "notes": [
         "Later staged delivery is defined by AR-0022.",
         "ER-0057 now implements persistent discovery and CEO-backed hosts with explicit binding/start after recovery; Independent Live Pass and System Engineer verification remain Pending.",
-        "Persistent capability context, service boundary enforcement, isolation hooks, and expanded service classes remain planned work."
+        "Capability context, service boundary enforcement, and isolation hooks exist; expanded Stage E services remain follow-on work."
       ]
     },
     {
@@ -121,7 +121,7 @@
       "conformance": "Implemented with future stages",
       "notes": [
         "AR-0023 defines profile boundaries.",
-        "ER-0078, ER-0079, and ER-0080 close remaining extended reflection scope."
+        "ER-0078, ER-0079, and ER-0080 are Verified and provide persisted constraints, effects, and documentation metadata."
       ]
     },
     {
@@ -132,7 +132,7 @@
       "conformance": "Implemented with future stages",
       "notes": [
         "Exec, Comms primitives, Astra, and Caliper exist.",
-        "Erector::Machine remains a planned subsystem under AR-0024."
+        "Machine primitives, descriptors, handles, and leases exist under AR-0024; ER-0070 through ER-0074 await System Engineer verification."
       ]
     },
     {
@@ -148,8 +148,8 @@
       "decision": "Model communication through object-oriented link, transport, session, protocol, and addressing abstractions.",
       "conformance": "Implemented with future stages",
       "notes": [
-        "Current implementation covers in-memory primitives and CEO I/O integration.",
-        "Machine-backed transport, session, and protocol objects remain planned work under AR-0024."
+        "Current implementation covers in-memory primitives, CEO I/O integration, and Machine-linked transport/session/protocol metadata.",
+        "AR-0024 mapping foundations and bounded loopback packet execution exist; physical drivers and full network stacks are outside that v1 scope."
       ]
     },
     {
@@ -160,7 +160,7 @@
       "conformance": "Implemented",
       "notes": [
         "Triggered artifact routing exists.",
-        "Graph routing and session growth have verified library support; this batch integrates session updates into the shell and checks typed missing-artifact errors."
+        "Graph routing and session growth are integrated into shell command boundaries; typed missing-artifact errors and operation metadata interpretation are implemented."
       ]
     },
     {
@@ -171,7 +171,7 @@
       "conformance": "Implemented",
       "notes": [
         "Graph observation, relationship routing, and session growth have verified library support.",
-        "This batch integrates the running shell with session growth and adds the accepted tiling workspace data model."
+        "The running shell integrates session growth and the accepted nested tiling workspace data model."
       ]
     },
     {
@@ -249,10 +249,11 @@
       "name": "Staged Service Plane Delivery",
       "status": "Accepted",
       "decision": "Define Service Plane delivery stages A through E so implementation can close one maturity level at a time.",
-      "conformance": "Staged",
+      "conformance": "Staged; host verification and expanded services pending",
       "notes": [
-        "ER-0057 verifies the current service host lifecycle and persistent registry slice.",
-        "Later stages remain planned under ER-0058 through ER-0062."
+        "ER-0057 implements service host lifecycle and persistent descriptor discovery; Independent Live Pass and System Engineer verification remain Pending.",
+        "ER-0058 through ER-0061 are Verified for Stage D; ER-0062 provides a Verified metadata-only memory service baseline for Stage E.",
+        "Allocation, network services, and first-class sandbox/capability services remain follow-on Stage E scope."
       ]
     },
     {
@@ -262,24 +263,27 @@
       "decision": "Separate Refract v1 core reflection from v2 extended reflection features.",
       "conformance": "Partial",
       "notes": [
-        "ER-0055 is verified.",
-        "ER-0078 is Complete but not Verified.",
-        "ER-0079 and ER-0080 are Proposed."
+        "ER-0055, ER-0078, ER-0079, and ER-0080 are Verified and their implementation is present.",
+        "The source stores required_capabilities on operations; the meaning of the AR's extended policy metadata requirement awaits System Engineer clarification in this reconciliation."
       ]
     },
     {
       "id": "AR-0024",
       "name": "Erector Machine and Comms Delivery Tracks",
-      "status": "Accepted",
+      "status": "In Progress",
       "decision": "Stage Machine and Comms expansion into Machine core, descriptors, handles/leases, and Machine-backed Comms realization.",
-      "conformance": "Planned"
+      "conformance": "Implementation present; verification pending",
+      "notes": [
+        "All four delivery tracks have source and passing automated coverage under ER-0070 through ER-0074.",
+        "Those ERs are Complete; Independent Live Pass and System Engineer verification remain Pending."
+      ]
     },
     {
       "id": "AR-0025",
       "name": "Conch and Vizier Interaction Modes",
-      "status": "Accepted",
+      "status": "Implemented",
       "decision": "Recognize triggered artifact routing as Mode 1 and define observer-driven graph routing as Mode 2.",
-      "conformance": "Staged",
+      "conformance": "Implemented for snapshot/change-feed modes",
       "notes": [
         "Mode 1 is implemented by verified ERs.",
         "Cursor-driven observer growth and Task Conchos are implemented by verified ER-0063 through ER-0066; continuous event-driven notification remains planned."
@@ -288,12 +292,12 @@
     {
       "id": "AR-0026",
       "name": "Conch Parser Maturity Levels",
-      "status": "Accepted",
+      "status": "Implemented",
       "decision": "Define parser maturity levels from quote-aware command parsing through reusable command grammar surfaces.",
-      "conformance": "Staged",
+      "conformance": "Implemented through Level 4",
       "notes": [
-        "ER-0056 implements Level 2 and begins Level 3.",
-        "Level 4 remains planned under ER-0067 through ER-0069."
+        "ER-0056 and ER-0088 implement typed command families and structured authoring handlers.",
+        "Reusable grammar, batch execution, and regression coverage are Verified under ER-0067 through ER-0069; ER-0091/0092 close grammar and escape coverage."
       ]
     },
     {
@@ -308,12 +312,12 @@
     {
       "area": "Service Plane",
       "source": "AR-0005, AR-0022",
-      "gap": "Later service stages for capability context, isolation, and expanded core services remain planned."
+      "gap": "ER-0057's host/persistent-registry implementation awaits live pass and verification; expanded Stage E services remain planned. Capability context and isolation hooks are implemented."
     },
     {
       "area": "Machine and Comms",
       "source": "AR-0008, AR-0010, AR-0024",
-      "gap": "Erector::Machine and Machine-backed Comms tracks remain planned."
+      "gap": "Machine and Machine-linked Comms foundations are implemented but ER-0070 through ER-0074 await live pass and System Engineer verification."
     },
     {
       "area": "Conch and Vizier",
@@ -323,7 +327,7 @@
     {
       "area": "Refract extended reflection",
       "source": "AR-0007, AR-0023",
-      "gap": "Constraints, operation effects, and documentation metadata are not fully verified."
+      "gap": "Constraints, operation effects, and documentation metadata are implemented under Verified ERs; the extended policy metadata scope awaits System Engineer clarification."
     }
   ]
 }

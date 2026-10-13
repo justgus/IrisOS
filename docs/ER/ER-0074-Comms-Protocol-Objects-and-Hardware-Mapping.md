@@ -82,6 +82,13 @@ ER-Dependencies: ER-0073
 
 ## Verification Plan
 
+### Reconciliation Evidence (2026-10-13)
+
+- `src/comms/transport_session.cc` implements inspectable protocol metadata, deterministic compatibility checks, Machine capability mappings, and a bounded loopback packet path. `test_comms_transport_session` passes 13 checks including incompatible mappings and lease revalidation.
+- Fresh `TMPDIR=/private/tmp make check` passed 31/31 programs outside the sandbox.
+- Status remains Complete. Independent Live Pass and System Engineer verification remain Pending;
+  automated tests do not establish a human-observed pass.
+
 - Tests to run:
   - `make check`
 - Manual checks:

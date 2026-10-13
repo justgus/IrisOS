@@ -84,6 +84,13 @@ ER-Dependencies: ER-0070, ER-0071, ER-0072
 
 ## Verification Plan
 
+### Reconciliation Evidence (2026-10-13)
+
+- `src/comms/transport_session.cc` implements Machine-linked transports, explicit session references, and strict lifecycle transitions. `test_comms_transport_session` passes 13 checks covering these surfaces and the protocol/mapping follow-on.
+- Fresh `TMPDIR=/private/tmp make check` passed 31/31 programs outside the sandbox.
+- Status remains Complete. Independent Live Pass and System Engineer verification remain Pending;
+  automated tests do not establish a human-observed pass.
+
 - Tests to run:
   - `make check`
 - Manual checks:

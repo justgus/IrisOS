@@ -84,6 +84,13 @@ ER-Dependencies: ER-0058, ER-0060, ER-0071
 
 ## Verification Plan
 
+### Reconciliation Evidence (2026-10-13)
+
+- `src/machine/authority.cc` implements resource-scoped handle creation and lease lifecycle. `test_machine_authority` passes 6 checks covering grant/owner checks, resource boundaries, release, and revocation.
+- Fresh `TMPDIR=/private/tmp make check` passed 31/31 programs outside the sandbox.
+- Status remains Complete. Independent Live Pass and System Engineer verification remain Pending;
+  automated tests do not establish a human-observed pass.
+
 - Tests to run:
   - `make check`
 - Manual checks:

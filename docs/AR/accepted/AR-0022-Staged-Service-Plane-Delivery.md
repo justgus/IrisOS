@@ -1,6 +1,6 @@
 ---
 GitHub-Issue: #290
-ER-Dependencies: ER-0057
+ER-Dependencies: ER-0057, ER-0058, ER-0059, ER-0060, ER-0061, ER-0062
 ---
 
 # AR-0022 — Staged Service Plane Delivery
@@ -83,5 +83,17 @@ Amend the Service Plane architecture to define explicit delivery stages.
 
 ## Next Steps
 
-- Draft ER-0057 to implement Stage B and the first part of Stage C.
-- Follow with capability-context ERs for Stage D.
+- Complete the Independent Live Pass and System Engineer verification for ER-0057.
+- Define later Stage E services through separate accepted implementation work.
+
+## Implementation Progress
+
+- ER-0057 now provides Stage B host lifecycle and Stage C persisted descriptor discovery/recovery.
+  The System Engineer selected explicit binding and start for recovered hosts. Its local build
+  and tests pass, but its Independent Live Pass and verification remain Pending.
+- Verified ER-0058 through ER-0061 provide capability context persistence, task attachment,
+  boundary enforcement, and sandbox identity/isolation hooks for Stage D.
+- Verified ER-0062 provides a metadata-only memory service baseline for Stage E. Allocation,
+  network services, and a first-class sandbox/capability service are broader follow-on scope.
+- This AR remains Accepted because its staged recommendation includes unfinished Stage E scope;
+  the Verified label on the old ER-0057 document must not be used as current completion evidence.

@@ -72,5 +72,14 @@ stated precisely.
 
 ## Next Steps
 
-- Draft ER-0055 for persisted inheritance and interface metadata.
-- Follow with ERs for constraints, effects, and documentation.
+- Confirm the intended scope of extended policy metadata before completing the AR reconciliation.
+
+## Implementation Progress
+
+- The 2026-10-13 source audit found persisted inheritance/interfaces, field and relationship
+  constraints, operation effects, and documentation/examples in `src/refract/schema_registry.*`.
+  All listed ER dependencies (ER-0055/0078/0079/0080) are Verified. The corresponding registry,
+  bootstrap, and Conch tests pass in fresh `TMPDIR=/private/tmp make check` (31/31, outside the sandbox).
+- Operations also persist and expose `required_capabilities`. Whether this satisfies the AR's
+  undefined extended policy metadata requirement awaits System Engineer clarification. This AR
+  remains Accepted; no broader policy architecture or completion is inferred by the reconciliation.

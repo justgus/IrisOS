@@ -1,11 +1,11 @@
 ---
 GitHub-Issue: #293
-ER-Dependencies: ER-0008, ER-0009, ER-0010, ER-0011, ER-0052, ER-0054
+ER-Dependencies: ER-0008, ER-0009, ER-0010, ER-0011, ER-0052, ER-0054, ER-0063, ER-0064, ER-0065, ER-0066, ER-0084
 ---
 
 # AR-0025 — Conch And Vizier Interaction Modes
 
-- Status: Accepted
+- Status: Implemented
 - Date: 2026-03-14
 - Owners: Mike
 
@@ -56,5 +56,18 @@ Define explicit interaction modes for Conch and Vizier.
 
 ## Next Steps
 
-- Complete parser and service-plane foundation work first.
-- Follow with Referee graph-watch and observer-driven Vizier ERs.
+- Continuous event-driven notification is a future extension; the accepted snapshot/change-feed
+  form of Mode 2 is implemented.
+
+## Implementation Progress
+
+- Mode 1 is implemented by artifact routing and explicit Concho creation in `src/vizier/routing.cc`
+  and `src/conch_shell/conch.cc`.
+- ER-0063 provides the persistent cursor-based graph change feed. ER-0064 routes relationships,
+  ER-0065 provides task views, and ER-0066 materializes observer-driven session growth in
+  `src/conch/session_growth.cc`. ER-0084 invokes session updates at shell command boundaries.
+- All listed ER dependencies are Verified. The 2026-10-13 reconciliation source audit confirms
+  both modes and Task Conchos; fresh `TMPDIR=/private/tmp make check` passed 31/31 outside the
+  sandbox, including routing, session-growth, and Conch integration suites.
+- Mode 2 uses graph changes/snapshots at command boundaries. This status does not claim continuous
+  notification while the shell is idle.
