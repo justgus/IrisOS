@@ -83,17 +83,17 @@ Amend the Service Plane architecture to define explicit delivery stages.
 
 ## Next Steps
 
-- Complete the Independent Live Pass and System Engineer verification for ER-0057.
+- ER-0057 verification was confirmed by the System Engineer on 2026-10-14.
 - Define later Stage E services through separate accepted implementation work.
 
 ## Implementation Progress
 
 - ER-0057 now provides Stage B host lifecycle and Stage C persisted descriptor discovery/recovery.
   The System Engineer selected explicit binding and start for recovered hosts. Its local build
-  and tests pass, but its Independent Live Pass and verification remain Pending.
+  and tests pass; the System Engineer confirmed its Verified status and prior live verification
+  on 2026-10-14.
 - Verified ER-0058 through ER-0061 provide capability context persistence, task attachment,
   boundary enforcement, and sandbox identity/isolation hooks for Stage D.
 - Verified ER-0062 provides a metadata-only memory service baseline for Stage E. Allocation,
   network services, and a first-class sandbox/capability service are broader follow-on scope.
-- This AR remains Accepted because its staged recommendation includes unfinished Stage E scope;
-  the Verified label on the old ER-0057 document must not be used as current completion evidence.
+- This AR remains Accepted because its staged recommendation includes unfinished Stage E scope.

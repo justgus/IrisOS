@@ -98,22 +98,22 @@
     {
       "id": "AR-0005",
       "name": "Service Plane Model",
-      "status": "In Progress",
+      "status": "Implemented",
       "decision": "Model long-running services as stable service objects with lifecycle, discovery, messaging, and isolation.",
-      "conformance": "Implementation complete; verification pending",
+      "conformance": "Implemented; System Engineer verification confirmed",
       "notes": [
         "Later staged delivery is defined by AR-0022.",
-        "ER-0057 now implements persistent discovery and CEO-backed hosts with explicit binding/start after recovery; Independent Live Pass and System Engineer verification remain Pending.",
+        "ER-0057 implements persistent discovery and CEO-backed hosts with explicit binding/start after recovery; the System Engineer confirmed Verified status and prior live verification on 2026-10-14.",
         "Capability context, service boundary enforcement, and isolation hooks exist; expanded Stage E services remain follow-on work."
       ]
     },
     {
       "id": "AR-0006",
       "name": "CEO/Exec Runtime Model",
-      "status": "In Progress",
+      "status": "Implemented",
       "decision": "Use CEO/Exec as the core task, waitable, message, and resource coordination substrate.",
       "notes": [
-        "The core runtime is implemented; explicitly linked ER-0057 is Complete with passing automated validation, but its Independent Live Pass and System Engineer verification are Pending."
+        "The System Engineer confirmed the established runtime and ER-0057 Verified status on 2026-10-14; all listed ER dependencies are Verified."
       ]
     },
     {
@@ -252,9 +252,9 @@
       "name": "Staged Service Plane Delivery",
       "status": "Accepted",
       "decision": "Define Service Plane delivery stages A through E so implementation can close one maturity level at a time.",
-      "conformance": "Staged; host verification and expanded services pending",
+      "conformance": "Staged; expanded services pending",
       "notes": [
-        "ER-0057 implements service host lifecycle and persistent descriptor discovery; Independent Live Pass and System Engineer verification remain Pending.",
+        "ER-0057 implements service host lifecycle and persistent descriptor discovery; Verified status and prior live verification were confirmed by the System Engineer on 2026-10-14.",
         "ER-0058 through ER-0061 are Verified for Stage D; ER-0062 provides a Verified metadata-only memory service baseline for Stage E.",
         "Allocation, network services, and first-class sandbox/capability services remain follow-on Stage E scope."
       ]
@@ -315,7 +315,7 @@
     {
       "area": "Service Plane",
       "source": "AR-0005, AR-0022",
-      "gap": "ER-0057's host/persistent-registry implementation awaits live pass and verification; expanded Stage E services remain planned. Capability context and isolation hooks are implemented."
+      "gap": "ER-0057 is Verified by System Engineer confirmation on 2026-10-14; expanded Stage E services remain planned. Capability context and isolation hooks are implemented."
     },
     {
       "area": "Machine and Comms",

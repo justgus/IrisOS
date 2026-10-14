@@ -14,7 +14,7 @@ GitHub-Issue: #264
 
 - ER ID: ER-0057
 - Title: Service Host Lifecycle and Persistent Registry
-- Status: Complete
+- Status: Verified
 - Date: 2026-03-14
 - Owners: Mike
 - Type: Epic
@@ -116,8 +116,8 @@ That historical status is not evidence that the acceptance criteria currently pa
   errors without publishing a partially recovered runtime registry.
 - Verify Conch inspection and lifecycle commands across separate shell processes.
 - Run the focused service, capability, CEO, parser, and shell tests, followed by `make check`.
-- Independent Live Pass: Pending; the System Engineer must observe service lifecycle and
-  rediscovery through Conch before verification is recorded.
+- Independent Live Pass: confirmed by the System Engineer on 2026-10-14 as having occurred
+  previously; the original observation date was not supplied.
 
 ### Implementation and Validation Evidence (2026-10-13)
 
@@ -141,6 +141,13 @@ That historical status is not evidence that the acceptance criteria currently pa
 - Published implementation commit: `2d524d0b4456d6c4cae93d1cfd35e98f8be1fca8`. Advisory Linux
   CI run `38423872082` completed successfully, including bootstrap, configure, build, unit tests,
   and distcheck. This completed automated evidence does not establish the Pending Independent Live Pass.
+
+### System Engineer Verification (2026-10-14)
+
+- The System Engineer confirmed that ER-0057 is Verified and that live verification occurred
+  previously. This confirmation supersedes the Pending gates recorded in the 2026-10-13 evidence.
+- The original observation date was not supplied. No new live run is claimed.
+- The System Engineer also confirmed the established CEO/Exec runtime under AR-0006.
 
 ## Verification Plan
 

@@ -5,7 +5,7 @@ ER-Dependencies: ER-0001, ER-0044, ER-0057
 
 # AR-0005 — Service Plane Model (Recommendation)
 
-- Status: In Progress
+- Status: Implemented
 - Date: 2026-02-16
 - Owners: Mike
 
@@ -65,9 +65,8 @@ threading model, and persistence of registry state) should be covered by follow-
 
 ## Implementation Progress
 
-- The 2026-10-13 source audit found that ER-0057's former Verified status was unsupported by a
-  matching service-host/persistent-registry implementation. The System Engineer authorized the
-  missing implementation and selected explicit binding and start after recovery.
-- ER-0057 is now Complete: durable descriptors, CEO-backed lifecycle, health inspection, recovery,
-  and Conch controls are implemented. Local build and the full 31-program suite pass. The required
-  Independent Live Pass and System Engineer verification are Pending, so this AR remains In Progress.
+- Durable descriptors, CEO-backed lifecycle, health inspection, recovery, and Conch controls
+  are implemented. Local build, the full 31-program suite, and Linux CI passed.
+- On 2026-10-14, the System Engineer confirmed ER-0057 is Verified and that live verification
+  occurred previously. This supersedes the Pending verification recorded on 2026-10-13.
+- All listed ER dependencies are Verified. Expanded services remain follow-on scope under AR-0022.

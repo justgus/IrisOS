@@ -5,7 +5,7 @@ ER-Dependencies: ER-0005, ER-0006, ER-0007, ER-0016, ER-0017, ER-0043, ER-0044, 
 
 # AR-0006 — CEO/Exec Runtime Model (Recommendation)
 
-- Status: In Progress
+- Status: Implemented
 - Date: 2026-02-16
 - Owners: Mike
 
@@ -54,9 +54,8 @@ scheduling policy, threading model) should be defined in follow-on ERs.
 
 ## Implementation Progress
 
-- Core task, waitable, message, capability attachment, and I/O substrate implementations remain
-  present. ER-0057 is an explicitly listed dependency and its unsupported historical Verified
-  label was corrected during the 2026-10-13 service-host reconciliation.
-- ER-0057 is now Complete with passing local and Linux CI validation. Its Independent Live Pass
-  and System Engineer verification remain Pending; this AR therefore remains In Progress until
-  that dependency is Verified.
+- Core task, waitable, message, capability attachment, and I/O substrate implementations are
+  present. The System Engineer confirmed the established runtime on 2026-10-14.
+- On 2026-10-14, the System Engineer confirmed ER-0057 is Verified and that live verification
+  occurred previously. This supersedes the Pending verification recorded on 2026-10-13.
+- All listed ER dependencies are Verified; this AR is Implemented.

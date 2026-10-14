@@ -3,7 +3,7 @@
 - Requested work: reconcile the AR audit findings in the order selected by the System Engineer.
 - Process: Temporary Initial Development Mode in `AGENTS.md`; work directly on `main`, with small
   cohesive commits and direct publication. Advisory CI and human-observed gates remain distinct.
-- Updated: 2026-10-13.
+- Updated: 2026-10-14.
 - Source of truth: canonical AR/ER documents and current repository state. Historical snapshots
   below retain prior evidence and unresolved historical statements; they are not resume instructions.
 
@@ -11,7 +11,7 @@
 
 | Order | Item | Current state | Evidence / remaining gate |
 |---|---|---|---|
-| 1 | ER-0057 / AR-0005 / AR-0006 | Implementation published; ER Complete, both ARs In Progress | Commit `2d524d0b4456d6c4cae93d1cfd35e98f8be1fca8`; local build passed, focused suite 8/8, full suite 31/31. Independent Live Pass and System Engineer verification Pending. AR-0006 explicitly lists ER-0057 and cannot remain Implemented while that dependency is unverified. |
+| 1 | ER-0057 / AR-0005 / AR-0006 | ER Verified; both ARs Implemented | Commit `2d524d0b4456d6c4cae93d1cfd35e98f8be1fca8`; local build passed, focused suite 8/8, full suite 31/31. System Engineer confirmed ER-0057 Verified status, prior live verification, and the established AR-0006 runtime on 2026-10-14; all linked ER dependencies are Verified. |
 | 2 | AR-0023 / AR-0025 / AR-0026 | AR-0025 and AR-0026 reconciled as Implemented; AR-0023 remains Accepted | Linked Verified ERs and code cover interaction modes and parser Levels 1–4. AR-0023's extended policy metadata scope awaits System Engineer clarification; existing operation required_capabilities metadata is present. |
 | 3 | AR-0024 | In Progress; ER-0070–0074 Complete | Source exists for all four tracks; relevant suites pass 8 primitive, 6 inventory, 6 authority, and 13 transport/session checks. Independent Live Pass and System Engineer verification Pending. |
 | 4 | Governance index | Reconciled to canonical statuses and current source | Corrected stale service, Machine/Comms, reflection, shell, and parser conformance notes. AR-0022 remains Accepted with unfinished Stage E scope. |
@@ -19,9 +19,10 @@
 
 ## Current Item and Gates
 
-- First unfinished gate: the System Engineer's Independent Live Pass for ER-0057. Follow
-  `docs/Service-Hosts.md` to create, bind, start, restart, stop, and rediscover a memory host through
-  Conch. After reopening the store, confirm it is stopped/unbound until explicit binding and start.
+- ER-0057 is Verified by System Engineer confirmation on 2026-10-14. Prior live verification
+  was confirmed; its original observation date was not supplied. No new live run is claimed.
+- Remaining items: AR-0023 policy-scope clarification, ER-0070–0074 Independent Live Pass and
+  System Engineer verification, and unfinished AR-0022 Stage E scope.
 - The System Engineer explicitly selected recovery with stopped/unbound hosts. Automatic restart
   is deferred; no persisted task ID or handler pointer is restored.
 - AR-0023 remains Accepted pending the policy-scope ruling. No broader policy implementation is
@@ -46,7 +47,8 @@
   imported locally; local main fast-forwarded to the same published commit without a history rewrite.
 - Service implementation CI run `38423872082` completed successfully, including bootstrap,
   configure, Linux build, unit tests, and distcheck. Its automated result does not establish any
-  Pending Independent Live Pass or System Engineer verification.
+  Independent Live Pass or System Engineer verification; ER-0057
+  verification is established by the subsequent System Engineer confirmation above.
 - Documentation reconciliation is recorded with this ledger update. Validation confirms all 27
   AR/index statuses match, ER ledger statuses match, linked ER documents exist, and repaired
   ledger/snapshots have no conflict markers. No ER or DR verification is claimed by these corrections.
