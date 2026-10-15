@@ -91,7 +91,7 @@
 | ER | Parent | State | Next step |
 |---|---|---|---|
 | ER-0100 | AR-0022 | Complete | Independent review and 33/33 full tests passed; publish and observe CI |
-| ER-0101 | AR-0022/0024 | Approved | Implement after ER-0100 publication |
+| ER-0101 | AR-0022/0024 | Complete | Independent review and 34/34 full tests passed; implementation CI next |
 | ER-0102 | AR-0022 | Approved | Implement after ER-0101 publication |
 | ER-0103 | AR-0023 | Verified | None; exact-head CI passed |
 
@@ -259,3 +259,28 @@
   Service-Hosts usage, review report, affected AR/ER/status/index/ledger documents.
 - Regeneration: `./bootstrap.sh`, `./configure` for new library sources/test target; generated
   tracked libtool and tests/test_referee_core restored. Next implementation: ER-0101.
+
+### ER-0101 implementation start
+
+- ER-0100 plus accepted AR reconciliation published directly on main as a53cf93.
+- ER-0101 Approved -> In Progress: constructor-bound copied protocol/transport plus borrowed
+  schemas/leases, owner/lease checks on every request, bounded retained session records, and
+  local registered packet round trip. Closed records remain inspectable and count toward the bound.
+- Requirement mapping: host-backed IPC/open/inspect -> metadata and envelope tests; packet
+  empty/binary/max-size -> exact round trips; close/double-close/count -> lifecycle tests;
+  cross-owner/revocation/descriptor/incompatible -> authority tests; malformed selectors/payloads
+  -> no session publication and retained open state. New dedicated network test target added.
+- Independent Live Pass Not Required under the approved bounded local scope. Independent
+  public API/security/lifetime review required after local validation.
+
+### ER-0101 publication checkpoint
+
+- New network service/header, dedicated test, Automake integration, Service-Hosts usage, ER/status,
+  ledger, and independent report. Governance notes corrected for the accepted AR-0023/0024 rulings.
+- Build and focused independent 6/6 programs (39 checks) passed; full parent suite 34/34 passed.
+  Reviewer `review_network` reports all six criteria Pass, no open findings.
+- ER-0101 In Progress -> Complete; no Verified transition before implementation CI. Next ER-0102.
+- a53cf93 allocation CI run 38811469029: build and unit tests passed, distcheck still running at
+  last observation. Reconciliation commit fe9beba CI run 38806640740 completed success.
+- Local `./bootstrap.sh` and `./configure` required for new module/test target; generated tracked
+  libtool and tests/test_referee_core restored before commit.

@@ -51,8 +51,8 @@ sandbox identity hooks provide a substrate but are not themselves a ServiceObjec
 ## Proposed Approach
 
 Add a separate read-only service wrapping list_contexts_for_subject/list_sandboxes_for_subject.
-Validate matching endpoint/message selectors and reject subject override payloads. This proposed
-scope awaits the System Engineer's Stage E ruling.
+Validate matching endpoint/message selectors and reject subject override payloads. The System
+Engineer approved this scope on 2026-10-15.
 
 ## Acceptance Criteria
 
@@ -66,7 +66,7 @@ scope awaits the System Engineer's Stage E ruling.
 
 ## Risks / Open Questions
 
-- Architectural ruling pending: read-only inspection is the first Stage E capability service slice.
+- Approved scope: read-only inspection is the first Stage E capability service slice.
 - Sender identity is trusted local IPC context, not a new authentication boundary.
 
 ## Dependencies

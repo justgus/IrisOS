@@ -62,7 +62,7 @@ Define explicit delivery tracks for Machine and Comms.
 
 ## Next Steps
 
-- Complete System Engineer verification of ER-0070 through ER-0074 before marking this AR Implemented.
+- No remaining work in the four accepted delivery tracks; see verification reconciliation below.
 
 ## Implementation Progress
 

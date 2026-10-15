@@ -100,3 +100,32 @@ releases all buffers. Calls are serialized. The subject quota scan is bounded by
 Only the descriptor persists. Recovery is stopped/unbound; binding a fresh allocator instance
 starts empty with limits supplied by the trusted application. Restarting the same handler retains
 its buffers. Quotas are per handler instance, not a process-wide memory budget.
+
+## Local Comms network service (C++ binding)
+
+`NetworkService(id, schemas, leases, protocol, transport, maximum_sessions)` binds the existing
+Machine-backed Comms loopback packet path to a ServiceObject. Protocol and transport are copied;
+the schema registry, lease registry, and its borrowed inputs must outlive the handler. Bind and
+start it through ServiceHostManager as above. It requires an authorized stream transport with a
+compatible protocol. Descriptor-only transports cannot acquire session authority.
+
+Every operation checks the envelope sender against the bound transport owner, revalidates its
+Machine lease, and checks protocol compatibility. Selectors follow the allocator's strict contract.
+Responses use `kNetworkResponseType` and preserve correlation, recipient, and sandbox.
+
+| Endpoint | Message type | CBOR object fields |
+|---|---|---|
+| `network.open` | `kNetworkOpenType` | `first_endpoint`, `second_endpoint`: hex ObjectIDs |
+| `network.inspect` | `kNetworkInspectType` | `id`: session hex ID |
+| `network.round_trip` | `kNetworkRoundTripType` | `id`, `payload`: CBOR byte string, at most 1 MiB |
+| `network.close` | `kNetworkCloseType` | `id`: session hex ID |
+
+Metadata returns `id`, `transport`, `first_endpoint`, `second_endpoint`, and `state` (`open` or
+`closed`). Round trip also returns the exact byte-string payload after registered packet framing,
+loopback transport, and decoding. Packet schema registration through `bootstrap_core_schema`
+is required before traffic. Closed sessions remain inspectable and count toward maximum_sessions;
+zero disables new sessions. A fresh handler starts with no sessions. No session state persists.
+Invalid requests publish no sessions; closure is staged until response construction succeeds.
+Missing sessions return NotFound, authorization/lifecycle/limit failures FailedPrecondition,
+invalid payload/selectors InvalidArgument, and allocation failure IoError. This is local loopback
+service delivery; remote networking and hardware drivers remain future scope.

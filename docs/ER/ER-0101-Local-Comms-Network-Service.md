@@ -15,7 +15,7 @@ ER-Dependencies: ER-0057, ER-0060, ER-0073, ER-0074
 
 - ER ID: ER-0101
 - Title: Local Comms Network Service
-- Status: Approved
+- Status: Complete
 - Date: 2026-10-14
 - Owners: Mike
 - Type: Enhancement
@@ -50,8 +50,8 @@ substrate. This proposed first service uses that local substrate without selecti
 ## Proposed Approach
 
 Wrap existing Comms Session and execute_registered_packet_round_trip. Borrow only trusted binding
-objects whose lifetimes exceed the binding; own session state in the handler. Proposed scope awaits
-the System Engineer ruling and prerequisite ER-0073/0074 verification.
+registries whose lifetimes exceed the binding; copy protocol/transport and own session state in the
+handler. The System Engineer approved this scope; prerequisite ER-0073/0074 are Verified.
 
 ## Acceptance Criteria
 
@@ -67,12 +67,12 @@ the System Engineer ruling and prerequisite ER-0073/0074 verification.
 
 ## Risks / Open Questions
 
-- Architectural ruling pending: a local Comms-backed service is the initial Stage E network slice.
+- Approved scope: a local Comms-backed service is the initial Stage E network slice.
 - No remote authentication or delivery guarantees beyond the existing local substrate are claimed.
 
 ## Dependencies
 
-- Verified ER-0057/0060; ER-0073/0074 verification remains unfinished.
+- Verified ER-0057/0060/0073/0074.
 
 ## Implementation Notes
 
@@ -81,7 +81,7 @@ the System Engineer ruling and prerequisite ER-0073/0074 verification.
 ## Verification Plan
 
 - `make -j4`
-- `TMPDIR=/private/tmp make -C tests check TESTS='test_core_services test_comms_primitives test_comms_transport_session test_machine_authority test_service_host'`
+- `TMPDIR=/private/tmp make -C tests check TESTS='test_network_service test_core_services test_comms_primitives test_comms_transport_session test_machine_authority test_service_host'`
 - `TMPDIR=/private/tmp make check`
 - Independent review must repeat focused tests and attempt lease, owner, and closed-session bypasses.
 
@@ -97,3 +97,18 @@ the System Engineer ruling and prerequisite ER-0073/0074 verification.
 - The System Engineer approved the drafted AR-0022 Stage E scope, including this ER.
   Earlier statements that the architectural ruling is pending are superseded.
 - Public API/security/lifetime changes require separate independent review under the batch workflow.
+
+### Implementation and Validation — 2026-10-15
+
+- NetworkService copies trusted protocol/transport bindings, borrows documented registry inputs,
+  owns bounded sessions, and checks owner/lease/compatibility for every request. It uses the
+  existing registered framed loopback packet path. Closed records remain bounded and inspectable.
+- `./bootstrap.sh`, `./configure`, `make -j4`: passed for new source and dedicated test target.
+  Generated tracked outputs excluded. Initial test fixture bus ID and binary comparison compiler
+  errors were corrected before validation; no production compiler failure remains.
+- Focused command in plan: passed 6/6 programs, 39 independent checks.
+- `env TMPDIR=/private/tmp make check`: passed 34/34. Check required outside-sandbox execution
+  after communication-file failures before assertions.
+- [Independent review](../Plans/AR-Batches/reviews/ER-0101-independent-review-2026-10-15.md):
+  every criterion Pass, no blocking findings. Independent Live Pass: Not Required.
+- Complete; exact implementation CI must pass before Verified.

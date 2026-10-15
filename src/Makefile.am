@@ -62,6 +62,8 @@ libreferee_la_SOURCES = \
    services/request_validation.h \
    services/allocation_service.h \
    services/allocation_service.cc \
+   services/network_service.h \
+   services/network_service.cc \
    services/host_records.h \
    services/host_records.cc \
    services/service_host.h \
@@ -85,6 +87,7 @@ libreferee_la_LIBADD = $(SQLITE_LIBS)
 
 nobase_include_HEADERS = referee/referee.h \
    services/allocation_service.h \
+   services/network_service.h \
    services/host_records.h \
    services/service_host.h \
    services/service.h \

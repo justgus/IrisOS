@@ -110,6 +110,6 @@
 - ER-0098 — Verified
 - ER-0099 — Verified
 - ER-0100 — Complete
-- ER-0101 — Approved
+- ER-0101 — Complete
 - ER-0102 — Approved
 - ER-0103 — Verified

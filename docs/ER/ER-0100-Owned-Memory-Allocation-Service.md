@@ -22,8 +22,8 @@ ER-Dependencies: ER-0057, ER-0060, ER-0062
 
 ## Context
 
-AR-0022 Stage E requires allocation beyond ER-0062's memory-region metadata. The proposed scope
-needs the System Engineer's ruling on ownership and allocation policy before implementation.
+AR-0022 Stage E requires allocation beyond ER-0062's memory-region metadata. The System Engineer
+approved the bounded ownership and allocation policy on 2026-10-15.
 
 ## Goals
 
@@ -56,7 +56,7 @@ needs the System Engineer's ruling on ownership and allocation policy before imp
 A separate AllocationService owns buffers through RAII and derives ownership from request.sender.
 It validates endpoint name, optional endpoint type, and message type against the same declared
 operation before dispatch. Existing service host persistence covers descriptors, not buffers.
-This approach is Proposed pending the System Engineer's Stage E ruling.
+The System Engineer approved this approach on 2026-10-15.
 
 ## Acceptance Criteria
 
@@ -70,7 +70,7 @@ This approach is Proposed pending the System Engineer's Stage E ruling.
 
 ## Risks / Open Questions
 
-- Architectural ruling pending: bounded process-owned allocation and subject ownership.
+- Approved scope: bounded process-owned allocation and subject ownership.
 - Stored descriptors do not persist constructor limits or allocation buffers; binding is trusted
   local configuration, matching existing host recovery behavior.
 

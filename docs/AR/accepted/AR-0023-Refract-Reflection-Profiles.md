@@ -72,7 +72,7 @@ stated precisely.
 
 ## Next Steps
 
-- Confirm the intended scope of extended policy metadata before completing the AR reconciliation.
+- No remaining work in the accepted profile scope; see the System Engineer ruling below.
 
 ## Implementation Progress
 

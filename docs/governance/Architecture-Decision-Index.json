@@ -135,7 +135,7 @@
       "conformance": "Implemented with future stages",
       "notes": [
         "Exec, Comms primitives, Astra, and Caliper exist.",
-        "Machine primitives, descriptors, handles, and leases exist under AR-0024; ER-0070 through ER-0074 await System Engineer verification."
+        "Machine primitives, descriptors, handles, and leases exist under AR-0024; ER-0070 through ER-0074 are Verified following accepted automated evidence."
       ]
     },
     {
@@ -321,7 +321,7 @@
     {
       "area": "Machine and Comms",
       "source": "AR-0008, AR-0010, AR-0024",
-      "gap": "Machine and Machine-linked Comms foundations are implemented but ER-0070 through ER-0074 await live pass and System Engineer verification."
+      "gap": "No remaining gap in the accepted AR-0024 tracks; foundations are Verified. Full physical drivers and remote networking remain outside v1."
     },
     {
       "area": "Conch and Vizier",
@@ -331,7 +331,7 @@
     {
       "area": "Refract extended reflection",
       "source": "AR-0007, AR-0023",
-      "gap": "Constraints, operation effects, and documentation metadata are implemented under Verified ERs; the extended policy metadata scope awaits System Engineer clarification."
+      "gap": "No remaining gap in the accepted AR-0023 profile scope; constraints, effects, documentation, and operation capabilities have Verified coverage and System Engineer scope acceptance."
     }
   ]
 }
