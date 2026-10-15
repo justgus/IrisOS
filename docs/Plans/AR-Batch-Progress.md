@@ -2,13 +2,13 @@
 
 - Requested range: AR-0022 through AR-0024; implementation and independent verification.
 - Started: 2026-10-14.
-- Current state: Paused by the System Engineer for context renewal; implementation published, ER-0103 CI pending, architectural rulings pending.
+- Current state: Resumed on 2026-10-15; ER-0103 Verified; architectural and human-gate rulings pending.
 - Process: Temporary Initial Development Mode; main, cohesive commits, direct pushes, advisory CI.
 - Goal: complete eligible accepted scope and independent verification; preserve architectural and human-observation gates.
 - Prior reconciliation is preserved in [the archive](AR-Batches/AR-reconciliation-2026-10-14-before-0022-0024.md).
 - The System Engineer explicitly requested this batch, including resuming AR-0024's unfinished verification.
 
-## Resume After Context Renewal
+## Context-Renewal Handoff (Historical)
 
 - Paused explicitly by the System Engineer on 2026-10-15 to exit and renew context. The Codex Goal
   is Paused, not Complete. Do no additional batch implementation until the System Engineer resumes.
@@ -49,7 +49,7 @@
 - a3ee08ac40ebc8e34547c936e8544d704723ce31: ER-0103 rejects malformed persisted capability containers
   and tests omitted/empty/valid requirements, file-backed reopen, and inherited listing. Local build
   passed; full suite 32/32; independent focused suite 4/4 programs, 55 checks, no findings.
-  Review: AR-Batches/reviews/ER-0103-independent-review-2026-10-15.md. ER-0103 is Complete, not Verified.
+  Review: AR-Batches/reviews/ER-0103-independent-review-2026-10-15.md. ER-0103 is now Verified; see the resume reconciliation below.
 - Exact commands are preserved in the ERs/review reports. For ER-0103:
   `make -j4`,
   `env TMPDIR=/private/tmp make -C tests check TESTS='test_refract_capabilities test_refract_registry test_refract_bootstrap test_conch_authoring'`,
@@ -96,7 +96,7 @@
 | ER-0100 | AR-0022 | Proposed | Owned-buffer allocation; Stage E architectural ruling pending |
 | ER-0101 | AR-0022/0024 | Proposed | Local network service; Stage E ruling and ER-0073/0074 verification pending |
 | ER-0102 | AR-0022 | Proposed | Read-only capability/sandbox service; Stage E ruling pending |
-| ER-0103 | AR-0023 | Complete | Existing capabilities encoding repair; focused/full validation and independent review passed; implementation CI pending |
+| ER-0103 | AR-0023 | Verified | Focused/full validation, independent review, and exact-head Linux CI passed |
 
 - New ERs are fully drafted before implementation; Proposed does not authorize unresolved architecture.
 - Independent planning reviewer inspected the accepted records and service/Machine APIs and identified
@@ -106,15 +106,15 @@
 
 ## Current Item
 
-- Paused for context renewal; no unfinished implementation edits.
-- Last completed action: published ER-0103 implementation and independent review evidence as a3ee08a.
-- Next action on explicit resume: query CI run 38759330650, reconcile supported ER-0103 status,
-  and obtain the three pending rulings before dependent implementation.
-- Validation: `make -j4` passed; focused four-program suite 4/4, 55 independent checks; full suite 32/32.
-- Independent reviewers: review_scope (completed ER-0103), review_machine (completed AR-0024).
-- CI: 982379e passed run 38751271580; a3ee08a run 38759330650 is in_progress at the last observation.
-- GitHub: AR-0022/0023 In Progress; Stage E proposals #354–356; ER-0103 #357 Complete/closed by sync.
-- Existing human gates and architecture rulings remain unanswered; no approval is inferred.
+- Resumed by the System Engineer on 2026-10-15; clean main reconciled with origin/main.
+- Last completed action: confirmed run 38759330650 succeeded for exact implementation head
+  a3ee08ac40ebc8e34547c936e8544d704723ce31; bootstrap/configure/build/unit tests/distcheck passed.
+- ER-0103 Complete -> Verified using its committed independent criterion review, passing local
+  build/full suite, Not Required live-pass decision, and terminal implementation CI evidence.
+- Next action: obtain the three pending rulings before dependent implementation. Questions were
+  presented again on resume; no approval is inferred from the request to continue.
+- ER-0100–0102 remain Proposed; ER-0070–0074 remain Complete. All selected ARs remain In Progress.
+- No new source edits or tests are needed for this evidence-only reconciliation.
 
 ## Decisions and Blockers
 
@@ -126,7 +126,7 @@
 
 - Published AR-0024 repair 982379e; independent implementation review and CI passed. ERs remain
   Complete pending the existing human-gate ruling.
-- ER-0103 Complete, published as a3ee08a; parent validation and independent review passed; CI pending.
+- ER-0103 Verified, published as a3ee08a; parent validation, independent review, and exact-head CI passed.
 - No selected AR is Implemented; architectural/human gates remain explicit.
 
 ## Independent Findings and Repair (2026-10-15)
@@ -219,3 +219,21 @@
 - Exact local commands are in ER-0103; no unrelated source behavior changed. New target integration
   required `./bootstrap.sh` and `./configure`; both passed, generated tracked output excluded.
 - Architectural and existing human-gate questions remain pending. ER-0100–0102 stay Proposed.
+
+## Resume Reconciliation — 2026-10-15
+
+- Read current instructions, workflow, ledger, selected ARs, Stage E proposals, ER-0103 and its
+  independent review. The explicit continuation ends the prior context-renewal pause.
+- `git fetch origin main` passed; `git merge --ff-only origin/main` reported Already up to date
+  after escalation for a sandbox-blocked ORIG_HEAD update. Worktree was clean at 719d4c2.
+- `gh run view 38759330650 --json headSha,status,conclusion,url,jobs` confirmed completed/success
+  for a3ee08ac40ebc8e34547c936e8544d704723ce31. All implementation checks passed.
+- Files changed by reconciliation: this ledger, ER-0103, and ER-Status. No implementation or
+  generated artifacts changed; no Autotools regeneration performed. Prior completed validation
+  is retained without claiming a new test run.
+- Remaining architectural and human-gate decisions were presented together through async input.
+  Pending answers do not authorize the dependent implementation or verification transitions.
+- `bash scripts/issue_sync.sh docs/ER/ER-0103-Refract-Capability-Metadata-Validation.md`
+  completed successfully; existing issue #357 is synchronized and remains closed.
+- `git diff --check` passed for the three documentation files. Reconciliation is ready for
+  direct publication on main under Temporary Initial Development Mode.

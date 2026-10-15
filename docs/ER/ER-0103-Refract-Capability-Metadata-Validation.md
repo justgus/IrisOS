@@ -15,7 +15,7 @@ ER-Dependencies: ER-0055, ER-0079
 
 - ER ID: ER-0103
 - Title: Refract Capability Metadata Validation
-- Status: Complete
+- Status: Verified
 - Date: 2026-10-15
 - Owners: Mike
 - Type: Enhancement
@@ -115,5 +115,9 @@ architectural scope ruling. It preserves the established encoded format and all 
 - Independent [review](../Plans/AR-Batches/reviews/ER-0103-independent-review-2026-10-15.md): all ER
   criteria Pass, fresh focused run 4/4 programs and 55 checks; no findings. The reviewer did not
   repeat the parent full suite.
-- Status Complete; CI on the implementation commit remains required before Verified. No broader
-  AR-0023 completion or policy-scope decision is claimed.
+- Status Verified on 2026-10-15 after implementation commit
+  `a3ee08ac40ebc8e34547c936e8544d704723ce31` passed Linux CI
+  [38759330650](https://github.com/justgus/IrisOS/actions/runs/38759330650): bootstrap, configure,
+  build, unit tests, and distcheck all succeeded. Independent review and local validation above
+  complete the remaining gates; Independent Live Pass is Not Required. No broader AR-0023
+  completion or policy-scope decision is claimed.
