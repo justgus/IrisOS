@@ -80,3 +80,17 @@ Define explicit delivery tracks for Machine and Comms.
 - Independent Live Pass and System Engineer verification remain Pending. Track 4 implements the
   accepted metadata/mapping foundations and a bounded loopback packet path; full drivers and a
   complete network stack remain outside v1.
+
+### Batch Verification and Repair (2026-10-15)
+
+- Fresh independent review reproduced forged aggregate handles bypassing descriptor validation at
+  lease creation, and invalid access modes matching malformed grant strings. ER-0072 now rejects
+  invalid modes and requires the Machine inventory for descriptor validation at lease creation.
+- API migration: construct `MachineLeaseRegistry(inventory, contexts)`. Both borrowed inputs must
+  outlive the registry. Existing factory, lease owner/grant, release, and revocation semantics remain.
+- `make -j4` passed; the focused five-program Machine/Comms suite and full 31-program suite passed.
+  The independent counterexample rerun rejects all originally accepted forged paths.
+- [Independent implementation review](../../Plans/AR-Batches/reviews/AR-0024-independent-review-2026-10-15.md)
+  passed all implementation criteria and fresh focused/full validation with no open findings.
+  The existing Independent Live Pass applicability ruling remains pending; no ER verification
+  transition is claimed yet.

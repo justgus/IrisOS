@@ -66,6 +66,8 @@ ER-Dependencies: ER-0058, ER-0060, ER-0071
 - Tests verify handle creation for known descriptor types.
 - Tests verify lease metadata round-trips.
 - Tests verify capability validation rejects unauthorized access where applicable.
+- Tests reject aggregate handles with missing or wrong-kind descriptors, even with matching grants.
+- Tests reject invalid access-mode values at both handle factory and lease creation boundaries.
 
 ## Risks / Open Questions
 
@@ -95,3 +97,21 @@ ER-Dependencies: ER-0058, ER-0060, ER-0071
   - `make check`
 - Manual checks:
   - create descriptor-backed handles and verify capability-aware lease metadata.
+
+### Batch Repair Plan (2026-10-15)
+
+- Independent review reproduced leases and authorized transports for forged handles whose resource
+  IDs are absent or refer to the wrong descriptor kind. A matching malformed grant also allowed an
+  invalid access-mode enum through the factory.
+- Require MachineInventory when constructing MachineLeaseRegistry and revalidate handle creation
+  through the existing factory before publishing a lease. Reject invalid modes before grant checks.
+- Preserve the existing explicit owner/grant/release/revocation semantics.
+- Validation: `make -j4`, then
+  `TMPDIR=/private/tmp make -C tests check TESTS='test_machine_authority test_comms_transport_session test_machine_primitives test_machine_inventory test_comms_primitives'`,
+  then `TMPDIR=/private/tmp make check` and independent counterexample rerun.
+- Required independent review: Yes; public constructor and capability boundary.
+- Independent Live Pass: remains Pending until System Engineer applicability ruling or observation.
+
+- Repair results: build passed, focused suite 5/5 (38 checks), full suite 31/31. Independent
+  [criterion review](../Plans/AR-Batches/reviews/AR-0024-independent-review-2026-10-15.md) and separate
+  counterexample rerun passed; no implementation findings remain. Human gate is still Pending.

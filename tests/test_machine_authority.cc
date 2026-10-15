@@ -167,7 +167,7 @@ START_TEST(test_lease_creation_validates_owner_context_and_grant)
   auto handle = factory.create_memory_handle(id(12), MachineAccessMode::Read, context.id);
   ck_assert_msg(handle, "handle construction failed");
 
-  MachineLeaseRegistry leases(fixture.contexts);
+  MachineLeaseRegistry leases(machine, fixture.contexts);
   auto lease = leases.create_lease(id(40), id(31), MachineHandle{*handle.value});
   ck_assert_msg(lease, "valid lease rejected");
   ck_assert_int_eq(static_cast<int>(lease.value->state()),
@@ -213,7 +213,7 @@ START_TEST(test_release_is_owner_checked_and_terminal)
   auto context = context_with(id(30), id(31), {grant});
   fixture.persist(context);
   auto handle = factory.create_memory_handle(id(12), MachineAccessMode::Read, context.id);
-  MachineLeaseRegistry leases(fixture.contexts);
+  MachineLeaseRegistry leases(machine, fixture.contexts);
   ck_assert_msg(leases.create_lease(id(40), id(31), MachineHandle{*handle.value}),
                 "lease construction failed");
 
@@ -245,7 +245,7 @@ START_TEST(test_supervisor_revocation_does_not_require_live_owner_or_context_obj
   fixture.persist(context);
   auto memory = factory.create_memory_handle(id(12), MachineAccessMode::Read, context.id);
   auto device = factory.create_device_handle(id(21), MachineAccessMode::Control, context.id);
-  MachineLeaseRegistry leases(fixture.contexts);
+  MachineLeaseRegistry leases(machine, fixture.contexts);
   ck_assert_msg(leases.create_lease(id(40), id(31), MachineHandle{*memory.value}),
                 "memory lease construction failed");
   ck_assert_msg(leases.create_lease(id(41), id(31), MachineHandle{*device.value}),
@@ -273,7 +273,7 @@ START_TEST(test_supervisor_can_revoke_one_lease_or_all_leases_for_owner)
   auto context = context_with(id(30), id(31), {grant});
   fixture.persist(context);
   auto handle = factory.create_memory_handle(id(12), MachineAccessMode::Read, context.id);
-  MachineLeaseRegistry leases(fixture.contexts);
+  MachineLeaseRegistry leases(machine, fixture.contexts);
   ck_assert_msg(leases.create_lease(id(40), id(31), MachineHandle{*handle.value}),
                 "first lease construction failed");
   ck_assert_msg(leases.create_lease(id(41), id(31), MachineHandle{*handle.value}),
@@ -289,12 +289,53 @@ START_TEST(test_supervisor_can_revoke_one_lease_or_all_leases_for_owner)
 }
 END_TEST
 
+START_TEST(test_lease_rejects_forged_resource_kind_and_invalid_mode)
+{
+  const auto machine = inventory();
+  CapabilityFixture fixture;
+  const auto invalid_mode = static_cast<MachineAccessMode>(99);
+  auto context = context_with(id(30), id(31), {
+      machine_capability_grant(MachineResourceKind::Device, MachineAccessMode::Read, id(99)),
+      machine_capability_grant(MachineResourceKind::Memory, MachineAccessMode::Read, id(21)),
+      machine_capability_grant(MachineResourceKind::IoRegion, MachineAccessMode::Read, id(10)),
+      machine_capability_grant(MachineResourceKind::Device, invalid_mode, id(21)),
+      machine_capability_grant(MachineResourceKind::Memory, invalid_mode, id(12)),
+      machine_capability_grant(MachineResourceKind::IoRegion, invalid_mode, id(11))});
+  fixture.persist(context);
+  MachineLeaseRegistry leases(machine, fixture.contexts);
+  auto missing = leases.create_lease(id(40), id(31), DeviceHandle{id(99), MachineAccessMode::Read, id(30)});
+  ck_assert_msg(!missing, "forged handle for missing descriptor accepted");
+  ck_assert_int_eq(static_cast<int>(missing.error->code), static_cast<int>(referee::ErrorCode::NotFound));
+  auto wrong_kind = leases.create_lease(id(40), id(31), MemoryHandle{id(21), MachineAccessMode::Read, id(30)});
+  ck_assert_msg(!wrong_kind, "device descriptor accepted as memory");
+  auto ram_as_io = leases.create_lease(id(40), id(31), IoRegionHandle{id(10), MachineAccessMode::Read, id(30)});
+  ck_assert_msg(!ram_as_io, "RAM accepted as IO region");
+  ck_assert_int_eq(static_cast<int>(ram_as_io.error->code), static_cast<int>(referee::ErrorCode::FailedPrecondition));
+  MachineHandleFactory factory(machine, fixture.contexts);
+  auto device = factory.create_device_handle(id(21), invalid_mode, id(30));
+  auto memory = factory.create_memory_handle(id(12), invalid_mode, id(30));
+  auto io = factory.create_io_region_handle(id(11), invalid_mode, id(30));
+  ck_assert_msg(!device && !memory && !io, "invalid mode accepted by factory");
+  ck_assert_int_eq(static_cast<int>(device.error->code), static_cast<int>(referee::ErrorCode::InvalidArgument));
+  for (const MachineHandle& handle : std::vector<MachineHandle>{
+         DeviceHandle{id(21), invalid_mode, id(30)},
+         MemoryHandle{id(12), invalid_mode, id(30)},
+         IoRegionHandle{id(11), invalid_mode, id(30)}}) {
+    auto invalid = leases.create_lease(id(40), id(31), handle);
+    ck_assert_msg(!invalid, "invalid mode accepted by lease registry");
+    ck_assert_int_eq(static_cast<int>(invalid.error->code), static_cast<int>(referee::ErrorCode::InvalidArgument));
+  }
+  ck_assert_ptr_null(leases.find(id(40)));
+}
+END_TEST
+
 Suite* machine_authority_suite(void) {
   Suite* suite = suite_create("MachineAuthority");
   TCase* tests = tcase_create("core");
   tcase_add_test(tests, test_handle_factory_requires_exact_resource_scoped_grants);
   tcase_add_test(tests, test_memory_and_io_region_handle_boundaries_are_distinct);
   tcase_add_test(tests, test_lease_creation_validates_owner_context_and_grant);
+  tcase_add_test(tests, test_lease_rejects_forged_resource_kind_and_invalid_mode);
   tcase_add_test(tests, test_release_is_owner_checked_and_terminal);
   tcase_add_test(tests,
                  test_supervisor_revocation_does_not_require_live_owner_or_context_objects);

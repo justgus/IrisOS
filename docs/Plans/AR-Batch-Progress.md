@@ -1,62 +1,105 @@
-# AR Reconciliation Progress
+# Autonomous AR Batch Progress
 
-- Requested work: reconcile the AR audit findings in the order selected by the System Engineer.
-- Process: Temporary Initial Development Mode in `AGENTS.md`; work directly on `main`, with small
-  cohesive commits and direct publication. Advisory CI and human-observed gates remain distinct.
-- Updated: 2026-10-14.
-- Source of truth: canonical AR/ER documents and current repository state. Historical snapshots
-  below retain prior evidence and unresolved historical statements; they are not resume instructions.
+- Requested range: AR-0022 through AR-0024; implementation and independent verification.
+- Started: 2026-10-14.
+- Current state: In Progress; AR-0024 bounded repair underway, architectural rulings pending.
+- Process: Temporary Initial Development Mode; main, cohesive commits, direct pushes, advisory CI.
+- Goal: complete eligible accepted scope and independent verification; preserve architectural and human-observation gates.
+- Prior reconciliation is preserved in [the archive](AR-Batches/AR-reconciliation-2026-10-14-before-0022-0024.md).
+- The System Engineer explicitly requested this batch, including resuming AR-0024's unfinished verification.
 
-## Ordered Work
+## AR Queue
 
-| Order | Item | Current state | Evidence / remaining gate |
+| AR | Eligibility | Status | Remaining work | Evidence / blocker |
+|---|---|---|---|---|
+| AR-0022 | Accepted; selected | In Progress | Stage E allocation, network-oriented and capability/sandbox service | Planning review underway; choose only designs supported by existing architecture |
+| AR-0023 | Accepted; selected | In Progress | Extended policy metadata scope and independent verification | System Engineer ruling requested on whether required_capabilities satisfies the scope |
+| AR-0024 | Existing In Progress; resumed by explicit request | In Progress | ER-0070–0074 independent verification and bounded repairs | Read-only independent reviewer inspecting existing criteria and running validation; recorded human gates remain Pending |
+
+## ER Queue
+
+- ER-0057–0062 and ER-0055/0078–0080 are already Verified; do not repeat or revoke completed gates without a concrete finding.
+- ER-0070–0074 are Complete; independent review is underway before proposing any status transitions.
+| ER | Parent | State | Dependencies / next step |
 |---|---|---|---|
-| 1 | ER-0057 / AR-0005 / AR-0006 | ER Verified; both ARs Implemented | Commit `2d524d0b4456d6c4cae93d1cfd35e98f8be1fca8`; local build passed, focused suite 8/8, full suite 31/31. System Engineer confirmed ER-0057 Verified status, prior live verification, and the established AR-0006 runtime on 2026-10-14; all linked ER dependencies are Verified. |
-| 2 | AR-0023 / AR-0025 / AR-0026 | AR-0025 and AR-0026 reconciled as Implemented; AR-0023 remains Accepted | Linked Verified ERs and code cover interaction modes and parser Levels 1–4. AR-0023's extended policy metadata scope awaits System Engineer clarification; existing operation required_capabilities metadata is present. |
-| 3 | AR-0024 | In Progress; ER-0070–0074 Complete | Source exists for all four tracks; relevant suites pass 8 primitive, 6 inventory, 6 authority, and 13 transport/session checks. Independent Live Pass and System Engineer verification Pending. |
-| 4 | Governance index | Reconciled to canonical statuses and current source | Corrected stale service, Machine/Comms, reflection, shell, and parser conformance notes. AR-0022 remains Accepted with unfinished Stage E scope. |
-| 5 | Batch ledger | Conflict markers removed; both historical narratives preserved | Each conflicted side was extracted into its own snapshot; preservation check confirms every original non-marker line remains in at least one snapshot. Existing archived batch records are unchanged. |
+| ER-0100 | AR-0022 | Proposed | Owned-buffer allocation; Stage E architectural ruling pending |
+| ER-0101 | AR-0022/0024 | Proposed | Local network service; Stage E ruling and ER-0073/0074 verification pending |
+| ER-0102 | AR-0022 | Proposed | Read-only capability/sandbox service; Stage E ruling pending |
 
-## Current Item and Gates
+- New ERs are fully drafted before implementation; Proposed does not authorize unresolved architecture.
+- Independent planning reviewer inspected the accepted records and service/Machine APIs and identified
+  the architectural gates plus conflicting endpoint selector risk. It did not run tests during planning.
+- Stage E proposal sent to System Engineer: bounded owned buffers with quotas/ownership, local
+  Comms-backed loopback network service, and read-only capability/sandbox inspection.
 
-- ER-0057 is Verified by System Engineer confirmation on 2026-10-14. Prior live verification
-  was confirmed; its original observation date was not supplied. No new live run is claimed.
-- Remaining items: AR-0023 policy-scope clarification, ER-0070–0074 Independent Live Pass and
-  System Engineer verification, and unfinished AR-0022 Stage E scope.
-- The System Engineer explicitly selected recovery with stopped/unbound hosts. Automatic restart
-  is deferred; no persisted task ID or handler pointer is restored.
-- AR-0023 remains Accepted pending the policy-scope ruling. No broader policy implementation is
-  inferred from its existing Verified ER labels.
-- ER-0070–0074 remain Complete until the System Engineer supplies the required observation and
-  verification. This reconciliation does not mark any ER or DR Verified.
-- ER-0085's archived narrative contains a pending Independent Live Pass statement despite its
-  canonical Verified status. Preserve that discrepancy as historical evidence; do not infer a new pass.
+## Current Item
 
-## Validation and Publication
+- Last completed action: read canonical ARs, linked ERs, batch workflow, service/Machine/Comms APIs, and Git state.
+- Repository started clean on main at 7192fc2.
+- Next action: complete independent planning review and ER breakdown; resolve architectural choices while continuing AR-0024 verification.
+- Independent reviewers: review_scope (read-only planning), review_machine (read-only criteria, code, and fresh tests).
+- Validation: no new test results yet.
+- CI baseline: commit 7192fc2 passed advisory run 38618243744; no batch commit published yet.
+- GitHub issue synchronization: pending planning completion.
 
-- `./bootstrap.sh`, `./configure`, and `make -j4` passed for the service-host implementation.
-- `TMPDIR=/private/tmp make -C tests check TESTS='test_service_host test_service_ipc test_capability_context test_ceo_tasks test_conch_parser test_conch_grammar_api test_conch_parser_regression test_conch_authoring'` passed 8/8 outside the sandbox.
-- `TMPDIR=/private/tmp make check` passed 31/31 outside the sandbox. Sandbox attempts failed before
-  assertions because Check could not create its communication files.
-- Generated tracked `libtool` and `tests/test_referee_core` were restored; no generated output was
-  published. Autotools regeneration was needed for new source modules and the new test target.
-- Shell Git fetch failed with `Could not resolve host: github.com`, including outside the sandbox;
-  `gh api` also failed to connect. These are command results, not a diagnosis of the underlying cause.
-- The connected GitHub API confirmed the base, uploaded SHA-matching blobs, created the exact local
-  tree, and advanced main with an expected-head check. The exact commit object was SHA-verified and
-  imported locally; local main fast-forwarded to the same published commit without a history rewrite.
-- Service implementation CI run `38423872082` completed successfully, including bootstrap,
-  configure, Linux build, unit tests, and distcheck. Its automated result does not establish any
-  Independent Live Pass or System Engineer verification; ER-0057
-  verification is established by the subsequent System Engineer confirmation above.
-- Documentation reconciliation is recorded with this ledger update. Validation confirms all 27
-  AR/index statuses match, ER ledger statuses match, linked ER documents exist, and repaired
-  ledger/snapshots have no conflict markers. No ER or DR verification is claimed by these corrections.
-- Documentation reconciliation was published as `8350d9c7a35da6f5976bcf8128bb90721697bc1d`;
-  its advisory CI run `38425762095` was still running at the last check.
+## Decisions and Blockers
 
-## Preserved Historical Records
+- AR-0023: undefined extended policy metadata requires a System Engineer ruling; question pending.
+- AR-0024: previous records explicitly leave Independent Live Pass Pending; automated review cannot attest to that human observation.
+- AR-0022: allocation policy and network service extent must be supported by accepted designs or receive a System Engineer ruling.
 
-- [AR-0015/0017/0019 snapshot](AR-Batches/AR-0015-0017-0019-2026-10-13-reconciliation-snapshot.md)
-- [AR-0001/0011/0012 snapshot](AR-Batches/AR-0001-0011-0012-2026-10-13-reconciliation-snapshot.md)
-- [Existing AR-0001/0011/0012 archive](AR-Batches/AR-0001-0011-0012-2026-10-07.md)
+## Completion Summary
+
+- No new implementation or verification claimed yet.
+
+## Independent Findings and Repair (2026-10-15)
+
+- AR-0024 fresh independent baseline: five programs, 37 checks passed. Reviewer then reproduced
+  forged aggregate handles yielding leases/transports for absent or wrong-kind descriptors, and
+  invalid mode acceptance with a matching malformed grant. ER-0072/0073 review fails pending repair.
+- ER-0072 repair plan and acceptance criteria updated before implementation. Registry construction
+  now requires inventory and uses the existing handle factory before publishing a lease; factory
+  rejects invalid modes. Regression tests cover absent descriptor, wrong kind, RAM-as-IO, and all
+  invalid handle modes. Validation and independent re-review pending.
+- AR-0023 independent baseline: three programs, 52 checks passed. New policy-specific gaps are
+  reopened-store capability assertions and malformed capability-container rejection. Scope ruling pending.
+- Issue sync encountered `scripts/issue_sync.sh: line 180: dr_deps[@]: unbound variable` after
+  updating AR-0022 title/body/labels. Final issue state must be checked before claiming sync complete.
+
+### Repair validation checkpoint
+
+- `make -j4`: exit 0; no Autotools regeneration needed.
+- `TMPDIR=/private/tmp make -C tests check TESTS='test_machine_authority test_comms_transport_session test_machine_primitives test_machine_inventory test_comms_primitives'`:
+  sandbox exit 2 before assertions, Check communication temp-file error. Escalated rerun with
+  `env TMPDIR=/private/tmp` passed 5/5 programs (38 checks after the new regression).
+- `env TMPDIR=/private/tmp make check`: passed 31/31 programs after normal relinking fixed the
+  baseline core-test dylib loader failure. No system library installation or DYLD workaround used.
+- Independent reviewer recompiled its separate counterexample: missing descriptor factory, missing
+  descriptor lease, unauthorized transport from that lease, wrong-kind lease, invalid factory mode
+  all reject. Final independent criterion review passed; see [report](AR-Batches/reviews/AR-0024-independent-review-2026-10-15.md).
+- GitHub read-back confirms AR-0022 #290 and AR-0023 #291 are OPEN with status:in-progress despite
+  issue_sync's empty-array Bash failure. No unrelated script repair is included.
+
+### Independent review completion
+
+- AR-0024 implementation criteria all Pass after the bounded repair. Fresh reviewer suite passes
+  5/5 programs (38 checks), full suite passes 31/31. No open implementation findings.
+- [Criterion-level review](AR-Batches/reviews/AR-0024-independent-review-2026-10-15.md) preserves
+  counterexamples, repair evidence, commands, and limits. This is not a human live pass.
+- ER-0070–0074 remain Complete until the pending human-gate ruling/observation and CI state are
+  resolved. No AR completion or ER Verified transition is inferred.
+- Source files touched: src/machine/authority.{h,cc}; tests/test_machine_authority.cc and
+  tests/test_comms_transport_session.cc. The public registry constructor now requires inventory.
+- Generated tracked tests/test_referee_core will be restored before committing; no generated
+  artifacts or Autotools regeneration are part of this repair.
+
+### Planning publication checkpoint
+
+- Proposed Stage E issue sync completed: ER-0100 [#354](https://github.com/justgus/IrisOS/issues/354),
+  ER-0101 [#355](https://github.com/justgus/IrisOS/issues/355), ER-0102
+  [#356](https://github.com/justgus/IrisOS/issues/356). Proposed scope remains unapproved pending
+  the architectural ruling; do not implement dependent work or infer approval from elapsed time.
+- Three System Engineer questions pending: AR-0023 required_capabilities scope; bounded Stage E
+  allocation/loopback/inspection scope; AR-0024 human live-pass applicability.
+- Next action: incorporate rulings, approve eligible ERs, implement in dependency order, and
+  independently review security/lifetime changes. While waiting, publish the validated AR-0024 fix.

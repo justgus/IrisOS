@@ -108,10 +108,13 @@ private:
   MachineLeaseState state_{MachineLeaseState::Active};
 };
 
+// Inventory and contexts must outlive the registry. Lease creation validates descriptor facts
+// as well as grants; aggregate handle construction does not establish authority.
 class MachineLeaseRegistry {
 public:
-  explicit MachineLeaseRegistry(service::CapabilityContextStore& contexts)
-      : contexts_(contexts) {}
+  MachineLeaseRegistry(const MachineInventory& inventory,
+                       service::CapabilityContextStore& contexts)
+      : inventory_(inventory), contexts_(contexts) {}
 
   referee::Result<MachineLease> create_lease(
       referee::ObjectID lease_id,
@@ -129,6 +132,7 @@ public:
 
 private:
   MachineLease* find_mutable(referee::ObjectID lease_id);
+  const MachineInventory& inventory_;
   service::CapabilityContextStore& contexts_;
   std::vector<MachineLease> leases_;
 };

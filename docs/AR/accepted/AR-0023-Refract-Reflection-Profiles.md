@@ -5,7 +5,7 @@ ER-Dependencies: ER-0055, ER-0078, ER-0079, ER-0080
 
 # AR-0023 — Refract Reflection Profiles
 
-- Status: Accepted
+- Status: In Progress
 - Date: 2026-03-14
 - Owners: Mike
 
@@ -82,4 +82,4 @@ stated precisely.
   bootstrap, and Conch tests pass in fresh `TMPDIR=/private/tmp make check` (31/31, outside the sandbox).
 - Operations also persist and expose `required_capabilities`. Whether this satisfies the AR's
   undefined extended policy metadata requirement awaits System Engineer clarification. This AR
-  remains Accepted; no broader policy architecture or completion is inferred by the reconciliation.
+  remains In Progress; no broader policy architecture or completion is inferred by the reconciliation.

@@ -250,7 +250,7 @@
     {
       "id": "AR-0022",
       "name": "Staged Service Plane Delivery",
-      "status": "Accepted",
+      "status": "In Progress",
       "decision": "Define Service Plane delivery stages A through E so implementation can close one maturity level at a time.",
       "conformance": "Staged; expanded services pending",
       "notes": [
@@ -262,7 +262,7 @@
     {
       "id": "AR-0023",
       "name": "Refract Reflection Profiles",
-      "status": "Accepted",
+      "status": "In Progress",
       "decision": "Separate Refract v1 core reflection from v2 extended reflection features.",
       "conformance": "Partial",
       "notes": [

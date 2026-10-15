@@ -1,0 +1,93 @@
+---
+GitHub-Issue: #355
+AR-Dependencies: AR-0022, AR-0024
+ER-Dependencies: ER-0057, ER-0060, ER-0073, ER-0074
+---
+
+# ER-0101 — Local Comms Network Service
+
+## Roles
+
+- Implementation Engineer: implements and validates batch scope.
+- System Engineer: rules on architecture and records required human observations.
+
+## ER Metadata
+
+- ER ID: ER-0101
+- Title: Local Comms Network Service
+- Status: Proposed
+- Date: 2026-10-14
+- Owners: Mike
+- Type: Enhancement
+
+## Context
+
+AR-0022 Stage E calls for network-oriented services; AR-0024 provides the Machine-backed Comms
+substrate. This proposed first service uses that local substrate without selecting a remote stack.
+
+## Goals
+
+- Expose session lifecycle and framed packet round trips through a first-class service.
+- Retain Machine lease authorization, protocol compatibility, payload bounds, and subject ownership.
+
+## Non-Goals
+
+- Cross-host transport, socket protocols, dynamic negotiation, drivers, and a complete network stack.
+
+## Scope
+
+- In scope: trusted constructor bindings for existing Comms protocol/transport/lease registry and
+  schema registry; bounded session collection; open/round-trip/close endpoints.
+- Out of scope: caller-created hardware authority and descriptor-only permission bypasses.
+
+## Requirements
+
+- Requests must belong to the authorized transport owner and revalidate its Machine lease.
+- Sessions carry stable IDs, endpoint/transport identities, and strict open/close state.
+- Unknown sessions, wrong subjects, closed sessions, invalid selectors/CBOR, excessive payloads,
+  and incompatible/revoked Machine mappings fail deterministically.
+
+## Proposed Approach
+
+Wrap existing Comms Session and execute_registered_packet_round_trip. Borrow only trusted binding
+objects whose lifetimes exceed the binding; own session state in the handler. Proposed scope awaits
+the System Engineer ruling and prerequisite ER-0073/0074 verification.
+
+## Acceptance Criteria
+
+1. IPC opens a session over the authorized Machine-backed transport and returns its identity.
+2. IPC round-trip preserves payload, response correlation, and sandbox; inspectable session metadata
+   records endpoints, transport, and state.
+3. Close rejects subsequent traffic and illegal duplicate transitions; session count is bounded.
+4. Cross-subject use, revoked leases, incompatible mappings, and descriptor-only transport cannot
+   execute packets or obtain session authority.
+5. Malformed, oversized, conflicting-selector, omitted-selector, and unknown-session requests fail
+   without partially publishing sessions or packets.
+6. Existing Comms primitive and session tests remain passing.
+
+## Risks / Open Questions
+
+- Architectural ruling pending: a local Comms-backed service is the initial Stage E network slice.
+- No remote authentication or delivery guarantees beyond the existing local substrate are claimed.
+
+## Dependencies
+
+- Verified ER-0057/0060; ER-0073/0074 verification remains unfinished.
+
+## Implementation Notes
+
+- Independent review required for Machine authority, borrowed lifetimes, and session behavior.
+
+## Verification Plan
+
+- `make -j4`
+- `TMPDIR=/private/tmp make -C tests check TESTS='test_core_services test_comms_primitives test_comms_transport_session test_machine_authority test_service_host'`
+- `TMPDIR=/private/tmp make check`
+- Independent review must repeat focused tests and attempt lease, owner, and closed-session bypasses.
+
+### Independent Live Pass
+
+- Required: No for the proposed deterministic local contract.
+- Reason: local Machine descriptors/leases, sessions, and packet round trips are faithfully testable
+  without real hardware, external network, or a user-observed surface.
+- Result: Not Required, subject to architectural scope approval.

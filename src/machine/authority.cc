@@ -38,6 +38,10 @@ referee::Result<void> authorize_handle(const service::CapabilityContext& context
                                        MachineResourceKind resource_kind,
                                        MachineAccessMode access_mode,
                                        referee::ObjectID resource_id) {
+  if (access_mode_name(access_mode).empty()) {
+    return referee::Result<void>::err(referee::ErrorCode::InvalidArgument,
+                                      "invalid Machine access mode");
+  }
   const std::string required = machine_capability_grant(resource_kind, access_mode, resource_id);
   if (!has_grant(context, required)) {
     return referee::Result<void>::err(referee::ErrorCode::FailedPrecondition,
@@ -164,6 +168,27 @@ referee::Result<MachineLease> MachineLeaseRegistry::create_lease(
   auto authorization = authorize_handle(context, handle_resource_kind(handle),
                                         handle_access_mode(handle), handle_resource_id(handle));
   if (!authorization) return referee::Result<MachineLease>::err(authorization.error.value());
+
+  // Aggregate handles are descriptive inputs, not proof that a factory validated them.
+  MachineHandleFactory factory(inventory_, contexts_);
+  auto validated = std::visit([&factory](const auto& typed) -> referee::Result<void> {
+    auto result = [&]() {
+      using Handle = std::decay_t<decltype(typed)>;
+      if constexpr (std::is_same_v<Handle, MemoryHandle>) {
+        return factory.create_memory_handle(typed.resource_id, typed.access_mode,
+                                             typed.capability_context_id);
+      } else if constexpr (std::is_same_v<Handle, DeviceHandle>) {
+        return factory.create_device_handle(typed.resource_id, typed.access_mode,
+                                             typed.capability_context_id);
+      } else {
+        return factory.create_io_region_handle(typed.resource_id, typed.access_mode,
+                                                typed.capability_context_id);
+      }
+    }();
+    if (!result) return referee::Result<void>::err(result.error.value());
+    return referee::Result<void>::ok();
+  }, handle);
+  if (!validated) return referee::Result<MachineLease>::err(validated.error.value());
 
   MachineLease lease(lease_id, owner_id, capability_context_id, std::move(handle));
   leases_.push_back(lease);

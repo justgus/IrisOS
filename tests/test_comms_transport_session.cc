@@ -83,7 +83,7 @@ START_TEST(test_descriptor_transports_validate_machine_resource_categories)
 {
   const auto machine = inventory();
   CapabilityFixture fixture;
-  MachineLeaseRegistry leases(fixture.contexts);
+  MachineLeaseRegistry leases(machine, fixture.contexts);
   TransportFactory factory(machine, leases);
 
   auto memory = factory.create_descriptor_transport(
@@ -123,7 +123,7 @@ START_TEST(test_authorized_transport_requires_matching_active_lease)
   MachineHandleFactory handles(machine, fixture.contexts);
   auto handle = handles.create_device_handle(id(21), MachineAccessMode::Control, id(40));
   ck_assert_msg(handle, "authorized handle construction failed");
-  MachineLeaseRegistry leases(fixture.contexts);
+  MachineLeaseRegistry leases(machine, fixture.contexts);
   ck_assert_msg(leases.create_lease(id(42), id(41), MachineHandle{*handle.value}),
                 "lease construction failed");
   TransportFactory factory(machine, leases);
@@ -155,7 +155,7 @@ START_TEST(test_released_or_revoked_lease_rejects_transport_construction)
   fixture.persist(context);
   MachineHandleFactory handles(machine, fixture.contexts);
   auto handle = handles.create_memory_handle(id(12), MachineAccessMode::Read, id(40));
-  MachineLeaseRegistry leases(fixture.contexts);
+  MachineLeaseRegistry leases(machine, fixture.contexts);
   ck_assert_msg(leases.create_lease(id(42), id(41), MachineHandle{*handle.value}),
                 "first lease construction failed");
   ck_assert_msg(leases.create_lease(id(43), id(41), MachineHandle{*handle.value}),
@@ -249,7 +249,7 @@ START_TEST(test_protocol_compatibility_reports_deterministic_reasons)
 {
   const auto machine = inventory();
   CapabilityFixture fixture;
-  MachineLeaseRegistry leases(fixture.contexts);
+  MachineLeaseRegistry leases(machine, fixture.contexts);
   TransportFactory factory(machine, leases);
   auto protocol = Protocol::create(
       id(60), "registered-packet", TransportSemantics::Stream,
@@ -297,7 +297,7 @@ START_TEST(test_protocol_required_machine_capability_is_checked)
   auto write_handle = handles.create_memory_handle(id(12), MachineAccessMode::Write, id(70));
   ck_assert_msg(read_handle && write_handle, "authorized memory handles rejected");
 
-  MachineLeaseRegistry leases(fixture.contexts);
+  MachineLeaseRegistry leases(machine, fixture.contexts);
   ck_assert_msg(leases.create_lease(id(72), id(71), MachineHandle{*read_handle.value}),
                 "read lease construction failed");
   ck_assert_msg(leases.create_lease(id(73), id(71), MachineHandle{*write_handle.value}),
@@ -380,7 +380,7 @@ START_TEST(test_authorized_transport_compatibility_revalidates_lease)
   fixture.persist(context_with(id(70), id(71), {grant}));
   MachineHandleFactory handles(machine, fixture.contexts);
   auto handle = handles.create_memory_handle(id(12), MachineAccessMode::Read, id(70));
-  MachineLeaseRegistry leases(fixture.contexts);
+  MachineLeaseRegistry leases(machine, fixture.contexts);
   ck_assert_msg(leases.create_lease(id(72), id(71), MachineHandle{*handle.value}),
                 "lease construction failed");
   TransportFactory factory(machine, leases);
@@ -431,7 +431,7 @@ START_TEST(test_registered_packet_executes_over_open_compatible_loopback)
   CapabilityFixture fixture;
   iris::refract::SchemaRegistry schemas(fixture.store);
   ck_assert_msg(iris::refract::bootstrap_core_schema(schemas), "schema bootstrap failed");
-  MachineLeaseRegistry leases(fixture.contexts);
+  MachineLeaseRegistry leases(machine, fixture.contexts);
   TransportFactory factory(machine, leases);
   auto transport = factory.create_descriptor_transport(
       id(80), TransportSemantics::Stream, MachineResourceKind::Memory, id(12));
@@ -454,7 +454,7 @@ START_TEST(test_packet_execution_rejects_unregistered_and_invalid_sessions)
   const auto machine = inventory();
   CapabilityFixture fixture;
   iris::refract::SchemaRegistry schemas(fixture.store);
-  MachineLeaseRegistry leases(fixture.contexts);
+  MachineLeaseRegistry leases(machine, fixture.contexts);
   TransportFactory factory(machine, leases);
   auto transport = factory.create_descriptor_transport(
       id(90), TransportSemantics::Stream, MachineResourceKind::Memory, id(12));

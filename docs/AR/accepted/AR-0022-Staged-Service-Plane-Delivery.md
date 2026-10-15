@@ -5,7 +5,7 @@ ER-Dependencies: ER-0057, ER-0058, ER-0059, ER-0060, ER-0061, ER-0062
 
 # AR-0022 — Staged Service Plane Delivery
 
-- Status: Accepted
+- Status: In Progress
 - Date: 2026-03-14
 - Owners: Mike
 
@@ -96,4 +96,4 @@ Amend the Service Plane architecture to define explicit delivery stages.
   boundary enforcement, and sandbox identity/isolation hooks for Stage D.
 - Verified ER-0062 provides a metadata-only memory service baseline for Stage E. Allocation,
   network services, and a first-class sandbox/capability service are broader follow-on scope.
-- This AR remains Accepted because its staged recommendation includes unfinished Stage E scope.
+- This AR remains In Progress because its staged recommendation includes unfinished Stage E scope.
