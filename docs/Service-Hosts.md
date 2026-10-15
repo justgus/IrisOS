@@ -71,3 +71,32 @@ TMPDIR=/private/tmp make check
 The service-host suite checks recovery, legal and invalid transitions, preserved descriptor and
 capability metadata, duplicate bindings, corrupt history, unhealthy tasks, and storage errors.
 The Conch authoring suite checks explicit binding/start and routing across two shell processes.
+
+## Owned allocation service (C++ binding)
+
+`AllocationService(id, AllocationLimits{total_bytes, bytes_per_subject, allocation_count})`
+implements Stage E owned process memory through the same local host and IPC APIs. Create its
+`descriptor()`, bind the instance, then explicitly start the host. Conch binding remains the
+memory metadata handler; applications bind the allocator through `ServiceHostManager`.
+
+Set the request recipient to the service ID and select one declared endpoint by name or type.
+`message_type` must equal that endpoint's operation type; if both endpoint selectors are supplied,
+they must agree. Payloads are CBOR objects with exactly one argument:
+
+| Endpoint | Message type | Payload |
+|---|---|---|
+| `allocation.allocate` | `kAllocationAllocateType` | `{"size": positive_integer}` |
+| `allocation.inspect` | `kAllocationInspectType` | `{"id": allocation_hex_id}` |
+| `allocation.release` | `kAllocationReleaseType` | `{"id": allocation_hex_id}` |
+
+Responses use `kAllocationResponseType` and return `id`, `owner`, and `size`, preserving request
+correlation and sandbox. Buffers are real zero-initialized owned storage; endpoints expose metadata,
+not raw addresses or write access. Ownership follows the trusted local envelope sender. Other
+subjects receive FailedPrecondition; missing/released IDs receive NotFound. Invalid arguments or
+selectors return InvalidArgument; exhausted limits return FailedPrecondition; allocation failure
+returns IoError. Zero limits disable allocation. Release restores quotas; handler destruction
+releases all buffers. Calls are serialized. The subject quota scan is bounded by allocation_count.
+
+Only the descriptor persists. Recovery is stopped/unbound; binding a fresh allocator instance
+starts empty with limits supplied by the trusted application. Restarting the same handler retains
+its buffers. Quotas are per handler instance, not a process-wide memory budget.

@@ -1,6 +1,6 @@
 ---
 GitHub-Issue: #290
-ER-Dependencies: ER-0057, ER-0058, ER-0059, ER-0060, ER-0061, ER-0062
+ER-Dependencies: ER-0057, ER-0058, ER-0059, ER-0060, ER-0061, ER-0062, ER-0100, ER-0101, ER-0102
 ---
 
 # AR-0022 — Staged Service Plane Delivery
@@ -97,3 +97,9 @@ Amend the Service Plane architecture to define explicit delivery stages.
 - Verified ER-0062 provides a metadata-only memory service baseline for Stage E. Allocation,
   network services, and a first-class sandbox/capability service are broader follow-on scope.
 - This AR remains In Progress because its staged recommendation includes unfinished Stage E scope.
+
+### Stage E Ruling — 2026-10-15
+
+- The System Engineer approved the bounded owned-allocation, local Comms loopback network, and
+  read-only capability/sandbox inspection service scope in ER-0100–0102. These ERs are Approved.
+  This AR remains In Progress until their implementation and verification complete.

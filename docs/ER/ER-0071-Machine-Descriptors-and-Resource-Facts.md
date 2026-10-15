@@ -16,7 +16,7 @@ ER-Dependencies: ER-0070
 
 - ER ID: ER-0071
 - Title: Machine Descriptors and Resource Facts
-- Status: Complete
+- Status: Verified
 - Date: 2026-05-28
 - Owners: Mike
 - Type: Enhancement
@@ -92,3 +92,14 @@ ER-Dependencies: ER-0070
   - `make check`
 - Manual checks:
   - create representative descriptors and inspect their facts.
+
+### Verification Reconciliation — 2026-10-15
+
+- System Engineer ruling: accepted independent code/API review and executable tests for AR-0024;
+  the earlier Pending human-observation gate is superseded. Independent Live Pass: Not Required.
+  This records a change in applicability, not a human-observed pass.
+- Status Verified based on the criterion-level
+  [independent report](../Plans/AR-Batches/reviews/AR-0024-independent-review-2026-10-15.md),
+  passing focused 5/5-program and full 31/31-program runs, and successful exact-head Linux CI
+  [38751271580](https://github.com/justgus/IrisOS/actions/runs/38751271580) for repair commit
+  `982379e414cd4a887520f8bff1f22a1d3770e708`. No open implementation findings remain.

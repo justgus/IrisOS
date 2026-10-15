@@ -262,24 +262,24 @@
     {
       "id": "AR-0023",
       "name": "Refract Reflection Profiles",
-      "status": "In Progress",
+      "status": "Implemented",
       "decision": "Separate Refract v1 core reflection from v2 extended reflection features.",
-      "conformance": "Partial",
+      "conformance": "Implemented for accepted profiles",
       "notes": [
         "ER-0055, ER-0078, ER-0079, and ER-0080 are Verified and their implementation is present.",
         "Batch ER-0103 repairs malformed persisted capability containers and tests capability metadata across reopen and inherited listing; its verification is tracked separately.",
-        "The source stores required_capabilities on operations; the meaning of the AR's extended policy metadata requirement awaits System Engineer clarification in this reconciliation."
+        "The source stores required_capabilities on operations; the System Engineer accepted this as the extended policy metadata scope on 2026-10-15; ER-0103 is Verified."
       ]
     },
     {
       "id": "AR-0024",
       "name": "Erector Machine and Comms Delivery Tracks",
-      "status": "In Progress",
+      "status": "Implemented",
       "decision": "Stage Machine and Comms expansion into Machine core, descriptors, handles/leases, and Machine-backed Comms realization.",
-      "conformance": "Implementation present; verification pending",
+      "conformance": "Implemented for all four scoped tracks",
       "notes": [
         "All four delivery tracks have source and passing automated coverage under ER-0070 through ER-0074.",
-        "Those ERs are Complete; Independent Live Pass and System Engineer verification remain Pending."
+        "ER-0070 through ER-0074 are Verified after independent review, local tests, CI, and the System Engineer accepted automated evidence on 2026-10-15."
       ]
     },
     {

@@ -15,7 +15,7 @@ ER-Dependencies: ER-0057, ER-0060, ER-0073, ER-0074
 
 - ER ID: ER-0101
 - Title: Local Comms Network Service
-- Status: Proposed
+- Status: Approved
 - Date: 2026-10-14
 - Owners: Mike
 - Type: Enhancement
@@ -90,4 +90,10 @@ the System Engineer ruling and prerequisite ER-0073/0074 verification.
 - Required: No for the proposed deterministic local contract.
 - Reason: local Machine descriptors/leases, sessions, and packet round trips are faithfully testable
   without real hardware, external network, or a user-observed surface.
-- Result: Not Required, subject to architectural scope approval.
+- Result: Not Required; bounded scope approved by the System Engineer on 2026-10-15.
+
+### System Engineer Ruling — 2026-10-15
+
+- The System Engineer approved the drafted AR-0022 Stage E scope, including this ER.
+  Earlier statements that the architectural ruling is pending are superseded.
+- Public API/security/lifetime changes require separate independent review under the batch workflow.

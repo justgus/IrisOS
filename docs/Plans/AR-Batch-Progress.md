@@ -2,7 +2,7 @@
 
 - Requested range: AR-0022 through AR-0024; implementation and independent verification.
 - Started: 2026-10-14.
-- Current state: Resumed on 2026-10-15; ER-0103 Verified; architectural and human-gate rulings pending.
+- Current state: In Progress; all three System Engineer rulings received; Stage E implementation next.
 - Process: Temporary Initial Development Mode; main, cohesive commits, direct pushes, advisory CI.
 - Goal: complete eligible accepted scope and independent verification; preserve architectural and human-observation gates.
 - Prior reconciliation is preserved in [the archive](AR-Batches/AR-reconciliation-2026-10-14-before-0022-0024.md).
@@ -82,52 +82,46 @@
 
 | AR | Eligibility | Status | Remaining work | Evidence / blocker |
 |---|---|---|---|---|
-| AR-0022 | Accepted; selected | In Progress | Stage E allocation, network-oriented and capability/sandbox service | Planning review complete; ER-0100–0102 Proposed pending architectural ruling |
-| AR-0023 | Accepted; selected | In Progress | Extended policy metadata scope and independent verification | System Engineer ruling requested on whether required_capabilities satisfies the scope |
-| AR-0024 | Existing In Progress; resumed by explicit request | In Progress | ER-0070–0074 verification | Implementation review, local tests, and CI pass after 982379e repair; existing human gates remain Pending |
+| AR-0022 | Accepted; selected | In Progress | ER-0100–0102 Stage E | Drafted scope approved by System Engineer |
+| AR-0023 | Accepted; selected | Implemented | None | All dependencies Verified; policy scope accepted |
+| AR-0024 | Existing In Progress; explicitly resumed | Implemented | None | ER-0070–0074 Verified; automated evidence accepted |
 
 ## ER Queue
 
-- ER-0057–0062 and ER-0055/0078–0080 are already Verified; do not repeat or revoke completed gates without a concrete finding.
-- ER-0070–0074 are Complete; independent implementation review and CI pass, human-gate ruling pending.
-
-| ER | Parent | State | Dependencies / next step |
+| ER | Parent | State | Next step |
 |---|---|---|---|
-| ER-0100 | AR-0022 | Proposed | Owned-buffer allocation; Stage E architectural ruling pending |
-| ER-0101 | AR-0022/0024 | Proposed | Local network service; Stage E ruling and ER-0073/0074 verification pending |
-| ER-0102 | AR-0022 | Proposed | Read-only capability/sandbox service; Stage E ruling pending |
-| ER-0103 | AR-0023 | Verified | Focused/full validation, independent review, and exact-head Linux CI passed |
+| ER-0100 | AR-0022 | Complete | Independent review and 33/33 full tests passed; publish and observe CI |
+| ER-0101 | AR-0022/0024 | Approved | Implement after ER-0100 publication |
+| ER-0102 | AR-0022 | Approved | Implement after ER-0101 publication |
+| ER-0103 | AR-0023 | Verified | None; exact-head CI passed |
 
-- New ERs are fully drafted before implementation; Proposed does not authorize unresolved architecture.
-- Independent planning reviewer inspected the accepted records and service/Machine APIs and identified
-  the architectural gates plus conflicting endpoint selector risk. It did not run tests during planning.
-- Stage E proposal sent to System Engineer: bounded owned buffers with quotas/ownership, local
-  Comms-backed loopback network service, and read-only capability/sandbox inspection.
+- ER-0057–0062, ER-0055/0078–0080, and ER-0070–0074 are Verified.
+- Separate read-only review is required for each Stage E service's public/security/lifetime boundary.
 
 ## Current Item
 
-- Resumed by the System Engineer on 2026-10-15; clean main reconciled with origin/main.
-- Last completed action: confirmed run 38759330650 succeeded for exact implementation head
-  a3ee08ac40ebc8e34547c936e8544d704723ce31; bootstrap/configure/build/unit tests/distcheck passed.
-- ER-0103 Complete -> Verified using its committed independent criterion review, passing local
-  build/full suite, Not Required live-pass decision, and terminal implementation CI evidence.
-- Next action: obtain the three pending rulings before dependent implementation. Questions were
-  presented again on resume; no approval is inferred from the request to continue.
-- ER-0100–0102 remain Proposed; ER-0070–0074 remain Complete. All selected ARs remain In Progress.
-- No new source edits or tests are needed for this evidence-only reconciliation.
+- ER-0100 on main: real zero-initialized owned buffers, subject ownership, byte/count limits,
+  strict selectors and numeric inputs, and stopped/unbound host recovery with fresh allocations.
+- `./bootstrap.sh`, `./configure`, `make -j4`: passed; new source/test targets required local
+  Autotools regeneration. Tracked generated artifacts will be excluded from publication.
+- Focused four-program suite passed after sandbox Check communication-file failure and a test-only
+  temporary c_str assertion fix. Command:
+  `env TMPDIR=/private/tmp make -C tests check TESTS='test_core_services test_service_host test_service_ipc test_capability_context'`.
+- Independent read-only ER-0100 review in progress; full suite follows that review.
+- All prior architectural/human-gate blockers resolved by explicit 2026-10-15 rulings below.
 
 ## Decisions and Blockers
 
-- AR-0023: undefined extended policy metadata requires a System Engineer ruling; question pending.
-- AR-0024: previous records explicitly leave Independent Live Pass Pending; automated review cannot attest to that human observation.
-- AR-0022: allocation policy and network service extent must be supported by accepted designs or receive a System Engineer ruling.
+- No unresolved architectural ruling. Stage E scope is approved; broader remote networking,
+  physical memory, grant mutation, and OS sandbox enforcement remain outside the selected scope.
+- AR-0024 Independent Live Pass is Not Required per System Engineer acceptance of automated evidence.
 
 ## Completion Summary
 
 - Published AR-0024 repair 982379e; independent implementation review and CI passed. ERs remain
   Complete pending the existing human-gate ruling.
 - ER-0103 Verified, published as a3ee08a; parent validation, independent review, and exact-head CI passed.
-- No selected AR is Implemented; architectural/human gates remain explicit.
+- AR-0023 and AR-0024 are Implemented following the explicit rulings; AR-0022 remains In Progress.
 
 ## Independent Findings and Repair (2026-10-15)
 
@@ -237,3 +231,31 @@
   completed successfully; existing issue #357 is synchronized and remains closed.
 - `git diff --check` passed for the three documentation files. Reconciliation is ready for
   direct publication on main under Temporary Initial Development Mode.
+
+## System Engineer Rulings and Execution — 2026-10-15
+
+- Explicit response: "AR-0022 approve. AR-0023 I believe it does. AR-0024 accept."
+- Stage E ER-0100–0102 are Approved; the proposed bounded scope is unchanged.
+- Persisted required_capabilities satisfies the accepted extended policy scope. AR-0023 is
+  Implemented with all listed dependencies Verified.
+- AR-0024 automated independent review/tests accepted in place of the earlier human gate.
+  ER-0070–0074 are Verified; AR-0024 Implemented. No human observation is claimed.
+- Earlier pending-ruling records are historical and superseded by this explicit response.
+- Next: ER-0100 owned allocations, then ER-0101 network service and ER-0102 inspection.
+  Separate read-only review is required for each new public/security/lifetime service boundary.
+- Allocation criterion mapping: owned zero buffers -> API plus IPC; owner/correlation -> IPC;
+  byte/count quotas -> boundary/release tests; numeric/selectors -> malformed requests;
+  recovery -> file-backed host reopen and explicit rebind.
+
+### ER-0100 publication checkpoint
+
+- Focused independent tests 4/4 programs, 24 checks; full parent suite 33/33. Review Pass after
+  one exception-boundary repair and added allocation-failure test. Detailed report committed.
+- ER-0100 In Progress -> Complete; CI pending, no Verified claim. AR-0023/0024 reconciliation
+  independently reviewed Pass using prior exact-head CI and explicit System Engineer rulings.
+- Stage E issues #354–356 synchronized; ER-0070–0074 issues closed as Verified; AR-0023/#291
+  and AR-0024/#292 synchronized and closed. AR-0022/#290 remains open with expanded dependencies.
+- Files: allocation service/header, internal request validation, core service tests, Automake inputs,
+  Service-Hosts usage, review report, affected AR/ER/status/index/ledger documents.
+- Regeneration: `./bootstrap.sh`, `./configure` for new library sources/test target; generated
+  tracked libtool and tests/test_referee_core restored. Next implementation: ER-0101.

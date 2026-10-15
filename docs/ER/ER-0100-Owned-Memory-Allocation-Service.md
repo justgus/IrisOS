@@ -15,7 +15,7 @@ ER-Dependencies: ER-0057, ER-0060, ER-0062
 
 - ER ID: ER-0100
 - Title: Owned Memory Allocation Service
-- Status: Proposed
+- Status: Complete
 - Date: 2026-10-14
 - Owners: Mike
 - Type: Enhancement
@@ -96,4 +96,24 @@ This approach is Proposed pending the System Engineer's Stage E ruling.
 - Required: No for the proposed bounded local C++ service contract.
 - Reason: owned buffers, deterministic quotas, lifecycle, and request authorization can be faithfully
   inspected and exercised through the local IPC/host APIs; no physical target or user observation.
-- Result: Not Required, subject to architectural scope approval.
+- Result: Not Required; bounded scope approved by the System Engineer on 2026-10-15.
+
+### System Engineer Ruling — 2026-10-15
+
+- The System Engineer approved the drafted AR-0022 Stage E scope, including this ER.
+  Earlier statements that the architectural ruling is pending are superseded.
+- Public API/security/lifetime changes require separate independent review under the batch workflow.
+
+### Implementation and Validation — 2026-10-15
+
+- AllocationService owns zero-initialized buffers, enforces subject/total/count limits, checks
+  ownership, and validates every selector before dispatch. Strict CBOR inputs return typed errors.
+- Recovery test proves descriptor persistence requires explicit bind/start with fresh empty state.
+- `./bootstrap.sh`, `./configure`, `make -j4`: exit 0. New sources/test target required regeneration;
+  tracked generated outputs are excluded from publication.
+- Focused command above: 4/4 programs, 24 checks; full `env TMPDIR=/private/tmp make check`: 33/33.
+  Check required escalation after sandbox temp-file failures. Initial test-only temporary c_str
+  assertion corrected; no implementation assertion failure was concealed.
+- [Independent review](../Plans/AR-Batches/reviews/ER-0100-independent-review-2026-10-15.md): Pass
+  after moving decoding inside bad_alloc handling; injected failure proves quota restoration.
+- Complete; implementation CI remains pending before Verified. Independent Live Pass: Not Required.

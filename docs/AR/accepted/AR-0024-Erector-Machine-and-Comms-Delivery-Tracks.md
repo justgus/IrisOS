@@ -5,7 +5,7 @@ ER-Dependencies: ER-0015, ER-0016, ER-0017, ER-0045, ER-0045.1, ER-0045.2, ER-00
 
 # AR-0024 — Erector Machine And Comms Delivery Tracks
 
-- Status: In Progress
+- Status: Implemented
 - Date: 2026-03-14
 - Owners: Mike
 
@@ -94,3 +94,11 @@ Define explicit delivery tracks for Machine and Comms.
   passed all implementation criteria and fresh focused/full validation with no open findings.
   The existing Independent Live Pass applicability ruling remains pending; no ER verification
   transition is claimed yet.
+
+### System Engineer Ruling and Reconciliation — 2026-10-15
+
+- The System Engineer accepted independent code/API review and executable tests for
+  ER-0070–0074; their prior human-observation requirement is superseded, not reported as performed.
+- ER-0070–0074 are now Verified using the independent criterion review, passing focused/full
+  validation, and successful exact-head CI for 982379e. All other listed ER dependencies were
+  already Verified. All four scoped delivery tracks are realized. Status: Implemented.
