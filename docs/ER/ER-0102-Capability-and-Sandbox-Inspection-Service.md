@@ -15,7 +15,7 @@ ER-Dependencies: ER-0057, ER-0058, ER-0060, ER-0061
 
 - ER ID: ER-0102
 - Title: Capability and Sandbox Inspection Service
-- Status: Approved
+- Status: Complete
 - Date: 2026-10-14
 - Owners: Mike
 - Type: Enhancement
@@ -80,7 +80,7 @@ Engineer approved this scope on 2026-10-15.
 ## Verification Plan
 
 - `make -j4`
-- `TMPDIR=/private/tmp make -C tests check TESTS='test_core_services test_capability_context test_service_ipc test_service_host'`
+- `TMPDIR=/private/tmp make -C tests check TESTS='test_inspection_service test_core_services test_capability_context test_service_ipc test_service_host'`
 - `TMPDIR=/private/tmp make check`
 - Independent review must repeat focused validation and attempt cross-subject inspection.
 
@@ -95,3 +95,16 @@ Engineer approved this scope on 2026-10-15.
 - The System Engineer approved the drafted AR-0022 Stage E scope, including this ER.
   Earlier statements that the architectural ruling is pending are superseded.
 - Public API/security/lifetime changes require separate independent review under the batch workflow.
+
+### Implementation and Validation — 2026-10-15
+
+- InspectionService exposes only persisted caller-filtered context/sandbox queries. Strict empty
+  object payloads prevent subject overrides; sandbox output omits every other member.
+- `./bootstrap.sh`, `./configure`, `make -j4`: passed for new sources/test target. Generated
+  tracked outputs excluded from publication.
+- Focused command in plan: 5/5 programs passed, independently repeated by `review_inspection`.
+- `env TMPDIR=/private/tmp make check`: passed 35/35. Sandbox attempt failed before assertions
+  on Check communication temporary-file permissions; escalated rerun passed.
+- [Independent review](../Plans/AR-Batches/reviews/ER-0102-independent-review-2026-10-15.md):
+  all six criteria Pass, no findings. Independent Live Pass: Not Required.
+- Complete; implementation CI remains pending before Verified.

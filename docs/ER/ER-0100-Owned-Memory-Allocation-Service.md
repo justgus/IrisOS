@@ -15,7 +15,7 @@ ER-Dependencies: ER-0057, ER-0060, ER-0062
 
 - ER ID: ER-0100
 - Title: Owned Memory Allocation Service
-- Status: Complete
+- Status: Verified
 - Date: 2026-10-14
 - Owners: Mike
 - Type: Enhancement
@@ -117,3 +117,10 @@ The System Engineer approved this approach on 2026-10-15.
 - [Independent review](../Plans/AR-Batches/reviews/ER-0100-independent-review-2026-10-15.md): Pass
   after moving decoding inside bad_alloc handling; injected failure proves quota restoration.
 - Complete; implementation CI remains pending before Verified. Independent Live Pass: Not Required.
+
+### CI Verification — 2026-10-15
+
+- Verified after successful exact-head Linux CI
+  [38811469029](https://github.com/justgus/IrisOS/actions/runs/38811469029) for
+  `a53cf93593279cfd14e4fcd9f6d340a652bc328c`: bootstrap, configure, build, unit tests, distcheck.
+  Passing local/full tests and independent review above complete the evidence. No live pass required.

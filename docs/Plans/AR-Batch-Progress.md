@@ -2,7 +2,7 @@
 
 - Requested range: AR-0022 through AR-0024; implementation and independent verification.
 - Started: 2026-10-14.
-- Current state: In Progress; all three System Engineer rulings received; Stage E implementation next.
+- Current state: In Progress; Stage E implemented/reviewed locally; network and inspection CI pending.
 - Process: Temporary Initial Development Mode; main, cohesive commits, direct pushes, advisory CI.
 - Goal: complete eligible accepted scope and independent verification; preserve architectural and human-observation gates.
 - Prior reconciliation is preserved in [the archive](AR-Batches/AR-reconciliation-2026-10-14-before-0022-0024.md).
@@ -90,9 +90,9 @@
 
 | ER | Parent | State | Next step |
 |---|---|---|---|
-| ER-0100 | AR-0022 | Complete | Independent review and 33/33 full tests passed; publish and observe CI |
+| ER-0100 | AR-0022 | Verified | Published a53cf93; exact-head CI 38811469029 success |
 | ER-0101 | AR-0022/0024 | Complete | Independent review and 34/34 full tests passed; implementation CI next |
-| ER-0102 | AR-0022 | Approved | Implement after ER-0101 publication |
+| ER-0102 | AR-0022 | Complete | Independent review and 35/35 full tests pass; publish and observe CI |
 | ER-0103 | AR-0023 | Verified | None; exact-head CI passed |
 
 - ER-0057–0062, ER-0055/0078–0080, and ER-0070–0074 are Verified.
@@ -100,15 +100,15 @@
 
 ## Current Item
 
-- ER-0100 on main: real zero-initialized owned buffers, subject ownership, byte/count limits,
-  strict selectors and numeric inputs, and stopped/unbound host recovery with fresh allocations.
-- `./bootstrap.sh`, `./configure`, `make -j4`: passed; new source/test targets required local
-  Autotools regeneration. Tracked generated artifacts will be excluded from publication.
-- Focused four-program suite passed after sandbox Check communication-file failure and a test-only
-  temporary c_str assertion fix. Command:
-  `env TMPDIR=/private/tmp make -C tests check TESTS='test_core_services test_service_host test_service_ipc test_capability_context'`.
-- Independent read-only ER-0100 review in progress; full suite follows that review.
-- All prior architectural/human-gate blockers resolved by explicit 2026-10-15 rulings below.
+- All three Stage E services implemented with dedicated tests and independent criterion reports.
+- ER-0100 Verified: published a53cf93; Linux run 38811469029 completed success including distcheck.
+- ER-0101 Complete: published cc54489; Linux run 38813348896 in_progress at last observation.
+- ER-0102 Complete: new inspection service, build integration, tests, docs and independent report
+  ready for publication; build and full suite 35/35 pass. Independent Live Pass Not Required.
+- Next: publish ER-0102, observe existing implementation CI runs, reconcile only proven statuses,
+  then audit final AR-0022 completion against all dependencies and the approved Stage E scope.
+- Autotools commands `./bootstrap.sh`, `./configure` passed for each new source/test target.
+  Generated tracked libtool/tests/test_referee_core excluded from commits.
 
 ## Decisions and Blockers
 
@@ -284,3 +284,24 @@
   last observation. Reconciliation commit fe9beba CI run 38806640740 completed success.
 - Local `./bootstrap.sh` and `./configure` required for new module/test target; generated tracked
   libtool and tests/test_referee_core restored before commit.
+
+### ER-0102 implementation start
+
+- ER-0101 published as cc54489. ER-0102 Approved -> In Progress on main.
+- Read-only service uses persisted caller-filtered store queries on every request. Empty object
+  payloads only; sandbox output contains the caller's membership, never other subject IDs.
+- Requirement mapping: contexts/sandbox queries -> two-subject privacy and ordering; selector and
+  subject override -> malformed IPC; recovery -> file-backed host reopen/rebind/start; corruption
+  and closed store -> propagated errors; persisted record counts/values -> no mutation.
+- Independent public API/privacy/persistence/lifetime review required; live pass Not Required.
+
+### ER-0102 publication checkpoint
+
+- Files: new inspection service/header, dedicated privacy/recovery/error tests, Automake inputs,
+  Service-Hosts usage, ER/status/ledger and independent review report. ER-0100 CI reconciliation
+  included using successful exact head a53cf93593279cfd14e4fcd9f6d340a652bc328c.
+- Build passed; focused independent suite 5/5 programs; full parent suite 35/35 passed.
+  `review_inspection`: every criterion Pass, no findings. No human observation required.
+- ER-0102 In Progress -> Complete; implementation CI remains pending before Verified.
+- `./bootstrap.sh` and `./configure` required for new module/test target; generated artifacts
+  restored before publication. No dependencies added. Next action: observe existing CI runs.

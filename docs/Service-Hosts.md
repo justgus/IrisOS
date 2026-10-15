@@ -129,3 +129,33 @@ Invalid requests publish no sessions; closure is staged until response construct
 Missing sessions return NotFound, authorization/lifecycle/limit failures FailedPrecondition,
 invalid payload/selectors InvalidArgument, and allocation failure IoError. This is local loopback
 service delivery; remote networking and hardware drivers remain future scope.
+
+## Capability and sandbox inspection service (C++ binding)
+
+`InspectionService(id, contexts)` exposes read-only persisted queries through the local host API.
+The CapabilityContextStore and its backing Referee store must outlive the binding; calls remain
+serialized. Bind and start explicitly after descriptor creation or recovery. Each request queries
+the store again, and storage/corruption failures propagate instead of returning empty success.
+
+| Endpoint | Message type | Payload |
+|---|---|---|
+| `inspection.contexts` | `kInspectionContextsType` | empty CBOR object `{}` |
+| `inspection.sandboxes` | `kInspectionSandboxesType` | empty CBOR object `{}` |
+
+Selectors follow the same strict endpoint/message contract. The trusted local envelope sender is
+the only queried subject. Subject overrides and all other payload arguments are InvalidArgument.
+Responses use `kInspectionResponseType` and preserve request correlation, recipient, and sandbox.
+`contexts` contains ordered records with `id`, `subject`, nullable `sandbox`, and ordered `grants`.
+`sandboxes` contains ordered records with `id`, `name`, and `subjects` containing only the caller;
+other members of a shared sandbox are omitted. Callers with no records receive an empty array.
+The service has no mutation, administrative cross-subject, grant-issuance, or OS enforcement endpoint.
+Ordering follows the existing store APIs. Handler state is not persisted; query results come from
+the persisted capability and sandbox records after explicit host rebind/start.
+
+Stage E service regression validation:
+
+```sh
+make -j4
+env TMPDIR=/private/tmp make -C tests check TESTS='test_core_services test_network_service test_inspection_service test_capability_context test_service_ipc test_service_host test_comms_primitives test_comms_transport_session test_machine_authority'
+env TMPDIR=/private/tmp make check
+```
