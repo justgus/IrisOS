@@ -730,7 +730,16 @@ static referee::Result<OperationDefinition> operation_from_json(const nlohmann::
   if (j.contains("scope")) op.scope = scope_from_string(j.at("scope").get<std::string>());
   if (j.contains("signature")) op.signature = signature_from_json(j.at("signature"));
   if (j.contains("capabilities")) {
-    for (const auto& item : j.at("capabilities")) {
+    const auto& capabilities = j.at("capabilities");
+    if (!capabilities.is_array()) {
+      return referee::Result<OperationDefinition>::err(referee::ErrorCode::CorruptData,
+                                                       "operation capabilities must be an array");
+    }
+    for (const auto& item : capabilities) {
+      if (!item.is_string()) {
+        return referee::Result<OperationDefinition>::err(referee::ErrorCode::CorruptData,
+                                                         "operation capability must be a string");
+      }
       op.required_capabilities.push_back(item.get<std::string>());
     }
   }

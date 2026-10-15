@@ -267,6 +267,7 @@
       "conformance": "Partial",
       "notes": [
         "ER-0055, ER-0078, ER-0079, and ER-0080 are Verified and their implementation is present.",
+        "Batch ER-0103 repairs malformed persisted capability containers and tests capability metadata across reopen and inherited listing; its verification is tracked separately.",
         "The source stores required_capabilities on operations; the meaning of the AR's extended policy metadata requirement awaits System Engineer clarification in this reconciliation."
       ]
     },

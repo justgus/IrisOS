@@ -1,6 +1,6 @@
 ---
 GitHub-Issue: #291
-ER-Dependencies: ER-0055, ER-0078, ER-0079, ER-0080
+ER-Dependencies: ER-0055, ER-0078, ER-0079, ER-0080, ER-0103
 ---
 
 # AR-0023 — Refract Reflection Profiles
@@ -78,8 +78,15 @@ stated precisely.
 
 - The 2026-10-13 source audit found persisted inheritance/interfaces, field and relationship
   constraints, operation effects, and documentation/examples in `src/refract/schema_registry.*`.
-  All listed ER dependencies (ER-0055/0078/0079/0080) are Verified. The corresponding registry,
+  The previously linked ERs (ER-0055/0078/0079/0080) are Verified. The corresponding registry,
   bootstrap, and Conch tests pass in fresh `TMPDIR=/private/tmp make check` (31/31, outside the sandbox).
 - Operations also persist and expose `required_capabilities`. Whether this satisfies the AR's
   undefined extended policy metadata requirement awaits System Engineer clarification. This AR
   remains In Progress; no broader policy architecture or completion is inferred by the reconciliation.
+
+### Existing Metadata Repair (2026-10-15)
+
+- Independent review found that malformed capabilities containers can decode as empty requirements.
+  Batch-approved ER-0103 validates the already-defined array-of-strings format and tests file-backed
+  capability persistence and inherited operation listing. This repair does not resolve the pending
+  extended policy scope ruling or claim completion of this AR.

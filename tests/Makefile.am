@@ -6,7 +6,7 @@ AM_TESTS_ENVIRONMENT = CK_FORK=no
 EXTRA_DIST = fixtures/parser/conch_commands.tsv
 
 TESTS = test_referee_core test_service_ipc test_capability_context test_refract_registry test_refract_bootstrap test_machine_primitives test_machine_inventory test_machine_authority test_ceo_tasks test_exec_waitables test_exec_integration test_vizier_routing test_viz_artifacts test_conch_session_growth test_conch_layout test_phase3_integration test_comms_primitives test_comms_transport_session test_ceo_io_reactor test_phase5_integration test_phase6_persistence test_conch_authoring test_parser_core test_conch_parser test_conch_grammar_api test_conch_parser_regression test_json_parser test_cpp_parser test_python_parser test_xml_parser
-TESTS += test_service_host
+TESTS += test_service_host test_refract_capabilities
 check_PROGRAMS = $(TESTS)
 
 test_service_host_SOURCES = test_service_host.cc
@@ -99,3 +99,6 @@ test_cpp_parser_SOURCES = test_cpp_parser.cc
 test_cpp_parser_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
 test_xml_parser_SOURCES = test_xml_parser.cc
 test_xml_parser_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
+
+test_refract_capabilities_SOURCES = test_refract_capabilities.cc
+test_refract_capabilities_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
