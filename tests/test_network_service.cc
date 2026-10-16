@@ -61,8 +61,9 @@ MessageEnvelope request(NetworkService& service, ObjectID owner, TypeID operatio
   result.sandbox = ObjectID::random();
   return result;
 }
+// The 1 MiB round-trip criterion has no latency SLA; allow slower CI runners.
 json send(IpcService& ipc, MessageEnvelope envelope) {
-  auto result = ipc.send_request(envelope, std::chrono::milliseconds(10));
+  auto result = ipc.send_request(envelope, std::chrono::seconds(5));
   ck_assert_msg(result, "%s", result.error ? result.error->message.c_str() : "ok");
   ck_assert(result.value->recipient == envelope.sender);
   ck_assert(result.value->correlation_id == envelope.correlation_id);
@@ -71,7 +72,7 @@ json send(IpcService& ipc, MessageEnvelope envelope) {
   return json::from_cbor(result.value->payload_cbor);
 }
 void error(IpcService& ipc, MessageEnvelope envelope, ErrorCode code) {
-  auto result = ipc.send_request(envelope, std::chrono::milliseconds(10));
+  auto result = ipc.send_request(envelope, std::chrono::seconds(5));
   ck_assert(!result);
   ck_assert_msg(result.error->code == code, "%s", result.error->message.c_str());
 }

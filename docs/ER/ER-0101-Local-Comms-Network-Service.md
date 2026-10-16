@@ -112,3 +112,17 @@ handler. The System Engineer approved this scope; prerequisite ER-0073/0074 are 
 - [Independent review](../Plans/AR-Batches/reviews/ER-0101-independent-review-2026-10-15.md):
   every criterion Pass, no blocking findings. Independent Live Pass: Not Required.
 - Complete; exact implementation CI must pass before Verified.
+
+### Linux CI Repair — 2026-10-15
+
+- Run [38813348896](https://github.com/justgus/IrisOS/actions/runs/38813348896) for cc54489
+  failed `make check V=1`: 33/34 passed; network lifecycle case returned Timeout at the success
+  helper. Build passed; distcheck skipped. Downloaded test_network_service.log confirms the error.
+- Diagnosis: the 1 MiB frame/loopback/CBOR round trip exceeded the test's 10 ms IPC deadline on
+  Linux CI. No acceptance criterion imposes that deadline. The test now allows 5 seconds while
+  keeping the exact payload limit, equality, authorization, and lifecycle assertions intact.
+- Focused and full revalidation plus new-head CI required; ER remains Complete.
+
+- Repair validation: focused network suite passed 1/1; full suite passed 35/35 after normal
+  relinking of the restored generated core launcher. Production code unchanged; all existing
+  independent criterion evidence retained. New implementation-head CI remains required.

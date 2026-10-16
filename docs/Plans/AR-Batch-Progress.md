@@ -305,3 +305,29 @@
 - ER-0102 In Progress -> Complete; implementation CI remains pending before Verified.
 - `./bootstrap.sh` and `./configure` required for new module/test target; generated artifacts
   restored before publication. No dependencies added. Next action: observe existing CI runs.
+
+### ER-0101 CI repair cycle 1
+
+- Network run 38813348896 for cc544898878833f5d59cc4ccacdfa14c37fd547c failed unit tests:
+  33/34 programs passed; network lifecycle helper reports Timeout. Build passed; distcheck skipped.
+- Exact CI command `make check V=1`; downloaded artifact test_network_service.log identifies
+  test_network_host_session_and_packet_lifecycle at success helper, not a payload mismatch.
+- Minimal repair: test-only IPC deadline 10 ms -> 5 seconds for the 1 MiB round trip. No latency
+  requirement exists; all size/equality/authority/lifecycle assertions retained. Production unchanged.
+- ER-0101 remains Complete; inspection run 38816782208 may encounter the same unchanged test.
+  Do not restart stale-head CI or claim a pass; publish repair after focused/full validation.
+
+### CI repair validation and restart recovery
+
+- Server restart interrupted the relink command before execution; no .batch-core-relink.log existed.
+  Resumed by inspecting Git/log/CI state rather than repeating a completed operation.
+- Inspection run 38816782208 for 2175222bebe3ae5e00367cacfbd5bfd48f08fdf1 completed failure:
+  34/35 programs passed; downloaded artifact confirms the identical network success-helper Timeout.
+  Build passed; inspection tests passed; distcheck skipped. No distinct implementation defect found.
+- Focused network repair test passed. Full rerun initially 34/35 due to restored generated core
+  launcher referencing /usr/local/lib/libreferee.0.dylib. Normal relink command
+  `make -C tests -W test_referee_core.cc test_referee_core` passed; no system install or DYLD workaround.
+- `env TMPDIR=/private/tmp make check` then passed 35/35, exit 0, after the test deadline change.
+  `git diff --check` passed. Production service source unchanged; existing independent reviews retained.
+- Repair changes only test_network_service.cc, ER-0101 evidence, and this ledger. No regeneration.
+  New-head CI must pass before ER-0101/0102 verification. Generated launcher restored before commit.
