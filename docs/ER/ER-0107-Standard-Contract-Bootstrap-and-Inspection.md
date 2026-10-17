@@ -15,7 +15,7 @@ ER-Dependencies: ER-0106
 
 - ER ID: ER-0107
 - Title: Standard Contract Bootstrap and Inspection
-- Status: Approved
+- Status: Complete
 - Date: 2026-10-17
 - Owners: Mike
 - Type: Enhancement
@@ -42,7 +42,7 @@ and unrelated changes to the AR-0016 name-based dispatch model.
 ## Scope
 
 - In scope: this ER's acceptance criteria and compatibility tests.
-- Out of scope: unresolved architectural alternatives until the System Engineer approves the plan.
+- Out of scope: architectural alternatives outside the approved plan.
 
 ## Requirements
 
@@ -62,7 +62,7 @@ Use the corresponding work item and architectural proposal in the linked plan. T
 
 ## Risks / Open Questions
 
-The plan's identity, compatibility, conformance, initial catalog and binding choices require approval.
+The System Engineer approved the plan's architectural choices on 2026-10-17.
 Persisted metadata must reject corruption instead of silently dropping constraints.
 
 ## Dependencies
@@ -71,7 +71,7 @@ Persisted metadata must reject corruption instead of silently dropping constrain
 
 ## Implementation Notes
 
-No implementation or independent review has occurred. Proposed dedicated test target: test_standard_contracts.
+Dedicated test target: test_standard_contracts.
 
 ## Verification Plan
 
@@ -83,6 +83,33 @@ No implementation or independent review has occurred. Proposed dedicated test ta
 
 ### Independent Live Pass
 
-- Required: No (proposed applicability).
+- Required: No.
 - Reason: deterministic local storage, metadata, invocation and shell behavior can be tested.
-- Result: Not Required for proposed local scope; no remote/hardware or human observation claimed.
+- Result: Not Required for approved local scope; no remote/hardware or human observation claimed.
+
+### Implementation evidence — 2026-10-17
+
+- Bootstraps three immutable version-1 contracts and adopts primitive to_string/compare plus
+  U64/F64 add in new schema versions. Existing definition records and name-based call paths remain.
+- Local standard callbacks validate primitive CBOR, reject arithmetic overflow/non-finite values,
+  preserve Bytes array display and return results separately from stored destinations.
+- Conch exposes `ops --catalog [--category name] [--capability name]` and
+  `ops <TypeName> --contracts`, using Refract metadata for signatures, authority and binding routes.
+- First focused integration run failed standard adoption because existing Bytes definitions repeat
+  core declarations. Bounded repair adopts only the first compatible unbound declaration and
+  preserves the duplicate legacy declarations. Conflicting explicit claims still fail.
+- Review tightened only conforming-operation decoding for unknown scope, malformed signature arrays,
+  and signed/invalid type IDs. Added stored-corruption regression cases; legacy decoding unchanged.
+- `./bootstrap.sh`, `./configure`, `make -j4`: passed. New sources/test target required regeneration;
+  generated tracked libtool and tests/test_referee_core remain local, excluded from commits.
+- Focused seven-program suite passed after the Bytes repair. Final
+  `env TMPDIR=/private/tmp make check` passed 39/39 programs after all source/test changes,
+  including 4 standard-contract checks, large-U64 ordering and byte-array compatibility.
+- Sandbox full run stopped all programs before assertions on Check communication-file creation;
+  authorized outside-sandbox rerun passed. No assertion failure is attributed to the sandbox.
+- Header installation check passed using `make -C src install-nobase_includeHEADERS
+  DESTDIR="$PWD/.ar0027-headercheck"`, followed by a C++20 syntax-only translation unit including
+  refract/standard_contracts.h and refract/contract_inspection.h from the staged include directory.
+  bootstrap.h and the existing SqliteStore header are installed to satisfy public dependencies.
+- `git diff --check` passed. No independent review or human observation claimed. Complete;
+  System Engineer verification remains outstanding.

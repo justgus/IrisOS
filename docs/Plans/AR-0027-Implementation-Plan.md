@@ -1,7 +1,7 @@
 # AR-0027 Implementation Plan
 
 - Date: 2026-10-17
-- State: Approved; implementation in progress.
+- State: Implementation Complete; System Engineer ER verification pending.
 - Request: plan and implement AR-0027 on main under Temporary Initial Development Mode.
 - Existing local change: regenerated macOS tests/test_referee_core launcher. Preserve it locally;
   do not restore the Linux launcher after tests or include generated platform paths in commits.
@@ -48,7 +48,7 @@
 5. First catalog: conversion/to_string, comparison/compare, and arithmetic/add. Use Self-parameterized
    contracts with explicit concrete conformance for existing primitive to_string/compare and
    U64/F64 addition. Addition has two ordered inputs and a separate result. U64 overflow is a
-   typed failure; proposed F64 addition accepts only finite inputs and fails if the result is
+   typed failure; F64 addition accepts only finite inputs and fails if the result is
    non-finite. Document this in the versioned contract rather than changing legacy comparison.
    Vector/matrix kernels and a complete standard library remain outside this first catalog.
 6. Discovery: extend Refract APIs for exact contract key, category, required capability, and
@@ -66,7 +66,7 @@
 | ER-0107 | Initial standard contracts, concrete bindings and Conch inspection | ER-0106 |
 
 The System Engineer approved this plan and ER scope explicitly on 2026-10-17.
-ER-0104–0107 are Approved. Verification still requires completed evidence.
+ER-0104–0107 were Approved and are now Complete. Verification remains a System Engineer gate.
 
 ## Delivery and validation
 
@@ -80,12 +80,15 @@ ER-0104–0107 are Approved. Verification still requires completed evidence.
 - CI after pushes is advisory; inspect actual failures and record completed evidence.
 - Temporary Mode does not mandate separate reviewer runs. The implementation will record code
   review and tests; no independent review or human observation will be claimed unless performed.
-- Proposed Independent Live Pass applicability: Not Required for deterministic local APIs and
+- Independent Live Pass applicability: Not Required for deterministic local APIs and
   automated Conch inspection tests. No physical/remote environment is claimed.
 
 ## Current checkpoint
 
-Architecture approved on 2026-10-17. Implement ER-0104 first on main; preserve the local launcher.
+Architecture approved on 2026-10-17; all four ERs are Complete. Final build and full suite
+pass (39/39). Publish the final increment on main; final-head CI remains advisory/pending.
+AR-0027 remains In Progress until the System Engineer verifies its dependency ERs.
+Preserve the working macOS launcher and local generated libtool; neither is published.
 
 ## Requirement-to-test mapping
 
@@ -117,3 +120,41 @@ completed validation. `git diff --check` passes for the planning documents.
 
 - ER-0106 Complete: build and focused suite 6/6 pass, with 4 new dispatch checks.
   Callback registration is process-local and fail-closed after recovery. Next ER-0107.
+
+- ER-0107 Complete: standard contracts, primitive callbacks and Conch inspection implemented.
+  Full suite passed 39/39 after the Bytes-adoption repair and strict decoder review. Public-header
+  staging/syntax check passed. Initial generated artifacts and disposable test fixtures excluded.
+- Prior publication: af95526 catalog, 6c7db6e conformance, c136a21 typed dispatch. Catalog CI
+  39050913184 and conformance CI 39051293940 completed success. Dispatch CI 39052510538 was
+  in_progress at the last check; pending is not a pass.
+- Source review: examined immutable key/version handling, fail-closed corrupted metadata,
+  inherited/optional/generic selection, capability-before-callback execution, output validation,
+  borrowed dependency lifetimes, duplicate legacy Bytes declarations and name-based compatibility.
+  This is the implementation engineer's review, not an independent review.
+- Tests/commands: ./bootstrap.sh; ./configure; make -j4; focused commands in each ER;
+  env TMPDIR=/private/tmp make check (39/39); git diff --check. Check communication-file creation
+  required authorized outside-sandbox execution. Tracked generated files are not published.
+- Header dependency check: make -C src install-nobase_includeHEADERS
+  DESTDIR="$PWD/.ar0027-headercheck"; c++ -std=c++20 -fsyntax-only
+  -I .ar0027-headercheck/usr/local/include -x c++ - (including both new public entry headers).
+  automake/config.status regenerated the local src Makefile for the install-header list.
+
+## Files delivered
+
+- src/refract/contract_types.h; operation_catalog.{h,cc}; contract_conformance.{h,cc};
+  contract_metadata.{h,cc}; contract_dispatch.{h,cc}; standard_contracts.{h,cc};
+  contract_inspection.{h,cc}; schema_registry.{h,cc}; operation_registry.{h,cc}.
+- src/conch_shell/conch.cc; src/Makefile.am; tests/Makefile.am.
+- tests/contract_test_support.h; test_operation_catalog.cc; test_operation_conformance.cc;
+  test_contract_dispatch.cc; test_standard_contracts.cc.
+- docs/Operation-Contracts.md; this plan; ER-0104–0107; ER-Status; canonical AR-0027;
+  docs/governance/Architecture-Decision-Index.json.
+
+## Remaining gates and limits
+
+- The System Engineer must verify ER-0104–0107 before AR-0027 can be marked Implemented.
+  This request approved architecture/implementation and was not an Autonomous AR Batch delegation.
+- No additional architectural ruling is pending. Runtime callbacks must be explicitly bound;
+  delegated routes are inspectable but return Unsupported without a supported execution route.
+- Final-head CI result remains unclaimed until completed evidence is observed. The local generated
+  launcher and libtool remain modified intentionally so local macOS builds/tests continue working.

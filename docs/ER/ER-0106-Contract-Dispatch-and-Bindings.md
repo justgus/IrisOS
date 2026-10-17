@@ -42,7 +42,7 @@ and unrelated changes to the AR-0016 name-based dispatch model.
 ## Scope
 
 - In scope: this ER's acceptance criteria and compatibility tests.
-- Out of scope: unresolved architectural alternatives until the System Engineer approves the plan.
+- Out of scope: architectural alternatives outside the approved plan.
 
 ## Requirements
 
@@ -63,7 +63,7 @@ Use the corresponding work item and architectural proposal in the linked plan. T
 
 ## Risks / Open Questions
 
-The plan's identity, compatibility, conformance, initial catalog and binding choices require approval.
+The System Engineer approved the plan's architectural choices on 2026-10-17.
 Persisted metadata must reject corruption instead of silently dropping constraints.
 
 ## Dependencies
@@ -72,7 +72,7 @@ Persisted metadata must reject corruption instead of silently dropping constrain
 
 ## Implementation Notes
 
-No implementation or independent review has occurred. Proposed dedicated test target: test_contract_dispatch.
+Dedicated test target: test_contract_dispatch.
 
 ## Verification Plan
 
@@ -84,9 +84,9 @@ No implementation or independent review has occurred. Proposed dedicated test ta
 
 ### Independent Live Pass
 
-- Required: No (proposed applicability).
+- Required: No.
 - Reason: deterministic local storage, metadata, invocation and shell behavior can be tested.
-- Result: Not Required for proposed local scope; no remote/hardware or human observation claimed.
+- Result: Not Required for approved local scope; no remote/hardware or human observation claimed.
 
 ### Implementation evidence — 2026-10-17
 

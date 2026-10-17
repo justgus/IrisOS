@@ -8,6 +8,8 @@
 #include "conch/session_growth.h"
 #include "refract/bootstrap.h"
 #include "refract/dispatch.h"
+#include "refract/standard_contracts.h"
+#include "refract/contract_inspection.h"
 #include "refract/schema_registry.h"
 #include "referee/referee.h"
 #include "referee_sqlite/sqlite_store.h"
@@ -240,7 +242,7 @@ void cmd_new_object(SchemaRegistry& registry, SqliteStore& store,
                     const iris::parser::AuthoringCommand& command);
 void cmd_find_type(SchemaRegistry& registry, const std::string& type_name);
 void cmd_show_type(SchemaRegistry& registry, const std::string& type_name);
-void cmd_ops(SchemaRegistry& registry, const std::vector<std::string>& args);
+void cmd_ops(SchemaRegistry& registry, SqliteStore& store, const std::vector<std::string>& args);
 bool handle_schema_command(SchemaRegistry& registry,
                            SqliteStore& store,
                            const iris::parser::SchemaCommand& command);
@@ -919,7 +921,7 @@ bool handle_session_operation(const std::string& line,
   }
   if (op == "ops") {
     if (parsed.args.empty()) return false;
-    cmd_ops(registry, parsed.args);
+    cmd_ops(registry, store, parsed.args);
     return true;
   }
   if (op == "caps_list" || op == "caps_grant" || op == "caps_revoke" || op == "caps_clear") {
@@ -1274,7 +1276,7 @@ std::optional<TypeSummary> find_type_summary(const std::vector<TypeSummary>& typ
   for (const auto& t : types) {
     auto full = type_display_name(t);
     if (t.name == name || full == name) {
-      if (match.has_value()) {
+      if (match.has_value() && match->type_id != t.type_id) {
         if (err_out) *err_out = "ambiguous type name";
         return std::nullopt;
       }
@@ -3484,6 +3486,8 @@ void print_help() {
   std::cout << "  alias <name>=<expr>\n";
   std::cout << "  show <ObjectID>\n";
   std::cout << "  show type <TypeName>\n";
+  std::cout << "  ops --catalog [--category name] [--capability name]\n";
+  std::cout << "  ops <TypeName> --contracts\n";
   std::cout << "  ops <TypeName> [--class|--object] [--declared]\n";
   std::cout << "  edges <ObjectID>\n";
   std::cout << "  find type <TypeName>\n";
@@ -4192,7 +4196,24 @@ void cmd_show_type(SchemaRegistry& registry, const std::string& name) {
   print_operations(registry, typesR.value.value(), match->type_id, std::nullopt, true);
 }
 
-void cmd_ops(SchemaRegistry& registry, const std::vector<std::string>& args) {
+void cmd_ops(SchemaRegistry& registry, SqliteStore& store, const std::vector<std::string>& args) {
+  iris::refract::OperationCatalog catalog(store);
+  if (!args.empty() && args[0] == "--catalog") {
+    std::optional<std::string> category, capability;
+    for (std::size_t i = 1; i < args.size(); ++i) {
+      if ((args[i] != "--category" && args[i] != "--capability") || i + 1 == args.size()) {
+        std::cout << "error: ops --catalog [--category name] [--capability name]\n";
+        return;
+      }
+      auto& filter = args[i] == "--category" ? category : capability;
+      if (filter) { std::cout << "error: duplicate catalog filter\n"; return; }
+      filter = args[++i];
+    }
+    auto view = iris::refract::inspect_contract_catalog(catalog, category, capability);
+    if (view) std::cout << *view.value << "\n";
+    else std::cout << "error: " << view.error->message << "\n";
+    return;
+  }
   if (args.empty()) {
     std::cout << "error: ops <type> [--class|--object] [--declared]\n";
     return;
@@ -4208,6 +4229,13 @@ void cmd_ops(SchemaRegistry& registry, const std::vector<std::string>& args) {
   auto match = find_type_summary(typesR.value.value(), args[0], &err);
   if (!match.has_value()) {
     std::cout << "error: " << err << "\n";
+    return;
+  }
+
+  if (args.size() == 2 && args[1] == "--contracts") {
+    auto view = iris::refract::inspect_type_contracts(registry, catalog, match->type_id);
+    if (view) std::cout << *view.value << "\n";
+    else std::cout << "error: " << view.error->message << "\n";
     return;
   }
 
@@ -4251,7 +4279,7 @@ bool handle_schema_command(SchemaRegistry& registry,
       cmd_show_type(registry, command.type_name);
       return true;
     case iris::parser::SchemaCommandKind::Ops:
-      cmd_ops(registry, command.args);
+      cmd_ops(registry, store, command.args);
       return true;
   }
   return false;
@@ -5807,6 +5835,12 @@ int main(int argc, char** argv) {
   auto catalogR = iris::refract::bootstrap_core_catalog(registry, store);
   if (!catalogR) {
     std::cout << "error: bootstrap catalog failed: " << catalogR.error->message << "\n";
+    return 1;
+  }
+  iris::refract::OperationCatalog operation_catalog(store);
+  auto standardR = iris::refract::bootstrap_standard_contracts(registry, operation_catalog);
+  if (!standardR) {
+    std::cout << "error: standard contract bootstrap failed: " << standardR.error->message << "\n";
     return 1;
   }
   auto cursorR = store.graph_cursor();

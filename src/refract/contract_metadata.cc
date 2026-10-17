@@ -70,6 +70,21 @@ referee::Result<void> decode_contract_metadata(const nlohmann::json& j, Operatio
       op.binding = std::move(b);
     }
     require(op.conformances.empty() == !op.binding.has_value(), "conformance/binding must occur together");
+    if (!op.conformances.empty()) {
+      const auto scope = j.at("scope").get<std::string>();
+      require(scope == "object" || scope == "class", "invalid conforming operation scope");
+      const auto& signature = j.at("signature");
+      require(signature.is_object(), "conforming signature must be an object");
+      for (const auto* field : {"params", "outputs"}) {
+        require(signature.at(field).is_array(), "signature parameters must be an array");
+        for (const auto& p : signature.at(field)) {
+          require(!p.at("name").get<std::string>().empty(), "empty parameter name");
+          positive(p.at("type_id"));
+          require(p.at("optional").is_boolean(), "optionality must be boolean");
+        }
+      }
+      if (j.contains("effects")) require(j.at("effects").is_array(), "effects must be an array");
+    }
     return referee::Result<void>::ok();
   } catch (const std::exception& ex) {
     return referee::Result<void>::err(referee::ErrorCode::CorruptData, ex.what());

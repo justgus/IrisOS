@@ -77,7 +77,7 @@ START_TEST(persistence_and_malformed_metadata) {
     ck_assert_uint_eq(view.value->front().conformance.substitutions.at("Self").v, 0x2701);
     ck_assert_uint_eq(view.value->front().operation.binding->version, 1);
   }
-  for (int i = 0; i < 6; ++i) {
+  for (int i = 0; i < 9; ++i) {
     SqliteStore store({":memory:"}); ok(store.open()); OperationCatalog catalog(store);
     ok(catalog.register_contract(sample())); auto bad = json;
     auto& op = bad["operations"][0];
@@ -88,6 +88,9 @@ START_TEST(persistence_and_malformed_metadata) {
       case 3: op["conformances"][0]["substitutions"] = nlohmann::json::array(); break;
       case 4: op["conformances"][0]["id"] = "bad"; break;
       case 5: op["conformances"][0]["substitutions"]["Self"] = 0; break;
+      case 6: op["scope"] = "unknown"; break;
+      case 7: op["signature"]["outputs"] = nullptr; break;
+      case 8: op["signature"]["params"][0]["type_id"] = -1; break;
     }
     ok(store.create_object(kTypeDefinitionType, {}, nlohmann::json::to_cbor(bad)));
     SchemaRegistry schema(store); error(schema.get_latest_definition_by_type({0x2701}), ErrorCode::CorruptData);

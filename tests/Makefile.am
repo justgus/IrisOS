@@ -123,3 +123,6 @@ test_operation_conformance_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.
 TESTS += test_contract_dispatch
 test_contract_dispatch_SOURCES = test_contract_dispatch.cc
 test_contract_dispatch_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
+TESTS += test_standard_contracts
+test_standard_contracts_SOURCES = test_standard_contracts.cc
+test_standard_contracts_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la

@@ -168,4 +168,10 @@ adequately through the established Refract and service interfaces.
 
 - System Engineer approved [the implementation plan](../../Plans/AR-0027-Implementation-Plan.md)
   and ER-0104–0107, resolving the open questions for the initial implementation.
-- Implementation proceeds in dependency order on main. No verification claimed yet.
+- ER-0104–0107 are Complete: immutable catalog, persisted conformance/discovery, typed contract
+  invocation, standard primitive implementations and Conch inspection are implemented on main.
+- Final local build passed and full suite passed 39/39 programs. Earlier catalog/conformance CI
+  passed; final implementation CI is advisory and its result must be recorded when observed.
+- This AR remains In Progress until the System Engineer verifies its four ER dependencies.
+  No independent review, human observation, remote transport or vector/matrix kernels claimed.
+- API/usage: [Operation Contracts](../../Operation-Contracts.md).
