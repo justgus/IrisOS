@@ -307,9 +307,13 @@
     {
       "id": "AR-0027",
       "name": "Standard Operation Contracts and Discovery",
-      "status": "In Progress",
+      "status": "Implemented",
       "decision": "Define a versioned catalog of operation contracts with explicit conformance, deterministic dispatch, effects, and Refract-based discovery.",
-      "conformance": "Planned"
+      "conformance": "Implemented for the approved initial catalog and local execution scope",
+      "notes": [
+        "ER-0104 through ER-0107 are Verified by System Engineer completion acceptance on 2026-10-17.",
+        "Local build, 39/39 test programs and installed-header checks passed; final-head advisory CI 39052974745 was still running at acceptance."
+      ]
     }
   ],
   "known_conformance_gaps": [

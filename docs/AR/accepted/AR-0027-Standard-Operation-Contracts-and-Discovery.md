@@ -5,7 +5,7 @@ ER-Dependencies: ER-0104, ER-0105, ER-0106, ER-0107
 
 # AR-0027 — Standard Operation Contracts and Discovery
 
-- Status: In Progress
+- Status: Implemented
 - Date: 2026-10-06
 - Owners: Mike
 
@@ -168,10 +168,21 @@ adequately through the established Refract and service interfaces.
 
 - System Engineer approved [the implementation plan](../../Plans/AR-0027-Implementation-Plan.md)
   and ER-0104–0107, resolving the open questions for the initial implementation.
-- ER-0104–0107 are Complete: immutable catalog, persisted conformance/discovery, typed contract
+- ER-0104–0107 are Verified by System Engineer acceptance: immutable catalog, persisted conformance/discovery, typed contract
   invocation, standard primitive implementations and Conch inspection are implemented on main.
 - Final local build passed and full suite passed 39/39 programs. Earlier catalog/conformance CI
   passed; final implementation CI is advisory and its result must be recorded when observed.
-- This AR remains In Progress until the System Engineer verifies its four ER dependencies.
+- The System Engineer accepted completion on 2026-10-17. All four dependency ERs are Verified.
   No independent review, human observation, remote transport or vector/matrix kernels claimed.
 - API/usage: [Operation Contracts](../../Operation-Contracts.md).
+
+### System Engineer Completion Acceptance — 2026-10-17
+
+- Explicit instruction: "mark AR-0027 as complete." Recorded as Implemented, matching the AR
+  status vocabulary, and as acceptance/verification of its completed ER-0104–0107 scope.
+- Implementation head: 278ae380e3c066cbd7a5b8449e628939b0f787b2. Local build, full 39/39
+  programs and installed-header checks passed as recorded in the implementation plan.
+- Advisory [CI run 39052974745](https://github.com/justgus/IrisOS/actions/runs/39052974745)
+  remains in_progress at acceptance: bootstrap/configure passed; build running, tests/distcheck
+  pending. No final CI pass inferred; Temporary Initial Development Mode permits acceptance
+  without waiting for advisory CI. Any subsequent failure still requires investigation.

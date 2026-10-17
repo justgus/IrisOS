@@ -1,7 +1,7 @@
 # AR-0027 Implementation Plan
 
 - Date: 2026-10-17
-- State: Implementation Complete; System Engineer ER verification pending.
+- State: Complete; System Engineer accepted AR-0027 completion on 2026-10-17.
 - Request: plan and implement AR-0027 on main under Temporary Initial Development Mode.
 - Existing local change: regenerated macOS tests/test_referee_core launcher. Preserve it locally;
   do not restore the Linux launcher after tests or include generated platform paths in commits.
@@ -66,7 +66,7 @@
 | ER-0107 | Initial standard contracts, concrete bindings and Conch inspection | ER-0106 |
 
 The System Engineer approved this plan and ER scope explicitly on 2026-10-17.
-ER-0104–0107 were Approved and are now Complete. Verification remains a System Engineer gate.
+ER-0104–0107 were Approved, implemented, and are now Verified by System Engineer acceptance.
 
 ## Delivery and validation
 
@@ -85,9 +85,9 @@ ER-0104–0107 were Approved and are now Complete. Verification remains a System
 
 ## Current checkpoint
 
-Architecture approved on 2026-10-17; all four ERs are Complete. Final build and full suite
-pass (39/39). Publish the final increment on main; final-head CI remains advisory/pending.
-AR-0027 remains In Progress until the System Engineer verifies its dependency ERs.
+Architecture and completion accepted on 2026-10-17; all four ERs are Verified and AR-0027
+is Implemented. Final increment 278ae38 is published on main. Local build/full suite pass
+(39/39); final-head CI remains advisory/in_progress at acceptance.
 Preserve the working macOS launcher and local generated libtool; neither is published.
 
 ## Requirement-to-test mapping
@@ -152,9 +152,21 @@ completed validation. `git diff --check` passes for the planning documents.
 
 ## Remaining gates and limits
 
-- The System Engineer must verify ER-0104–0107 before AR-0027 can be marked Implemented.
-  This request approved architecture/implementation and was not an Autonomous AR Batch delegation.
+- The System Engineer explicitly accepted completion on 2026-10-17: "mark AR-0027 as complete."
+  ER-0104–0107 are Verified by that decision and AR-0027 is Implemented. No independent review
+  or human observation is inferred.
 - No additional architectural ruling is pending. Runtime callbacks must be explicitly bound;
   delegated routes are inspectable but return Unsupported without a supported execution route.
 - Final-head CI result remains unclaimed until completed evidence is observed. The local generated
   launcher and libtool remain modified intentionally so local macOS builds/tests continue working.
+
+## Completion acceptance — 2026-10-17
+
+- Recorded the System Engineer's explicit completion decision in the AR, four ERs, ER-Status,
+  architecture index, and this plan. This is documentation only; no implementation changed.
+- Read-back of advisory CI 39052974745 confirmed exact head 278ae38 and in_progress:
+  bootstrap/configure succeeded; build running and unit tests/distcheck pending. No pass claimed.
+- Prior completed 39/39 local validation and header checks are retained; no test rerun or
+  Autotools regeneration was needed for this status-only change. `git diff --check` passed.
+- Existing staged generated libtool/tests/test_referee_core changes are preserved and excluded
+  from the documentation commit.
