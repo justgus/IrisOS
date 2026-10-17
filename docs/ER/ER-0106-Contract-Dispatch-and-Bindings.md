@@ -15,7 +15,7 @@ ER-Dependencies: ER-0105
 
 - ER ID: ER-0106
 - Title: Contract Dispatch and Bindings
-- Status: Approved
+- Status: Complete
 - Date: 2026-10-17
 - Owners: Mike
 - Type: Enhancement
@@ -87,3 +87,15 @@ No implementation or independent review has occurred. Proposed dedicated test ta
 - Required: No (proposed applicability).
 - Reason: deterministic local storage, metadata, invocation and shell behavior can be tested.
 - Result: Not Required for proposed local scope; no remote/hardware or human observation claimed.
+
+### Implementation evidence — 2026-10-17
+
+- Added ContractDispatcher typed resolution and process-local callback registry with explicit
+  receiver/capability/route checks and result count/type validation. Callback failures stay typed.
+- `./bootstrap.sh`, `./configure`, `make -j4`: passed for new sources/test target.
+- Focused suite (all three new contract targets plus existing registry/bootstrap/Conch) passed
+  6/6 programs; 4 new dispatch checks cover every input, ambiguity, optional/subtype/inherited
+  resolution, registered generic identity mismatches, authority/callback/result errors and reopen.
+- Sandbox execution failed before assertions on Check communication temporary-file permissions;
+  escalated rerun passed. No independent review or human observation claimed.
+- Complete; System Engineer verification remains outstanding.

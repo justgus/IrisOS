@@ -114,3 +114,6 @@ completed validation. `git diff --check` passes for the planning documents.
 
 - ER-0105 Complete: build passed; focused suite 5/5 including 3 new conformance checks.
   Legacy operation decoding remains compatible. Next ER-0106 typed contract invocation.
+
+- ER-0106 Complete: build and focused suite 6/6 pass, with 4 new dispatch checks.
+  Callback registration is process-local and fail-closed after recovery. Next ER-0107.

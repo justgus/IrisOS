@@ -30,3 +30,16 @@ Local routes have no destination; Service and ObjectSystem routes require a dest
 OperationRegistry::list_conformances preserves declaring owner and inheritance depth; the object
 view loads the object's stored type. Discovery revalidates claims against the catalog and fails on
 corrupt metadata. It does not issue capabilities or create per-object authority overrides.
+
+ContractDispatcher resolves an exact contract key using every typed input. It follows existing
+exact/subtype, omitted-optional-argument, and declaring-depth precedence; tied candidates return
+FailedPrecondition with an ambiguity diagnostic. It takes an input vector, so a separate untrusted
+argument count cannot bypass type checks. No implicit conversion or generic inference occurs.
+
+Invoke checks object/class receiver shape, required capabilities and execution route before a
+registered callback runs. Missing callbacks require explicit runtime rebinding; delegated routes
+return Unsupported in this local implementation. Callback errors propagate and exceptions become
+Internal errors. Returned values must match declared output count/types; results never imply
+assignment to a caller-provided destination. Callbacks remain responsible for their documented
+payload semantics and declared effects. Type tags are trusted local runtime metadata, not a new
+remote authentication mechanism.

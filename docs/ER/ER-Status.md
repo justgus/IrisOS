@@ -115,5 +115,5 @@
 - ER-0103 — Verified
 - ER-0104 — Complete
 - ER-0105 — Complete
-- ER-0106 — Approved
+- ER-0106 — Complete
 - ER-0107 — Approved
