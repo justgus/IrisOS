@@ -116,7 +116,8 @@ The System Engineer approved this approach on 2026-10-15.
   assertion corrected; no implementation assertion failure was concealed.
 - [Independent review](../Plans/AR-Batches/reviews/ER-0100-independent-review-2026-10-15.md): Pass
   after moving decoding inside bad_alloc handling; injected failure proves quota restoration.
-- Complete; implementation CI remains pending before Verified. Independent Live Pass: Not Required.
+- Implementation Complete at publication; subsequent CI verification is recorded below.
+  Independent Live Pass: Not Required.
 
 ### CI Verification — 2026-10-15
 

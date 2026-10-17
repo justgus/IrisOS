@@ -5,7 +5,7 @@ ER-Dependencies: ER-0057, ER-0058, ER-0059, ER-0060, ER-0061, ER-0062, ER-0100, 
 
 # AR-0022 — Staged Service Plane Delivery
 
-- Status: In Progress
+- Status: Implemented
 - Date: 2026-03-14
 - Owners: Mike
 
@@ -84,7 +84,8 @@ Amend the Service Plane architecture to define explicit delivery stages.
 ## Next Steps
 
 - ER-0057 verification was confirmed by the System Engineer on 2026-10-14.
-- Define later Stage E services through separate accepted implementation work.
+- Approved Stage E services are implemented and verified under ER-0100–0102. Additional
+  system services require separately accepted implementation work.
 
 ## Implementation Progress
 
@@ -95,11 +96,25 @@ Amend the Service Plane architecture to define explicit delivery stages.
 - Verified ER-0058 through ER-0061 provide capability context persistence, task attachment,
   boundary enforcement, and sandbox identity/isolation hooks for Stage D.
 - Verified ER-0062 provides a metadata-only memory service baseline for Stage E. Allocation,
-  network services, and a first-class sandbox/capability service are broader follow-on scope.
-- This AR remains In Progress because its staged recommendation includes unfinished Stage E scope.
+  network services, and a first-class sandbox/capability service are delivered by Verified
+  ER-0100–0102 under the bounded scope approved below.
 
 ### Stage E Ruling — 2026-10-15
 
 - The System Engineer approved the bounded owned-allocation, local Comms loopback network, and
-  read-only capability/sandbox inspection service scope in ER-0100–0102. These ERs are Approved.
-  This AR remains In Progress until their implementation and verification complete.
+  read-only capability/sandbox inspection service scope in ER-0100–0102. This approval authorized
+  their implementation; all three ERs are now Verified on the evidence below.
+
+### Stage E Completion — 2026-10-17
+
+- ER-0100 provides bounded owned allocation with owner checks and deterministic release;
+  ER-0101 provides authorized local Comms sessions and packet round trips; ER-0102 provides
+  read-only caller-filtered capability/sandbox inspection. All nine listed ER dependencies
+  are Verified. Existing Stage A–D delivery and verification remain intact.
+- Separate independent service reviews passed with no open findings. Corrected local validation
+  passed 35/35 programs. [Linux CI run 38831614893](https://github.com/justgus/IrisOS/actions/runs/38831614893)
+  passed bootstrap/configure/build/unit tests/distcheck for `6e5677a`, including both final services
+  and the test deadline repair. Prior ER-0100 exact-head CI also passed.
+- In Progress -> Implemented for the accepted bounded stages. No cross-host networking, raw
+  memory addresses, grant mutation, or new OS sandbox enforcement is claimed; additional services
+  remain future work. Independent Live Pass is Not Required for the approved Stage E local APIs.

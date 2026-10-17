@@ -81,15 +81,15 @@ stated precisely.
   The previously linked ERs (ER-0055/0078/0079/0080) are Verified. The corresponding registry,
   bootstrap, and Conch tests pass in fresh `TMPDIR=/private/tmp make check` (31/31, outside the sandbox).
 - Operations also persist and expose `required_capabilities`. Whether this satisfies the AR's
-  undefined extended policy metadata requirement awaits System Engineer clarification. This AR
-  remains In Progress; no broader policy architecture or completion is inferred by the reconciliation.
+  extended policy metadata requirement was accepted by the System Engineer on 2026-10-15.
+  All listed dependency ERs are Verified; the reconciliation below records completion.
 
 ### Existing Metadata Repair (2026-10-15)
 
 - Independent review found that malformed capabilities containers can decode as empty requirements.
   Batch-approved ER-0103 validates the already-defined array-of-strings format and tests file-backed
-  capability persistence and inherited operation listing. This repair does not resolve the pending
-  extended policy scope ruling or claim completion of this AR.
+  capability persistence and inherited operation listing. This repair does not define a broader
+  policy model; the System Engineer separately accepted the existing metadata scope below.
 
 ### System Engineer Ruling and Reconciliation — 2026-10-15
 

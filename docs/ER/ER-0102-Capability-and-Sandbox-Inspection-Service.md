@@ -15,7 +15,7 @@ ER-Dependencies: ER-0057, ER-0058, ER-0060, ER-0061
 
 - ER ID: ER-0102
 - Title: Capability and Sandbox Inspection Service
-- Status: Complete
+- Status: Verified
 - Date: 2026-10-14
 - Owners: Mike
 - Type: Enhancement
@@ -108,3 +108,13 @@ Engineer approved this scope on 2026-10-15.
 - [Independent review](../Plans/AR-Batches/reviews/ER-0102-independent-review-2026-10-15.md):
   all six criteria Pass, no findings. Independent Live Pass: Not Required.
 - Complete; implementation CI remains pending before Verified.
+
+### CI Verification — 2026-10-17
+
+- Corrected combined implementation head `6e5677ae522e4b22de42931fae7e0604d6f503cc`
+  passed [Linux CI run 38831614893](https://github.com/justgus/IrisOS/actions/runs/38831614893),
+  completed 2026-10-16: bootstrap, configure, build, unit tests, and distcheck all succeeded.
+- Prior independent criterion review has no open findings; corrected local full suite passed
+  35/35. Independent Live Pass: Not Required under the approved bounded scope.
+- Complete -> Verified on completed evidence. This reconciliation changes documentation only;
+  no fresh local build/test run or human observation is claimed.

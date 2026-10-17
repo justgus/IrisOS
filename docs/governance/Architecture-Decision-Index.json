@@ -250,13 +250,13 @@
     {
       "id": "AR-0022",
       "name": "Staged Service Plane Delivery",
-      "status": "In Progress",
+      "status": "Implemented",
       "decision": "Define Service Plane delivery stages A through E so implementation can close one maturity level at a time.",
-      "conformance": "Staged; expanded services pending",
+      "conformance": "Implemented for accepted stages A through E",
       "notes": [
         "ER-0057 implements service host lifecycle and persistent descriptor discovery; Verified status and prior live verification were confirmed by the System Engineer on 2026-10-14.",
         "ER-0058 through ER-0061 are Verified for Stage D; ER-0062 provides a Verified metadata-only memory service baseline for Stage E.",
-        "Allocation, network services, and first-class sandbox/capability services remain follow-on Stage E scope."
+        "ER-0100 through ER-0102 are Verified for approved bounded allocation, local Comms network, and read-only capability/sandbox inspection services; independent reviews, local 35/35 tests, and corrected-head Linux CI 38831614893 passed."
       ]
     },
     {

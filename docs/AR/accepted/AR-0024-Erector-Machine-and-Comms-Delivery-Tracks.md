@@ -72,12 +72,13 @@ Define explicit delivery tracks for Machine and Comms.
   capability handles and leases (`authority.cc`); and transport/session/protocol compatibility and
   Machine mappings (`src/comms/transport_session.cc`).
 - ER-0070's Proposed label was stale: its construction/equality/bounds criteria have matching
-  source and passing tests. It is now Complete, matching ER-0071 through ER-0074. No ER is marked
-  Verified by this reconciliation.
+  source and passing tests. That audit moved it to Complete, matching ER-0071 through ER-0074;
+  the later accepted-evidence reconciliation below verifies these ERs.
 - Fresh `TMPDIR=/private/tmp make check` passed 31/31 outside the sandbox. The relevant suites
   passed 8 Machine primitive checks, 6 inventory checks, 6 authority checks, and 13 transport/session
   checks. These are local automated results, not Independent Live Pass evidence.
-- Independent Live Pass and System Engineer verification remain Pending. Track 4 implements the
+- The System Engineer accepted automated evidence on 2026-10-15; Independent Live Pass is Not
+  Required for this scope. Track 4 implements the
   accepted metadata/mapping foundations and a bounded loopback packet path; full drivers and a
   complete network stack remain outside v1.
 
@@ -92,8 +93,8 @@ Define explicit delivery tracks for Machine and Comms.
   The independent counterexample rerun rejects all originally accepted forged paths.
 - [Independent implementation review](../../Plans/AR-Batches/reviews/AR-0024-independent-review-2026-10-15.md)
   passed all implementation criteria and fresh focused/full validation with no open findings.
-  The existing Independent Live Pass applicability ruling remains pending; no ER verification
-  transition is claimed yet.
+  The System Engineer subsequently accepted these automated checks; ER-0070–0074 are Verified
+  under the reconciliation below.
 
 ### System Engineer Ruling and Reconciliation — 2026-10-15
 

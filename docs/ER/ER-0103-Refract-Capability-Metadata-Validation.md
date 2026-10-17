@@ -54,8 +54,8 @@ neither defines a broader policy model nor declares the entire extended profile 
 
 Validate the existing capabilities shape at operation decoding, following existing typed corruption
 handling. Add tests against raw stored CBOR and fresh registry instances after file-backed reopen.
-This bounded repair is authorized by the selected AR-0023 batch and does not depend on the pending
-architectural scope ruling. It preserves the established encoded format and all valid semantics.
+This bounded repair was authorized by the selected AR-0023 batch independently of the broader
+profile ruling. It preserves the established encoded format and all valid semantics.
 
 ## Acceptance Criteria
 
@@ -68,7 +68,8 @@ architectural scope ruling. It preserves the established encoded format and all 
 
 - Malformed historic records will now fail explicitly; no migration is needed for records produced
   by the existing encoder. No claim is made that malformed records were previously authoritative.
-- AR-0023 policy-scope ruling remains pending independently of this format repair.
+- The System Engineer accepted required_capabilities as the AR-0023 extended policy scope on
+  2026-10-15. That ruling is separate from this format repair.
 
 ## Dependencies
 

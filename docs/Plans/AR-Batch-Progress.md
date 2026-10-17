@@ -2,7 +2,7 @@
 
 - Requested range: AR-0022 through AR-0024; implementation and independent verification.
 - Started: 2026-10-14.
-- Current state: In Progress; Stage E implemented/reviewed locally; network and inspection CI pending.
+- Current state: Complete; all selected ARs Implemented and all listed dependency ERs Verified.
 - Process: Temporary Initial Development Mode; main, cohesive commits, direct pushes, advisory CI.
 - Goal: complete eligible accepted scope and independent verification; preserve architectural and human-observation gates.
 - Prior reconciliation is preserved in [the archive](AR-Batches/AR-reconciliation-2026-10-14-before-0022-0024.md).
@@ -62,7 +62,7 @@
 - Independent reviewer agents may not survive context renewal. Their committed reports are the
   evidence; do not claim new reviews from remembered conversations or merely rerun all passed gates.
 
-### Pending System Engineer Rulings
+### Historical Rulings Requested (Resolved 2026-10-15)
 
 - AR-0022: approve or revise initial Stage E scope: in-process owned-buffer allocation with total,
   per-subject, and count limits plus owner checks; local Comms loopback network service; read-only
@@ -75,14 +75,14 @@
 - AR-0024: may independent API/code review and executable tests replace the blanket Pending human
   live-pass language in ER-0070–0074? Original criteria are locally testable and hardware is excluded,
   but AGENTS.md preserves existing human gates until a ruling or reported human observation arrives.
-- The async questions have no recorded answers. A new context should present these decisions if
-  they remain unanswered, with no repeated requests for already-authorized routine implementation.
+- These were the original unanswered questions. The explicit System Engineer response recorded
+  below resolved all three; do not request these rulings again.
 
 ## AR Queue
 
 | AR | Eligibility | Status | Remaining work | Evidence / blocker |
 |---|---|---|---|---|
-| AR-0022 | Accepted; selected | In Progress | ER-0100–0102 Stage E | Drafted scope approved by System Engineer |
+| AR-0022 | Accepted; selected | Implemented | None | All dependencies Verified; approved Stage E and corrected-head CI pass |
 | AR-0023 | Accepted; selected | Implemented | None | All dependencies Verified; policy scope accepted |
 | AR-0024 | Existing In Progress; explicitly resumed | Implemented | None | ER-0070–0074 Verified; automated evidence accepted |
 
@@ -91,8 +91,8 @@
 | ER | Parent | State | Next step |
 |---|---|---|---|
 | ER-0100 | AR-0022 | Verified | Published a53cf93; exact-head CI 38811469029 success |
-| ER-0101 | AR-0022/0024 | Complete | Independent review and 34/34 full tests passed; implementation CI next |
-| ER-0102 | AR-0022 | Complete | Independent review and 35/35 full tests pass; publish and observe CI |
+| ER-0101 | AR-0022/0024 | Verified | Corrected-head CI 38831614893 success; independent review Pass |
+| ER-0102 | AR-0022 | Verified | Corrected-head CI 38831614893 success; independent review Pass |
 | ER-0103 | AR-0023 | Verified | None; exact-head CI passed |
 
 - ER-0057–0062, ER-0055/0078–0080, and ER-0070–0074 are Verified.
@@ -100,15 +100,13 @@
 
 ## Current Item
 
-- All three Stage E services implemented with dedicated tests and independent criterion reports.
-- ER-0100 Verified: published a53cf93; Linux run 38811469029 completed success including distcheck.
-- ER-0101 Complete: published cc54489; Linux run 38813348896 in_progress at last observation.
-- ER-0102 Complete: new inspection service, build integration, tests, docs and independent report
-  ready for publication; build and full suite 35/35 pass. Independent Live Pass Not Required.
-- Next: publish ER-0102, observe existing implementation CI runs, reconcile only proven statuses,
-  then audit final AR-0022 completion against all dependencies and the approved Stage E scope.
-- Autotools commands `./bootstrap.sh`, `./configure` passed for each new source/test target.
-  Generated tracked libtool/tests/test_referee_core excluded from commits.
+- Implementation is published on main at `6e5677ae522e4b22de42931fae7e0604d6f503cc`.
+- Corrected-head CI [38831614893](https://github.com/justgus/IrisOS/actions/runs/38831614893)
+  completed success on 2026-10-16, including build, unit tests and distcheck.
+- ER-0100–0103 Verified; AR-0022–0024 Implemented. Independent reviews have no open findings;
+  no architectural ruling, human gate, or implementation blocker remains for the selected scope.
+- Final documentation/issue reconciliation completes this batch directly on main. No source or
+  generated output changed, no local tests repeated, and no Autotools regeneration performed.
 
 ## Decisions and Blockers
 
@@ -118,10 +116,11 @@
 
 ## Completion Summary
 
-- Published AR-0024 repair 982379e; independent implementation review and CI passed. ERs remain
-  Complete pending the existing human-gate ruling.
+- AR-0024 repair 982379e, independent implementation review, and CI passed. ER-0070–0074 are
+  Verified following the System Engineer acceptance of automated evidence.
 - ER-0103 Verified, published as a3ee08a; parent validation, independent review, and exact-head CI passed.
-- AR-0023 and AR-0024 are Implemented following the explicit rulings; AR-0022 remains In Progress.
+- AR-0022–0024 are Implemented; ER-0101/0102 verification closes approved Stage E using
+  completed corrected-head CI and the existing independent/local validation evidence.
 
 ## Independent Findings and Repair (2026-10-15)
 
@@ -331,3 +330,28 @@
   `git diff --check` passed. Production service source unchanged; existing independent reviews retained.
 - Repair changes only test_network_service.cc, ER-0101 evidence, and this ledger. No regeneration.
   New-head CI must pass before ER-0101/0102 verification. Generated launcher restored before commit.
+
+## Final Resume Reconciliation — 2026-10-17
+
+- Reloaded instructions, ledger, canonical ARs/ERs, and committed independent criterion reports.
+  Preserved the unfinished documentation corrections and final independent audit from the prior
+  session. No new independent review is claimed.
+- `git fetch origin main` passed; HEAD and origin/main both resolve to
+  `6e5677ae522e4b22de42931fae7e0604d6f503cc`. Existing work is on main as authorized.
+- `gh run view 38831614893 --json headSha,status,conclusion,url,jobs` returned completed/success
+  for that exact head. Bootstrap/configure/build/unit tests/distcheck all passed. This is the
+  terminal evidence missing at the prior audit, not an assumption from the old watcher.
+- ER-0101/0102 Complete -> Verified; AR-0022 In Progress -> Implemented in its canonical document
+  and architecture index. ER-Status and current queue tables reconciled with those transitions.
+- Preserved prior AR-0023/0024 System Engineer rulings and corrected stale pending statements.
+  No additional architecture scope, human observation, test execution, or DR verification claimed.
+- `git diff --check` passed. Architecture JSON parses; all three canonical AR statuses match
+  the index and every listed ER dependency is Verified (9 for AR-0022, 5 for AR-0023, 13 for
+  AR-0024). ER-Status matches the final two ER transitions.
+- `bash scripts/issue_sync.sh` succeeded for ER-0101/#355 and ER-0102/#356. AR-0022 sync updated
+  body/labels but hit the previously recorded Bash empty-array failure at line 180; closure is
+  completed directly with `gh issue close 290` after checking every dependency. No script change.
+- GitHub read-back confirms AR #290/#291/#292 and ER #355/#356 are closed with status:done;
+  ER issue bodies say Verified. Removed AR-0024's stale status:accepted label.
+- Final files: AR-0022/0023/0024, ER-0100/0101/0102/0103, ER-Status, architecture index, this
+  ledger, and the preserved final independent audit report. Documentation only; no regeneration.
