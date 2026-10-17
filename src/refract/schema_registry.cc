@@ -1,4 +1,6 @@
 #include "refract/schema_registry.h"
+#include "refract/contract_conformance.h"
+#include "refract/contract_metadata.h"
 
 #include <nlohmann/json.hpp>
 
@@ -357,6 +359,7 @@ static OperationScope scope_from_string(std::string_view scope) {
 
 static nlohmann::json to_json(const OperationDefinition& op) {
   nlohmann::json j;
+  encode_contract_metadata(j, op);
   j["name"] = op.name;
   j["scope"] = scope_to_string(op.scope);
   j["signature"] = to_json(op.signature);
@@ -726,6 +729,8 @@ static SignatureDefinition signature_from_json(const nlohmann::json& j) {
 
 static referee::Result<OperationDefinition> operation_from_json(const nlohmann::json& j) {
   OperationDefinition op{};
+  auto metadata = decode_contract_metadata(j, op);
+  if (!metadata) return referee::Result<OperationDefinition>::err(*metadata.error);
   op.name = j.value("name", "");
   if (j.contains("scope")) op.scope = scope_from_string(j.at("scope").get<std::string>());
   if (j.contains("signature")) op.signature = signature_from_json(j.at("signature"));
@@ -1182,6 +1187,9 @@ referee::Result<DefinitionRecord> SchemaRegistry::register_definition(const Type
   if (!normalizedR) return referee::Result<DefinitionRecord>::err(normalizedR.error.value());
 
   const auto& normalized = normalizedR.value.value();
+  OperationCatalog catalog(store_);
+  auto conformance = validate_contract_operations(catalog, normalized);
+  if (!conformance) return referee::Result<DefinitionRecord>::err(*conformance.error);
   auto payload = encode_definition(normalized);
   auto definition_id = referee::ObjectID::random();
   auto createR = store_.create_object_with_id(definition_id, kTypeDefinitionType, definition_id,
@@ -1219,6 +1227,9 @@ referee::Result<DefinitionRecord> SchemaRegistry::register_definition_with_id(
   if (!normalizedR) return referee::Result<DefinitionRecord>::err(normalizedR.error.value());
 
   const auto& normalized = normalizedR.value.value();
+  OperationCatalog catalog(store_);
+  auto conformance = validate_contract_operations(catalog, normalized);
+  if (!conformance) return referee::Result<DefinitionRecord>::err(*conformance.error);
   auto payload = encode_definition(normalized);
   auto createR = store_.create_object_with_id(definition_id, kTypeDefinitionType, definition_id,
                                               payload);

@@ -15,7 +15,7 @@ ER-Dependencies: ER-0104
 
 - ER ID: ER-0105
 - Title: Operation Conformance and Discovery
-- Status: Approved
+- Status: Complete
 - Date: 2026-10-17
 - Owners: Mike
 - Type: Enhancement
@@ -86,3 +86,15 @@ No implementation or independent review has occurred. Proposed dedicated test ta
 - Required: No (proposed applicability).
 - Reason: deterministic local storage, metadata, invocation and shell behavior can be tested.
 - Result: Not Required for proposed local scope; no remote/hardware or human observation claimed.
+
+### Implementation evidence — 2026-10-17
+
+- Explicit conformance/substitutions/binding metadata persists alongside existing operations.
+  Schema registration validates the entire claim before publishing; discovery revalidates reads.
+- `./bootstrap.sh`, `./configure`, `make -j4`: passed for new sources and test target.
+- Focused suite including test_operation_catalog in addition to the planned targets passed 5/5
+  programs; 3 new conformance checks cover incompatible/unknown claims, inheritance/object views,
+  file-backed reopen and malformed stored metadata. Existing legacy metadata suites pass.
+- Sandbox execution failed before assertions on Check communication-file permissions; escalated
+  rerun passed. No generated output published and no independent review claimed.
+- Complete; System Engineer verification remains outstanding.

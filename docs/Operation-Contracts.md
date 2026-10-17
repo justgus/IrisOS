@@ -18,3 +18,15 @@ requirements; it does not grant authority.
 Catalog calls are serialized, following SchemaRegistry's existing ownership model. The backing
 SqliteStore must outlive the catalog. Contracts use ordinary Referee objects, not a separate
 network discovery protocol. The catalog API preserves typed storage errors.
+
+Types advertise support through OperationDefinition::conformances, including an exact contract key
+and explicit substitutions for every contract type parameter. Self must name the declaring type.
+Registration validates scope, ordered concrete signature and optionality, required capabilities,
+and contract effects before storing a definition. Compatible names alone never establish support.
+Existing operations without conformance retain their previous encoding and behavior.
+
+Each conforming operation also has an implementation ObjectID/version and execution route.
+Local routes have no destination; Service and ObjectSystem routes require a destination string.
+OperationRegistry::list_conformances preserves declaring owner and inheritance depth; the object
+view loads the object's stored type. Discovery revalidates claims against the catalog and fails on
+corrupt metadata. It does not issue capabilities or create per-object authority overrides.

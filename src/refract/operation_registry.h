@@ -1,6 +1,7 @@
 #pragma once
 
 #include "refract/schema_registry.h"
+#include "refract/contract_conformance.h"
 
 #include <functional>
 #include <vector>
@@ -18,6 +19,14 @@ public:
       referee::TypeID type,
       OperationScope scope,
       bool include_inherited = true);
+
+  referee::Result<std::vector<ConformingOperation>> list_conformances(
+      referee::TypeID type, OperationCatalog& catalog,
+      std::optional<ContractKey> contract = {}, bool include_inherited = true);
+
+  referee::Result<std::vector<ConformingOperation>> list_object_conformances(
+      referee::ObjectID object, referee::SqliteStore& store, OperationCatalog& catalog,
+      std::optional<ContractKey> contract = {});
 
 private:
   SchemaRegistry& registry_;

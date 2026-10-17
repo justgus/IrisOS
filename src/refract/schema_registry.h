@@ -1,6 +1,7 @@
 #pragma once
 
 #include "referee/referee.h"
+#include "refract/contract_types.h"
 #include "referee_sqlite/sqlite_store.h"
 
 #include <cstdint>
@@ -84,6 +85,8 @@ struct OperationDefinition {
   std::vector<std::string> required_capabilities{};
   std::vector<OperationEffect> effects{};
   std::optional<DocumentationMetadata> documentation;
+  std::vector<ContractConformance> conformances{};
+  std::optional<OperationBinding> binding;
 };
 
 enum class RelationshipConstraintKind {

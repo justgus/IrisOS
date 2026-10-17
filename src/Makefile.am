@@ -78,6 +78,10 @@ libreferee_la_SOURCES = \
    refract/contract_types.h \
    refract/operation_catalog.h \
    refract/operation_catalog.cc \
+   refract/contract_metadata.h \
+   refract/contract_metadata.cc \
+   refract/contract_conformance.h \
+   refract/contract_conformance.cc \
    refract/dispatch.h \
    refract/dispatch.cc \
    refract/operation_registry.h \
@@ -91,6 +95,7 @@ libreferee_la_CPPFLAGS = $(SQLITE_CFLAGS) $(NLOHMANN_JSON_CFLAGS)
 libreferee_la_LIBADD = $(SQLITE_LIBS)
 
 nobase_include_HEADERS = referee/referee.h \
+   refract/contract_conformance.h \
    refract/contract_types.h \
    refract/operation_catalog.h \
    services/allocation_service.h \

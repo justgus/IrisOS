@@ -111,3 +111,6 @@ completed validation. `git diff --check` passes for the planning documents.
 
 - ER-0104 Complete: build and focused suite 4/4 pass (3 new catalog checks); no verification claim.
   New target integration required ./bootstrap.sh and ./configure; both passed. Next ER-0105.
+
+- ER-0105 Complete: build passed; focused suite 5/5 including 3 new conformance checks.
+  Legacy operation decoding remains compatible. Next ER-0106 typed contract invocation.

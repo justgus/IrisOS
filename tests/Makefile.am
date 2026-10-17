@@ -116,3 +116,6 @@ noinst_HEADERS = contract_test_support.h
 TESTS += test_operation_catalog
 test_operation_catalog_SOURCES = test_operation_catalog.cc
 test_operation_catalog_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
+TESTS += test_operation_conformance
+test_operation_conformance_SOURCES = test_operation_conformance.cc
+test_operation_conformance_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
