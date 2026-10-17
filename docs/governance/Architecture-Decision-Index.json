@@ -307,7 +307,7 @@
     {
       "id": "AR-0027",
       "name": "Standard Operation Contracts and Discovery",
-      "status": "Accepted",
+      "status": "In Progress",
       "decision": "Define a versioned catalog of operation contracts with explicit conformance, deterministic dispatch, effects, and Refract-based discovery.",
       "conformance": "Planned"
     }

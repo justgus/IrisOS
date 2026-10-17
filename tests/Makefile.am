@@ -111,3 +111,8 @@ test_network_service_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
 
 test_inspection_service_SOURCES = test_inspection_service.cc
 test_inspection_service_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la
+
+noinst_HEADERS = contract_test_support.h
+TESTS += test_operation_catalog
+test_operation_catalog_SOURCES = test_operation_catalog.cc
+test_operation_catalog_LDADD = $(CHECK_LIBS) $(top_builddir)/src/libreferee.la

@@ -1,10 +1,11 @@
 ---
 GitHub-Issue: N/A
+ER-Dependencies: ER-0104, ER-0105, ER-0106, ER-0107
 ---
 
 # AR-0027 — Standard Operation Contracts and Discovery
 
-- Status: Accepted
+- Status: In Progress
 - Date: 2026-10-06
 - Owners: Mike
 
@@ -162,3 +163,9 @@ adequately through the established Refract and service interfaces.
 - Draft ERs for catalog metadata, conformance and discovery, and an initial set of core contracts.
 - Plan vector and matrix operations as an early catalog domain after generic signature and dispatch
   rules are settled.
+
+## Implementation Progress — 2026-10-17
+
+- System Engineer approved [the implementation plan](../../Plans/AR-0027-Implementation-Plan.md)
+  and ER-0104–0107, resolving the open questions for the initial implementation.
+- Implementation proceeds in dependency order on main. No verification claimed yet.
