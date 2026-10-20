@@ -1,0 +1,10 @@
+define type --json '{"name":"AuditAuthoring","namespace":"Audit","fields":[{"name":"value","type":"U64","required":true}],"operations":[{"name":"promised","scope":"object","signature":{"params":[],"outputs":[]}}]}'
+show type Audit::AuditAuthoring
+new Audit::AuditAuthoring value:="wrong type"
+new --json '{"type":"Audit::AuditAuthoring","payload":{}}'
+let list=new Crate::List value:="arbitrary"
+call @list size
+let num=new U64 value:=42
+call @num print
+show type String
+quit

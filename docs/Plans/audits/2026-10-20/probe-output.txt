@@ -1,0 +1,14 @@
+duplicate_identity_accepted=1
+duplicate_latest_payload=2
+object_id_text_length=32
+public_cbor_helper_exception_escaped=1
+unknown_generic_base_accepted=1
+list_without_type_argument_accepted=1
+zero_width_invalid_endian_packet_accepted=1
+inconsistent_argument_type_count_accepted=1
+torn_tail_first_reopen_ok=1
+torn_tail_prior_record_present=1
+torn_tail_incomplete_record_present=0
+torn_tail_second_reopen_ok=0
+torn_tail_second_reopen_error=invalid object segment tag
+undetected_changed_payload=2

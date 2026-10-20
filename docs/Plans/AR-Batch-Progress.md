@@ -1,5 +1,16 @@
 # Autonomous AR Batch Progress
 
+## Current Follow-on Audit — 2026-10-20
+
+- Resumed from `docs/NOTE-FOR-CODEX.md`: reassess every AR/ER completion claim against architecture.
+- [Audit report](AR-Implementation-Audit-2026-10-20.md) inventories 27 ARs and 115 ERs, separates
+  concrete gaps from accepted narrow scope, and records executable storage/identity/generic/dispatch
+  counterexamples plus actual Conch output. This is not a fresh verification of every ER.
+- Proposed status corrections and uncovered requirements await System Engineer disposition;
+  canonical statuses and existing human acceptances are preserved. No implementation repair started.
+- Baseline AR-0027 implementation CI 39052974745 is now confirmed completed/success for 278ae38.
+- The completed AR-0022–0024 batch record below remains historical evidence for its accepted scope.
+
 - Requested range: AR-0022 through AR-0024; implementation and independent verification.
 - Started: 2026-10-14.
 - Current state: Complete; all selected ARs Implemented and all listed dependency ERs Verified.

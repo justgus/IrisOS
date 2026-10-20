@@ -1,0 +1,29 @@
+session cb834c6e02984ce4a62709418f3c9abc
+defined type Audit::AuditAuthoring id=0x2a0d5f0ae5f5e26e def=6773ec100e54410b8ad6d9f364f214f7
+session update: created 0 reused 0
+type Audit::AuditAuthoring v1
+fields
+  value type=0x1002 required constraints=required
+session update: created 0 reused 0
+created bbb98a04615944489055e5be3327b2d4
+session update: created 0 reused 0
+error: missing required field 'value'
+session update: created 0 reused 0
+list = fcfa4c0211184638b22a1ebc912859d0
+session update: created 0 reused 0
+call ok
+session update: created 0 reused 0
+num = 56ac12d6e9af44b4a4e83c6821d02cbc
+session update: created 0 reused 0
+
+call ok
+session update: created 0 reused 0
+type Refract::String v1
+operations
+  object
+    compare(other:0x1001) -> order:0x1008
+    print()
+    render()
+    to_string() -> text:0x1001
+session update: created 0 reused 0
+session update: created 0 reused 0
