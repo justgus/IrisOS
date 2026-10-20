@@ -5,9 +5,17 @@ ER-Dependencies: ER-0031, ER-0032, ER-0033, ER-0039, ER-0090, ER-0093, ER-0094, 
 
 # AR-0017 — Collections, Math Types, and Units
 
-- Status: Implemented
+- Status: Pending Review
 - Date: 2026-02-21
 - Owners: Mike
+
+## Implementation Review — 2026-10-20
+
+The System Engineer returned this AR to `Pending Review` after the
+[implementation audit](../../Plans/AR-Implementation-Audit-2026-10-20.md) identified
+implementation gaps (F8). This status supersedes earlier completion claims while the
+remaining work and ER coverage are reviewed. The architectural decision remains accepted;
+existing implementation evidence and ER verification records are preserved.
 
 ## Context
 

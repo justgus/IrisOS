@@ -7,14 +7,16 @@
   including ER-0045.1–0045.4 and ER-0047.1–0047.4.
 - This is an implementation engineer's source/coverage audit with targeted counterexamples.
   It is not independent review, a new verification of every ER, or a human live pass.
-- Canonical statuses remain as recorded pending System Engineer disposition. Audit assessments
-  below are separate from those statuses. No architecture, ER acceptance criteria, or prior
-  human acceptance has been changed to make the implementation appear complete.
+- On 2026-10-20, the System Engineer directed the eleven ARs with concrete gaps to be marked
+  `Pending Review`. Their canonical documents and architecture index now reflect that disposition.
+  Architecture decisions, ER acceptance criteria, and existing verification evidence are preserved.
 
 ## Result
 
-The recorded state is 27 Implemented ARs and 115 Verified ERs. That state overstates the implemented
-architecture. Eleven ARs have concrete gaps described below; six need their broader architecture
+At the audit baseline, the recorded state was 27 Implemented ARs and 115 Verified ERs. That state
+overstated the implemented architecture. After System Engineer disposition, 11 ARs are Pending
+Review and 16 remain Implemented; the ER statuses are unchanged. Eleven ARs have concrete gaps
+described below; six need their broader architecture
 reconciled with narrower delivered scope. Ten have no additional direct gap identified in this
 survey of their accepted scope. The latter assessment does not establish that those implementations
 are defect-free or independent of the storage findings.
@@ -30,27 +32,27 @@ All recorded statuses in this table are read from the canonical AR documents.
 
 | AR | Title | Recorded status | Audit assessment and remaining work |
 |---|---|---|---|
-| AR-0001 | Expected-Style Error Model | Implemented | Concrete gap, F1: public serialization helpers and ObjectID parsing throw across their API boundary. Existing Result/NotFound work remains present. |
-| AR-0002 | Object Identity and Versioning Semantics | Implemented | Concrete gap, F2: duplicate identity accepted; external form is 32 hex digits; cryptographic generation guarantee explicitly disclaimed. No dedicated identity ER covers these requirements. |
-| AR-0003 | Storage Layout Strategy | Implemented | Concrete gap, F3/F4: segment backend exists, but checksum, durable-write and torn-tail recovery requirements are unmet. V0 SQLite alignment text is stale relative to the implemented backend. |
-| AR-0004 | Index and Graph Storage Strategy | Implemented | Concrete recovery gap, F4. Rebuild exists, but successful recovery does not leave the store safe for subsequent append/reopen. Backend recommendation text also needs reconciliation. |
+| AR-0001 | Expected-Style Error Model | Pending Review | Concrete gap, F1: public serialization helpers and ObjectID parsing throw across their API boundary. Existing Result/NotFound work remains present. |
+| AR-0002 | Object Identity and Versioning Semantics | Pending Review | Concrete gap, F2: duplicate identity accepted; external form is 32 hex digits; cryptographic generation guarantee explicitly disclaimed. No dedicated identity ER covers these requirements. |
+| AR-0003 | Storage Layout Strategy | Pending Review | Concrete gap, F3/F4: segment backend exists, but checksum, durable-write and torn-tail recovery requirements are unmet. V0 SQLite alignment text is stale relative to the implemented backend. |
+| AR-0004 | Index and Graph Storage Strategy | Pending Review | Concrete recovery gap, F4. Rebuild exists, but successful recovery does not leave the store safe for subsequent append/reopen. Backend recommendation text also needs reconciliation. |
 | AR-0005 | Service Plane Model | Implemented | Scope reconciliation, S1: bounded stages were accepted; registry is a C++ registry rather than a ServiceObject, and local dispatch does not establish the broader delivery/isolation model. Preserve ER-0057 acceptance. |
 | AR-0006 | CEO/Exec Runtime Model | Implemented | Scope reconciliation, S2: task state/supervision, waitables and explicit reactor wake paths exist. No executable task scheduler/continuation, yield/sleep/timer surface is established by the registry. Preserve the 2026-10-14 acceptance of the established runtime. |
 | AR-0007 | Refract Reflection Graph | Implemented | Scope reconciliation, S3: persisted inline metadata and accepted extended profiles exist; independently addressable Field/Signature/Operation/Documentation objects and variadic signature parameters are not demonstrated. |
 | AR-0008 | Erector Subsystems | Implemented | Scope reconciliation, S4: Machine/Comms foundations exist; the larger primitive/descriptor/handle taxonomy is not delivered in full. Approved AR-0024 tracks remain distinct from the umbrella list. |
-| AR-0009 | Referee Object Store | Implemented | Concrete gap, F2/F5: creation always uses object revision 1; no API appends a new revision under a stable logical ObjectID. Definition supersession is a separate feature. |
+| AR-0009 | Referee Object Store | Pending Review | Concrete gap, F2/F5: creation always uses object revision 1; no API appends a new revision under a stable logical ObjectID. Definition supersession is a separate feature. |
 | AR-0010 | Comms Subsystem | Implemented | Scope reconciliation, S4: loopback and protocol/mapping metadata exist; TCP/UDP/TLS/SSH, physical links, addressing and protocol implementations listed in this umbrella are not realized. |
 | AR-0011 | Vizier Interpretation Layer | Implemented | No additional direct gap found in accepted routing/metadata scope. Type, relationship, task and emitted-artifact routing have source and named tests. |
 | AR-0012 | Conch Shell and Concho Views | Implemented | No additional direct gap found in accepted textual session/workspace scope. Continuous idle notification and a graphical compositor are not inferred; preserve reported live passes. |
 | AR-0013 | Viz Display Subsystem | Implemented | Scope reconciliation, S5: artifact creation/modeling exists; append-only live logs, live table mutation and metric history have no corresponding update/history API. Image is explicitly deferred. |
-| AR-0014 | Conch Schema and Object Authoring | Implemented | Concrete gap, F6: JSON schema authoring silently drops supplied operations. Existing field authoring/instance creation works. |
+| AR-0014 | Conch Schema and Object Authoring | Pending Review | Concrete gap, F6: JSON schema authoring silently drops supplied operations. Existing field authoring/instance creation works. |
 | AR-0015 | Conch Parser and Syntax | Implemented | No additional direct gap found in accepted single-line grammar, structured authoring, quoting and reusable parser scope. Full scripting remains excluded. |
-| AR-0016 | Operations and Dispatch Model | Implemented | Concrete gap, F7: shell call can report success without an implementation/result and resolves without argument types. Legacy API accepts inconsistent argument-type counts. |
-| AR-0017 | Collections, Math Types, and Units | Implemented | Concrete uncovered runtime work, F8: collection operation declarations and Astra shape metadata are present; usable collection bindings and math value/operation behavior are not. Metadata-only ERs do not cover this remainder. |
-| AR-0018 | Generic Type System | Implemented | Concrete gap, F9: arbitrary bases and missing fixed-arity arguments accepted; general parameter validation/substitution and Conch instance introspection missing; default hashing contradicts ER-0040. |
+| AR-0016 | Operations and Dispatch Model | Pending Review | Concrete gap, F7: shell call can report success without an implementation/result and resolves without argument types. Legacy API accepts inconsistent argument-type counts. |
+| AR-0017 | Collections, Math Types, and Units | Pending Review | Concrete uncovered runtime work, F8: collection operation declarations and Astra shape metadata are present; usable collection bindings and math value/operation behavior are not. Metadata-only ERs do not cover this remainder. |
+| AR-0018 | Generic Type System | Pending Review | Concrete gap, F9: arbitrary bases and missing fixed-arity arguments accepted; general parameter validation/substitution and Conch instance introspection missing; default hashing contradicts ER-0040. |
 | AR-0019 | Caliper Unit Catalog | Implemented | No additional direct gap found in the explicitly approved finite catalog, rational conversion, extension and intrinsic-constraint scope. Do not reopen settled customary/prefix/temperature decisions. |
-| AR-0020 | Core Type Operations and Rendering | Implemented | Concrete gap, F10: most listed primitive operations and later collection/math phases are absent. U64 print/render produces blank output. Implemented contract add/to_string/compare is a narrower surface. |
-| AR-0021 | Structured Types, Enums, and Packets | Implemented | Concrete gap, F11: packet metadata lacks bit-layout serialization/validation; structured arrays and inherited layouts lack runtime coverage. Invalid packet definitions are accepted. |
+| AR-0020 | Core Type Operations and Rendering | Pending Review | Concrete gap, F10: most listed primitive operations and later collection/math phases are absent. U64 print/render produces blank output. Implemented contract add/to_string/compare is a narrower surface. |
+| AR-0021 | Structured Types, Enums, and Packets | Pending Review | Concrete gap, F11: packet metadata lacks bit-layout serialization/validation; structured arrays and inherited layouts lack runtime coverage. Invalid packet definitions are accepted. |
 | AR-0022 | Staged Service Plane Delivery | Implemented | No additional direct gap found against the explicitly approved bounded stages. Local allocator/network/inspection services do not imply remote networking or OS sandbox enforcement. |
 | AR-0023 | Refract Reflection Profiles | Implemented | No additional direct gap found against approved metadata profiles. Inline documentation and required_capabilities were explicitly accepted; preserve that ruling. |
 | AR-0024 | Erector Machine and Comms Delivery Tracks | Implemented | No additional direct gap found against approved foundational tracks and bounded loopback path. Hardware drivers/full stack remain excluded; preserve automated-evidence acceptance. |
@@ -197,8 +199,9 @@ failure as well as an uncovered AR requirement. ER-0038 remains evidence for met
 | S5 | create_text_log/create_table/create_metric persist initial artifact snapshots | Whether AR-0013's live logs/tables/metrics require update/history APIs or are intended to mean immutable snapshots. Image remains an explicit later feature. |
 
 No new broad implementation or acceptance-criteria rewrite is authorized by these findings. The
-audit recommends reopening the eleven concrete-gap ARs and reassessing ER-0034/0035/0039/0040/0042/
-0086. Other ERs can remain valid for their narrower scope; missing parent requirements need new ERs.
+System Engineer returned the eleven concrete-gap ARs to Pending Review. Reassessment of
+ER-0034/0035/0039/0040/0042/0086 remains a recommendation; no ER status was changed. Other ERs
+can remain valid for their narrower scope; missing parent requirements need new ERs.
 Decide the umbrella boundaries separately instead of silently shrinking them to match current code.
 
 ## Reproduction and validation

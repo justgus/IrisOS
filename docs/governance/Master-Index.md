@@ -34,7 +34,9 @@ are not converted into Agile Airframe Epics.
 
 AR status is recorded in each AR document. `Accepted` means approved and waiting; `In Progress`
 means selected into a started Autonomous AR Batch; `Implemented` means required implementation
-work passed its verification gates. When asked for AR status, Codex reports every AR in a Markdown
+work passed its verification gates. `Pending Review` means the architecture remains accepted but
+implementation gaps or completion evidence require review before completion can be claimed.
+When asked for AR status, Codex reports every AR in a Markdown
 table in chat, including available batch or ER progress. Keep the status in
 `Architecture-Decision-Index.json` aligned as a derived summary.
 

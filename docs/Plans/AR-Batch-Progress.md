@@ -6,8 +6,10 @@
 - [Audit report](AR-Implementation-Audit-2026-10-20.md) inventories 27 ARs and 115 ERs, separates
   concrete gaps from accepted narrow scope, and records executable storage/identity/generic/dispatch
   counterexamples plus actual Conch output. This is not a fresh verification of every ER.
-- Proposed status corrections and uncovered requirements await System Engineer disposition;
-  canonical statuses and existing human acceptances are preserved. No implementation repair started.
+- The System Engineer directed AR-0001–0004, AR-0009, AR-0014, AR-0016–0018, and AR-0020–0021
+  to Pending Review on 2026-10-20. Canonical documents and architecture index agree; review of
+  remaining work is pending. ER statuses and prior verification evidence are preserved.
+  No implementation repair started.
 - Baseline AR-0027 implementation CI 39052974745 is now confirmed completed/success for 278ae38.
 - The completed AR-0022–0024 batch record below remains historical evidence for its accepted scope.
 

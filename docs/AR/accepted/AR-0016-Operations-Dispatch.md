@@ -6,9 +6,17 @@ DR-Dependencies: DR-0001
 
 # AR-0016 — Operations and Dispatch Model
 
-- Status: Implemented
+- Status: Pending Review
 - Date: 2026-02-21
 - Owners: Mike
+
+## Implementation Review — 2026-10-20
+
+The System Engineer returned this AR to `Pending Review` after the
+[implementation audit](../../Plans/AR-Implementation-Audit-2026-10-20.md) identified
+implementation gaps (F7). This status supersedes earlier completion claims while the
+remaining work and ER coverage are reviewed. The architectural decision remains accepted;
+existing implementation evidence and ER verification records are preserved.
 
 ## Context
 

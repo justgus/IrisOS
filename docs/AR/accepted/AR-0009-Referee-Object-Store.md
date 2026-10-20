@@ -5,9 +5,17 @@ ER-Dependencies: ER-0002, ER-0003, ER-0004, ER-0018, ER-0019, ER-0020, ER-0034, 
 
 # AR-0009 — Referee Object Store (Recommendation)
 
-- Status: Implemented
+- Status: Pending Review
 - Date: 2026-02-16
 - Owners: Mike
+
+## Implementation Review — 2026-10-20
+
+The System Engineer returned this AR to `Pending Review` after the
+[implementation audit](../../Plans/AR-Implementation-Audit-2026-10-20.md) identified
+implementation gaps (F2/F5). This status supersedes earlier completion claims while the
+remaining work and ER coverage are reviewed. The architectural decision remains accepted;
+existing implementation evidence and ER verification records are preserved.
 
 ## Context
 

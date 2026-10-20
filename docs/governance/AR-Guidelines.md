@@ -35,7 +35,7 @@ DR-Dependencies: DR-XXXX
 
 # AR-XXXX — Short Title
 
-- Status: Proposed | Accepted | In Progress | Implemented | Done | Rejected
+- Status: Proposed | Accepted | Pending Review | In Progress | Implemented | Done | Rejected
 - Date: YYYY-MM-DD
 - Owners:
 ```
@@ -97,6 +97,10 @@ without expanding into implementation task detail.
 
 - `Proposed`: the recommendation is under review and is not authorized implementation work.
 - `Accepted`: the recommendation is approved and waiting for implementation to be selected.
+- `Pending Review`: the architecture remains accepted, but implementation gaps or completion
+  evidence require System Engineer review before completion can be claimed. Record the findings
+  in the AR and architecture index. This status does not change dependent ER verification records
+  or authorize a new implementation batch.
 - `In Progress`: the System Engineer selected the AR for an Autonomous AR Batch, and the batch
   has started. Keep this status across session, quota, and day boundaries and while a documented
   blocker remains.

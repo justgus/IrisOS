@@ -68,32 +68,42 @@
     {
       "id": "AR-0001",
       "name": "Expected-Style Error Model",
-      "status": "Implemented",
+      "status": "Pending Review",
       "decision": "Use explicit result-style error propagation and avoid exceptions as normal cross-boundary control flow.",
-      "conformance": "Implemented",
+      "conformance": "Pending Review",
       "notes": [
         "The AR specifies Result<T> with expected-style semantics and enum class ErrorCode.",
         "The current implementation provides enum class ErrorCode through referee::Result<T>.",
-        "ER-0081 through ER-0083 establish typed NotFound behavior across storage, Refract, and runtime lookups; ER-0086 completes the selected public-boundary error propagation audit."
+        "ER-0081 through ER-0083 establish typed NotFound behavior across storage, Refract, and runtime lookups; ER-0086 completes the selected public-boundary error propagation audit.",
+        "The System Engineer returned this AR to Pending Review on 2026-10-20 after implementation audit findings F1; see docs/Plans/AR-Implementation-Audit-2026-10-20.md. Earlier completion evidence does not close these gaps; ER verification records are unchanged."
       ]
     },
     {
       "id": "AR-0002",
       "name": "Object Identity and Versioning Semantics",
-      "status": "Implemented",
-      "decision": "Use stable UUID-style ObjectID values with versioning represented separately."
+      "status": "Pending Review",
+      "decision": "Use stable UUID-style ObjectID values with versioning represented separately.",
+      "notes": [
+        "The System Engineer returned this AR to Pending Review on 2026-10-20 after implementation audit findings F2; see docs/Plans/AR-Implementation-Audit-2026-10-20.md. Earlier completion evidence does not close these gaps; ER verification records are unchanged."
+      ]
     },
     {
       "id": "AR-0003",
       "name": "Storage Layout Strategy",
-      "status": "Implemented",
-      "decision": "Use deterministic object storage with explicit layout/versioning; SQLite is accepted as the current realized backend while segment/index concepts remain architectural direction."
+      "status": "Pending Review",
+      "decision": "Use deterministic object storage with explicit layout/versioning; SQLite is accepted as the current realized backend while segment/index concepts remain architectural direction.",
+      "notes": [
+        "The System Engineer returned this AR to Pending Review on 2026-10-20 after implementation audit findings F3/F4; see docs/Plans/AR-Implementation-Audit-2026-10-20.md. Earlier completion evidence does not close these gaps; ER verification records are unchanged."
+      ]
     },
     {
       "id": "AR-0004",
       "name": "Index and Graph Storage Strategy",
-      "status": "Implemented",
-      "decision": "Represent object and relationship indexes explicitly and support deterministic graph traversal and rebuild behavior."
+      "status": "Pending Review",
+      "decision": "Represent object and relationship indexes explicitly and support deterministic graph traversal and rebuild behavior.",
+      "notes": [
+        "The System Engineer returned this AR to Pending Review on 2026-10-20 after implementation audit findings F4; see docs/Plans/AR-Implementation-Audit-2026-10-20.md. Earlier completion evidence does not close these gaps; ER verification records are unchanged."
+      ]
     },
     {
       "id": "AR-0005",
@@ -141,8 +151,11 @@
     {
       "id": "AR-0009",
       "name": "Referee Object Store",
-      "status": "Implemented",
-      "decision": "Use Referee as the canonical object store and relationship graph manager."
+      "status": "Pending Review",
+      "decision": "Use Referee as the canonical object store and relationship graph manager.",
+      "notes": [
+        "The System Engineer returned this AR to Pending Review on 2026-10-20 after implementation audit findings F2/F5; see docs/Plans/AR-Implementation-Audit-2026-10-20.md. Earlier completion evidence does not close these gaps; ER verification records are unchanged."
+      ]
     },
     {
       "id": "AR-0010",
@@ -186,8 +199,11 @@
     {
       "id": "AR-0014",
       "name": "Conch Schema and Object Authoring",
-      "status": "Implemented",
-      "decision": "Allow Conch to define schemas and create object graph records through Refract and Referee."
+      "status": "Pending Review",
+      "decision": "Allow Conch to define schemas and create object graph records through Refract and Referee.",
+      "notes": [
+        "The System Engineer returned this AR to Pending Review on 2026-10-20 after implementation audit findings F6; see docs/Plans/AR-Implementation-Audit-2026-10-20.md. Earlier completion evidence does not close these gaps; ER verification records are unchanged."
+      ]
     },
     {
       "id": "AR-0015",
@@ -203,26 +219,33 @@
     {
       "id": "AR-0016",
       "name": "Operations and Dispatch Model",
-      "status": "Implemented",
-      "decision": "Use Conduit and Refract metadata to resolve and dispatch operations across types."
+      "status": "Pending Review",
+      "decision": "Use Conduit and Refract metadata to resolve and dispatch operations across types.",
+      "notes": [
+        "The System Engineer returned this AR to Pending Review on 2026-10-20 after implementation audit findings F7; see docs/Plans/AR-Implementation-Audit-2026-10-20.md. Earlier completion evidence does not close these gaps; ER verification records are unchanged."
+      ]
     },
     {
       "id": "AR-0017",
       "name": "Collections, Math Types, and Units",
-      "status": "Implemented",
+      "status": "Pending Review",
       "decision": "Provide first-class collection, math, and unit type foundations.",
-      "conformance": "Implemented",
+      "conformance": "Pending Review",
       "notes": [
         "Collection, math, and starter unit ERs are Verified.",
         "Batch contracts for collection operations, generic packs, numeric formats, type-level shapes, and value-level units are Verified through ER-0090/0093/0094/0096/0097/0098.",
-        "Implementation and validation completed in PR #346; the Caliper catalog follow-up is implemented under AR-0019."
+        "Implementation and validation completed in PR #346; the Caliper catalog follow-up is implemented under AR-0019.",
+        "The System Engineer returned this AR to Pending Review on 2026-10-20 after implementation audit findings F8; see docs/Plans/AR-Implementation-Audit-2026-10-20.md. Earlier completion evidence does not close these gaps; ER verification records are unchanged."
       ]
     },
     {
       "id": "AR-0018",
       "name": "Generic Type System",
-      "status": "Implemented",
-      "decision": "Use explicit generic instance identity and scoped type registries for generic type behavior."
+      "status": "Pending Review",
+      "decision": "Use explicit generic instance identity and scoped type registries for generic type behavior.",
+      "notes": [
+        "The System Engineer returned this AR to Pending Review on 2026-10-20 after implementation audit findings F9; see docs/Plans/AR-Implementation-Audit-2026-10-20.md. Earlier completion evidence does not close these gaps; ER verification records are unchanged."
+      ]
     },
     {
       "id": "AR-0019",
@@ -238,14 +261,20 @@
     {
       "id": "AR-0020",
       "name": "Core Type Operations and Rendering",
-      "status": "Implemented",
-      "decision": "Expose standard operations and rendering hooks for core types through Refract and Conduit."
+      "status": "Pending Review",
+      "decision": "Expose standard operations and rendering hooks for core types through Refract and Conduit.",
+      "notes": [
+        "The System Engineer returned this AR to Pending Review on 2026-10-20 after implementation audit findings F10; see docs/Plans/AR-Implementation-Audit-2026-10-20.md. Earlier completion evidence does not close these gaps; ER verification records are unchanged."
+      ]
     },
     {
       "id": "AR-0021",
       "name": "Structured Types, Enums, and Packets",
-      "status": "Implemented",
-      "decision": "Make structs, packets, enums, and structured arrays first-class Refract types."
+      "status": "Pending Review",
+      "decision": "Make structs, packets, enums, and structured arrays first-class Refract types.",
+      "notes": [
+        "The System Engineer returned this AR to Pending Review on 2026-10-20 after implementation audit findings F11; see docs/Plans/AR-Implementation-Audit-2026-10-20.md. Earlier completion evidence does not close these gaps; ER verification records are unchanged."
+      ]
     },
     {
       "id": "AR-0022",
